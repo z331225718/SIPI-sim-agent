@@ -1,0 +1,108 @@
+{
+  "build": {
+    "binary_sha256": "8abb1fcefc70cbd2524ceda34bb5a23ddc32e1a7149ccb27a3607bfcf8a0c0b1",
+    "returncode": 0,
+    "stderr_bytes": 2812,
+    "stderr_sha256": "12e9dc873b1b0f359b6150ddc3bcf7169a3e3d0f231651c641987c6ce3e87e34",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "272beba9cff45b449cf84c19dfcd026f5d42a3d470cdd18bf38a731b3780f4e0",
+    "commit": "aeb09982f360e73159d1335c6e0dd77d1176e65a",
+    "tree": "4d0411d9439bed2ff5410b56f799ac47583bf43a"
+  },
+  "execution": {
+    "candidate": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 78,
+      "stdout_sha256": "e7569f92d00d3613fb5ca1d3a210dbd2d915f5fc5e5fe272116fc27dd4eec998"
+    },
+    "candidate_report_sha256": "e511a2526ed0d3849bd6c8d27f2f50b3ce1f5a786209ec3d30c76ea9dfbe7d47",
+    "upstream": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 200,
+      "stdout_sha256": "ca0555616522c8c9a438ceceffdc387d219d6cc48bc4d7362365636448a34c5c"
+    },
+    "upstream_report_sha256": "bc0dae6e09e0f6d9db26841334a11b71fcf7ed0b3158ea74722d63001e834510"
+  },
+  "fixture": {
+    "generated_by_runner_constant": "tools/run_as_02_03_numeric_bound_v3.py:FIXTURE",
+    "kind": "fixed_touchstone_line_s2p_v1",
+    "sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70"
+  },
+  "fixture_sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70",
+  "fresh_run_nonce": "71a405812d133bfb3ee3453c0fc545a67d6413ac5116849563899eca8d740a7c",
+  "metrics": {
+    "candidate_snapshot": {
+      "selected_order": 1,
+      "target_met": true
+    },
+    "candidate_y_mean_rms_siemens": 0.012928922397961246,
+    "candidate_y_rms_siemens": 0.025857844795922492,
+    "upstream_snapshot": {
+      "target_met": true
+    },
+    "upstream_y_mean_rms_siemens": 0.012928922397961225,
+    "upstream_y_rms_siemens": 0.02585784479592245
+  },
+  "non_claims": [
+    "Numeric mismatch remains open.",
+    "No parity or acceptance tolerance is claimed."
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "run_id": "as03-aeb09982-fresh-03",
+  "runner": {
+    "repo_relative_path": "tools/run_as_02_03_numeric_bound_v3.py",
+    "sha256": "1acc6d619b37f0ea1139ce4a21117024b723a5bf934b42b927fa6af3670e9c61"
+  },
+  "schema": "sipi.agent-spice-as-numeric-bound.v3",
+  "status": "completed_numeric_mismatch_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "exit_code": 0,
+      "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+      "path_redacted": true,
+      "role": "python",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-03",
+  "wrapper_policy": {
+    "clear_inherited_rustc_workspace_wrapper": true,
+    "clear_inherited_rustc_wrapper": true,
+    "rustc_workspace_wrapper": "unset",
+    "rustc_wrapper": "unset",
+    "schema": "sipi.path-free-wrapper-policy.v1"
+  }
+}

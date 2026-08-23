@@ -1,0 +1,169 @@
+{
+  "build": {
+    "binary_sha256": "b0949e65483a33bac408c7286bae499746d37df6d6165903c91bff9b8e97479d",
+    "returncode": 0,
+    "stderr_bytes": 2812,
+    "stderr_sha256": "5d99b79d11a9bf6735cdbb54f87505f238e630f7de0277723d906f0e8e0bd357",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "272beba9cff45b449cf84c19dfcd026f5d42a3d470cdd18bf38a731b3780f4e0",
+    "commit": "aeb09982f360e73159d1335c6e0dd77d1176e65a",
+    "tree": "4d0411d9439bed2ff5410b56f799ac47583bf43a"
+  },
+  "execution": {
+    "candidate": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 125,
+      "stdout_sha256": "6673233174edf6a2d93a71f389b11a121ab58020a082f6cde92345ce035b630d"
+    },
+    "candidate_report_sha256": "4d25615bd490b4969af102b9cd0b1a3909b4c4feae197a6f2f43d979ed36d82f",
+    "upstream": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 113,
+      "stdout_sha256": "b269d126208c396f2daf88e2b74ed04de91862dc9b0a9b6d060063e37e7937f9"
+    },
+    "upstream_report_sha256": "3037579a960856951fa1641fbed5215cdee1e8bbfa28ea5e197f0fad5159ef28"
+  },
+  "fixture": {
+    "generated_by_runner_constant": "tools/run_as_02_03_numeric_bound_v3.py:FIXTURE",
+    "kind": "fixed_touchstone_line_s2p_v1",
+    "sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70"
+  },
+  "fixture_sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70",
+  "fresh_run_nonce": "761ab3c15aeb0c937172a61d5e61e2f0971e39e12a2a8b9b4a201b42bfc881f1",
+  "metrics": {
+    "candidate_block_rms": [
+      0.06748965962552016,
+      0.06748965962552016
+    ],
+    "candidate_cascade_mean_rms": 0.08227413117673504,
+    "candidate_snapshot": {
+      "blocks": [
+        {
+          "gate": {
+            "full_band_rms": 0.06748965962552016,
+            "priority_band_rms": null,
+            "target_met": true
+          },
+          "name": "a",
+          "pole_relocation_iterations": 14,
+          "scale": 1.0,
+          "selected_order": 1
+        },
+        {
+          "gate": {
+            "full_band_rms": 0.06748965962552016,
+            "priority_band_rms": null,
+            "target_met": true
+          },
+          "name": "b",
+          "pole_relocation_iterations": 14,
+          "scale": 1.0,
+          "selected_order": 1
+        }
+      ],
+      "cascade_order": [
+        "a",
+        "b"
+      ],
+      "selected_scales": [
+        1.0,
+        1.0
+      ]
+    },
+    "upstream_block_rms": [
+      0.06916905397206313,
+      0.06916905397206313
+    ],
+    "upstream_cascade_mean_rms": 0.08305707108701127,
+    "upstream_snapshot": {
+      "blocks": [
+        {
+          "full_band_mean_rms_error": 0.06916905397206313,
+          "name": "a",
+          "pole_relocation_iterations": null,
+          "priority_band_mean_rms_error": null,
+          "scale": 1.0,
+          "selected_order": 1
+        },
+        {
+          "full_band_mean_rms_error": 0.06916905397206313,
+          "name": "b",
+          "pole_relocation_iterations": null,
+          "priority_band_mean_rms_error": null,
+          "scale": 1.0,
+          "selected_order": 1
+        }
+      ],
+      "cascade_order": [
+        "a",
+        "b"
+      ],
+      "selected_scales": {
+        "a": 1.0,
+        "b": 1.0
+      }
+    }
+  },
+  "non_claims": [
+    "Numeric mismatch remains open.",
+    "No parity or acceptance tolerance is claimed."
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "run_id": "as02-aeb09982-fresh-03",
+  "runner": {
+    "repo_relative_path": "tools/run_as_02_03_numeric_bound_v3.py",
+    "sha256": "1acc6d619b37f0ea1139ce4a21117024b723a5bf934b42b927fa6af3670e9c61"
+  },
+  "schema": "sipi.agent-spice-as-numeric-bound.v3",
+  "status": "completed_numeric_mismatch_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "exit_code": 0,
+      "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+      "path_redacted": true,
+      "role": "python",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-02",
+  "wrapper_policy": {
+    "clear_inherited_rustc_workspace_wrapper": true,
+    "clear_inherited_rustc_wrapper": true,
+    "rustc_workspace_wrapper": "unset",
+    "rustc_wrapper": "unset",
+    "schema": "sipi.path-free-wrapper-policy.v1"
+  }
+}

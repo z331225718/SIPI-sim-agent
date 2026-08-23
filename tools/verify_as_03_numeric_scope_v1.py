@@ -10,8 +10,14 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools import verify_as_02_03_numeric_bound_v3 as bound_verifier
+
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs/baselines/as-03-fit-yparam-numeric-scope-v1.yaml"
+UPSTREAM_SOURCE = {"commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5", "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402", "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144"}
+CANDIDATE_SOURCE = {"commit": "aeb09982f360e73159d1335c6e0dd77d1176e65a", "tree": "4d0411d9439bed2ff5410b56f799ac47583bf43a", "archive_sha256": "272beba9cff45b449cf84c19dfcd026f5d42a3d470cdd18bf38a731b3780f4e0"}
+HARNESS_SHA = {"tools/run_as_02_03_numeric_bound_v3.py": "1acc6d619b37f0ea1139ce4a21117024b723a5bf934b42b927fa6af3670e9c61", "tools/aggregate_as_02_03_numeric_bound_v3.py": "d951474d93d2c0cb110ab15ad2a961905d4c067db5b9cff6ddf91b3f96fbbae4"}
 
 
 def sha(path: Path) -> str:
@@ -35,44 +41,12 @@ def _repo_file(value: object, prefix: str) -> Path | None:
 
 def verify(path: Path = MANIFEST, document: dict[str, object] | None = None) -> dict[str, object]:
     doc = document if document is not None else yaml.safe_load(path.read_text(encoding="utf-8"))
-    blockers: list[str] = []
-    if _has_absolute(doc) or doc.get("global_row_closed") is not False:
-        blockers.append("scope or path contract")
-    source = doc.get("source", {})
-    expected = {"commit": "706191a1d0a9be7fed77e10b7ba90195d01b1911", "tree": "ef51159ea5d471405d3018e8eadc10df607b6e2f"}
-    if source.get("candidate", {}).get("commit") != expected["commit"] or source.get("candidate", {}).get("tree") != expected["tree"]:
-        blockers.append("candidate binding")
-    report_hashes: list[str] = []
-    reports = doc.get("reports", [])
-    for item in reports:
-        report_path = _repo_file(item.get("path"), "docs/") if isinstance(item, dict) else None
-        if report_path is None or item.get("sha256") != sha(report_path):
-            blockers.append("report path/hash")
-            continue
-        report = json.loads(report_path.read_text(encoding="utf-8"))
-        report_hashes.append(item["sha256"])
-        if report.get("workflow") != "AS-03" or report.get("candidate", {}).get("commit") != expected["commit"] or report.get("parity_claim") is not False or report.get("numeric_parity") is not False:
-            blockers.append("report contract")
-        metrics = report.get("metrics", {})
-        if abs(metrics.get("candidate_y_rms_siemens", 1.0) - metrics.get("upstream_y_rms_siemens", 0.0)) > 1e-12 or abs(metrics.get("candidate_y_mean_rms_siemens", 1.0) - metrics.get("upstream_y_mean_rms_siemens", 0.0)) > 1e-12:
-            blockers.append("scoped numeric mismatch")
-    aggregate = doc.get("aggregate", {})
-    aggregate_path = _repo_file(aggregate.get("path"), "docs/") if isinstance(aggregate, dict) else None
-    if aggregate_path is None or aggregate.get("sha256") != sha(aggregate_path):
-        blockers.append("aggregate path/hash")
-    else:
-        value = json.loads(aggregate_path.read_text(encoding="utf-8"))
-        if value.get("workflow") != "AS-03" or value.get("status") != "completed_numeric_mismatch_open" or value.get("custody_valid") is not True or [x.get("sha256") for x in value.get("reports", [])] != report_hashes:
-            blockers.append("aggregate contract")
-    for key in ("runner", "aggregator"):
-        item = doc.get("harness", {}).get(key, {})
-        tool_path = _repo_file(item.get("path"), "tools/") if isinstance(item, dict) else None
-        if tool_path is None or item.get("sha256") != sha(tool_path):
-            blockers.append("harness hash")
-    audit = doc.get("audit", {})
-    audit_path = _repo_file(audit.get("path"), "docs/") if isinstance(audit, dict) else None
-    if audit_path is None or audit.get("sha256") != sha(audit_path):
-        blockers.append("audit hash")
+    result = bound_verifier.verify(path, document=doc)
+    blockers = list(result["blockers"])
+    if doc.get("global_row_closed") is not False or doc.get("scope", {}).get("tolerance") != 1.0e-12:
+        blockers.append("scope contract")
+    if doc.get("status") != "scoped_numeric_parity_observation" or doc.get("parity_claim") is not False or doc.get("scoped_observation_passed") is not True:
+        blockers.append("scoped status")
     return {"valid": not blockers, "blockers": blockers}
 
 
