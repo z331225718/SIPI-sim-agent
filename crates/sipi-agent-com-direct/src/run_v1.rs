@@ -2082,12 +2082,16 @@ fn canonical_controls_v1(
     let aliases: &[(&str, &[&str])] = &[
         (
             "samples_per_ui",
-            &["samples_per_ui", "SAMP_PER_UI", "N_v", "M"],
+            // N_v is the upstream COM search/window control, not the UI
+            // sampling count.  M remains a legacy spelling of samples_per_ui.
+            &["samples_per_ui", "SAMP_PER_UI", "M"],
         ),
         ("LEVELS", &["LEVELS", "PAM_LEVELS", "levels", "L"]),
         (
             "bin_size",
-            &["bin_size", "BIN_SIZE", "BinSize", "force_pdf_bin_size"],
+            // force_pdf_bin_size is a boolean enable switch, never a PDF
+            // width.  Keep it out of the numeric alias family.
+            &["bin_size", "BIN_SIZE", "BinSize"],
         ),
         ("A_v", &["A_v", "AVAILABLE_SIGNAL"]),
         ("R_LM", &["R_LM", "R_LM_OHM"]),
@@ -2147,6 +2151,139 @@ fn canonical_controls_v1(
         if let Some(value) = unique_alias_value_v1(source, names, canonical)?.cloned() {
             result.insert((*canonical).to_owned(), value);
         }
+    }
+    Ok(result)
+}
+
+/// Project a trusted workbook's materialized schema into the small canonical
+/// COM control surface.  The public JSON path intentionally keeps its legacy
+/// aliases above; workbook values have section/source semantics, so accepting
+/// those broad aliases here would conflate independent controls such as M/N_v
+/// and BinSize/force_pdf_bin_size.
+fn trusted_workbook_controls_v1(
+    source: &BTreeMap<String, ResolvedDefaultV1>,
+    branch: &PortableBranchResultV1,
+    package_case_index: usize,
+) -> Result<BTreeMap<String, ResolvedDefaultV1>, DirectRunErrorV1> {
+    let exact = |source_key: &str, canonical: &str| {
+        let Some(value) = source.get(source_key).cloned() else {
+            return Err(DirectRunErrorV1::Unsupported(format!(
+                "trusted workbook is missing materialized {source_key} for {canonical}"
+            )));
+        };
+        if source
+            .keys()
+            .any(|key| key != source_key && key.eq_ignore_ascii_case(source_key))
+        {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "trusted workbook has duplicate case-insensitive materialized control {canonical}"
+            )));
+        }
+        Ok(value)
+    };
+    let mut result = BTreeMap::new();
+    for (canonical, source_key) in [
+        ("samples_per_ui", "samples_per_ui"),
+        ("LEVELS", "levels"),
+        ("R_LM", "R_LM"),
+        ("sigma_X", "sigma_X"),
+        ("sigma_RJ", "sigma_RJ"),
+        ("A_DD", "A_DD"),
+        ("spec_ber", "specBER"),
+        ("f2", "f2"),
+    ] {
+        result.insert(canonical.to_owned(), exact(source_key, canonical)?);
+    }
+    let available_signal_v = branch.search_available_signal_v.ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialized search did not produce a final candidate".to_owned(),
+        )
+    })?;
+    let sigma_n_v = branch.search_sigma_n_v.ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialized search did not produce sigma_N".to_owned(),
+        )
+    })?;
+    let h_j = branch.search_h_j.as_ref().ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialized search did not produce jitter response".to_owned(),
+        )
+    })?;
+    if !available_signal_v.is_finite()
+        || !sigma_n_v.is_finite()
+        || h_j.iter().any(|value| !value.is_finite())
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "trusted workbook search sidecar contains non-finite controls".to_owned(),
+        ));
+    }
+    let configured_bin_size = match exact("BinSize", "bin_size")? {
+        ResolvedDefaultV1::Scalar(value) if value.is_finite() && value > 0.0 => value,
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(
+                "trusted workbook BinSize must be a finite positive scalar".to_owned(),
+            ));
+        }
+    };
+    let force_pdf_bin_size = match exact("force_pdf_bin_size", "force_pdf_bin_size")? {
+        ResolvedDefaultV1::Boolean(value) => value,
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(
+                "trusted workbook force_pdf_bin_size must be boolean".to_owned(),
+            ));
+        }
+    };
+    let effective_bin_size = if force_pdf_bin_size {
+        configured_bin_size
+    } else {
+        (available_signal_v / 1000.0).min(configured_bin_size)
+    };
+    if !effective_bin_size.is_finite() || effective_bin_size <= 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "trusted workbook effective bin_size must be finite and positive".to_owned(),
+        ));
+    }
+    result.insert(
+        "bin_size".to_owned(),
+        ResolvedDefaultV1::Scalar(effective_bin_size),
+    );
+    result.insert(
+        "A_v".to_owned(),
+        ResolvedDefaultV1::Scalar(available_signal_v),
+    );
+    result.insert("sigma_N".to_owned(), ResolvedDefaultV1::Scalar(sigma_n_v));
+    result.insert("h_J".to_owned(), ResolvedDefaultV1::Vector(h_j.clone()));
+
+    // SNDR is a case-specific materialized vector.  Do not alias it to an
+    // arbitrary SNR_TX field in the trusted path.
+    let sndr = workbook_case_scalar_v1(source, &["SNDR"], package_case_index, "SNDR")?;
+    result.insert("SNR_TX".to_owned(), ResolvedDefaultV1::Scalar(sndr));
+
+    // These are the only optional controls with direct schema materialized
+    // spellings consumed by the canonical DTO.  Missing optional controls are
+    // omitted; no legacy fallback is permitted for a trusted workbook.
+    for (canonical, source_key) in [
+        ("cdr", "CDR"),
+        ("noise_crest_factor", "Noise_Crest_Factor"),
+        ("pass_threshold_db", "pass_threshold"),
+    ] {
+        if source.contains_key(source_key) {
+            result.insert(canonical.to_owned(), exact(source_key, canonical)?);
+        }
+    }
+    if source.contains_key("Floating_DFE") {
+        let floating_dfe = match exact("Floating_DFE", "floating_dfe")? {
+            ResolvedDefaultV1::Boolean(value) => value,
+            _ => {
+                return Err(DirectRunErrorV1::Parameters(
+                    "trusted workbook Floating_DFE must be boolean".to_owned(),
+                ));
+            }
+        };
+        result.insert(
+            "floating_dfe".to_owned(),
+            ResolvedDefaultV1::Scalar(if floating_dfe { 1.0 } else { 0.0 }),
+        );
     }
     Ok(result)
 }
@@ -2224,21 +2361,17 @@ fn workbook_controls_from_search_v1(
             "workbook materialized search did not produce jitter response".to_owned(),
         )
     })?;
-    let mut source = values.clone();
-    source.insert(
-        "A_v".to_owned(),
-        ResolvedDefaultV1::Scalar(available_signal_v),
-    );
-    source.insert("sigma_N".to_owned(), ResolvedDefaultV1::Scalar(sigma_n_v));
-    source.insert("h_J".to_owned(), ResolvedDefaultV1::Vector(h_j.clone()));
-    let sndr = workbook_case_scalar_v1(&source, &["SNDR"], package_case_index, "SNDR")?;
-    source.retain(|key, _| {
-        !["SNR_TX", "TX_SNR_DB", "SNDR"]
-            .iter()
-            .any(|alias| key.eq_ignore_ascii_case(alias))
-    });
-    source.insert("SNR_TX".to_owned(), ResolvedDefaultV1::Scalar(sndr));
-    canonical_controls_v1(&source)
+    // Keep the checks local for a useful error at the call boundary, then
+    // apply the source-exact projection (which performs the same checks).
+    if !available_signal_v.is_finite()
+        || !sigma_n_v.is_finite()
+        || h_j.iter().any(|value| !value.is_finite())
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "workbook materialized search sidecar contains non-finite controls".to_owned(),
+        ));
+    }
+    trusted_workbook_controls_v1(values, branch, package_case_index)
 }
 
 fn required_usize_from_controls_v1(
@@ -7279,6 +7412,44 @@ mod tests {
     }
 
     #[test]
+    fn public_canonical_controls_keep_true_legacy_aliases_only() {
+        let mut values = BTreeMap::new();
+        for (key, value) in [
+            ("SAMP_PER_UI", ResolvedDefaultV1::Scalar(8.0)),
+            ("LEVELS", ResolvedDefaultV1::Scalar(4.0)),
+            ("BIN_SIZE", ResolvedDefaultV1::Scalar(0.001)),
+            ("AVAILABLE_SIGNAL", ResolvedDefaultV1::Scalar(0.5)),
+            ("R_LM_OHM", ResolvedDefaultV1::Scalar(50.0)),
+            ("TX_SNR_DB", ResolvedDefaultV1::Scalar(30.0)),
+            ("SIGMA_X", ResolvedDefaultV1::Scalar(0.03)),
+            ("SIGMA_RJ", ResolvedDefaultV1::Scalar(1.0e-4)),
+            ("JITTER_RESPONSE", ResolvedDefaultV1::Vector(vec![0.3])),
+            ("SIGMA_N", ResolvedDefaultV1::Scalar(0.01)),
+            ("AMPLITUDE_DD", ResolvedDefaultV1::Scalar(0.4)),
+            ("SPEC_BER", ResolvedDefaultV1::Scalar(1.0e-4)),
+            ("F2", ResolvedDefaultV1::Scalar(50.0e9)),
+        ] {
+            values.insert(key.to_owned(), value);
+        }
+        // These controls are intentionally independent and must not be
+        // consumed as samples_per_ui or bin_size aliases.
+        values.insert("N_v".to_owned(), ResolvedDefaultV1::Scalar(32.0));
+        values.insert(
+            "force_pdf_bin_size".to_owned(),
+            ResolvedDefaultV1::Boolean(true),
+        );
+        let controls = canonical_controls_v1(&values).expect("legacy aliases");
+        assert_eq!(
+            controls.get("samples_per_ui"),
+            Some(&ResolvedDefaultV1::Scalar(8.0))
+        );
+        assert_eq!(
+            controls.get("bin_size"),
+            Some(&ResolvedDefaultV1::Scalar(0.001))
+        );
+    }
+
+    #[test]
     fn workbook_case_distinct_controls_prefer_exact_schema_keys() {
         let mut values = BTreeMap::new();
         values.insert("f_HP".to_owned(), ResolvedDefaultV1::Vector(vec![1.0, 2.0]));
@@ -8753,9 +8924,69 @@ mod tests {
                 .iter()
                 .any(|alias| key.eq_ignore_ascii_case(alias))
         });
+        // Exercise the trusted materialized schema spellings rather than the
+        // legacy public-JSON spellings in `canonical_parameters`.
+        for (legacy, materialized) in [
+            ("LEVELS", "levels"),
+            ("bin_size", "BinSize"),
+            ("spec_ber", "specBER"),
+        ] {
+            if let Some(value) = workbook_values.remove(legacy) {
+                workbook_values.insert(materialized.to_owned(), value);
+            }
+        }
         workbook_values.insert("SNDR".to_owned(), ResolvedDefaultV1::Vector(vec![33.0]));
+        workbook_values.insert("N_v".to_owned(), ResolvedDefaultV1::Scalar(6.0));
+        workbook_values.insert(
+            "force_pdf_bin_size".to_owned(),
+            ResolvedDefaultV1::Boolean(true),
+        );
+        workbook_values.insert("Floating_DFE".to_owned(), ResolvedDefaultV1::Boolean(true));
+        workbook_values.insert(
+            "force_pdf_bin_size".to_owned(),
+            ResolvedDefaultV1::Boolean(false),
+        );
+        let unforced = workbook_controls_from_search_v1(&workbook_values, &sigma_zero, 0)
+            .expect("unforced trusted workbook sidecar");
+        assert_eq!(
+            unforced.get("bin_size"),
+            Some(&ResolvedDefaultV1::Scalar(
+                (sigma_zero.search_available_signal_v.unwrap() / 1000.0).min(0.001),
+            ))
+        );
+        workbook_values.insert(
+            "force_pdf_bin_size".to_owned(),
+            ResolvedDefaultV1::Boolean(true),
+        );
         let workbook_sidecar = workbook_controls_from_search_v1(&workbook_values, &sigma_zero, 0)
             .expect("typed workbook sidecar");
+        assert_eq!(
+            workbook_sidecar.get("samples_per_ui"),
+            Some(&ResolvedDefaultV1::Scalar(8.0))
+        );
+        assert_eq!(
+            workbook_sidecar.get("LEVELS"),
+            Some(&ResolvedDefaultV1::Scalar(4.0))
+        );
+        assert_eq!(
+            workbook_sidecar.get("bin_size"),
+            Some(&ResolvedDefaultV1::Scalar(0.001))
+        );
+        assert_eq!(
+            workbook_sidecar.get("floating_dfe"),
+            Some(&ResolvedDefaultV1::Scalar(1.0))
+        );
+        let consumed_keys = workbook_sidecar.keys().cloned().collect::<Vec<_>>();
+        let dto = merge_com_parameters_v1(&consumed_keys, &workbook_sidecar, &BTreeMap::new(), &[])
+            .expect("trusted controls DTO");
+        let resolved =
+            sipi_com::resolve_com_parameter_controls_v1(&dto).expect("trusted controls resolve");
+        assert!(format!("{resolved:?}").contains("floating_dfe: true"));
+        assert!(!workbook_sidecar.contains_key("N_v"));
+        assert!(!workbook_sidecar.contains_key("force_pdf_bin_size"));
+        let mut duplicate = workbook_values.clone();
+        duplicate.insert("SAMPLES_PER_UI".to_owned(), ResolvedDefaultV1::Scalar(16.0));
+        assert!(workbook_controls_from_search_v1(&duplicate, &sigma_zero, 0).is_err());
         assert!(matches!(
             workbook_sidecar.get("A_v"),
             Some(ResolvedDefaultV1::Scalar(value)) if value.is_finite()
