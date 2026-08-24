@@ -1,0 +1,194 @@
+{
+  "build": {
+    "binary_sha256": "5bc7f56cf5c2b4beb768c75125d3fb3ab67df4aa3708a4b39df79352f8236f09",
+    "returncode": 0,
+    "stderr_bytes": 2773,
+    "stderr_sha256": "5b57484508feb6ea60961edf12f044e38371bba177673e2187b5ef47b36b72db",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "59becc6fbfede8dce7019ec1e57c7b8fb98c4682eb85894176050740e6df6cc4",
+    "commit": "6b8dacb434c1b95571b45e0f07a15fe2e997b012",
+    "tree": "5cf877e3da35f387f0a720a081c87214a2d6ca2b"
+  },
+  "custody": {
+    "archive_links_rejected": true,
+    "archive_overlay": false,
+    "create_new": true,
+    "fresh_root": true,
+    "offline_build": true,
+    "path_redacted": true,
+    "root_external_to_repository": true
+  },
+  "execution": {
+    "candidate": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 78,
+      "stdout_sha256": "e7569f92d00d3613fb5ca1d3a210dbd2d915f5fc5e5fe272116fc27dd4eec998"
+    },
+    "candidate_report_sha256": "7685502fa88e79b79a5365b768861e6d7b5e4579925f48d8abcaad7438c383d5",
+    "upstream": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 195,
+      "stdout_sha256": "f0bd13b9f65104f72bccbbaa88d1aec2916fc1aadbfbe7f1fa8b869b797b1851"
+    },
+    "upstream_report_sha256": "a16ecabd7ecaaf9085be6a651d93c957db8e98845bf830d517122fdbf41bfdec"
+  },
+  "fixture": {
+    "generated_by_runner_constant": "tools/run_as_02_03_numeric_bound_v3.py:FIXTURE",
+    "kind": "fixed_touchstone_line_s2p_v1",
+    "sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70"
+  },
+  "fixture_sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70",
+  "fresh_run_nonce": "d2701aec1dea54237ac26687a4923f43903c6cd57711651a2de9ba08fb9d483f",
+  "metrics": {
+    "candidate_snapshot": {
+      "selected_order": 1,
+      "target_met": true
+    },
+    "candidate_y_mean_rms_siemens": 0.012928922397961246,
+    "candidate_y_rms_siemens": 0.025857844795922492,
+    "upstream_snapshot": {
+      "target_met": true
+    },
+    "upstream_y_mean_rms_siemens": 0.012928922397961241,
+    "upstream_y_rms_siemens": 0.025857844795922482
+  },
+  "non_claims": [
+    "Numeric mismatch remains open.",
+    "No parity or acceptance tolerance is claimed.",
+    "No SI-channel S-parameter fitting is claimed.",
+    "No product or release promotion is claimed."
+  ],
+  "numeric_parity": false,
+  "parity_claim": false,
+  "profile": {
+    "as03_args": [
+      "--n-poles-real",
+      "1",
+      "--n-poles-cmplx",
+      "0",
+      "--max-order",
+      "1",
+      "--fit-iterations",
+      "2",
+      "--max-y-rms-siemens",
+      "100",
+      "--passivity",
+      "off"
+    ],
+    "as03_profile": "governing_v2_v3_current_exact_fixture_and_args",
+    "fixture_sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70"
+  },
+  "run_id": "as03-6b8dacb4-fresh-01",
+  "runner": {
+    "repo_relative_path": "tools/run_as_02_03_numeric_bound_v3.py",
+    "sha256": "11fb2258679fbed702d7e0a12af447710eb4e294a1b5965b37c54f021f46729e"
+  },
+  "schema": "sipi.agent-spice-as-numeric-bound.v3",
+  "status": "completed_numeric_mismatch_open",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "post": {
+        "executable": "cargo.exe",
+        "exit_code": 0,
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "schema": "sipi.path-free-tool-identity.v1",
+        "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+      },
+      "pre": {
+        "executable": "cargo.exe",
+        "exit_code": 0,
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "schema": "sipi.path-free-tool-identity.v1",
+        "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+      },
+      "pre_post_equal": true,
+      "role": "cargo",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "python": {
+      "executable": "python.exe",
+      "exit_code": 0,
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "post": {
+        "executable": "python.exe",
+        "exit_code": 0,
+        "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+        "path_redacted": true,
+        "role": "python",
+        "schema": "sipi.path-free-tool-identity.v1",
+        "version_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+      },
+      "pre": {
+        "executable": "python.exe",
+        "exit_code": 0,
+        "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+        "path_redacted": true,
+        "role": "python",
+        "schema": "sipi.path-free-tool-identity.v1",
+        "version_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+      },
+      "pre_post_equal": true,
+      "role": "python",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "exit_code": 0,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "post": {
+        "executable": "rustc.exe",
+        "exit_code": 0,
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "schema": "sipi.path-free-tool-identity.v1",
+        "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+      },
+      "pre": {
+        "executable": "rustc.exe",
+        "exit_code": 0,
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "schema": "sipi.path-free-tool-identity.v1",
+        "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+      },
+      "pre_post_equal": true,
+      "role": "rustc",
+      "schema": "sipi.path-free-tool-identity.v1",
+      "version_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "workflow": "AS-03",
+  "wrapper_policy": {
+    "clear_inherited_rustc_workspace_wrapper": true,
+    "clear_inherited_rustc_wrapper": true,
+    "rustc_workspace_wrapper": "unset",
+    "rustc_wrapper": "unset",
+    "schema": "sipi.path-free-wrapper-policy.v1"
+  }
+}
