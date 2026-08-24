@@ -10,6 +10,15 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+REQUIRED_CUSTODY = {
+    "fresh_root": True,
+    "create_new": True,
+    "root_external_to_repository": True,
+    "archive_links_rejected": True,
+    "archive_overlay": False,
+    "offline_build": True,
+    "path_redacted": True,
+}
 
 
 def sha(path: Path) -> str:
@@ -33,7 +42,7 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, ob
     first_sha, second_sha = sha(first_path), sha(second_path)
     if first_sha == second_sha or first.get("run_id") == second.get("run_id") or first.get("fresh_run_nonce") == second.get("fresh_run_nonce"):
         blockers.append("fresh identity")
-    for key in ("workflow", "runner", "wrapper_policy", "candidate", "upstream", "toolchain", "fixture", "fixture_sha256", "metrics"):
+    for key in ("workflow", "runner", "wrapper_policy", "custody", "profile", "candidate", "upstream", "toolchain", "fixture", "fixture_sha256", "metrics"):
         if first.get(key) != second.get(key):
             blockers.append(f"cross-run drift:{key}")
     if first.get("build", {}).get("binary_sha256") != second.get("build", {}).get("binary_sha256"):
@@ -41,6 +50,19 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, ob
     for report in (first, second):
         if report.get("status") != "completed_numeric_mismatch_open" or report.get("parity_claim") is not False or report.get("numeric_parity") is not False:
             blockers.append("parity overclaim")
+        if report.get("custody") != REQUIRED_CUSTODY:
+            blockers.append("custody contract")
+        profile = report.get("profile")
+        if not isinstance(profile, dict) or profile.get("fixture_sha256") != report.get("fixture_sha256"):
+            blockers.append("governing profile fixture contract")
+        elif report.get("workflow") == "AS-03":
+            if set(profile) != {"fixture_sha256", "as03_args", "as03_profile"} or profile.get("as03_profile") != "governing_v2_v3_current_exact_fixture_and_args" or profile.get("as03_args") != ["--n-poles-real", "1", "--n-poles-cmplx", "0", "--max-order", "1", "--fit-iterations", "2", "--max-y-rms-siemens", "100", "--passivity", "off"]:
+                blockers.append("governing AS-03 profile contract")
+        elif report.get("workflow") == "AS-02":
+            if set(profile) != {"fixture_sha256", "as02_args", "as02_profile"} or profile.get("as02_profile") != "governing_v2_v3_current_exact_fixture_and_cascade_args" or profile.get("as02_args") != ["--rms-target", "1", "--max-order", "1", "--min-order", "1", "--max-order-step", "1", "--cascade-samples", "8"]:
+                blockers.append("governing AS-02 profile contract")
+        else:
+            blockers.append("unsupported workflow profile")
     relative = lambda path: path.resolve().relative_to(ROOT.resolve()).as_posix()
     document = {
         "schema": "sipi.agent-spice-as-numeric-bound-aggregate.v3",
@@ -52,6 +74,8 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, ob
         "reports": [{"path": relative(first_path), "sha256": first_sha, "run_id": first.get("run_id"), "fresh_run_nonce": first.get("fresh_run_nonce")}, {"path": relative(second_path), "sha256": second_sha, "run_id": second.get("run_id"), "fresh_run_nonce": second.get("fresh_run_nonce")}],
         "candidate": first.get("candidate"),
         "runner": first.get("runner"),
+        "custody": first.get("custody"),
+        "profile": first.get("profile"),
         "wrapper_policy": first.get("wrapper_policy"),
         "fixture": first.get("fixture"),
         "upstream": first.get("upstream"),
@@ -61,7 +85,8 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, ob
         "non_claims": ["Numeric mismatch remains open.", "No acceptance tolerance or product parity is claimed."],
     }
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    with output.open("x", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(document, indent=2, sort_keys=True) + "\n")
     return document
 
 
