@@ -899,7 +899,7 @@ fn run_with_workflow_token_origin(
             return run_package_cases_v1(request, schema, package_cases);
         }
     }
-    let loaded = load_config_v1(request)?;
+    let loaded = load_config_v1_with_origin(request, origin_override)?;
     let mut document = loaded.document.clone();
     validate_output_input_custody_v1(request, Some(&document))?;
     let trusted_workbook =
@@ -1701,6 +1701,13 @@ fn paths_overlap_v1(left: &Path, right: &Path) -> bool {
 }
 
 fn load_config_v1(request: &DirectRunRequestV1) -> Result<LoadedConfigV1, DirectRunErrorV1> {
+    load_config_v1_with_origin(request, None)
+}
+
+fn load_config_v1_with_origin(
+    request: &DirectRunRequestV1,
+    origin_override: Option<ConfigOriginV1>,
+) -> Result<LoadedConfigV1, DirectRunErrorV1> {
     let bytes = bounded_read_v1(&request.config, MAX_CONFIG_JSON_BYTES_V1)?;
     let source_sha256 = sha256_bytes_v1(&bytes);
     if request
@@ -1712,7 +1719,8 @@ fn load_config_v1(request: &DirectRunRequestV1) -> Result<LoadedConfigV1, Direct
         let mut document: Value = serde_json::from_slice(&bytes)
             .map_err(|error| DirectRunErrorV1::Json(error.to_string()))?;
         merge_cli_calibration_v1(&mut document, request)?;
-        let values = parameter_map_from_json_v1(&document)?;
+        let trusted_workbook = origin_override == Some(ConfigOriginV1::TrustedWorkbook);
+        let values = parameter_map_from_json_with_origin_v1(&document, trusted_workbook)?;
         if values.is_empty() {
             return Err(DirectRunErrorV1::Unsupported(
                 "JSON config contains no canonical COM parameters".to_owned(),
@@ -1723,7 +1731,7 @@ fn load_config_v1(request: &DirectRunRequestV1) -> Result<LoadedConfigV1, Direct
             source_sha256,
             profile: request.profile.clone(),
             document,
-            origin: ConfigOriginV1::Json,
+            origin: origin_override.unwrap_or(ConfigOriginV1::Json),
         });
     }
 
@@ -1874,8 +1882,9 @@ fn merge_cli_calibration_v1(
     Ok(())
 }
 
-fn parameter_map_from_json_v1(
+fn parameter_map_from_json_with_origin_v1(
     document: &Value,
+    trusted_workbook: bool,
 ) -> Result<BTreeMap<String, ResolvedDefaultV1>, DirectRunErrorV1> {
     let object = document.as_object().ok_or_else(|| {
         DirectRunErrorV1::Json("canonical config must be a JSON object".to_owned())
@@ -1884,8 +1893,10 @@ fn parameter_map_from_json_v1(
     if let Some(materialized) = object.get("materialized").and_then(Value::as_object) {
         for key in ["parameters", "options"] {
             if let Some(map) = materialized.get(key).and_then(Value::as_object) {
-                reject_json_numeric_boolean_controls_v1(map)?;
-                values.extend(parse_parameter_object_v1(map, false)?);
+                if !trusted_workbook {
+                    reject_json_numeric_boolean_controls_v1(map)?;
+                }
+                values.extend(parse_parameter_object_v1(map, trusted_workbook)?);
             }
         }
     }
@@ -1898,6 +1909,9 @@ fn parameter_map_from_json_v1(
     if values.is_empty() {
         reject_json_numeric_boolean_controls_v1(object)?;
         values.extend(parse_parameter_object_v1(object, false)?);
+    }
+    if trusted_workbook {
+        normalize_workbook_boolean_controls_v1(&mut values);
     }
     Ok(values)
 }
@@ -7229,9 +7243,40 @@ mod tests {
     #[test]
     fn public_json_rejects_workbook_numeric_boolean_and_special_float() {
         let numeric = json!({"parameters": {"INCLUDE_CTLE": 1.0}});
-        assert!(parameter_map_from_json_v1(&numeric).is_err());
+        assert!(parameter_map_from_json_with_origin_v1(&numeric, false).is_err());
         let special = json!({"parameters": {"Max_VEO": {"$special_float": "Infinity"}}});
-        assert!(parameter_map_from_json_v1(&special).is_err());
+        assert!(parameter_map_from_json_with_origin_v1(&special, false).is_err());
+    }
+
+    #[test]
+    fn trusted_staged_workbook_token_allows_specials_but_public_json_cannot() {
+        let root = temp_root("trusted-staged-workbook-specials");
+        let config = root.join("staged-config.json");
+        let document = json!({
+            "materialized": {
+                "parameters": {
+                    "Max_VEO": {"$special_float": "Infinity"},
+                    "INCLUDE_CTLE": 1.0
+                },
+                "options": {}
+            },
+            "package_cases": [{"case_id": "case-0"}, {"case_id": "case-1"}]
+        });
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        let request = DirectRunRequestV1::new(&config, root.join("pulse.f64le"), root.join("out"));
+        let trusted = load_config_v1_with_origin(&request, Some(ConfigOriginV1::TrustedWorkbook))
+            .expect("trusted staged workbook config");
+        assert_eq!(trusted.origin, ConfigOriginV1::TrustedWorkbook);
+        assert!(
+            matches!(trusted.values.get("Max_VEO"), Some(ResolvedDefaultV1::Scalar(value)) if value.is_infinite())
+        );
+        assert_eq!(
+            trusted.values.get("INCLUDE_CTLE"),
+            Some(&ResolvedDefaultV1::Boolean(true))
+        );
+        assert!(load_config_v1(&request).is_err());
+        assert!(load_config_v1_with_origin(&request, Some(ConfigOriginV1::Json)).is_err());
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
