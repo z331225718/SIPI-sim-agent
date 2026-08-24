@@ -28,6 +28,19 @@ package VTF/S4P FD TwoPort cascade 仍缺失，继续 impulse-only、禁止 fit�
 `docs/baselines/as-05-ngspice-scoped-observation-v2.manifest.json`；该快照只作 additive
 继承与约束，不提升 parity 或 release。
 
+**2026-08-24 v6 upstream-first 治理快照：** 新增
+[`upstream-integration-ledger.v6`](docs/baselines/upstream-integration-ledger.v6.yaml)，绑定当前
+clean candidate `a2b1f9bd`、tree `8138a7d7` 与显式
+`git -c core.autocrlf=true archive --format=tar` archive
+`ad24059cf87ae817ebeb3a6a7c2a3c989f30d39542b1fdc6e99420545dcc9462`（44564480 bytes）。v5 immutable 历史账本保留；
+其 live-path verifier 因 COM source-map 合法演进产生的 hash drift 由 v6 successor 接管，不回写 v5。
+AS-06 当前为 source asset missing/docker info failed/build not attempted/workflow not run/parity false；
+PB 仅为 bounded `example_rx`/control semantics，vendor DLL/parity/open；COM 当前 SOURCE-MAP 记录
+内部 DD package FD cascade 与 public 64 点 synthetic artifact E2E、FEXT/NEXT metrics、最终一次
+impulse/no fit；COM-02/04 仅为 scoped synthetic package E2E，COM-01/03 仍为 historical，clean upstream
+numeric replay、DC/ACCM、full row 与 release 仍 open。15 行仍
+open，release-ready=0。
+
 **2026-08-24 PyBERT metallic/CTLE 外部复核：** Rust 线性重采样已修正为 pinned
 `interp1d(..., fill_value=0)` 的真实时间轴边界语义。普通 `3 GHz / 10 GHz` 非整数网格在两次
 clean-archive replay 中完成 17/17 stage payload 对照；near-integral 两点网格则被 pinned
