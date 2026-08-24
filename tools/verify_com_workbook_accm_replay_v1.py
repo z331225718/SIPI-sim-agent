@@ -12,7 +12,7 @@ from typing import Any
 
 REPORT_SCHEMA = "sipi.com.workbook-accm-replay-prep.v3"
 AGGREGATE_SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v3"
-CANDIDATE = {"commit": "2f751b6c5f4387e9f043e7d629fb103945d12fdf", "tree": "6e235fafe6cd77cd7916af67cb370869570d32c6", "archive": {"command": "git -c core.autocrlf=false archive --format=tar <candidate>", "exit": 0, "bytes": 44605440, "sha256": "4ad001e4ea2419bb5cd7c9817eb8a178cea831bd1eeb5f943db916cfccc1c329"}}
+CANDIDATE = {"commit": "d3d2b90516949541c281eb420ac75e9f21be41aa", "tree": "709e19008aff51e8be3d3052c19b5aac3713ee76", "archive": {"command": "git -c core.autocrlf=false archive --format=tar <candidate>", "exit": 0, "bytes": 44605440, "sha256": "2291d6abf83a1cb0a86c381856e9b21d0b540941032630ccb2b4cde8b0e7eb92"}}
 UPSTREAM = {"commit": "5272ffe74702cd585054d975559b06f8afae7b6e", "tree": "7094ab6e84989b218730c52432c70da10261f8ea", "runtime": "not_executed_external_only"}
 FIXTURE_KEYS = ("workbook", "s4p")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
