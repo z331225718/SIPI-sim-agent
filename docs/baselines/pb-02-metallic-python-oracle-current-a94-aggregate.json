@@ -1,0 +1,207 @@
+{
+  "build": {
+    "canonical_sha256": "79414d9eeb4a0ceb115e789e659278d016db28aa9b92282aa1c2530522c6bd34",
+    "environment_policy": {
+      "cargo_build_rustc_wrapper_cleared": true,
+      "rustc_workspace_wrapper_cleared": true,
+      "rustc_wrapper_cleared": true
+    },
+    "exit_code": 0,
+    "format": "PE",
+    "machine": 34404,
+    "normalization": {
+      "changed_byte_count": 32,
+      "fields": [
+        "IMAGE_FILE_HEADER.TimeDateStamp",
+        "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+        "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+        "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+        "CodeView.RSDS[0].GUID"
+      ],
+      "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+      "ranges": [
+        {
+          "canonical_hex": "00000000",
+          "field": "IMAGE_FILE_HEADER.TimeDateStamp",
+          "length": 4,
+          "offset": 240
+        },
+        {
+          "canonical_hex": "00000000",
+          "field": "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+          "length": 4,
+          "offset": 2946052
+        },
+        {
+          "canonical_hex": "00000000",
+          "field": "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+          "length": 4,
+          "offset": 2946080
+        },
+        {
+          "canonical_hex": "00000000",
+          "field": "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+          "length": 4,
+          "offset": 2946108
+        },
+        {
+          "canonical_hex": "00000000000000000000000000000000",
+          "field": "CodeView.RSDS[0].GUID",
+          "length": 16,
+          "offset": 2946416
+        }
+      ]
+    },
+    "profile": "pe32-plus"
+  },
+  "candidate": {
+    "archive_sha256": "dcf9e38aaf0980c40a6c7640e5c229ac851a11e7c287d4bde386b21b1e9c5b00",
+    "commit": "dc82489d109f27b70940a5f1037cb08d3c10a8b6",
+    "tree": "6311d5a0e88cd008e22ab9dcc0e7c18f57120ed3"
+  },
+  "case_ids": [
+    "metallic-ctle-ordinary-3ghz-10ghz",
+    "metallic-ctle-near-integral-3ghz"
+  ],
+  "claims": {
+    "global_branch_parity": false,
+    "independent_python_payload_oracle": true,
+    "near_integral_counted_as_parity": false,
+    "near_integral_external_blocked": true,
+    "ordinary_payload_parity": true,
+    "promotion": false
+  },
+  "payload": {
+    "near_integral_counted_as_parity": false,
+    "ordinary_all_passed": true,
+    "ordinary_field_count": 17
+  },
+  "reports": [
+    {
+      "fresh_run_nonce": "9194e25192ce4662bb7eb82427983390",
+      "path": "docs/baselines/pb-02-metallic-python-oracle-current-a94-run-01.json",
+      "run_id": "pb02-a94-fresh-01",
+      "sha256": "d6c9348bdbe79fa9d63a3893582e6ddd578144d583016409e7f6a7a419302bc1"
+    },
+    {
+      "fresh_run_nonce": "d6aade896a624665bd8540c86c9e7d0e",
+      "path": "docs/baselines/pb-02-metallic-python-oracle-current-a94-run-02.json",
+      "run_id": "pb02-a94-fresh-02",
+      "sha256": "17da7b5d0fb09f9c7905c1b212a2e8e72a8e886c46997de72afeccb406e9a30a"
+    }
+  ],
+  "schema": "sipi.pb-02-metallic-python-oracle-aggregate.v2-prep",
+  "source_gate": {
+    "candidate": {
+      "archive_sha256": "dcf9e38aaf0980c40a6c7640e5c229ac851a11e7c287d4bde386b21b1e9c5b00",
+      "commit": "dc82489d109f27b70940a5f1037cb08d3c10a8b6",
+      "tree": "6311d5a0e88cd008e22ab9dcc0e7c18f57120ed3"
+    },
+    "corpus": {
+      "case_count": 2,
+      "file_names": [],
+      "path": "docs/baselines/pb-02-metallic-python-oracle-corpus.v1.json",
+      "sha256": "e14a440945de59c14dbd0438a7d2e6e8785d1dc201f1e3b4c7fecdc691561d5c"
+    },
+    "fixture": {
+      "archive_present": true,
+      "archive_source_sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+      "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+      "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+      "source": "candidate_archive"
+    },
+    "harness": {
+      "python_oracle": {
+        "path": "tools/pb_02_metallic_python_oracle.py",
+        "sha256": "9c110467d7d97039ba1d425b4a4aa100e452da8e823a599bd6fbb26911804fea",
+        "snapshot": "candidate_prep_archive_harness_snapshot"
+      },
+      "runner": {
+        "path": "tools/run_pb_03_python_oracle_matrix.py",
+        "sha256": "31e5dddd19f608497cfb34a95b5fb0b223b51d790db09b44207485dc1223b5f3"
+      },
+      "wrapper": {
+        "path": "tools/run_pb_02_metallic_python_oracle.py",
+        "sha256": "45d2f5efafdf9e00a7f06c5ca157bc641da2ea02d01f3ccd175060e5e9ed4732"
+      }
+    },
+    "source_mode": "git_archive_at_candidate_prep_commit_plus_content_addressed_input_corpus_and_harness_snapshot",
+    "upstream": {
+      "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+      "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+      "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+    }
+  },
+  "status": "blocked_near_integral_external",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "child_python": {
+      "command": "uv run --project <archive> --frozen python -c <identity>",
+      "identity": {
+        "numpy": {
+          "core_module": "numpy.core",
+          "module": "numpy",
+          "version": "2.2.6"
+        },
+        "python": {
+          "executable": "python.exe",
+          "file_sha256": "a5143a28b87a4f4bd327cd8b0c73472e2ba39f0931fa68d488869ef767efc78d",
+          "implementation": "CPython",
+          "path_redacted": true,
+          "version": "3.13.14"
+        },
+        "scipy": {
+          "module": "scipy",
+          "version": "1.15.3"
+        }
+      },
+      "process": {
+        "exit_code": 0
+      }
+    },
+    "host_python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "source": "sys.executable"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 900,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 2
+}

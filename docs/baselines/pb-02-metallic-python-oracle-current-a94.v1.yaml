@@ -1,0 +1,39 @@
+schema: sipi.pb-02-metallic-python-oracle-current-a94.v1
+version: 1
+row: PB-02
+status: blocked_external_python_oracle
+source_mode: git_archive_at_candidate_prep_commit_plus_content_addressed_input_corpus_and_harness_snapshot
+candidate:
+  commit: dc82489d109f27b70940a5f1037cb08d3c10a8b6
+  tree: 6311d5a0e88cd008e22ab9dcc0e7c18f57120ed3
+  archive_sha256: dcf9e38aaf0980c40a6c7640e5c229ac851a11e7c287d4bde386b21b1e9c5b00
+upstream:
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+prep:
+  commit: a94f2dcc566193a516878621a5042374faa7d1a9
+  tree: b2b89027af44962acd1736715a6651d830d5c187
+  archive_sha256: ea444506433cd4600fa2f0b386ebc821811abf3fb291e9ecc6f69435cfd2163c
+source:
+  corpus_path: docs/baselines/pb-02-metallic-python-oracle-corpus.v1.json
+  corpus_sha256: e14a440945de59c14dbd0438a7d2e6e8785d1dc201f1e3b4c7fecdc691561d5c
+  fixture_path: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+  fixture_sha256: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+harness:
+  matrix: {path: tools/run_pb_03_python_oracle_matrix.py, sha256: 31e5dddd19f608497cfb34a95b5fb0b223b51d790db09b44207485dc1223b5f3}
+  oracle: {path: tools/pb_02_metallic_python_oracle.py, sha256: 9c110467d7d97039ba1d425b4a4aa100e452da8e823a599bd6fbb26911804fea}
+  runner: {path: tools/run_pb_02_metallic_python_oracle.py, sha256: 45d2f5efafdf9e00a7f06c5ca157bc641da2ea02d01f3ccd175060e5e9ed4732}
+  aggregate: {path: tools/aggregate_pb_02_metallic_python_oracle.py, sha256: 68d2d726b1ea07ef3a982ea8132366837571c62ac2d2b40fa3ff87760c034208}
+  prep_verifier: {path: tools/verify_pb_02_metallic_python_oracle.py, sha256: cd5a99320323d7ba89cc3ab1da91646c7385736dfbf24ea7a4356763107eaf60}
+  prep_test: {path: tools/test_verify_pb_02_metallic_python_oracle.py, sha256: 167ff13bc1ae11c1b5066497a4725e5e908f43541f7aff864896dcaa8a878e83}
+  corpus: {path: docs/baselines/pb-02-metallic-python-oracle-corpus.v1.json, sha256: e14a440945de59c14dbd0438a7d2e6e8785d1dc201f1e3b4c7fecdc691561d5c}
+  formal_verifier: {path: tools/verify_pb_02_metallic_python_oracle_formal.py, sha256: 961ebb29b5699b3641a31ee79dcbaeb67e8f21d6e2ed32631e6ed62504ec6eb5}
+  formal_test: {path: tools/test_verify_pb_02_metallic_python_oracle_formal.py, sha256: 7a9373f725ee20386839f9755990d58f5a6db0e32559a00ae5ac26075a8c819b}
+evidence:
+  reports:
+    - {path: docs/baselines/pb-02-metallic-python-oracle-current-a94-run-01.json, sha256: d6c9348bdbe79fa9d63a3893582e6ddd578144d583016409e7f6a7a419302bc1, run_id: pb02-a94-fresh-01, fresh_run_nonce: 9194e25192ce4662bb7eb82427983390}
+    - {path: docs/baselines/pb-02-metallic-python-oracle-current-a94-run-02.json, sha256: 17da7b5d0fb09f9c7905c1b212a2e8e72a8e886c46997de72afeccb406e9a30a, run_id: pb02-a94-fresh-02, fresh_run_nonce: d6aade896a624665bd8540c86c9e7d0e}
+  aggregate: {path: docs/baselines/pb-02-metallic-python-oracle-current-a94-aggregate.json, sha256: c99c91946e5ec39426f4d6288cc2558bba4e0a68aca02c24f51fd37fe8def38a}
+audit: {path: docs/baselines/audits/2026-08-24-pb-02-metallic-python-oracle-current-a94.md, sha256: ca6d53f1b393b01d7959e44dc2f23d02d33a535df72dd1ca129b85b2191b472c}
+claims: {ordinary_payload_parity: true, near_integral_external_blocked: true, near_integral_counted_as_parity: false, global_branch_parity: false, promotion: false}

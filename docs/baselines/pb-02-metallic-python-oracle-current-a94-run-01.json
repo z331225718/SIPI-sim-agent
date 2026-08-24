@@ -1,0 +1,950 @@
+{
+  "build": {
+    "binary_custody": {
+      "bytes": 3346944,
+      "canonical_sha256": "79414d9eeb4a0ceb115e789e659278d016db28aa9b92282aa1c2530522c6bd34",
+      "characteristics": 34,
+      "format": "PE",
+      "machine": 34404,
+      "normalization": {
+        "changed_byte_count": 32,
+        "fields": [
+          "IMAGE_FILE_HEADER.TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+          "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+          "CodeView.RSDS[0].GUID"
+        ],
+        "map": "zero-only:IMAGE_FILE_HEADER.TimeDateStamp+IMAGE_DEBUG_DIRECTORY.TimeDateStamp+CodeView.RSDS.GUID",
+        "ranges": [
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_FILE_HEADER.TimeDateStamp",
+            "length": 4,
+            "offset": 240,
+            "raw_hex": "06d68b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[0].TimeDateStamp",
+            "length": 4,
+            "offset": 2946052,
+            "raw_hex": "06d68b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[1].TimeDateStamp",
+            "length": 4,
+            "offset": 2946080,
+            "raw_hex": "06d68b6a"
+          },
+          {
+            "canonical_hex": "00000000",
+            "field": "IMAGE_DEBUG_DIRECTORY[2].TimeDateStamp",
+            "length": 4,
+            "offset": 2946108,
+            "raw_hex": "06d68b6a"
+          },
+          {
+            "canonical_hex": "00000000000000000000000000000000",
+            "field": "CodeView.RSDS[0].GUID",
+            "length": 16,
+            "offset": 2946416,
+            "raw_hex": "e3647d05bf4cac4fa66e993e34643baf"
+          }
+        ]
+      },
+      "profile": "pe32-plus",
+      "raw_sha256": "906a12063b314663dd8237addffbcb926a389c41cfed2e5b9c60c5bdc1832d21",
+      "repro_entry": {
+        "bytes": 0,
+        "debug_directory_index": null,
+        "present": false,
+        "raw_sha256": null
+      },
+      "schema": "sipi.windows-pe-replay-custody.v1"
+    },
+    "binary_sha256": "906a12063b314663dd8237addffbcb926a389c41cfed2e5b9c60c5bdc1832d21",
+    "environment_policy": {
+      "cargo_build_rustc_wrapper_cleared": true,
+      "rustc_workspace_wrapper_cleared": true,
+      "rustc_wrapper_cleared": true
+    },
+    "exit_code": 0,
+    "stderr_sha256": "7d30851314d8ce6401ae889d378f34988502fb1b2e495f04308b237059b894ee",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+    "archive_sha256": "dcf9e38aaf0980c40a6c7640e5c229ac851a11e7c287d4bde386b21b1e9c5b00",
+    "commit": "dc82489d109f27b70940a5f1037cb08d3c10a8b6",
+    "tree": "6311d5a0e88cd008e22ab9dcc0e7c18f57120ed3"
+  },
+  "cases": [
+    {
+      "blockers": [],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {
+          "cancellation": "checked_before_and_after_the_bounded_native_call",
+          "capabilities": [
+            "validate",
+            "channel_response",
+            "tx_processing",
+            "rx_equalization",
+            "dfe_adaptation",
+            "jitter_analysis",
+            "statistical_eye",
+            "result_assembly"
+          ],
+          "events": [
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 0,
+              "stage": "validate",
+              "stageProgress": 1.0,
+              "totalProgress": 0.1111111111111111
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 1,
+              "stage": "channel_response",
+              "stageProgress": 1.0,
+              "totalProgress": 0.2222222222222222
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 2,
+              "stage": "tx_processing",
+              "stageProgress": 1.0,
+              "totalProgress": 0.3333333333333333
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 3,
+              "stage": "rx_equalization",
+              "stageProgress": 1.0,
+              "totalProgress": 0.4444444444444444
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 4,
+              "stage": "dfe_adaptation",
+              "stageProgress": 1.0,
+              "totalProgress": 0.5555555555555556
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 5,
+              "stage": "jitter_analysis",
+              "stageProgress": 1.0,
+              "totalProgress": 0.7777777777777778
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 6,
+              "stage": "statistical_eye",
+              "stageProgress": 1.0,
+              "totalProgress": 0.8888888888888888
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 7,
+              "stage": "result_assembly",
+              "stageProgress": 1.0,
+              "totalProgress": 1.0
+            }
+          ],
+          "pipeline": "typed_simulation_input_v1",
+          "source": {
+            "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+            "native_core": "native/pybert-core",
+            "python_extension_boundary": "native/pybert-python/src/lib.rs",
+            "repository": "pybert",
+            "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+          }
+        },
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "67e49df45aebdc7b1f00225d9f15c816ab6984d90622ea0d47da771788ccb852"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "legacy_channel_frequency_hz",
+        "legacy_channel_raw_re",
+        "legacy_channel_raw_im",
+        "legacy_channel_terminated_re",
+        "legacy_channel_terminated_im",
+        "legacy_channel_trimmed_re",
+        "legacy_channel_trimmed_im",
+        "rx_filter_impulse_v_per_v",
+        "legacy_stage_ctle_re",
+        "legacy_stage_ctle_im",
+        "legacy_stage_ctle_out_re",
+        "legacy_stage_ctle_out_im",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v"
+      ],
+      "id": "metallic-ctle-ordinary-3ghz-10ghz",
+      "oracle": {
+        "array_names": [
+          "additive_noise_v",
+          "channel_impulse_v_per_v",
+          "channel_output_v",
+          "ctle_output_v",
+          "dfe_clock_times_s",
+          "dfe_clocks",
+          "dfe_decisions",
+          "dfe_locked",
+          "dfe_output_v",
+          "dfe_ui_estimates_s",
+          "legacy_channel_frequency_hz",
+          "legacy_channel_raw_im",
+          "legacy_channel_raw_re",
+          "legacy_channel_terminated_im",
+          "legacy_channel_terminated_re",
+          "legacy_channel_trimmed_im",
+          "legacy_channel_trimmed_re",
+          "legacy_stage_ctle_im",
+          "legacy_stage_ctle_out_im",
+          "legacy_stage_ctle_out_re",
+          "legacy_stage_ctle_re",
+          "random_noise_v",
+          "rx_filter_impulse_v_per_v",
+          "rx_input_v",
+          "rx_output_v"
+        ],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python",
+          "capabilities": [
+            "validate",
+            "channel_response",
+            "tx_processing",
+            "rx_equalization",
+            "dfe_adaptation",
+            "viterbi_fec",
+            "jitter_analysis",
+            "result_assembly"
+          ]
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr_sha256": "799b821294f1dd9ed47cd4895b7138787d7182fdd0552cd3a9c9e7df40fe5b33",
+        "stdout_sha256": "fb3f219bb5d00916875e9c6eaf0dafb8fedd5df45811098ec97588520fa3b0ae"
+      },
+      "payload": {
+        "compared_field_count": 17,
+        "equal": true,
+        "fields": [
+          {
+            "candidate": {
+              "count": 320,
+              "dtype": "float64",
+              "f64_sha256": "33f5cf25fa485b579fdec3b7cf9b4c86c2b22d21f81123c45d0ee2041a48d835",
+              "shape": [
+                320
+              ]
+            },
+            "max_abs": 1.249000902703301e-16,
+            "name": "channel_impulse_v_per_v",
+            "oracle": {
+              "count": 320,
+              "dtype": "float64",
+              "f64_sha256": "48d05fe2f26df0d2ca2261bbf5cc08d87c81714e181dc4d6145777a0b9961a9a",
+              "shape": [
+                320
+              ]
+            },
+            "passed": true,
+            "scale": 0.03683688338593911,
+            "tolerance": 1.0368368833859392e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "9051b101d2b97c4ecfea5a42e65a4ec575baff13642962db339a9acb00e98585",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 4.6629367034256575e-15,
+            "name": "channel_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "af65b5d3a8fb8a74b360c7688798978599118d2e8517f545b7573a8a3c63745a",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.2156173752993016,
+            "tolerance": 2.2156173752993013e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "51ada7ab77064bd4316e99918a12dc9e7abea8a753787859d784453be8d4b528",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 0.0,
+            "name": "legacy_channel_frequency_hz",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "51ada7ab77064bd4316e99918a12dc9e7abea8a753787859d784453be8d4b528",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 12000000000.0,
+            "tolerance": 12000.000001
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "6df5c7ccc6b736c94c1581e8a817377085bbe4535a2a0ffd86c44b059b7aaf68",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 1.4432899320127035e-15,
+            "name": "legacy_channel_raw_re",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "bf451ae02b44ba2a11a052b9265276e65758cc79c470dec56f6638305b17799b",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.9999999999998559,
+            "tolerance": 1.9999999999998555e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "8dce7598d9a776cdab3a1d9650b947cce1ac81be89b4fb71f80cbd93c302c22e",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 2.7755575615628914e-15,
+            "name": "legacy_channel_raw_im",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "ebffe049dcbe11aae795886b563b960c2158398839999f2f1744ba2fc1fd83d1",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.9174368574025732,
+            "tolerance": 1.917436857402573e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "a1e2abaf7066305bbc2778a81f41f0e3965414440284f98f8312fed8a56d679e",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 3.4416913763379853e-15,
+            "name": "legacy_channel_terminated_re",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "ca046882eaed00e55870ce4dbe2d751374916e8774f88ae428601c4eab8af723",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.9999999979999995,
+            "tolerance": 1.9999999979999997e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "7944f2f5b1fc86dcff1d1881a7d0337b8dde4ed612b708fe9e11c17a6c9c1908",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 3.524958103184872e-15,
+            "name": "legacy_channel_terminated_im",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "76c0295192eaddb7d5dbb602b5ff1f1eece6eefc98bed8936f85ef38eefd8a1a",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.6511863443116002,
+            "tolerance": 1.6511863443116e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "45795872e5d598cc49b46143123a109db9a984e16483e92c33815fa17ecc2e44",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 3.83026943495679e-15,
+            "name": "legacy_channel_trimmed_re",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "a5625b16f1f9ecc26b0624066083d868da6fb85cf4d4c1eaf598ac4b4babdd98",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 1.02609451933846,
+            "tolerance": 2.02609451933846e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "184584cd47e4bf8afb89377b984921abf821de4a5f7830bc3012f3ce44302595",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 2.8033131371785203e-15,
+            "name": "legacy_channel_trimmed_im",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "2f5523ddf243b2d696527ae89bd5747e66cdf37d4314e1539ec2796825ecb1fd",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.6696198662804073,
+            "tolerance": 1.6696198662804072e-06
+          },
+          {
+            "candidate": {
+              "count": 320,
+              "dtype": "float64",
+              "f64_sha256": "bd7e224bef3c61609feec34abab15941b9abd4a52f1afd35d1094994e05cd81e",
+              "shape": [
+                320
+              ]
+            },
+            "max_abs": 2.7755575615628914e-17,
+            "name": "rx_filter_impulse_v_per_v",
+            "oracle": {
+              "count": 320,
+              "dtype": "float64",
+              "f64_sha256": "dfde7b0cd411f82e9e61b03204f85ea282d6fc86e3a49eca15332d6a95791f29",
+              "shape": [
+                320
+              ]
+            },
+            "passed": true,
+            "scale": 0.10030200309309747,
+            "tolerance": 1.1003020030930974e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "6288e6cb9ae6ab4a2ca6a08dda5eb5197adbf973180f5a75a3d915a04998efba",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 5.551115123125783e-16,
+            "name": "legacy_stage_ctle_re",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "063fb61de1520d79a61b6638920c6ed2bf378b122e9b93cc711546ba02aafa7d",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.9710389594522029,
+            "tolerance": 1.9710389594522028e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "2a7fd6477a87f34a49f2783480946f598c56927057a97059441558e894ee13b5",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 5.551115123125783e-16,
+            "name": "legacy_stage_ctle_im",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "7a00b08976a599751cafe5b81e730abcc1e9ed3962f7b65be85a4ae83deadfe6",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.7750352640698349,
+            "tolerance": 1.7750352640698349e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "3171a1b67d517df5cb4115b35f973a1a9a1d30f3ae08b8399cc5f13748544b65",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 1.5785983631388945e-16,
+            "name": "legacy_stage_ctle_out_re",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "862a171f545b175eb857de485308a58dfe28c05cb7ff495aaccad9cacfe77022",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.018083468288742428,
+            "tolerance": 1.0180834682887423e-06
+          },
+          {
+            "candidate": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "1c2613ee7ed65c6d087cc14da3c93b378a7e5aa7b927884982d0460b2e67f6eb",
+              "shape": [
+                5
+              ]
+            },
+            "max_abs": 5.551115123125783e-17,
+            "name": "legacy_stage_ctle_out_im",
+            "oracle": {
+              "count": 5,
+              "dtype": "float64",
+              "f64_sha256": "9bdd090310bbd903eea1a63b124ccce298b6d1d222a7babc2e5bc9690ee3a88f",
+              "shape": [
+                5
+              ]
+            },
+            "passed": true,
+            "scale": 0.01349551084450449,
+            "tolerance": 1.0134955108445045e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "86605b4ce4e53f6550199b301f47a428cb529e4705b1747b02c6cf19da690c54",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 5.551115123125783e-15,
+            "name": "ctle_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "a3b10c9934ea793df05c940be36531a40e0874455431c1c5d1a5bf9ee4c63a82",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.3054399900159301,
+            "tolerance": 2.30543999001593e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "eee8215dc59a204962f1a88dc8c395793910d5c977b69d069e62dc6dab1a6e8c",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 5.551115123125783e-15,
+            "name": "rx_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "2ea627c157e506b5e631a23f5b21dbf60a4bc69bfba2e999abf780c5869454bb",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.3054399900159301,
+            "tolerance": 2.30543999001593e-06
+          },
+          {
+            "candidate": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "eee8215dc59a204962f1a88dc8c395793910d5c977b69d069e62dc6dab1a6e8c",
+              "shape": [
+                32000
+              ]
+            },
+            "max_abs": 5.551115123125783e-15,
+            "name": "dfe_output_v",
+            "oracle": {
+              "count": 32000,
+              "dtype": "float64",
+              "f64_sha256": "2ea627c157e506b5e631a23f5b21dbf60a4bc69bfba2e999abf780c5869454bb",
+              "shape": [
+                32000
+              ]
+            },
+            "passed": true,
+            "scale": 1.3054399900159301,
+            "tolerance": 2.30543999001593e-06
+          }
+        ]
+      },
+      "status": "passed"
+    },
+    {
+      "blockers": [
+        "pinned_channel_cubic_interp1d_two_point_boundary"
+      ],
+      "candidate": {
+        "array_names": null,
+        "backend": null,
+        "diagnostics": {
+          "cancellation": "checked_before_and_after_the_bounded_native_call",
+          "capabilities": [
+            "validate",
+            "channel_response",
+            "tx_processing",
+            "rx_equalization",
+            "dfe_adaptation",
+            "jitter_analysis",
+            "statistical_eye",
+            "result_assembly"
+          ],
+          "events": [
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 0,
+              "stage": "validate",
+              "stageProgress": 1.0,
+              "totalProgress": 0.1111111111111111
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 1,
+              "stage": "channel_response",
+              "stageProgress": 1.0,
+              "totalProgress": 0.2222222222222222
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 2,
+              "stage": "tx_processing",
+              "stageProgress": 1.0,
+              "totalProgress": 0.3333333333333333
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 3,
+              "stage": "rx_equalization",
+              "stageProgress": 1.0,
+              "totalProgress": 0.4444444444444444
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 4,
+              "stage": "dfe_adaptation",
+              "stageProgress": 1.0,
+              "totalProgress": 0.5555555555555556
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 5,
+              "stage": "jitter_analysis",
+              "stageProgress": 1.0,
+              "totalProgress": 0.7777777777777778
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 6,
+              "stage": "statistical_eye",
+              "stageProgress": 1.0,
+              "totalProgress": 0.8888888888888888
+            },
+            {
+              "message": null,
+              "runId": "config",
+              "sequence": 7,
+              "stage": "result_assembly",
+              "stageProgress": 1.0,
+              "totalProgress": 1.0
+            }
+          ],
+          "pipeline": "typed_simulation_input_v1",
+          "source": {
+            "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+            "native_core": "native/pybert-core",
+            "python_extension_boundary": "native/pybert-python/src/lib.rs",
+            "repository": "pybert",
+            "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+          }
+        },
+        "metrics": null,
+        "schema": "pybert.native-cli-result.v1",
+        "source_command": null
+      },
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "37524ebcb124f6fd5e2fe58aaf4dc1208e9585bb027a65a2e5e85e2bc6f3ba08"
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "legacy_channel_frequency_hz",
+        "legacy_channel_raw_re",
+        "legacy_channel_raw_im",
+        "legacy_channel_terminated_re",
+        "legacy_channel_terminated_im",
+        "legacy_channel_trimmed_re",
+        "legacy_channel_trimmed_im",
+        "rx_filter_impulse_v_per_v",
+        "legacy_stage_ctle_re",
+        "legacy_stage_ctle_im",
+        "legacy_stage_ctle_out_re",
+        "legacy_stage_ctle_out_im",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v"
+      ],
+      "id": "metallic-ctle-near-integral-3ghz",
+      "oracle": {
+        "array_names": [],
+        "backend": "python",
+        "diagnostics": {
+          "backend": "python",
+          "failure_code": "pinned_channel_cubic_interp1d_two_point_boundary",
+          "failure_stage": "channel"
+        },
+        "metrics": null,
+        "schema": "pybert.python-oracle-result.v1",
+        "source_command": "PythonSimulationBackend"
+      },
+      "oracle_process": {
+        "exit_code": 1,
+        "stderr_sha256": "631e654baccaddeebc8f3a1b4c8f9709945f60cc27f7a23dd96e42c845c8633c",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "payload": {
+        "compared_field_count": 0,
+        "equal": false,
+        "fields": []
+      },
+      "status": "blocked"
+    }
+  ],
+  "claims": {
+    "global_branch_parity": false,
+    "independent_python_payload_oracle": true,
+    "near_integral_counted_as_parity": false,
+    "near_integral_external_blocked": true,
+    "ordinary_payload_parity": true,
+    "promotion": false
+  },
+  "corpus": {
+    "case_count": 2,
+    "file_names": [],
+    "path": "docs/baselines/pb-02-metallic-python-oracle-corpus.v1.json",
+    "sha256": "e14a440945de59c14dbd0438a7d2e6e8785d1dc201f1e3b4c7fecdc691561d5c"
+  },
+  "external_blockers": [
+    {
+      "branch": "legacy.external.ami_ibis_ts4_getwave",
+      "reason": "host-owned DLL/model/service remains outside the portable corpus"
+    },
+    {
+      "branch": "legacy.config.exact_pybert_data_class_pickle",
+      "reason": "the oracle executes the class but the Rust artifact contract remains data-only"
+    }
+  ],
+  "fixture": {
+    "archive_present": true,
+    "archive_source_sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+    "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+    "source": "candidate_archive"
+  },
+  "fresh_run_nonce": "9194e25192ce4662bb7eb82427983390",
+  "harness": {
+    "python_oracle": {
+      "path": "tools/pb_02_metallic_python_oracle.py",
+      "sha256": "9c110467d7d97039ba1d425b4a4aa100e452da8e823a599bd6fbb26911804fea",
+      "snapshot": "candidate_prep_archive_harness_snapshot"
+    },
+    "runner": {
+      "path": "tools/run_pb_03_python_oracle_matrix.py",
+      "sha256": "31e5dddd19f608497cfb34a95b5fb0b223b51d790db09b44207485dc1223b5f3"
+    },
+    "wrapper": {
+      "path": "tools/run_pb_02_metallic_python_oracle.py",
+      "sha256": "45d2f5efafdf9e00a7f06c5ca157bc641da2ea02d01f3ccd175060e5e9ed4732"
+    }
+  },
+  "non_claims": [
+    "The Python process is independent of the Rust candidate and is not sim-rust.",
+    "Case payload parity does not close untested PyBERT branches or external model branches."
+  ],
+  "row": "PB-02",
+  "run_id": "pb02-a94-fresh-01",
+  "schema": "sipi.pb-02-metallic-python-oracle-replay.v1",
+  "scope": "analytic_ctle_metallic_noninteger_grid",
+  "source_mode": "git_archive_at_candidate_prep_commit_plus_content_addressed_input_corpus_and_harness_snapshot",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "child_python": {
+      "command": "uv run --project <archive> --frozen python -c <identity>",
+      "identity": {
+        "numpy": {
+          "core_module": "numpy.core",
+          "module": "numpy",
+          "version": "2.2.6"
+        },
+        "python": {
+          "executable": "python.exe",
+          "file_sha256": "a5143a28b87a4f4bd327cd8b0c73472e2ba39f0931fa68d488869ef767efc78d",
+          "implementation": "CPython",
+          "path_redacted": true,
+          "version": "3.13.14"
+        },
+        "scipy": {
+          "module": "scipy",
+          "version": "1.15.3"
+        }
+      },
+      "process": {
+        "exit_code": 0,
+        "stderr_json": {
+          "numpy": {
+            "core_module": "numpy.core",
+            "module": "numpy",
+            "version": "2.2.6"
+          },
+          "python": {
+            "executable": "python.exe",
+            "file_sha256": "a5143a28b87a4f4bd327cd8b0c73472e2ba39f0931fa68d488869ef767efc78d",
+            "implementation": "CPython",
+            "path_redacted": true,
+            "version": "3.13.14"
+          },
+          "scipy": {
+            "module": "scipy",
+            "version": "1.15.3"
+          }
+        },
+        "stderr_sha256": "e74db1009c54f1d3ad8cd6b16836cd30f98a77d0c23c9c496792587a40362e56",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "host_python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "source": "sys.executable"
+    },
+    "python": {
+      "executable": "python.exe",
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "role": "python",
+      "version_exit_code": 0,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 900,
+    "uv": {
+      "executable": "uv.EXE",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 1
+}
