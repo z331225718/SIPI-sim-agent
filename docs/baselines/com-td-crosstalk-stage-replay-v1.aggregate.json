@@ -1,0 +1,24 @@
+{
+  "aggregate_sha256": "cc2f4978920c42d8d98c2785a27b62944a707e9d9b7c6f95a033b76448508ae0",
+  "candidate": {
+    "archive_sha256": "d4c576ddf6ded979896c47dca8142aed7c57555ac1977edc924088e7bf939311",
+    "commit": "e1a9ca876c57bdf196974ae7b640e5ae73b6f18c",
+    "tree": "ab34cc91ff482fa7494f0b3c36842345ad46e519"
+  },
+  "matched": true,
+  "report_sha256": [
+    "d5c0aa5c8585c6d3ffdb295375cd884286490678dbe397672f4ce3f1c82ed325",
+    "4c07b78153bd73e1a1110cde462f26bef91cac51328ac429ea3699a85da95326"
+  ],
+  "run_ids": [
+    "com-td-crosstalk-stage-v1-run1",
+    "com-td-crosstalk-stage-v1-run2"
+  ],
+  "schema": "sipi.com.td-crosstalk-stage-replay.v1.aggregate",
+  "status": "matched",
+  "upstream": {
+    "archive_sha256": "5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}

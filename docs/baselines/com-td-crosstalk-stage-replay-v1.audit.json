@@ -1,0 +1,54 @@
+{
+  "claims": {
+    "numeric_scope": "TDMODE crosstalk stage only",
+    "promotion": false,
+    "status": "matched"
+  },
+  "launcher_shims": {
+    "cargo": {
+      "delegated_basename": "cargo.exe",
+      "delegated_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "receipt_managed": false,
+      "wrapper_basename": "cargo-wrap.exe",
+      "wrapper_sha256": "cc24c1ed35681765b3d4823cc2e5d2e9c5d9214d38fc6ec62931af8b7db12d4d"
+    },
+    "linker": {
+      "delegated_basename": "rust-lld.exe",
+      "delegated_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+      "receipt_managed": false,
+      "wrapper_basename": "lld-wrap.exe",
+      "wrapper_sha256": "6579a15ad16a23a5cc6217503041bd1b369f468f203e0aaa4337b895a115713c"
+    },
+    "uv": {
+      "delegated_basename": "uv.exe",
+      "delegated_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "receipt_managed": false,
+      "wrapper_basename": "uv-wrap.exe",
+      "wrapper_sha256": "3dcc13ab1c9ce13208f4d5ae03d8074e367a0437325a7f7ccb2a2c6af665691b"
+    }
+  },
+  "mode": "environment_local_scoped_observation",
+  "non_claims": [
+    "no portable or reproducible environment claim",
+    "no full toolchain or full COM parity claim",
+    "no release or promotion claim",
+    "SciPy and complete Python environment are not bound"
+  ],
+  "python_environment": {
+    "complete_environment_bound": false,
+    "scipy_bound": false,
+    "venv_injected": true,
+    "venv_path_policy": "external caller-supplied"
+  },
+  "schema": "sipi.com.td-crosstalk-stage-replay.v1.scope-audit",
+  "scope_gate": {
+    "tests": {
+      "path": "tools/test_verify_com_td_crosstalk_stage_scope_v1.py",
+      "sha256": "295c022bf63fbfe9b5140522752c46c2617e399246bd70595598e36daae389aa"
+    },
+    "verifier": {
+      "path": "tools/verify_com_td_crosstalk_stage_scope_v1.py",
+      "sha256": "7f61b37c129b3b3c55bc601c24c940377998e3392e2d377c14ce72630b21d808"
+    }
+  }
+}

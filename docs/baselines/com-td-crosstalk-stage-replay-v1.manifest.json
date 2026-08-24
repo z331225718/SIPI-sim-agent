@@ -1,0 +1,77 @@
+{
+  "aggregate": {
+    "path": "docs/baselines/com-td-crosstalk-stage-replay-v1.aggregate.json",
+    "sha256": "8d2f1b3a4e951441b7e6bf565f007679dc086b9ed695d02540b3cb82de2bfe4c"
+  },
+  "audit": {
+    "path": "docs/baselines/com-td-crosstalk-stage-replay-v1.audit.json",
+    "sha256": "bd7751475c2dc8344b4e6f1ae97c5bb3ab7ef7ff26ed81f46c48600ac649a26d"
+  },
+  "candidate": {
+    "archive_sha256": "d4c576ddf6ded979896c47dca8142aed7c57555ac1977edc924088e7bf939311",
+    "commit": "e1a9ca876c57bdf196974ae7b640e5ae73b6f18c",
+    "tree": "ab34cc91ff482fa7494f0b3c36842345ad46e519"
+  },
+  "f2_values_hz": [
+    50000000000.0,
+    13000000000.0
+  ],
+  "fixture_paths": [
+    "fixtures/synthetic/td_thru_pulse.csv",
+    "fixtures/synthetic/td_fext_pulse.csv",
+    "fixtures/synthetic/td_next_pulse.csv"
+  ],
+  "fixture_sha256": {
+    "fixtures/synthetic/td_fext_pulse.csv": "eedb81c5b710a7b664146d7639418b22ac5b1c60e3ce4bcf007b7e655e65571a",
+    "fixtures/synthetic/td_next_pulse.csv": "6625c7eb5093f0f9239649216a90d3fdbe030a66279c419a12239f74db8cfc1f",
+    "fixtures/synthetic/td_thru_pulse.csv": "186901f7c26bd990b52f71c607764b4132fb2c8f8aaffa6769465d782e6ed5de"
+  },
+  "helper": {
+    "path": "tools/com_erl_exact_profile_replay_v3_support.py",
+    "sha256": "77fd60cfcc21161b5be997c6b72fc9c1dd45fceb0a8d94d977dda63b0f6f7ea9"
+  },
+  "pe_helper": {
+    "path": "tools/pb_03_replay_common.py",
+    "sha256": "dcdb7527548dd867ee705a2f4b3020c18e7f328016b1f58d9fe261ed924039da"
+  },
+  "report_sha256": {
+    "docs/baselines/com-td-crosstalk-stage-v1-run1.json": "d5c0aa5c8585c6d3ffdb295375cd884286490678dbe397672f4ce3f1c82ed325",
+    "docs/baselines/com-td-crosstalk-stage-v1-run2.json": "4c07b78153bd73e1a1110cde462f26bef91cac51328ac429ea3699a85da95326"
+  },
+  "reports": [
+    "docs/baselines/com-td-crosstalk-stage-v1-run1.json",
+    "docs/baselines/com-td-crosstalk-stage-v1-run2.json"
+  ],
+  "run_ids": [
+    "com-td-crosstalk-stage-v1-run1",
+    "com-td-crosstalk-stage-v1-run2"
+  ],
+  "runner": {
+    "path": "tools/run_com_td_crosstalk_stage_replay_v1.py",
+    "sha256": "59ca5a120315a201c2a02b6c777cb9f71b6edd86a91057fdf39081fd0400aee4"
+  },
+  "schema": "sipi.com.td-crosstalk-stage-replay.v1",
+  "stage": {
+    "full_count": 64,
+    "short_count": 8
+  },
+  "tools": {
+    "aggregator": {
+      "path": "tools/aggregate_com_td_crosstalk_stage_replay_v1.py",
+      "sha256": "411b69e8670fd174c32c1dbd91ebaa4d9448fa9ce97a28a617d45385cd5a8e7c"
+    },
+    "tests": {
+      "path": "tools/test_verify_com_td_crosstalk_stage_replay_v1.py",
+      "sha256": "69204a1609b9402cfc2ad2f38bb028044ac10c92a292be18876117dfcbdca796"
+    },
+    "verifier": {
+      "path": "tools/verify_com_td_crosstalk_stage_replay_v1.py",
+      "sha256": "eb0de8fc45cb3358879a71c82ceadb35d86bbad2121e9ac520d6780f96c83a0b"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}
