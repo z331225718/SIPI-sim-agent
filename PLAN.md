@@ -14,6 +14,20 @@ clean candidate `e1a9ca87` 记录 15 行的集成去向、运行时可用性、�
 当前 0 行 release-ready；AS-01..03 数值差异仍 open，AS-04..06 的 Rust 控制/产物分支不改变外部
 solver workflow 边界。此快照为 additive successor，不改写 v1-v3，也不提升全局 parity。
 
+**2026-08-24 v5 upstream-first 治理快照：** 新增
+[`upstream-integration-ledger.v5`](docs/baselines/upstream-integration-ledger.v5.yaml)，绑定当前
+clean candidate `9aeb6917`、tree `815eda3c` 与 archive SHA
+`e73ac6c8b7cfe816753c058620f7ce3d144b01f948c1be6942db3236f06788ee`。AS-05 已有
+attested external ngspice consumption 与 immutable 双 replay，但仍为
+`external_solver_not_verified`、numeric parity false、row open、无 release；PB 的 Rust
+external worker/typed receipt 仅消费真实 mock DLL，vendor AMI/DLL 仍是 external asset，
+无 vendor numeric parity/row close/promotion，V1 保兼容；COM pinned package selector 已
+direct-port 且由 selected SNDR/ACCM consumer 实际使用并保留 source order/repeats，但
+package VTF/S4P FD TwoPort cascade 仍缺失，继续 impulse-only、禁止 fit、row open。15 行
+仍 open，release-ready=0；AS-05 当前 observation manifest 为
+`docs/baselines/as-05-ngspice-scoped-observation-v2.manifest.json`；该快照只作 additive
+继承与约束，不提升 parity 或 release。
+
 **2026-08-24 PyBERT metallic/CTLE 外部复核：** Rust 线性重采样已修正为 pinned
 `interp1d(..., fill_value=0)` 的真实时间轴边界语义。普通 `3 GHz / 10 GHz` 非整数网格在两次
 clean-archive replay 中完成 17/17 stage payload 对照；near-integral 两点网格则被 pinned
