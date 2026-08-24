@@ -222,13 +222,14 @@ pub fn simulate_native_v1_with_cancellation(
         ChannelInputV1::MetallicLine(channel) => {
             match (channel.frequency_step_hz, channel.frequency_max_hz) {
                 (Some(step), Some(maximum)) => {
+                    let (frequency_intervals, effective_maximum) =
+                        legacy_arange_grid(step.0, maximum.0, max_total_samples)?;
                     let stage_fft_size = validate_legacy_stage_frequency_grid(
                         step.0,
-                        maximum.0,
+                        effective_maximum,
                         input.timebase.sample_interval.0,
                         max_total_samples,
                     )?;
-                    let frequency_intervals = (maximum.0 / step.0).round().max(0.0) as usize;
                     let frequency_bins = frequency_intervals
                         .checked_add(1)
                         .ok_or(NativeSimulationError::ResourceLimitExceeded)?;
@@ -1734,14 +1735,18 @@ fn metallic_line_impulse(
     let (fft_size, frequency_step_hz, source_sample_interval_s, trim_to_legacy_window) =
         match (channel.frequency_step_hz, channel.frequency_max_hz) {
             (Some(step), Some(maximum)) => {
-                let intervals = (maximum.0 / step.0).round() as usize;
+                let (intervals, effective_maximum) =
+                    legacy_arange_grid(step.0, maximum.0, max_total_samples)?;
                 let fft_size = intervals
                     .checked_mul(2)
                     .ok_or(NativeSimulationError::ResourceLimitExceeded)?;
-                if fft_size > max_total_samples {
-                    return Err(NativeSimulationError::ResourceLimitExceeded);
+                // The actual last materialized bin, rather than the requested
+                // endpoint, determines both the source time scale and this
+                // native IFFT Nyquist safety check.
+                if effective_maximum > 0.5 / target_sample_interval_s {
+                    return Err(NativeSimulationError::LegacyStageFrequencyOutOfRange);
                 }
-                (fft_size, step.0, 0.5 / maximum.0, true)
+                (fft_size, step.0, 0.5 / effective_maximum, true)
             }
             (None, None) => (
                 target_sample_count,

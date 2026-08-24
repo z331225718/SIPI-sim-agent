@@ -231,8 +231,8 @@ fn native_request_reaches_analytic_ctle_and_metallic_line_grid_branches() {
         bandwidth: Hertz(12.0e9),
         peak_frequency: Hertz(5.0e9),
         peak_magnitude_db: 1.7,
-        frequency_step_hz: Some(Hertz(10.0e9)),
-        frequency_max_hz: Some(Hertz(40.0e9)),
+        frequency_step_hz: Some(Hertz(3.0e9)),
+        frequency_max_hz: Some(Hertz(10.0e9)),
         impulse_response_v_per_v: None,
     });
     let ctle_output = run(&ctle);
@@ -258,8 +258,8 @@ fn native_request_reaches_analytic_ctle_and_metallic_line_grid_branches() {
         load_impedance: Ohms(100.0),
         load_capacitance_f: 0.5e-12,
         apply_raised_cosine_window: true,
-        frequency_step_hz: Some(Hertz(10.0e9)),
-        frequency_max_hz: Some(Hertz(40.0e9)),
+        frequency_step_hz: Some(Hertz(3.0e9)),
+        frequency_max_hz: Some(Hertz(10.0e9)),
         impulse_length: Some(Seconds(1.0e-9)),
     });
     let line_output = run(&line);
@@ -268,6 +268,21 @@ fn native_request_reaches_analytic_ctle_and_metallic_line_grid_branches() {
             .arrays
             .contains_key("legacy_channel_frequency_hz")
     );
+    assert_eq!(line_output.arrays["legacy_channel_frequency_hz"].len(), 5);
+    assert_eq!(line_output.arrays["legacy_channel_frequency_hz"][4], 12.0e9);
+    let pinned_raw_re = [
+        0.9999999999998559,
+        -0.21346019040916128,
+        -0.7836205535132831,
+        0.6107703954011926,
+        0.3676296985687409,
+    ];
+    for (actual, expected) in line_output.arrays["legacy_channel_raw_re"]
+        .iter()
+        .zip(pinned_raw_re)
+    {
+        assert!((actual - expected).abs() < 1.0e-12);
+    }
     assert!(line_output.arrays.contains_key("legacy_stage_ctle_re"));
 }
 

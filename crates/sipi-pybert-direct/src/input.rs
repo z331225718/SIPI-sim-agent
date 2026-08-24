@@ -128,10 +128,7 @@ impl MetallicLineChannelV1 {
         let valid_frequency_grid = match (self.frequency_step_hz, self.frequency_max_hz) {
             (None, None) => true,
             (Some(step), Some(maximum)) => {
-                step.is_finite_positive()
-                    && maximum.is_finite_positive()
-                    && maximum.0 >= step.0
-                    && (maximum.0 / step.0).fract().abs() <= 1.0e-10
+                step.is_finite_positive() && maximum.is_finite_positive()
             }
             _ => false,
         };
