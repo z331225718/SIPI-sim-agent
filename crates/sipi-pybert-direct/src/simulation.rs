@@ -2140,13 +2140,18 @@ fn linear_resample_uniform(
     target_sample_interval_s: f64,
     target_len: usize,
 ) -> Vec<f64> {
+    if source.is_empty() {
+        return vec![0.0; target_len];
+    }
     (0..target_len)
         .map(|index| {
-            let position = index as f64 * target_sample_interval_s / source_sample_interval_s;
-            let lower = position.floor() as usize;
-            if lower >= source.len() {
+            let target_time = index as f64 * target_sample_interval_s;
+            let source_end = (source.len() - 1) as f64 * source_sample_interval_s;
+            if target_time < 0.0 || target_time > source_end {
                 return 0.0;
             }
+            let position = target_time / source_sample_interval_s;
+            let lower = position.floor() as usize;
             let fraction = position - lower as f64;
             source[lower] * (1.0 - fraction)
                 + source.get(lower + 1).copied().unwrap_or(0.0) * fraction
@@ -2261,10 +2266,29 @@ mod tests {
     use super::{
         ComplexMatrix2, complex_multiply, complex_right_solve, complex_solve, first_maximum_index,
         legacy_arange_grid, legacy_ctle_impulse, legacy_power_wave_nudge_v1,
-        trim_legacy_impulse_with_start,
+        linear_resample_uniform, trim_legacy_impulse_with_start,
     };
     use crate::{CtleConfigV1, Hertz, Seconds};
     use num_complex::Complex64;
+
+    #[test]
+    fn linear_resample_uniform_has_bounded_endpoint_semantics() {
+        assert_eq!(
+            linear_resample_uniform(&[], 1.0, 1.0, 3),
+            vec![0.0, 0.0, 0.0]
+        );
+
+        let exact = linear_resample_uniform(&[2.0, 6.0, 10.0], 1.0, 0.5, 6);
+        assert_eq!(exact, vec![2.0, 4.0, 6.0, 8.0, 10.0, 0.0]);
+
+        let just_before = linear_resample_uniform(&[0.0, 10.0, 20.0], 1.0, 1.0 - f64::EPSILON, 4);
+        assert!(just_before[2] > 19.99999999999999);
+        assert_eq!(just_before[3], 0.0);
+
+        let source = vec![1.0; 8];
+        let rounded_past_end = linear_resample_uniform(&source, 1.0e-15, 7.0e-15 / 13.0, 14);
+        assert_eq!(rounded_past_end[13], 0.0);
+    }
 
     #[test]
     fn legacy_power_wave_nudge_v1_floors_a_near_singular_odd_mode() {
@@ -2325,6 +2349,34 @@ mod tests {
                 (actual - expected).abs() < 1.0e-12,
                 "{actual} != {expected}"
             );
+        }
+    }
+
+    #[test]
+    fn legacy_ctle_resample_uses_zero_outside_source_grid() {
+        let config = CtleConfigV1 {
+            bandwidth: Hertz(12.0e9),
+            peak_frequency: Hertz(5.0e9),
+            peak_magnitude_db: 1.7,
+            frequency_step_hz: Some(Hertz(3.0e9)),
+            frequency_max_hz: Some(Hertz(10.0e9)),
+            impulse_response_v_per_v: None,
+        };
+        let impulse = legacy_ctle_impulse(&config, 320, Seconds(1.0e-12).0, 4, 1024, Some(8))
+            .expect("legacy CTLE interpolation should remain bounded");
+        let expected = [
+            -0.000522225440345773,
+            -0.000678266971593843,
+            -0.000834308502841914,
+            -0.000990350034089984,
+            -0.001146391565338055,
+            -0.001302433096586126,
+            -0.001458474627834197,
+            -0.001614516159082268,
+        ];
+        assert_eq!(impulse.len(), expected.len());
+        for (actual, expected) in impulse.iter().zip(expected) {
+            assert!((actual - expected).abs() < 1.0e-8, "{actual} != {expected}");
         }
     }
 
