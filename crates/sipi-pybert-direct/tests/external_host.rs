@@ -16,7 +16,16 @@ fn root(label: &str) -> PathBuf {
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).unwrap();
     fs::write(root.join("model.ibs"), b"[IBIS Ver] 7.2\n").unwrap();
-    fs::write(root.join("model.ami"), b"(mode success)").unwrap();
+    fs::write(
+        root.join("model.ami"),
+        br#"(example_rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (mode (Usage In) (Type String) (Default "success"))))"#,
+    )
+    .unwrap();
     fs::write(root.join("model.dll"), b"external-vendor-placeholder").unwrap();
     fs::write(root.join("matrix.f64le"), 0.0_f64.to_le_bytes()).unwrap();
     let mut waveform = Vec::new();
@@ -79,7 +88,7 @@ fn request(mode: PybertAmiModeV1) -> PybertAmiRequestV1 {
         mode,
         ibis_path: "model.ibs".into(),
         ami_path: "model.ami".into(),
-        runtime_parameters: "(mode success)".into(),
+        runtime_parameters: "(example_rx (mode \"success\"))".into(),
         dll_path: "model.dll".into(),
         init_matrix_path: "matrix.f64le".into(),
         waveform_path: "wave.f64le".into(),
@@ -133,7 +142,12 @@ fn adapter_rebinds_file_drift_and_digest_mutations_fail_closed() {
         prepare_pybert_ami_launch(&root_dir, &request(PybertAmiModeV1::InitGetWave)).unwrap();
     fs::write(
         root_dir.join("model.ami"),
-        b"(Reserved_Parameters (GetWave_Exists (Value False)))",
+        br#"(example_rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (mode (Usage In) (Type String) (Default "changed"))))"#,
     )
     .unwrap();
     let rebound =
@@ -403,7 +417,7 @@ static INIT: &[u8] = b"init\0";
 static BLOCK_ONE: &[u8] = b"block-1\0";
 static BLOCK_TWO: &[u8] = b"block-2\0";
 static mut CALLS: usize = 0;
-#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Init(matrix:*mut f64,_rows:c_long,_aggressors:c_long,_dt:f64,_bit:f64,parameters:*mut c_char,out:*mut *mut c_char,handle:*mut *mut c_void,_message:*mut *mut c_char)->c_long { if CStr::from_ptr(parameters).to_bytes() != b"(mode success)" { return 0; } *matrix=42.0; *out=INIT.as_ptr() as *mut c_char; *handle=1usize as *mut c_void; 1 }
+#[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Init(matrix:*mut f64,rows:c_long,aggressors:c_long,dt:f64,bit:f64,parameters:*mut c_char,out:*mut *mut c_char,handle:*mut *mut c_void,_message:*mut *mut c_char)->c_long { if CALLS != 0 || rows != 1 || aggressors != 0 || (dt - 1e-12).abs() > 1e-24 || (bit - 8e-12).abs() > 1e-24 || CStr::from_ptr(parameters).to_bytes() != b"(example_rx (GetWave_Exists True)(Init_Returns_Impulse True)(mode \"success\"))" { return 0; } *matrix=42.0; *out=INIT.as_ptr() as *mut c_char; *handle=1usize as *mut c_void; 1 }
 #[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_GetWave(wave:*mut f64,_size:c_long,clocks:*mut f64,out:*mut *mut c_char,_handle:*mut c_void)->c_long { CALLS+=1; *wave=if CALLS==1{7.0}else{8.0}; *clocks=if CALLS==1{1e-12}else{2e-12}; *out=if CALLS==1{BLOCK_ONE.as_ptr()}else{BLOCK_TWO.as_ptr()} as *mut c_char; *clocks.add(1)=-1.0; 1 }
 #[unsafe(no_mangle)] pub unsafe extern "C" fn AMI_Close(_handle:*mut c_void)->c_long { 1 }
 "#;

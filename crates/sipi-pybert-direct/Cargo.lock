@@ -636,6 +636,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2",
+ "sipi-ami-text",
  "sipi-ami-worker",
  "sipi-artifacts",
  "statrs",

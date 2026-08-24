@@ -15,6 +15,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use sipi_ami_text::{AmiTextListV1, AmiTextNodeV1, ParseLimitsV1, parse_ami_text_v1};
 use sipi_ami_worker::{
     AmiWorkerJobV2, FileIdentityV1, SupervisorReceiptV1, WorkerBundleManifestV2, WorkerErrorV1,
     supervise_worker_v2, validate_job_v2_contract,
@@ -420,6 +421,1034 @@ fn valid_file_identity(item: &FileIdentityV1) -> bool {
         && item.bytes <= MAX_ASSET_BYTES
 }
 
+fn materializer_parse_limits() -> ParseLimitsV1 {
+    ParseLimitsV1::try_new(65_536, 64, 4_096, 4_096).expect("non-zero materializer limits")
+}
+
+fn text_atom(node: &AmiTextNodeV1) -> Option<&str> {
+    match node {
+        AmiTextNodeV1::Atom(token) => Some(token.spelling()),
+        AmiTextNodeV1::Quoted(_) => None,
+        AmiTextNodeV1::List(_) => None,
+    }
+}
+
+fn list_name(list: &AmiTextListV1) -> Option<&str> {
+    list.items().first().and_then(text_atom)
+}
+
+fn single_root(
+    document: &sipi_ami_text::AmiTextDocumentV1,
+) -> Result<&AmiTextListV1, PybertAmiWorkerErrorV1> {
+    if document.forms().len() != 1 {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    document
+        .forms()
+        .first()
+        .ok_or(PybertAmiWorkerErrorV1::InvalidInput)
+}
+
+#[derive(Debug, Clone)]
+struct TypedParameter {
+    usage: String,
+    declared_type: String,
+    format: String,
+    encoded: String,
+    choices: Vec<String>,
+    range: Option<(f64, f64)>,
+    integer_range: Option<(i64, i64)>,
+}
+
+#[derive(Debug, Clone)]
+struct ParameterDescriptor {
+    path: Vec<String>,
+    parameter: TypedParameter,
+}
+
+#[derive(Debug, Default)]
+struct DeclarationAnalysis {
+    info: Vec<ParameterDescriptor>,
+    model: Vec<ParameterDescriptor>,
+    paths: Vec<Vec<String>>,
+    getwave_exists: Option<bool>,
+    init_returns_impulse: Option<bool>,
+}
+
+fn quoted_value(token: &AmiTextNodeV1) -> Result<String, PybertAmiWorkerErrorV1> {
+    let AmiTextNodeV1::Quoted(value) = token else {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    };
+    let spelling = value.spelling();
+    if spelling.len() < 2 || !spelling.starts_with('"') || !spelling.ends_with('"') {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let inner = &spelling[1..spelling.len() - 1];
+    if inner.is_empty() || inner.as_bytes().contains(&0) {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    Ok(inner.to_owned())
+}
+
+fn scalar_atom(token: &AmiTextNodeV1) -> Result<&str, PybertAmiWorkerErrorV1> {
+    text_atom(token)
+        .filter(|value| !value.is_empty())
+        .ok_or(PybertAmiWorkerErrorV1::InvalidInput)
+}
+
+fn metadata_values(list: &AmiTextListV1) -> Result<Vec<&AmiTextNodeV1>, PybertAmiWorkerErrorV1> {
+    if list.items().len() < 2 || list_name(list).is_none() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    Ok(list.items().iter().skip(1).collect())
+}
+
+fn parse_numeric(token: &AmiTextNodeV1) -> Result<f64, PybertAmiWorkerErrorV1> {
+    let value = scalar_atom(token)?
+        .parse::<f64>()
+        .map_err(|_| PybertAmiWorkerErrorV1::InvalidInput)?;
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(PybertAmiWorkerErrorV1::InvalidInput)
+    }
+}
+
+fn python_float_string(value: f64) -> String {
+    let mut text = format!("{value:?}");
+    if let Some(index) = text.find('e') {
+        let (mantissa, exponent) = text.split_at(index + 1);
+        let mut exponent = exponent.to_owned();
+        if !exponent.starts_with(['+', '-']) {
+            exponent.insert(0, '+');
+        }
+        if exponent.len() == 2 {
+            exponent.insert(1, '0');
+        }
+        text = format!("{mantissa}{exponent}");
+    } else if !text.contains('.') {
+        text.push_str(".0");
+    }
+    text
+}
+
+fn strict_integer(token: &AmiTextNodeV1) -> Result<String, PybertAmiWorkerErrorV1> {
+    let value = scalar_atom(token)?
+        .parse::<i64>()
+        .map_err(|_| PybertAmiWorkerErrorV1::InvalidInput)?;
+    Ok(value.to_string())
+}
+
+fn python_string_repr(value: &str) -> String {
+    let escaped = value.replace('\\', "\\\\").replace('\'', "\\'");
+    format!("'{escaped}'")
+}
+
+fn python_list_string(values: &[String]) -> String {
+    format!("[{}]", values.join(", "))
+}
+
+fn list_item_value(
+    declared_type: &str,
+    value: &AmiTextNodeV1,
+) -> Result<String, PybertAmiWorkerErrorV1> {
+    if matches!(declared_type, "Integer" | "Tap") {
+        strict_integer(value)
+    } else {
+        typed_value(declared_type, "Value", &[value])
+    }
+}
+
+fn list_default_value(
+    declared_type: &str,
+    value: &AmiTextNodeV1,
+) -> Result<String, PybertAmiWorkerErrorV1> {
+    if matches!(declared_type, "Integer" | "Tap") {
+        strict_integer(value)
+    } else {
+        typed_value(declared_type, "Default", &[value])
+    }
+}
+
+fn typed_value(
+    declared_type: &str,
+    format: &str,
+    values: &[&AmiTextNodeV1],
+) -> Result<String, PybertAmiWorkerErrorV1> {
+    if values.is_empty() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let value = values[0];
+    match format {
+        "Value" | "Default" => {
+            if values.len() != 1 {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            match declared_type {
+                "String" | "Tap" => Ok(format!("\"{}\"", quoted_value(value)?)),
+                "Boolean" => match scalar_atom(value)? {
+                    "True" => Ok("True".into()),
+                    "False" => Ok("False".into()),
+                    _ => Err(PybertAmiWorkerErrorV1::InvalidInput),
+                },
+                "Float" | "UI" => {
+                    let number = parse_numeric(value)?;
+                    Ok(python_float_string(number))
+                }
+                "Integer" => {
+                    // PyAMI's integer boundary is lexical here: accepting a
+                    // float first would silently round values above 2^53.
+                    strict_integer(value)
+                }
+                _ => Err(PybertAmiWorkerErrorV1::InvalidInput),
+            }
+        }
+        "Range" => {
+            if values.len() != 3 || !matches!(declared_type, "Float" | "UI" | "Integer" | "Tap") {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            if declared_type == "Integer" {
+                let current = strict_integer(values[0])?.parse::<i64>().unwrap();
+                let minimum = strict_integer(values[1])?.parse::<i64>().unwrap();
+                let maximum = strict_integer(values[2])?.parse::<i64>().unwrap();
+                if minimum > maximum || current < minimum || current > maximum {
+                    return Err(PybertAmiWorkerErrorV1::InvalidInput);
+                }
+                return Ok(current.to_string());
+            }
+            let (current, minimum, maximum) = {
+                (
+                    parse_numeric(values[0])?,
+                    parse_numeric(values[1])?,
+                    parse_numeric(values[2])?,
+                )
+            };
+            if minimum > maximum || current < minimum || current > maximum {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            Ok(python_float_string(current))
+        }
+        "List" | "Corner" => {
+            let selected = match declared_type {
+                "String" => format!("\"{}\"", quoted_value(value)?),
+                "Boolean" => match scalar_atom(value)? {
+                    "True" => "True".into(),
+                    "False" => "False".into(),
+                    _ => return Err(PybertAmiWorkerErrorV1::InvalidInput),
+                },
+                "Float" | "UI" => python_float_string(parse_numeric(value)?),
+                "Integer" | "Tap" => strict_integer(value)?,
+                _ => return Err(PybertAmiWorkerErrorV1::InvalidInput),
+            };
+            Ok(selected)
+        }
+        _ => Err(PybertAmiWorkerErrorV1::InvalidInput),
+    }
+}
+
+fn typed_parameter(
+    parameter: &AmiTextListV1,
+) -> Result<Option<TypedParameter>, PybertAmiWorkerErrorV1> {
+    let name = list_name(parameter).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if name.is_empty() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let mut tags: Vec<(&str, Vec<&AmiTextNodeV1>)> = Vec::new();
+    for child in parameter.items().iter().skip(1) {
+        let AmiTextNodeV1::List(tag) = child else {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        };
+        let tag_name = list_name(tag).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+        if tags.iter().any(|(existing, _)| *existing == tag_name) {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+        let values = metadata_values(tag)?;
+        tags.push((tag_name, values));
+    }
+    let semantic = tags.iter().any(|(name, _)| {
+        matches!(
+            *name,
+            "Usage" | "Type" | "Value" | "Default" | "Range" | "List" | "Corner"
+        )
+    });
+    if !semantic {
+        return Ok(None);
+    }
+    if tags.iter().any(|(name, _)| {
+        !matches!(
+            *name,
+            "Usage"
+                | "Type"
+                | "Value"
+                | "Default"
+                | "Range"
+                | "List"
+                | "Corner"
+                | "Description"
+                | "List_Tip"
+                | "Label"
+                | "Labels"
+        )
+    }) {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let lookup = |name: &str| {
+        tags.iter()
+            .rev()
+            .find(|(tag, _)| *tag == name)
+            .map(|(_, values)| values.as_slice())
+    };
+    let usage = lookup("Usage").ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if usage.len() != 1 || !matches!(scalar_atom(usage[0])?, "In" | "Out" | "InOut" | "Info") {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let declared_type = lookup("Type").ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if declared_type.len() != 1 {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let declared_type = scalar_atom(declared_type[0])?;
+    if !matches!(
+        declared_type,
+        "String" | "Boolean" | "Integer" | "Float" | "UI" | "Tap"
+    ) {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let format = tags
+        .iter()
+        .rev()
+        .find(|(tag, _)| matches!(*tag, "Value" | "Range" | "List" | "Corner"))
+        .map(|(tag, _)| *tag)
+        .or_else(|| lookup("Default").map(|_| "Default"));
+    let format = format.ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if scalar_atom(usage[0])? == "Out" && lookup("Default").is_some() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    if let Some(default) = lookup("Default") {
+        if default.len() != 1 {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+        if matches!(format, "List" | "Corner") {
+            let _ = list_default_value(declared_type, default[0])?;
+        } else {
+            let _ = typed_value(declared_type, "Default", default)?;
+        }
+    }
+    let mut choices = Vec::new();
+    if matches!(format, "List" | "Corner") {
+        for item in lookup(format).unwrap() {
+            choices.push(list_item_value(declared_type, item)?);
+        }
+    }
+    let encoded = if matches!(format, "List" | "Corner") && declared_type == "Boolean" {
+        if let Some(default) = lookup("Default") {
+            typed_value(declared_type, "Default", default)?
+        } else {
+            "False".into()
+        }
+    } else if matches!(format, "List" | "Corner") {
+        if let Some(default) = lookup("Default") {
+            list_default_value(declared_type, default[0])?
+        } else {
+            typed_value(declared_type, format, lookup(format).unwrap_or(&[]))?
+        }
+    } else {
+        typed_value(declared_type, format, lookup(format).unwrap_or(&[]))?
+    };
+    let encoded = if matches!(format, "List" | "Corner")
+        && declared_type != "Boolean"
+        && scalar_atom(usage[0])? == "Info"
+        && lookup("Default").is_none()
+    {
+        let list_values = lookup(format)
+            .unwrap()
+            .iter()
+            .map(|value| {
+                if declared_type == "String" {
+                    quoted_value(value).map(|value| python_string_repr(&value))
+                } else {
+                    list_item_value(declared_type, value)
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        python_list_string(&list_values)
+    } else {
+        encoded
+    };
+    Ok(Some(TypedParameter {
+        usage: scalar_atom(usage[0])?.into(),
+        declared_type: declared_type.into(),
+        format: format.into(),
+        encoded,
+        choices,
+        range: if format == "Range" && declared_type != "Integer" {
+            let values = lookup(format).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+            Some((parse_numeric(values[1])?, parse_numeric(values[2])?))
+        } else {
+            None
+        },
+        integer_range: if format == "Range" && declared_type == "Integer" {
+            let values = lookup(format).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+            Some((
+                strict_integer(values[1])?.parse().unwrap(),
+                strict_integer(values[2])?.parse().unwrap(),
+            ))
+        } else {
+            None
+        },
+    }))
+}
+
+fn validate_metadata_node(node: &AmiTextListV1) -> Result<bool, PybertAmiWorkerErrorV1> {
+    let name = list_name(node).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    match name {
+        "Description" | "Label" => {
+            let values = metadata_values(node)?;
+            if values.len() != 1 {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            let _ = quoted_value(values[0])?;
+            Ok(true)
+        }
+        "List_Tip" | "Labels" => {
+            let values = metadata_values(node)?;
+            if values.is_empty() {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            for value in values {
+                let _ = quoted_value(value)?;
+            }
+            Ok(true)
+        }
+        _ => Ok(false),
+    }
+}
+
+fn walk_declaration(
+    node: &AmiTextListV1,
+    analysis: &mut DeclarationAnalysis,
+    in_reserved: bool,
+    reserved_direct: bool,
+    in_model: bool,
+    parent_path: &[String],
+) -> Result<(), PybertAmiWorkerErrorV1> {
+    let name = list_name(node).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if name.is_empty() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let mut path = parent_path.to_vec();
+    path.push(name.to_owned());
+    if analysis.paths.iter().any(|existing| existing == &path) {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    analysis.paths.push(path.clone());
+    if matches!(name, "Description" | "List_Tip" | "Labels" | "Label")
+        && validate_metadata_node(node)?
+    {
+        if in_reserved {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+        return Ok(());
+    }
+    let typed = typed_parameter(node)?;
+    if let Some(parameter) = typed {
+        if in_reserved {
+            if !reserved_direct || parameter.usage != "Info" {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            if name == "GetWave_Exists" {
+                if analysis
+                    .getwave_exists
+                    .replace(parameter.encoded == "True")
+                    .is_some()
+                {
+                    return Err(PybertAmiWorkerErrorV1::InvalidInput);
+                }
+            } else if name == "Init_Returns_Impulse"
+                && analysis
+                    .init_returns_impulse
+                    .replace(parameter.encoded == "True")
+                    .is_some()
+            {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            analysis.info.push(ParameterDescriptor { path, parameter });
+        } else if in_model && matches!(parameter.usage.as_str(), "In" | "InOut") {
+            analysis.model.push(ParameterDescriptor { path, parameter });
+        }
+        return Ok(());
+    }
+    if validate_metadata_node(node)? {
+        return Ok(());
+    }
+    for child in node.items().iter().skip(1) {
+        let AmiTextNodeV1::List(child) = child else {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        };
+        walk_declaration(
+            child,
+            analysis,
+            in_reserved || name == "Reserved_Parameters",
+            false,
+            in_model || name == "Model_Specific",
+            &path,
+        )?;
+    }
+    Ok(())
+}
+
+fn declaration_analysis(
+    root: &AmiTextListV1,
+) -> Result<DeclarationAnalysis, PybertAmiWorkerErrorV1> {
+    let root_name = list_name(root).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if root_name.is_empty()
+        || root
+            .items()
+            .iter()
+            .skip(1)
+            .any(|node| !matches!(node, AmiTextNodeV1::List(_)))
+    {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let mut analysis = DeclarationAnalysis::default();
+    let mut reserved_count = 0;
+    let mut model_count = 0;
+    let mut description_count = 0;
+    for child in root.items().iter().skip(1) {
+        let AmiTextNodeV1::List(section) = child else {
+            unreachable!()
+        };
+        let section_name = list_name(section).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+        if section_name == "Reserved_Parameters" {
+            reserved_count += 1;
+            if reserved_count > 1 {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            for child in section.items().iter().skip(1) {
+                let AmiTextNodeV1::List(child) = child else {
+                    return Err(PybertAmiWorkerErrorV1::InvalidInput);
+                };
+                walk_declaration(child, &mut analysis, true, true, false, &[])?;
+            }
+        } else if section_name == "Model_Specific" {
+            model_count += 1;
+            if model_count > 1 {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            for child in section.items().iter().skip(1) {
+                let AmiTextNodeV1::List(child) = child else {
+                    return Err(PybertAmiWorkerErrorV1::InvalidInput);
+                };
+                walk_declaration(child, &mut analysis, false, false, true, &[])?;
+            }
+        } else if section_name == "Description" {
+            // `example_rx.ami` has one legal top-level metadata node.  It is
+            // validated, then intentionally omitted from the AMI init tree.
+            description_count += 1;
+            if description_count > 1 {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            let values = metadata_values(section)?;
+            if values.len() != 1 {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+            let _ = quoted_value(values[0])?;
+        } else {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+    }
+    if reserved_count != 1
+        || model_count != 1
+        || analysis.getwave_exists != Some(true)
+        || analysis.init_returns_impulse != Some(true)
+    {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    Ok(analysis)
+}
+
+#[derive(Debug, Clone)]
+struct RuntimeLeaf {
+    path: Vec<String>,
+    value: AmiTextNodeV1,
+}
+
+fn flatten_runtime(
+    node: &AmiTextListV1,
+    parent_path: &[String],
+    leaves: &mut Vec<RuntimeLeaf>,
+) -> Result<(), PybertAmiWorkerErrorV1> {
+    let name = list_name(node).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if name.is_empty() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let mut path = parent_path.to_vec();
+    path.push(name.to_owned());
+    let children = node.items().iter().skip(1).collect::<Vec<_>>();
+    if children.is_empty() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let has_lists = children
+        .iter()
+        .any(|child| matches!(child, AmiTextNodeV1::List(_)));
+    let has_scalars = children
+        .iter()
+        .any(|child| matches!(child, AmiTextNodeV1::Atom(_) | AmiTextNodeV1::Quoted(_)));
+    if has_lists && has_scalars {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    if has_lists {
+        for child in children {
+            let AmiTextNodeV1::List(child) = child else {
+                unreachable!()
+            };
+            flatten_runtime(child, &path, leaves)?;
+        }
+    } else {
+        if children.len() != 1 {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+        if leaves.iter().any(|leaf| leaf.path == path) {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+        leaves.push(RuntimeLeaf {
+            path,
+            value: children[0].clone(),
+        });
+    }
+    Ok(())
+}
+
+fn runtime_value(
+    parameter: &TypedParameter,
+    value: &AmiTextNodeV1,
+) -> Result<String, PybertAmiWorkerErrorV1> {
+    let format = parameter.format.as_str();
+    let encoded = match format {
+        "Value" | "Default" => typed_value(parameter.declared_type.as_str(), "Value", &[value])?,
+        "Range" if parameter.declared_type == "Integer" => strict_integer(value)?,
+        "Range" => python_float_string(parse_numeric(value)?),
+        "List" | "Corner" => list_item_value(parameter.declared_type.as_str(), value)?,
+        _ => return Err(PybertAmiWorkerErrorV1::InvalidInput),
+    };
+    if format == "Range" {
+        if parameter.declared_type == "Integer" {
+            let number = encoded
+                .parse::<i64>()
+                .map_err(|_| PybertAmiWorkerErrorV1::InvalidInput)?;
+            let (minimum, maximum) = parameter
+                .integer_range
+                .ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+            if number < minimum || number > maximum {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+        } else {
+            let number = encoded
+                .parse::<f64>()
+                .map_err(|_| PybertAmiWorkerErrorV1::InvalidInput)?;
+            let (minimum, maximum) = parameter
+                .range
+                .ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+            if number < minimum || number > maximum {
+                return Err(PybertAmiWorkerErrorV1::InvalidInput);
+            }
+        }
+    }
+    if matches!(format, "List" | "Corner")
+        && !parameter.choices.is_empty()
+        && !parameter.choices.iter().any(|choice| choice == &encoded)
+    {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    Ok(encoded)
+}
+
+#[derive(Debug, Default)]
+struct OutputNode {
+    name: String,
+    value: Option<String>,
+    children: Vec<OutputNode>,
+}
+
+fn insert_output(
+    nodes: &mut Vec<OutputNode>,
+    path: &[String],
+    value: String,
+) -> Result<(), PybertAmiWorkerErrorV1> {
+    let name = path.first().ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    let index = if let Some(index) = nodes.iter().position(|node| &node.name == name) {
+        index
+    } else {
+        nodes.push(OutputNode {
+            name: name.clone(),
+            value: None,
+            children: Vec::new(),
+        });
+        nodes.len() - 1
+    };
+    if path.len() == 1 {
+        if nodes[index].value.replace(value).is_some() || !nodes[index].children.is_empty() {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        }
+        return Ok(());
+    }
+    if nodes[index].value.is_some() {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    insert_output(&mut nodes[index].children, &path[1..], value)
+}
+
+fn serialize_output_nodes(
+    nodes: &[OutputNode],
+    output: &mut Vec<u8>,
+    separator: bool,
+) -> Result<(), PybertAmiWorkerErrorV1> {
+    for (index, node) in nodes.iter().enumerate() {
+        if index != 0 && separator {
+            output.push(b' ');
+        }
+        output.push(b'(');
+        output.extend_from_slice(node.name.as_bytes());
+        if let Some(value) = &node.value {
+            output.push(b' ');
+            output.extend_from_slice(value.as_bytes());
+        } else if node.children.is_empty() {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        } else {
+            output.push(b' ');
+            serialize_output_nodes(&node.children, output, true)?;
+        }
+        output.push(b')');
+    }
+    Ok(())
+}
+
+/// Materialize PyBERT's `_ads_style_ami_init_parameters` boundary without
+/// flattening containers or accepting caller-owned Reserved_Parameters.
+fn materialize_runtime_parameters(
+    declaration: &[u8],
+    runtime: &[u8],
+) -> Result<Vec<u8>, PybertAmiWorkerErrorV1> {
+    let declaration = parse_ami_text_v1(declaration, materializer_parse_limits())
+        .map_err(|_| PybertAmiWorkerErrorV1::InvalidInput)?;
+    let runtime = parse_ami_text_v1(runtime, materializer_parse_limits())
+        .map_err(|_| PybertAmiWorkerErrorV1::InvalidInput)?;
+    let declaration_root = single_root(&declaration)?;
+    let runtime_root = single_root(&runtime)?;
+    let declaration_name =
+        list_name(declaration_root).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    let runtime_name = list_name(runtime_root).ok_or(PybertAmiWorkerErrorV1::InvalidInput)?;
+    if declaration_name != runtime_name {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let analysis = declaration_analysis(declaration_root)?;
+    let mut leaves = Vec::new();
+    for child in runtime_root.items().iter().skip(1) {
+        let AmiTextNodeV1::List(child) = child else {
+            return Err(PybertAmiWorkerErrorV1::InvalidInput);
+        };
+        flatten_runtime(child, &[], &mut leaves)?;
+    }
+    let mut output_nodes = Vec::new();
+    for descriptor in &analysis.info {
+        insert_output(
+            &mut output_nodes,
+            &descriptor.path,
+            descriptor.parameter.encoded.clone(),
+        )?;
+    }
+    for descriptor in &analysis.model {
+        let value = if let Some(leaf) = leaves.iter().find(|leaf| leaf.path == descriptor.path) {
+            runtime_value(&descriptor.parameter, &leaf.value)?
+        } else {
+            descriptor.parameter.encoded.clone()
+        };
+        insert_output(&mut output_nodes, &descriptor.path, value)?;
+    }
+    if leaves.iter().any(|leaf| {
+        !analysis
+            .model
+            .iter()
+            .any(|descriptor| descriptor.path == leaf.path)
+    }) {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    let mut output = Vec::new();
+    output.push(b'(');
+    output.extend_from_slice(declaration_name.as_bytes());
+    if !output_nodes.is_empty() {
+        output.push(b' ');
+        serialize_output_nodes(&output_nodes, &mut output, false)?;
+    }
+    output.push(b')');
+    if output.len() > MAX_PARAMETERS_TOTAL_BYTES {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
+    Ok(output)
+}
+
+#[cfg(test)]
+mod materializer_tests {
+    use super::*;
+
+    const DECLARATION: &[u8] = br#"
+(example_rx
+  (Reserved_Parameters
+    (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+    (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True))
+    (First_Info (Usage Info) (Type String) (Value "one"))
+    (Second_Info (Usage Info) (Type Boolean) (Value True)))
+  (Model_Specific
+    (mode (Usage In) (Type String) (Value "NRZ"))))
+"#;
+
+    #[test]
+    fn materializer_matches_ads_info_order_and_model_override() {
+        let runtime = br#"(example_rx (mode "PAM4"))"#;
+        let actual = materialize_runtime_parameters(DECLARATION, runtime).expect("materialize");
+        assert_eq!(
+            actual,
+            br#"(example_rx (GetWave_Exists True)(Init_Returns_Impulse True)(First_Info "one")(Second_Info True)(mode "PAM4"))"#
+        );
+    }
+
+    #[test]
+    fn materializer_rejects_missing_info_value_and_root_mismatch() {
+        let missing_value =
+            br#"(example_rx (Reserved_Parameters (Info (Usage Info) (Type String))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(missing_value, b"(example_rx (mode 1))")
+                .expect_err("missing info value"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        assert_eq!(
+            materialize_runtime_parameters(DECLARATION, b"(other (mode 1))")
+                .expect_err("root mismatch"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+    }
+
+    #[test]
+    fn materializer_rejects_untyped_legacy_passthrough() {
+        assert_eq!(
+            materialize_runtime_parameters(b"(mode success)", b"(mode success)")
+                .expect_err("untyped declaration"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+    }
+
+    #[test]
+    fn materializer_rejects_reserved_override_flatten_and_caller_order() {
+        let reserved = br#"(example_rx (Reserved_Parameters (GetWave_Exists False)))"#;
+        assert_eq!(
+            materialize_runtime_parameters(DECLARATION, reserved).expect_err("reserved override"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let arbitrary = br#"(example_rx (raw 1))"#;
+        assert_eq!(
+            materialize_runtime_parameters(DECLARATION, arbitrary)
+                .expect_err("arbitrary top-level"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let declaration = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (first (Usage In) (Type Integer) (Value 1))
+            (second (Usage In) (Type String) (Value "two"))))"#;
+        let actual =
+            materialize_runtime_parameters(declaration, br#"(rx (second "override") (first 7))"#)
+                .expect("source order");
+        assert_eq!(
+            actual,
+            br#"(rx (GetWave_Exists True)(Init_Returns_Impulse True)(first 7)(second "override"))"#
+        );
+    }
+
+    #[test]
+    fn materializer_supports_fixed_formats_and_rejects_bad_controls() {
+        let declaration = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Default True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True))
+            (f (Usage Info) (Type Float) (Range 1.5 0 2))
+            (i (Usage Info) (Type Integer) (Default 1000))
+            (s (Usage Info) (Type String) (List "alpha" "beta"))
+            (b (Usage Info) (Type Boolean) (Corner False True)))
+          (Model_Specific (nested (child (Usage In) (Type UI) (List 3 4)))))"#;
+        let actual = materialize_runtime_parameters(declaration, b"(rx)").expect("formats");
+        assert_eq!(actual, br#"(rx (GetWave_Exists True)(Init_Returns_Impulse True)(f 1.5)(i 1000)(s ['alpha', 'beta'])(b False)(nested (child 3.0)))"#);
+        let false_getwave = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Default False))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (nested (child (Usage In) (Type UI) (List 3 4)))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(false_getwave, b"(rx)").expect_err("false getwave"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let duplicate = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Default True))
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (nested (child (Usage In) (Type UI) (List 3 4)))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(duplicate, b"(rx)").expect_err("duplicate getwave"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let duplicate_format = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (x (Usage In) (Type Float) (Range 1 0 2) (Range 1 0 2))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(duplicate_format, b"(rx (x 1))")
+                .expect_err("duplicate format"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let missing = br#"(rx
+          (Reserved_Parameters
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (nested (child (Usage In) (Type UI) (List 3 4)))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(missing, b"(rx)").expect_err("missing getwave"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let bad_integer_range = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (i (Usage In) (Type Integer) (Range 1.5 0 2))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(bad_integer_range, b"(rx (i 1))")
+                .expect_err("fractional integer range"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let bad_integer_list = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (i (Usage In) (Type Integer) (List 1.5 2))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(bad_integer_list, b"(rx (i 2))")
+                .expect_err("fractional integer list"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let tap_value = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (tap (Usage In) (Type Tap) (Value "tap-1"))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(tap_value, br#"(rx (tap "tap-2"))"#)
+                .expect("Tap Value string"),
+            br#"(rx (GetWave_Exists True)(Init_Returns_Impulse True)(tap "tap-2"))"#
+        );
+        let nested_gate = br#"(rx
+          (Reserved_Parameters
+            (Nested (GetWave_Exists (Usage Info) (Type Boolean) (Value True)))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (x (Usage In) (Type Float) (Value 1))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(nested_gate, b"(rx)").expect_err("nested getwave gate"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let out_default = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (x (Usage Out) (Type Float) (Default 1))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(out_default, b"(rx)").expect_err("out default"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let huge_integer = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (x (Usage In) (Type Integer) (Range 1 0 9223372036854775808))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(huge_integer, b"(rx (x 1) )").expect_err("huge integer"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+    }
+
+    #[test]
+    fn archived_example_rx_description_and_metadata_materialize() {
+        // This fixture is copied from the pinned PyBERT archive
+        // 5bf6d7ea0ace261891aaeb611ffc1c267e160afe:
+        // models/ibisami/example_rx.ami.  Description/List_Tip metadata is
+        // validated but must not leak into AMIModel.initialize parameters.
+        let declaration = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/example_rx.ami"
+        ));
+        assert_eq!(declaration.len(), 3373);
+        assert_eq!(
+            sha256_bytes(declaration),
+            "5c0c971be411a9af2a9e1cfdf2222086bf9d0c82946ed740c91b364f1d43113d"
+        );
+        let output = materialize_runtime_parameters(declaration, b"(example_rx (ctle_mode 1))")
+            .expect("archived declaration is a supported typed profile");
+        let output = String::from_utf8(output).expect("AMI sexpr is UTF-8");
+        assert_eq!(
+            output,
+            "(example_rx (AMI_Version \"5.1\")(Init_Returns_Impulse True)(GetWave_Exists True)(ctle_mode 1)(ctle_freq 5000000000.0)(ctle_mag 0.0)(ctle_bandwidth 12000000000.0)(ctle_dcgain 0.0)(dfe_mode 0)(dfe_ntaps 5)(dfe_tap1 0.0)(dfe_tap2 0.0)(dfe_tap3 0.0)(dfe_tap4 0.0)(dfe_tap5 0.0)(dfe_vout 1.0)(dfe_gain 0.1)(debug (dbg_enable False) (dump_dfe_adaptation False) (dump_adaptation_input False)))"
+        );
+    }
+
+    #[test]
+    fn runtime_uses_range_and_list_descriptor_formats() {
+        let declaration = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific
+            (tap_range (Usage In) (Type Tap) (Range 2 0 4))
+            (tap_list (Usage In) (Type Tap) (List 1 2) (Default 2))
+            (text_list (Usage In) (Type String) (List "a" "b") (Default "b"))
+            (integer_list (Usage In) (Type Integer) (List 1 2) (Default 2))))"#;
+        let runtime = br#"(rx (tap_range 3) (tap_list 1))"#;
+        let output = materialize_runtime_parameters(declaration, runtime).expect("typed runtime");
+        assert_eq!(
+            output,
+            br#"(rx (GetWave_Exists True)(Init_Returns_Impulse True)(tap_range 3.0)(tap_list 1)(text_list "b")(integer_list 2))"#
+        );
+    }
+
+    #[test]
+    fn integer_value_and_default_are_lexical_i64() {
+        let controls = br#"(Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))"#;
+        let fractional = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (x (Usage In) (Type Integer) (Value 1e3))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(fractional, b"(rx (x 1))")
+                .expect_err("fractional integer value"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        let overflow = br#"(rx
+          (Reserved_Parameters
+            (GetWave_Exists (Usage Info) (Type Boolean) (Value True))
+            (Init_Returns_Impulse (Usage Info) (Type Boolean) (Value True)))
+          (Model_Specific (x (Usage In) (Type Integer) (Default 9223372036854775808))))"#;
+        assert_eq!(
+            materialize_runtime_parameters(overflow, b"(rx)")
+                .expect_err("overflow integer default"),
+            PybertAmiWorkerErrorV1::InvalidInput
+        );
+        assert!(controls.starts_with(b"(Reserved_Parameters"));
+    }
+}
+
 /// Build a fresh, content-addressed worker launch from PyBERT's file bundle.
 pub fn prepare_pybert_ami_launch(
     root: &Path,
@@ -499,16 +1528,21 @@ pub fn prepare_pybert_ami_launch(
         ".ami",
         request.max_parameters_bytes as u64,
     )?;
+    let ami_source = fs::read(checked_asset_path(&root, &request.ami_path)?)
+        .map_err(|_| PybertAmiWorkerErrorV1::AssetUnavailable)?;
+    if sha256_bytes(&ami_source) != ami.sha256 || ami_source.len() as u64 != ami.bytes {
+        return Err(PybertAmiWorkerErrorV1::AssetIdentity);
+    }
+    let materialized_runtime =
+        materialize_runtime_parameters(&ami_source, request.runtime_parameters.as_bytes())?;
+    if materialized_runtime.len() > request.max_parameters_bytes {
+        return Err(PybertAmiWorkerErrorV1::InvalidInput);
+    }
     let dll = identity(&root, &request.dll_path, ".dll", MAX_ASSET_BYTES)?;
     let nonce = nonce()?;
     let runtime_path = format!("runtime-{nonce}.ami");
     let runtime_file = root.join(&runtime_path);
-    write_new(
-        &root,
-        &runtime_path,
-        &nonce,
-        request.runtime_parameters.as_bytes(),
-    )?;
+    write_new(&root, &runtime_path, &nonce, &materialized_runtime)?;
     let mut runtime_guard = RuntimeFileGuard {
         path: runtime_file,
         keep: false,

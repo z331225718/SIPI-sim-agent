@@ -22,6 +22,7 @@ statrs = "0.18"
 thiserror = "2.0"
 yaml-rust2 = { version = "0.10", default-features = false }
 sipi-ami-worker = { path = "../sipi-ami-worker" }
+sipi-ami-text = { path = "../sipi-ami-text" }
 sipi-artifacts = { path = "../sipi-artifacts" }
 
 [[bin]]
