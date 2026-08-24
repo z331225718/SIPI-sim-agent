@@ -41,6 +41,10 @@ def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def report_sha(path: Path) -> str:
+    return sha(read_bounded(path, MAX_REPORT_BYTES))
+
+
 def read_bounded(path: Path, limit: int = MAX_FILE_BYTES) -> bytes:
     if not path.is_file() or path.is_symlink() or path.stat().st_size > limit:
         raise RuntimeError(f"file exceeds bounded budget: {path.name}")
@@ -381,7 +385,7 @@ def main() -> int:
         raise SystemExit("output report already exists; create-new semantics reject overwrite") from error
     with os.fdopen(descriptor, "wb") as report_file:
         report_file.write(payload)
-    print(json.dumps({"report_sha256": sha(args.output), "run_id": args.run_id}, sort_keys=True))
+    print(json.dumps({"report_sha256": report_sha(args.output), "run_id": args.run_id}, sort_keys=True))
     return 0
 
 

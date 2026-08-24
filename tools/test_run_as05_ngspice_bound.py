@@ -57,6 +57,12 @@ class RunAs05NgspiceBoundTests(unittest.TestCase):
             runner.toolchain_identities(Path("git"), Path("cargo"), Path("rustc"), Path("python"))
         self.assertEqual(calls, ["git", "cargo", "rustc", "python"])
 
+    def test_report_sha_accepts_real_path_and_is_bounded(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="as05-report-sha-") as temporary:
+            path = Path(temporary) / "report.json"
+            path.write_bytes(b"{}\n")
+            self.assertEqual(runner.report_sha(path), runner.sha(b"{}\n"))
+
 
 if __name__ == "__main__":
     unittest.main()
