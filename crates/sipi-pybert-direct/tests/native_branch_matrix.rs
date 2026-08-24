@@ -272,6 +272,27 @@ fn native_request_reaches_analytic_ctle_and_metallic_line_grid_branches() {
 }
 
 #[test]
+fn native_request_accepts_pinned_non_integral_ctle_grid() {
+    let mut input = base("branch-ctle-non-integral-grid");
+    input.rx.native_ctle_enabled = true;
+    input.rx.ctle = Some(CtleConfigV1 {
+        bandwidth: Hertz(12.0e9),
+        peak_frequency: Hertz(5.0e9),
+        peak_magnitude_db: 1.7,
+        frequency_step_hz: Some(Hertz(3.0e9)),
+        frequency_max_hz: Some(Hertz(10.0e9)),
+        impulse_response_v_per_v: None,
+    });
+    let output = run(&input);
+    assert!(
+        output
+            .arrays
+            .get("rx_filter_impulse_v_per_v")
+            .is_some_and(|values| values.len() > 1)
+    );
+}
+
+#[test]
 fn native_request_reaches_native_fft_channel_and_ctle_defaults() {
     let mut ctle = base("branch-ctle-native-grid");
     ctle.rx.native_ctle_enabled = true;

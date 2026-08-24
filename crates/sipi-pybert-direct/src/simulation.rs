@@ -1471,12 +1471,15 @@ fn legacy_ctle_impulse(
             target_sample_interval_s,
         )?);
     };
-    let intervals = (maximum.0 / step.0).round() as usize;
+    let (intervals, effective_maximum) = legacy_arange_grid(step.0, maximum.0, max_total_samples)?;
     let fft_size = intervals
         .checked_mul(2)
         .ok_or(NativeSimulationError::ResourceLimitExceeded)?;
-    if fft_size > max_total_samples {
-        return Err(NativeSimulationError::ResourceLimitExceeded);
+    // This is a native IFFT safety boundary: every materialized frequency must
+    // fit the requested timebase Nyquist, even when PyBERT's source grid would
+    // otherwise contain the next point after f_max.
+    if !effective_maximum.is_finite() || effective_maximum > 0.5 / target_sample_interval_s {
+        return Err(NativeSimulationError::LegacyStageFrequencyOutOfRange);
     }
     let frequencies = (0..=intervals)
         .map(|index| index as f64 * step.0)
@@ -1487,7 +1490,7 @@ fn legacy_ctle_impulse(
         &response.iter().map(|value| value.im).collect::<Vec<_>>(),
         fft_size,
     )?;
-    let source_sample_interval_s = 0.5 / maximum.0;
+    let source_sample_interval_s = 0.5 / effective_maximum;
     let source_sum = source_impulse.iter().sum::<f64>();
     // PyBERT's CTLE path uses `interp1d` without an explicit kind, whose
     // default is linear. Channel impulse resampling below is intentionally
@@ -1511,6 +1514,43 @@ fn legacy_ctle_impulse(
     let min_length = explicit_impulse_sample_count.unwrap_or(30 * samples_per_ui);
     let max_length = explicit_impulse_sample_count.unwrap_or(100 * samples_per_ui);
     Ok(trim_legacy_impulse(&resampled, min_length, max_length, 0))
+}
+
+/// Reproduce NumPy's bounded stop-exclusive ``arange(0, f_max + f_step,
+/// f_step)`` point generation without a ratio round/ceil approximation.
+fn legacy_arange_grid(
+    step: f64,
+    maximum: f64,
+    max_total_samples: usize,
+) -> Result<(usize, f64), NativeSimulationError> {
+    if !step.is_finite() || step <= 0.0 || !maximum.is_finite() || maximum <= 0.0 {
+        return Err(NativeSimulationError::UnsupportedChannel);
+    }
+    let stop = maximum + step;
+    if !stop.is_finite() {
+        return Err(NativeSimulationError::ResourceLimitExceeded);
+    }
+    let max_points = max_total_samples.saturating_div(2).saturating_add(1);
+    let mut points = 0usize;
+    while (points as f64 * step) < stop {
+        points = points
+            .checked_add(1)
+            .ok_or(NativeSimulationError::ResourceLimitExceeded)?;
+        if points > max_points {
+            return Err(NativeSimulationError::ResourceLimitExceeded);
+        }
+    }
+    let intervals = points
+        .checked_sub(1)
+        .ok_or(NativeSimulationError::UnsupportedChannel)?;
+    if intervals == 0 {
+        return Err(NativeSimulationError::UnsupportedChannel);
+    }
+    let effective_maximum = intervals as f64 * step;
+    if !effective_maximum.is_finite() {
+        return Err(NativeSimulationError::ResourceLimitExceeded);
+    }
+    Ok((intervals, effective_maximum))
 }
 
 struct MetallicLineImpulse {
@@ -2215,8 +2255,10 @@ fn first_maximum_index(values: &[f64]) -> usize {
 mod tests {
     use super::{
         ComplexMatrix2, complex_multiply, complex_right_solve, complex_solve, first_maximum_index,
-        legacy_power_wave_nudge_v1, trim_legacy_impulse_with_start,
+        legacy_arange_grid, legacy_ctle_impulse, legacy_power_wave_nudge_v1,
+        trim_legacy_impulse_with_start,
     };
+    use crate::{CtleConfigV1, Hertz, Seconds};
     use num_complex::Complex64;
 
     #[test]
@@ -2248,6 +2290,44 @@ mod tests {
         assert_eq!(start, -4);
         assert_eq!(trimmed, vec![0.0, 0.0, 0.0]);
         assert_eq!(first_maximum_index(&[-0.0, 0.0, 0.0]), 0);
+    }
+
+    #[test]
+    fn legacy_ctle_grid_matches_pinned_arange_endpoint_and_payload() {
+        let config = CtleConfigV1 {
+            bandwidth: Hertz(12.0e9),
+            peak_frequency: Hertz(5.0e9),
+            peak_magnitude_db: 1.7,
+            frequency_step_hz: Some(Hertz(3.0e9)),
+            frequency_max_hz: Some(Hertz(10.0e9)),
+            impulse_response_v_per_v: None,
+        };
+        let impulse = legacy_ctle_impulse(&config, 16, Seconds(1.0e-12).0, 4, 1024, Some(8))
+            .expect("non-integral PyBERT arange endpoint is portable");
+        let expected = [
+            0.059026117198096924,
+            0.05791690535298647,
+            0.05680769350787601,
+            0.05569848166276556,
+            0.0545892698176551,
+            0.05348005797254464,
+            0.05237084612743419,
+            0.06900902380409103,
+        ];
+        assert_eq!(impulse.len(), expected.len());
+        for (actual, expected) in impulse.iter().zip(expected) {
+            assert!(
+                (actual - expected).abs() < 1.0e-12,
+                "{actual} != {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_arange_grid_keeps_numpy_near_integral_stop_exclusive() {
+        let step = 3.0e9;
+        let maximum = step * (1.0 + 2.0e-16);
+        assert_eq!(legacy_arange_grid(step, maximum, 1024).unwrap(), (1, step));
     }
 
     #[test]

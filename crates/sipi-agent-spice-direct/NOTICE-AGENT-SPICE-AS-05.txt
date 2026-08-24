@@ -1,0 +1,19 @@
+AS-05 direct-port attribution
+
+The normalized HSPICE probe and measurement output contract in
+src/lib.rs follows the pinned Agent-Spice source
+src/agent_spice/hspice/measure.py. This additive notice does not modify
+repository-wide license or shared source-map records.
+
+Upstream project: agent-spice
+Commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+Tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+License: MIT
+License raw Git-object SHA-1: 55aac2e4f8c36a978d315efb02815972579b8293
+License byte count: 1067
+License SHA-256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+Raw source SHA-256: cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4
+
+Native, ngspice, Xyce, and XDM solver execution remains an explicit external
+runtime boundary and is fail-closed when caller-owned executable custody is
+not available.

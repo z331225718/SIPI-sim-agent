@@ -16,13 +16,13 @@ use sipi_com::{
     CalibrationErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, ComRunResultEnvelopeV1,
     CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
-    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultV1, apply_r480_equalization_v1,
-    apply_r480_pn_skew_v1, butterworth_filter_v1, calculate_r480_calibration_noise_v1,
-    calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, execute_com_run_v1,
-    execute_com_run_with_crosstalk_v1, merge_com_parameters_v1, r480_tdiln_v1,
+    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultV1, TdFrequencyFillinV1,
+    apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
+    calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1,
+    execute_com_run_v1, execute_com_run_with_crosstalk_v1, merge_com_parameters_v1, r480_tdiln_v1,
     raised_cosine_filter_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
     sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1, search_mmse_candidates_v1,
-    search_r480_nonmmse_no_xtalk_with_sigma_v1,
+    search_r480_nonmmse_no_xtalk_with_sigma_v1, td_fd_fillin_v1, td_pulse_input_v1,
 };
 use sipi_touchstone::selected_four_port_v1::parse_selected_four_port_hz_s_ri_50_v2;
 use sipi_touchstone::{TouchstoneParseLimitsV1, parse_touchstone_hz_s_ri_50_two_port_v1};
@@ -45,6 +45,7 @@ pub const MAX_CROSSTALK_CHANNELS_V1: usize = 64;
 pub const MAX_SEARCH_FREQUENCY_POINTS_V1: usize = 262_144;
 pub const MAX_SEARCH_TX_FFE_CANDIDATES_V1: u64 = 1_000_000;
 const MAX_TOUCHSTONE_RECORDS_V1: usize = 65_536;
+const MAX_TD_BESSEL_ORDER_V1: usize = 32;
 
 /// Inputs shared by the executable COM run and the public API workflow.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -187,6 +188,11 @@ struct ImpulseInputV1 {
     causality_correction_db: Option<f64>,
     truncation_db: Option<f64>,
     causality_iterations: Option<usize>,
+    /// TDMODE retains the typed FD fill-in and sampled pulse so the existing
+    /// COM search consumer can use them instead of silently discarding the
+    /// TD preparation result.
+    td_fillin: Option<TdFrequencyFillinV1>,
+    td_pulse: Option<Vec<f64>>,
 }
 
 #[derive(Clone, Debug)]
@@ -736,6 +742,31 @@ fn run_with_workflow(
     }
     let loaded = load_config_v1(request)?;
     validate_output_input_custody_v1(request, Some(&loaded.document))?;
+    let controls = canonical_controls_v1(&loaded.values)?;
+    // The workbook materializer supplies the upstream false default when the
+    // option is omitted.  Once enabled, all TD controls below are required.
+    let td_mode = if loaded.values.contains_key("TDMODE") {
+        resolved_bool_alias_v1(&loaded.values, &["TDMODE"], "TDMODE")?
+    } else {
+        false
+    };
+    if td_mode {
+        let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
+        let baud_hz = required_td_scalar_alias_v1(&loaded.values, &["fb", "baud_hz"], "fb")?;
+        reject_td_transformed_channel_v1(&loaded.document)?;
+        validate_td_search_crosswalk_v1(&loaded.document, &loaded.values, samples_per_ui, baud_hz)?;
+        validate_td_thru_scope_v1(&loaded.document, request)?;
+        let extension = request
+            .pulse
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or_default();
+        if !extension.eq_ignore_ascii_case("csv") && !extension.eq_ignore_ascii_case("td") {
+            return Err(DirectRunErrorV1::Unsupported(
+                "TDMODE input must be a strict two-column .csv/.td waveform".to_owned(),
+            ));
+        }
+    }
     let erl_s2p_exact = exact_erl_s2p_profile_v1(&loaded.document, &request.pulse)?;
     let input_impulse = if request
         .pulse
@@ -746,9 +777,27 @@ fn run_with_workflow(
         load_s4p_impulse_v1(&request.pulse)?
     } else if erl_s2p_exact {
         load_erl_s2p_impulse_v1(&request.pulse)?
+    } else if td_mode {
+        let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
+        load_td_mode_input_v1(&request.pulse, &loaded.values, samples_per_ui)?
     } else {
         load_impulse_v1(&request.pulse)?
     };
+    if td_mode
+        && input_impulse.td_fillin.is_some()
+        && loaded
+            .document
+            .get("portable")
+            .and_then(Value::as_object)
+            .and_then(|portable| portable.get("search"))
+            .and_then(Value::as_object)
+            .is_none()
+    {
+        return Err(DirectRunErrorV1::Unsupported(
+            "TDMODE requires portable.search so the typed TD FD fill-in is consumed by the existing search chain"
+                .to_owned(),
+        ));
+    }
     let mut fext_inputs = request
         .fext
         .iter()
@@ -790,6 +839,8 @@ fn run_with_workflow(
                     causality_correction_db: None,
                     truncation_db: None,
                     causality_iterations: None,
+                    td_fillin: None,
+                    td_pulse: None,
                 });
             }
         }
@@ -814,11 +865,12 @@ fn run_with_workflow(
                     causality_correction_db: None,
                     truncation_db: None,
                     causality_iterations: None,
+                    td_fillin: None,
+                    td_pulse: None,
                 });
             }
         }
     }
-    let controls = canonical_controls_v1(&loaded.values)?;
     let branches = portable_branch_result_v1(
         &loaded.document,
         &input_impulse,
@@ -851,6 +903,8 @@ fn run_with_workflow(
             causality_correction_db: input_impulse.causality_correction_db,
             truncation_db: input_impulse.truncation_db,
             causality_iterations: input_impulse.causality_iterations,
+            td_fillin: input_impulse.td_fillin.clone(),
+            td_pulse: input_impulse.td_pulse.clone(),
         }
     } else {
         input_impulse
@@ -1639,6 +1693,204 @@ fn required_usize_from_controls_v1(
         .map_err(|_| DirectRunErrorV1::Parameters(format!("control {key} is too large")))
 }
 
+fn resolved_bool_alias_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<bool, DirectRunErrorV1> {
+    let Some(value) = aliases.iter().find_map(|key| values.get(*key)) else {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "TDMODE control {label} is missing"
+        )));
+    };
+    match value {
+        ResolvedDefaultV1::Boolean(value) => Ok(*value),
+        _ => Err(DirectRunErrorV1::Parameters(format!(
+            "TDMODE control {label} must be boolean"
+        ))),
+    }
+}
+
+fn required_td_scalar_alias_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<f64, DirectRunErrorV1> {
+    let Some(value) = aliases.iter().find_map(|key| values.get(*key)) else {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "TDMODE control {label} is missing"
+        )));
+    };
+    let scalar = match value {
+        ResolvedDefaultV1::Scalar(value) => *value,
+        ResolvedDefaultV1::Vector(values) if values.len() == 1 => values[0],
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "TDMODE control {label} must be scalar"
+            )));
+        }
+    };
+    if !scalar.is_finite() {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "TDMODE control {label} must be finite"
+        )));
+    }
+    Ok(scalar)
+}
+
+fn validate_td_search_crosswalk_v1(
+    document: &Value,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    samples_per_ui: usize,
+    baud_hz: f64,
+) -> Result<(), DirectRunErrorV1> {
+    let portable = document
+        .get("portable")
+        .and_then(Value::as_object)
+        .ok_or_else(|| {
+            DirectRunErrorV1::Unsupported(
+                "TDMODE requires portable.search with an explicit runtime crosswalk".to_owned(),
+            )
+        })?;
+    let search = portable
+        .get("search")
+        .and_then(Value::as_object)
+        .ok_or_else(|| {
+            DirectRunErrorV1::Unsupported(
+                "TDMODE requires portable.search with an explicit runtime crosswalk".to_owned(),
+            )
+        })?;
+    let search_samples = required_usize_v1(search, "samples_per_ui", "portable.search")?;
+    if search_samples != samples_per_ui {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE samples_per_ui conflicts with portable.search.samples_per_ui".to_owned(),
+        ));
+    }
+    let search_baud = required_f64_v1(search, "fb_hz", "portable.search")?;
+    if search_baud.to_bits() != baud_hz.to_bits() {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE fb conflicts with portable.search.fb_hz".to_owned(),
+        ));
+    }
+    let candidate = required_object_v1(search, "candidate", "portable.search")?;
+    let candidate_samples =
+        required_usize_v1(candidate, "samples_per_ui", "portable.search.candidate")?;
+    if candidate_samples != samples_per_ui {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE samples_per_ui conflicts with portable.search.candidate.samples_per_ui"
+                .to_owned(),
+        ));
+    }
+    let receiver = required_object_v1(search, "receiver", "portable.search")?;
+    let receiver_baud = required_f64_v1(receiver, "fb_hz", "portable.search.receiver")?;
+    let receiver_order = required_usize_v1(receiver, "btorder", "portable.search.receiver")?;
+    let receiver_bt = required_f64_v1(receiver, "fb_bt_cutoff", "portable.search.receiver")?;
+    let receiver_bw = required_f64_v1(receiver, "fb_bw_cutoff", "portable.search.receiver")?;
+    let source_order = required_td_scalar_alias_v1(values, &["BTorder", "btorder"], "BTorder")?;
+    let source_bt = required_td_scalar_alias_v1(
+        values,
+        &["fb_BT_cutoff", "bessel_cutoff_multiplier"],
+        "fb_BT_cutoff",
+    )?;
+    let source_bw = required_td_scalar_alias_v1(
+        values,
+        &["fb_BW_cutoff", "butterworth_cutoff_multiplier"],
+        "fb_BW_cutoff",
+    )?;
+    if receiver_baud.to_bits() != baud_hz.to_bits()
+        || (receiver_order as f64).to_bits() != source_order.to_bits()
+        || receiver_bt.to_bits() != source_bt.to_bits()
+        || receiver_bw.to_bits() != source_bw.to_bits()
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE receiver controls conflict with the TD fill-in controls".to_owned(),
+        ));
+    }
+    let options = required_object_v1(search, "options", "portable.search")?;
+    let receiver_options = required_object_v1(options, "receiver", "portable.search.options")?;
+    let source_bessel = resolved_bool_alias_v1(
+        values,
+        &["Bessel_Thomson", "bessel_thomson"],
+        "Bessel_Thomson",
+    )?;
+    let source_butterworth =
+        resolved_bool_alias_v1(values, &["Butterworth", "butterworth"], "Butterworth")?;
+    if required_bool_v1(
+        receiver_options,
+        "bessel_thomson",
+        "portable.search.options.receiver",
+    )? != source_bessel
+        || required_bool_v1(
+            receiver_options,
+            "butterworth",
+            "portable.search.options.receiver",
+        )? != source_butterworth
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE filter controls conflict with portable.search.options.receiver".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_td_thru_scope_v1(
+    document: &Value,
+    request: &DirectRunRequestV1,
+) -> Result<(), DirectRunErrorV1> {
+    if !request.fext.is_empty() || !request.next.is_empty() {
+        return Err(DirectRunErrorV1::Unsupported(
+            "TDMODE scope is THRU/no-crosstalk; FEXT/NEXT requires an admitted FD channel response"
+                .to_owned(),
+        ));
+    }
+    if document
+        .get("package_case")
+        .and_then(Value::as_object)
+        .is_some_and(|case| {
+            ["fext", "next"].iter().any(|key| {
+                case.get(*key)
+                    .and_then(Value::as_array)
+                    .is_some_and(|values| !values.is_empty())
+            })
+        })
+    {
+        return Err(DirectRunErrorV1::Unsupported(
+            "TDMODE scope is THRU/no-crosstalk; package_case FEXT/NEXT sources are not admitted"
+                .to_owned(),
+        ));
+    }
+    let portable = document.get("portable").and_then(Value::as_object);
+    let search = portable
+        .and_then(|value| value.get("search"))
+        .and_then(Value::as_object);
+    if search.is_some_and(|value| {
+        ["crosstalk", "fext", "next", "crosstalk_frequency_hz"]
+            .iter()
+            .any(|key| value.contains_key(*key))
+    }) {
+        return Err(DirectRunErrorV1::Unsupported(
+            "TDMODE scope is THRU/no-crosstalk; crosstalk channel-response branches are not admitted"
+                .to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn reject_td_transformed_channel_v1(document: &Value) -> Result<(), DirectRunErrorV1> {
+    let root = document.as_object().ok_or_else(|| {
+        DirectRunErrorV1::Json("canonical config object must be an object".to_owned())
+    })?;
+    let portable = document.get("portable").and_then(Value::as_object);
+    for branch in ["equalization", "mixed_mode"] {
+        if root.contains_key(branch) || portable.is_some_and(|value| value.contains_key(branch)) {
+            return Err(DirectRunErrorV1::Unsupported(format!(
+                "TDMODE cannot combine with channel-producing portable.{branch}; TD pulse/fill-in would become stale"
+            )));
+        }
+    }
+    Ok(())
+}
+
 /// Search leaves expose sampled SBR/FFE waveforms, which can be shorter than
 /// the full COM time-domain channel.  Keep the selected values as the actual
 /// channel response while placing them in a bounded full-length buffer so the
@@ -2165,6 +2417,8 @@ fn portable_branch_result_with_sigma_v1(
                     causality_correction_db: None,
                     truncation_db: None,
                     causality_iterations: None,
+                    td_fillin: None,
+                    td_pulse: None,
                 };
                 let orchestration = portable_branch_result_with_sigma_v1(
                     &orchestration_document,
@@ -2682,6 +2936,8 @@ fn portable_branch_result_with_sigma_v1(
                 causality_correction_db: impulse.causality_correction_db,
                 truncation_db: impulse.truncation_db,
                 causality_iterations: impulse.causality_iterations,
+                td_fillin: impulse.td_fillin.clone(),
+                td_pulse: impulse.td_pulse.clone(),
             },
         );
         let result = portable_search_v1(search, &search_input, calibration_sigma_ne_override)?;
@@ -2707,6 +2963,14 @@ fn portable_branch_result_with_sigma_v1(
                 "selected_pulse_sha256": sha256_f64_v1(&result.selected_pulse),
                 "selected_pulse_sample_count": result.selected_pulse.len(),
                 "selected_tx_taps": result.selected_tx_taps,
+                "td_input": search_input.td_fillin.as_ref().map(|fillin| json!({
+                    "frequency_sha256": sha256_f64_v1(&fillin.frequency_hz),
+                    "noise_frequency_sha256": sha256_f64_v1(&fillin.noise_frequency_hz),
+                    "insertion_loss_sha256": sha256_complex_v1(&fillin.insertion_loss),
+                    "peak_window_pulse_sha256": search_input.td_pulse.as_ref().map(|pulse| sha256_f64_v1(pulse)),
+                    "consumer": "search_r480_nonmmse_no_xtalk_with_sigma_v1",
+                    "scope": "THRU/no-crosstalk axis+pulse consumer"
+                })),
             }),
         );
     }
@@ -2903,7 +3167,20 @@ fn portable_search_v1(
     calibration_sigma_ne_override: Option<f64>,
 ) -> Result<SearchLoopResultV1, DirectRunErrorV1> {
     let branch = "portable.search";
-    let frequency_hz = parse_f64_array_key_v1(search, "frequency_hz", branch)?;
+    let td_fillin = impulse.td_fillin.as_ref();
+    let frequency_hz = if let Some(fillin) = td_fillin {
+        if let Some(value) = search.get("frequency_hz") {
+            let requested = parse_f64_array_v1(value, "portable.search.frequency_hz")?;
+            if requested != fillin.frequency_hz {
+                return Err(DirectRunErrorV1::Parameters(
+                    "portable.search.frequency_hz conflicts with TDMODE FD fill-in".to_owned(),
+                ));
+            }
+        }
+        fillin.frequency_hz.clone()
+    } else {
+        parse_f64_array_key_v1(search, "frequency_hz", branch)?
+    };
     if frequency_hz.len() < 2 {
         return Err(DirectRunErrorV1::Parameters(
             "portable.search.frequency_hz needs at least two samples".to_owned(),
@@ -2915,16 +3192,42 @@ fn portable_search_v1(
             MAX_SEARCH_FREQUENCY_POINTS_V1
         )));
     }
-    let noise_frequency_hz = search
-        .get("noise_frequency_hz")
-        .map(|value| parse_f64_array_v1(value, "portable.search.noise_frequency_hz"))
-        .transpose()?
-        .unwrap_or_else(|| frequency_hz.clone());
-    let crosstalk_frequency_hz = search
-        .get("crosstalk_frequency_hz")
-        .map(|value| parse_f64_array_v1(value, "portable.search.crosstalk_frequency_hz"))
-        .transpose()?
-        .unwrap_or_else(|| frequency_hz.clone());
+    let noise_frequency_hz = if let Some(fillin) = td_fillin {
+        if let Some(value) = search.get("noise_frequency_hz") {
+            let requested = parse_f64_array_v1(value, "portable.search.noise_frequency_hz")?;
+            if requested != fillin.noise_frequency_hz {
+                return Err(DirectRunErrorV1::Parameters(
+                    "portable.search.noise_frequency_hz conflicts with TDMODE FD fill-in"
+                        .to_owned(),
+                ));
+            }
+        }
+        fillin.noise_frequency_hz.clone()
+    } else {
+        search
+            .get("noise_frequency_hz")
+            .map(|value| parse_f64_array_v1(value, "portable.search.noise_frequency_hz"))
+            .transpose()?
+            .unwrap_or_else(|| frequency_hz.clone())
+    };
+    let crosstalk_frequency_hz = if let Some(fillin) = td_fillin {
+        if let Some(value) = search.get("crosstalk_frequency_hz") {
+            let requested = parse_f64_array_v1(value, "portable.search.crosstalk_frequency_hz")?;
+            if requested != fillin.frequency_hz {
+                return Err(DirectRunErrorV1::Parameters(
+                    "portable.search.crosstalk_frequency_hz conflicts with TDMODE FD fill-in"
+                        .to_owned(),
+                ));
+            }
+        }
+        fillin.frequency_hz.clone()
+    } else {
+        search
+            .get("crosstalk_frequency_hz")
+            .map(|value| parse_f64_array_v1(value, "portable.search.crosstalk_frequency_hz"))
+            .transpose()?
+            .unwrap_or_else(|| frequency_hz.clone())
+    };
     let ctle_object = required_object_v1(search, "ctle", branch)?;
     let ctle = CtleParamsV1 {
         ctle_gdc_values: parse_f64_array_key_v1(
@@ -3186,7 +3489,7 @@ fn portable_search_v1(
         &[],
         zero_calibration_noise_v1,
         calibration_sigma_ne_override,
-        None,
+        impulse.td_pulse.as_deref(),
         false,
         &[],
         search
@@ -3956,6 +4259,137 @@ fn load_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> {
     load_impulse_mode_v1(path, false)
 }
 
+/// Load the pinned CSV TDMODE input and immediately carry its typed pulse and
+/// FD fill-in into the existing portable search consumer.  This is deliberately
+/// separate from the legacy one-column CSV reader: TDMODE cannot guess a time
+/// axis or silently discard the first column.
+fn load_td_mode_input_v1(
+    path: &Path,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    samples_per_ui: usize,
+) -> Result<ImpulseInputV1, DirectRunErrorV1> {
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
+    if !extension.eq_ignore_ascii_case("csv") && !extension.eq_ignore_ascii_case("td") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "TDMODE input must be a strict two-column .csv/.td waveform".to_owned(),
+        ));
+    }
+    let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
+    let (time_s, voltage_v) = parse_td_mode_rows_v1(&bytes, path)?;
+    let pulse = td_pulse_input_v1(&time_s, &voltage_v, samples_per_ui)
+        .map_err(|error| DirectRunErrorV1::Channel(format!("TDMODE pulse input: {error:?}")))?;
+    let baud_hz = required_td_scalar_alias_v1(values, &["fb", "baud_hz"], "fb")?;
+    let bessel_order = required_td_scalar_alias_v1(values, &["BTorder", "btorder"], "BTorder")?;
+    if bessel_order < 0.0
+        || bessel_order.fract() != 0.0
+        || bessel_order > MAX_TD_BESSEL_ORDER_V1 as f64
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE control BTorder must be a non-negative integer within the 32-order budget"
+                .to_owned(),
+        ));
+    }
+    let bessel_cutoff = required_td_scalar_alias_v1(
+        values,
+        &["fb_BT_cutoff", "bessel_cutoff_multiplier"],
+        "fb_BT_cutoff",
+    )?;
+    let butterworth_cutoff = required_td_scalar_alias_v1(
+        values,
+        &["fb_BW_cutoff", "butterworth_cutoff_multiplier"],
+        "fb_BW_cutoff",
+    )?;
+    let bessel_enabled = resolved_bool_alias_v1(
+        values,
+        &["Bessel_Thomson", "bessel_thomson"],
+        "Bessel_Thomson",
+    )?;
+    let butterworth_enabled =
+        resolved_bool_alias_v1(values, &["Butterworth", "butterworth"], "Butterworth")?;
+    let fillin = td_fd_fillin_v1(
+        &pulse,
+        baud_hz,
+        samples_per_ui,
+        usize::try_from(bessel_order as u64)
+            .map_err(|_| DirectRunErrorV1::Parameters("TDMODE BTorder is too large".to_owned()))?,
+        bessel_cutoff,
+        bessel_enabled,
+        butterworth_cutoff,
+        butterworth_enabled,
+    )
+    .map_err(|error| DirectRunErrorV1::Channel(format!("TDMODE FD fill-in: {error:?}")))?;
+    validate_impulse_v1(&pulse.impulse)?;
+    Ok(ImpulseInputV1 {
+        values: pulse.impulse.clone(),
+        erl_values: None,
+        erl_time_s: None,
+        source_sha256: sha256_bytes_v1(&bytes),
+        sample_interval_s: pulse.time_s.windows(2).next().map(|pair| pair[1] - pair[0]),
+        source_kind: "td-mode-csv-impulse",
+        already_pulse: false,
+        causality_correction_db: None,
+        truncation_db: None,
+        causality_iterations: None,
+        td_fillin: Some(fillin),
+        td_pulse: Some(pulse.pulse),
+    })
+}
+
+fn parse_td_mode_rows_v1(
+    bytes: &[u8],
+    path: &Path,
+) -> Result<(Vec<f64>, Vec<f64>), DirectRunErrorV1> {
+    let text = std::str::from_utf8(bytes).map_err(|error| DirectRunErrorV1::Input {
+        path: path.display().to_string(),
+        message: format!("TDMODE CSV must be UTF-8: {error}"),
+    })?;
+    let lines = text
+        .lines()
+        .map(|line| line.trim_start_matches('\u{feff}').trim())
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect::<Vec<_>>();
+    let parse = |comma: bool| -> Result<(Vec<f64>, Vec<f64>), DirectRunErrorV1> {
+        let mut time_s = Vec::with_capacity(lines.len());
+        let mut voltage_v = Vec::with_capacity(lines.len());
+        for (line_index, line) in lines.iter().enumerate() {
+            let fields = if comma {
+                line.split(',').map(str::trim).collect::<Vec<_>>()
+            } else {
+                line.split_whitespace().collect::<Vec<_>>()
+            };
+            if fields.len() < 2 {
+                return Err(DirectRunErrorV1::Json(format!(
+                    "TDMODE row {} has fewer than two columns",
+                    line_index + 1
+                )));
+            }
+            let parse_value = |field: &str| match sipi_com::csv_value_v1(field) {
+                sipi_com::CellValueV1::Number(value) if value.is_finite() => Ok(value),
+                _ => Err(DirectRunErrorV1::Json(format!(
+                    "TDMODE row {} contains a non-finite/non-numeric value",
+                    line_index + 1
+                ))),
+            };
+            time_s.push(parse_value(fields[0])?);
+            voltage_v.push(parse_value(fields[1])?);
+        }
+        if time_s.len() < 2 {
+            return Err(DirectRunErrorV1::Json(
+                "TDMODE CSV contains fewer than two numeric rows".to_owned(),
+            ));
+        }
+        Ok((time_s, voltage_v))
+    };
+    parse(false).or_else(|_| parse(true)).map_err(|error| {
+        DirectRunErrorV1::Json(format!(
+            "TDMODE input requires numeric whitespace or comma rows: {error}"
+        ))
+    })
+}
+
 fn touchstone_limits_v1() -> Result<TouchstoneParseLimitsV1, DirectRunErrorV1> {
     let max_file_bytes =
         NonZeroUsize::new(MAX_IMPULSE_FILE_BYTES_V1 as usize).ok_or_else(|| {
@@ -4052,6 +4486,8 @@ fn load_impulse_mode_v1(
             causality_correction_db: Some(result.causality_correction_db),
             truncation_db: Some(result.truncation_db),
             causality_iterations: Some(result.causality_iterations),
+            td_fillin: None,
+            td_pulse: None,
         });
     }
     if extension.eq_ignore_ascii_case("json") {
@@ -4093,6 +4529,8 @@ fn load_impulse_mode_v1(
             causality_correction_db: None,
             truncation_db: None,
             causality_iterations: None,
+            td_fillin: None,
+            td_pulse: None,
         });
     }
     if extension.eq_ignore_ascii_case("csv") || extension.eq_ignore_ascii_case("td") {
@@ -4109,6 +4547,8 @@ fn load_impulse_mode_v1(
             causality_correction_db: None,
             truncation_db: None,
             causality_iterations: None,
+            td_fillin: None,
+            td_pulse: None,
         });
     }
     if bytes.len() % std::mem::size_of::<f64>() != 0 {
@@ -4137,6 +4577,8 @@ fn load_impulse_mode_v1(
         causality_correction_db: None,
         truncation_db: None,
         causality_iterations: None,
+        td_fillin: None,
+        td_pulse: None,
     })
 }
 
@@ -4198,6 +4640,8 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
         causality_correction_db: Some(result.causality_correction_db),
         truncation_db: Some(result.truncation_db),
         causality_iterations: Some(result.causality_iterations),
+        td_fillin: None,
+        td_pulse: None,
     })
 }
 
@@ -4374,6 +4818,8 @@ fn load_frequency_domain_json_v1(
         causality_correction_db: Some(result.causality_correction_db),
         truncation_db: Some(result.truncation_db),
         causality_iterations: Some(result.causality_iterations),
+        td_fillin: None,
+        td_pulse: None,
     })
 }
 
@@ -5526,6 +5972,84 @@ mod tests {
     }
 
     #[test]
+    fn td_mode_loads_typed_fillin_for_the_search_consumer() {
+        let root = temp_root("td-mode-consumer");
+        let path = root.join("channel.csv");
+        let mut csv = String::new();
+        for index in 0..400 {
+            csv.push_str(&format!("{:.15e},{:.15e}\n", index as f64 * 1.0e-12, 1.0));
+        }
+        fs::write(&path, csv).expect("TD CSV");
+        let controls = BTreeMap::from([
+            ("fb".to_owned(), ResolvedDefaultV1::Scalar(1.0e9)),
+            ("BTorder".to_owned(), ResolvedDefaultV1::Scalar(3.0)),
+            ("fb_BT_cutoff".to_owned(), ResolvedDefaultV1::Scalar(0.75)),
+            ("fb_BW_cutoff".to_owned(), ResolvedDefaultV1::Scalar(0.75)),
+            (
+                "Bessel_Thomson".to_owned(),
+                ResolvedDefaultV1::Boolean(false),
+            ),
+            ("Butterworth".to_owned(), ResolvedDefaultV1::Boolean(false)),
+        ]);
+        let input = load_td_mode_input_v1(&path, &controls, 2).expect("typed TDMODE input");
+        assert_eq!(input.source_kind, "td-mode-csv-impulse");
+        assert!(input.td_fillin.is_some());
+        assert_eq!(input.td_pulse.as_ref().map(Vec::len), Some(406));
+        assert_eq!(input.values.len(), 406);
+        let bad = root.join("bad.csv");
+        fs::write(&bad, "time_s,voltage_v\n0.0\n1.0e-12,1.0\n").expect("bad TD CSV");
+        assert!(parse_td_mode_rows_v1(&fs::read(&bad).unwrap(), &bad).is_err());
+        let (time, voltage) = parse_td_mode_rows_v1(b"0 0.1 extra\n1e-12 0.2 extra\n", &path)
+            .expect("whitespace TD rows");
+        assert_eq!(time, vec![0.0, 1.0e-12]);
+        assert_eq!(voltage, vec![0.1, 0.2]);
+        assert!(parse_td_mode_rows_v1(b"not-a-header,1\n1e-12,0.2\n", &path).is_err());
+        let mut oversized_controls = controls.clone();
+        oversized_controls.insert(
+            "BTorder".to_owned(),
+            ResolvedDefaultV1::Scalar((MAX_TD_BESSEL_ORDER_V1 + 1) as f64),
+        );
+        let error = load_td_mode_input_v1(&path, &oversized_controls, 2)
+            .expect_err("oversized BTorder must fail before filter allocation");
+        assert!(
+            matches!(error, DirectRunErrorV1::Parameters(message) if message.contains("32-order budget"))
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn td_mode_crosswalk_rejects_runtime_conflicts_and_stale_transforms() {
+        let valid = json!({
+            "portable": {"search": {
+                "samples_per_ui": 2,
+                "fb_hz": 1.0e9,
+                "candidate": {"samples_per_ui": 2},
+                "receiver": {"fb_hz": 1.0e9, "btorder": 3, "fb_bt_cutoff": 0.75, "fb_bw_cutoff": 0.75},
+                "options": {"receiver": {"bessel_thomson": false, "butterworth": false}}
+            }}
+        });
+        let controls = BTreeMap::from([
+            ("fb".to_owned(), ResolvedDefaultV1::Scalar(1.0e9)),
+            ("BTorder".to_owned(), ResolvedDefaultV1::Scalar(3.0)),
+            ("fb_BT_cutoff".to_owned(), ResolvedDefaultV1::Scalar(0.75)),
+            ("fb_BW_cutoff".to_owned(), ResolvedDefaultV1::Scalar(0.75)),
+            (
+                "Bessel_Thomson".to_owned(),
+                ResolvedDefaultV1::Boolean(false),
+            ),
+            ("Butterworth".to_owned(), ResolvedDefaultV1::Boolean(false)),
+        ]);
+        validate_td_search_crosswalk_v1(&valid, &controls, 2, 1.0e9)
+            .expect("matching TD crosswalk");
+        let mut conflict = valid.clone();
+        conflict["portable"]["search"]["samples_per_ui"] = json!(4);
+        assert!(validate_td_search_crosswalk_v1(&conflict, &controls, 2, 1.0e9).is_err());
+        let mut transformed = valid;
+        transformed["portable"]["equalization"] = json!({"impulses": [[1.0]]});
+        assert!(reject_td_transformed_channel_v1(&transformed).is_err());
+    }
+
+    #[test]
     fn artifact_writer_requires_overwrite_and_preserves_result_semantics() {
         let root = temp_root("writer");
         let result = json!({
@@ -6041,6 +6565,139 @@ mod tests {
         assert_ne!(
             sigma_zero_search["fom_db"], sigma_high_search["fom_db"],
             "search FOM evaluator must consume the per-sigma noise"
+        );
+        let mut td_values = values.clone();
+        td_values["parameters"]["samples_per_ui"] = json!(10.0);
+        td_values["options"] = json!({
+            "TDMODE": true,
+            "fb": 26.5625e9,
+            "BTorder": 3,
+            "fb_BT_cutoff": 0.75,
+            "fb_BW_cutoff": 0.75,
+            "Bessel_Thomson": false,
+            "Butterworth": false
+        });
+        td_values["portable"]["search"]
+            .as_object_mut()
+            .expect("search object")
+            .remove("frequency_hz");
+        let td_path = root.join("td-channel.csv");
+        let mut td_csv = String::new();
+        for index in 0..2200 {
+            let voltage = if index < 5 {
+                0.0
+            } else {
+                0.02 * (-((index - 5) as f64) / 32.0).exp()
+            };
+            td_csv.push_str(&format!(
+                "{:.15e},{:.15e}\n",
+                index as f64 * 1.0e-12,
+                voltage
+            ));
+        }
+        fs::write(&td_path, td_csv).expect("TDMODE channel");
+        fs::write(&config, serde_json::to_vec(&td_values).unwrap()).unwrap();
+        let td_report = run_com_v1(&DirectRunRequestV1::new(
+            &config,
+            &td_path,
+            root.join("td-out"),
+        ))
+        .expect("TDMODE end-to-end search");
+        let td_search = &td_report.result["cases"][0]["diagnostics"]["portable_branches"]["search"];
+        assert_eq!(
+            td_search["td_input"]["consumer"],
+            "search_r480_nonmmse_no_xtalk_with_sigma_v1"
+        );
+        assert_ne!(
+            td_search["fom_db"], search["fom_db"],
+            "TDMODE pulse/window must alter the downstream search FOM"
+        );
+        let mut td_conflict = td_values.clone();
+        td_conflict["portable"]["search"]["samples_per_ui"] = json!(4);
+        fs::write(&config, serde_json::to_vec(&td_conflict).unwrap()).unwrap();
+        let error = run_com_v1(&DirectRunRequestV1::new(
+            &config,
+            &td_path,
+            root.join("td-conflict-out"),
+        ))
+        .expect_err("TDMODE/search UI conflict");
+        assert!(
+            matches!(error, DirectRunErrorV1::Parameters(message) if message.contains("samples_per_ui conflicts"))
+        );
+        fs::write(&config, serde_json::to_vec(&td_values).unwrap()).unwrap();
+        let mut td_xtalk_request =
+            DirectRunRequestV1::new(&config, &td_path, root.join("td-xtalk-out"));
+        td_xtalk_request.fext.push(td_path.clone());
+        let error = run_com_v1(&td_xtalk_request).expect_err("TDMODE FEXT scope");
+        assert!(
+            matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("THRU/no-crosstalk"))
+        );
+        let mut td_package = td_values.clone();
+        td_package["package_case"] = json!({"fext": [[0.0, 1.0]]});
+        fs::write(&config, serde_json::to_vec(&td_package).unwrap()).unwrap();
+        let error = run_com_v1(&DirectRunRequestV1::new(
+            &config,
+            &td_path,
+            root.join("td-package-xtalk-out"),
+        ))
+        .expect_err("TDMODE package_case FEXT scope");
+        assert!(
+            matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("package_case FEXT/NEXT"))
+        );
+        let mut td_stale = td_values;
+        td_stale["portable"]["equalization"] = json!({"impulses": [[1.0]]});
+        fs::write(&config, serde_json::to_vec(&td_stale).unwrap()).unwrap();
+        let error = run_com_v1(&DirectRunRequestV1::new(
+            &config,
+            &td_path,
+            root.join("td-stale-out"),
+        ))
+        .expect_err("stale transformed TDMODE input");
+        assert!(
+            matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("stale"))
+        );
+        let td_frequency = parse_f64_array_v1(
+            &values["portable"]["search"]["frequency_hz"],
+            "test.frequency_hz",
+        )
+        .expect("test frequency axis");
+        let zero = Complex64::try_new(0.0, 0.0).expect("finite complex zero");
+        let td_fillin = TdFrequencyFillinV1 {
+            frequency_hz: td_frequency.clone(),
+            noise_frequency_hz: td_frequency.clone(),
+            insertion_loss: td_frequency
+                .iter()
+                .map(|_| Complex64::try_new(1.0, 0.0).expect("finite complex gain"))
+                .collect(),
+            sdd: td_frequency
+                .iter()
+                .map(|_| [zero, zero, zero, zero])
+                .collect(),
+            final_voltage_v: 1.0,
+        };
+        let mut td_probe_input = probe_input.clone();
+        td_probe_input.td_fillin = Some(td_fillin);
+        td_probe_input.td_pulse = Some(impulse.iter().map(|value| value * 0.5).collect());
+        let mut td_document = probe_loaded.document.clone();
+        td_document["portable"]["search"]
+            .as_object_mut()
+            .expect("search object")
+            .remove("frequency_hz");
+        let td_branch = portable_branch_result_with_sigma_v1(
+            &td_document,
+            &td_probe_input,
+            None,
+            Some(&probe_controls),
+            Some(0.0),
+        )
+        .expect("TDMODE search consumer");
+        assert_eq!(
+            td_branch.diagnostics["search"]["td_input"]["consumer"],
+            "search_r480_nonmmse_no_xtalk_with_sigma_v1"
+        );
+        assert_eq!(
+            td_branch.diagnostics["search"]["td_input"]["peak_window_pulse_sha256"],
+            sha256_f64_v1(td_probe_input.td_pulse.as_ref().expect("TD pulse"))
         );
         let raw_search_digest = search["search_input_sha256"]
             .as_str()

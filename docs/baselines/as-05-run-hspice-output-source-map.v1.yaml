@@ -1,0 +1,23 @@
+schema: sipi.as-05-run-hspice-output-source-map.v1
+status: additive_direct_port_inventory
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_git_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_byte_count: 1067
+  license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - upstream: src/agent_spice/hspice/measure.py
+    upstream_git_blob_sha1: 215790e18f5cc013fbe51791086e3bce362a889a
+    upstream_sha256: cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4
+    role: normalize_outputs probe tokens and measurement operation/target records
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/lib.rs
+  public_entry: run_hspice
+  portable_branch: normalized-hspice-output-contract
+  external_runtime_boundary: solver execution and native result production

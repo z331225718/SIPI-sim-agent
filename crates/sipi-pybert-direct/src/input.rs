@@ -418,10 +418,7 @@ impl CtleConfigV1 {
         match (self.frequency_step_hz, self.frequency_max_hz) {
             (None, None) if self.valid_imported_impulse() => Ok(()),
             (Some(step), Some(maximum))
-                if step.is_finite_positive()
-                    && maximum.is_finite_positive()
-                    && maximum.0 >= step.0
-                    && ((maximum.0 / step.0).round() - maximum.0 / step.0).abs() <= 1.0e-10 =>
+                if step.is_finite_positive() && maximum.is_finite_positive() =>
             {
                 if self.valid_imported_impulse() {
                     Ok(())

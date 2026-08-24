@@ -1073,13 +1073,23 @@ pub fn run_hspice_project(
 }
 
 fn output_probes(text: &str) -> Vec<String> {
-    logical_lines(text)
-        .into_iter()
-        .filter(|line| {
-            let lower = line.to_ascii_lowercase();
-            lower.starts_with(".probe ") || lower.starts_with(".print ")
-        })
-        .collect()
+    let mut probes = Vec::new();
+    for raw in text.lines() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with('*') {
+            continue;
+        }
+        let parts = line.split_whitespace().collect::<Vec<_>>();
+        let Some(directive) = parts.first() else {
+            continue;
+        };
+        if matches!(directive.to_ascii_lowercase().as_str(), ".probe" | ".print")
+            && parts.len() >= 3
+        {
+            probes.extend(parts[2..].iter().map(|value| (*value).to_owned()));
+        }
+    }
+    probes
 }
 
 fn stable_source_path(deck_path: &Path, stem: &str) -> String {
@@ -1098,14 +1108,52 @@ fn stable_source_path(deck_path: &Path, stem: &str) -> String {
     if value.is_empty() { fallback } else { value }
 }
 
-fn output_measures(text: &str) -> Vec<String> {
-    logical_lines(text)
-        .into_iter()
-        .filter(|line| {
-            let lower = line.to_ascii_lowercase();
-            lower.starts_with(".measure ") || lower.starts_with(".meas ")
-        })
-        .collect()
+fn output_measures(text: &str) -> Vec<serde_json::Value> {
+    let mut measures = Vec::new();
+    for raw in text.lines() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with('*') {
+            continue;
+        }
+        let parts = line.split_whitespace().collect::<Vec<_>>();
+        let Some(directive) = parts.first() else {
+            continue;
+        };
+        if !matches!(
+            directive.to_ascii_lowercase().as_str(),
+            ".measure" | ".meas"
+        ) || parts.len() < 4
+        {
+            continue;
+        }
+        let operation_token = parts[3];
+        let mut operation = operation_token.to_ascii_lowercase();
+        let target = if operation.starts_with("param=") {
+            operation = "param".to_owned();
+            operation_token
+                .split_once('=')
+                .map(|(_, value)| value.to_owned())
+        } else if operation == "param" {
+            if parts.len() >= 6 && parts[4] == "=" {
+                Some(parts[5].to_owned())
+            } else {
+                parts.get(4).map(|value| (*value).to_owned())
+            }
+        } else {
+            parts.get(4).map(|value| (*value).to_owned())
+        };
+        let Some(target) = target else {
+            continue;
+        };
+        measures.push(json!({
+            "analysis": parts[1].to_ascii_lowercase(),
+            "name": parts[2],
+            "operation": operation,
+            "target": target,
+            "raw": line,
+        }));
+    }
+    measures
 }
 
 fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
@@ -2098,6 +2146,34 @@ mod tests {
         );
         assert!(admission.cases[0].deck_text.contains(".print tran v(out)"));
         assert!(!admission.cases[0].deck_text.contains("post=2"));
+    }
+
+    #[test]
+    fn normalized_outputs_match_pinned_hspice_measure_contract() {
+        let source = concat!(
+            ".probe tran v(out) i(v1)\n",
+            ".print ac vm(out)\n",
+            ".measure tran m max v(out) from=1n to=2n\n",
+            ".meas op p PARAM='v(out)'\n",
+            ".measure op q PARAM = sqrt(v(out))\n",
+        );
+        assert_eq!(
+            output_probes(source),
+            vec![
+                "v(out)".to_owned(),
+                "i(v1)".to_owned(),
+                "vm(out)".to_owned()
+            ]
+        );
+        let measures = output_measures(source);
+        assert_eq!(measures.len(), 3);
+        assert_eq!(measures[0]["analysis"], "tran");
+        assert_eq!(measures[0]["name"], "m");
+        assert_eq!(measures[0]["operation"], "max");
+        assert_eq!(measures[0]["target"], "v(out)");
+        assert_eq!(measures[1]["operation"], "param");
+        assert_eq!(measures[1]["target"], "'v(out)'");
+        assert_eq!(measures[2]["target"], "sqrt(v(out))");
     }
 
     #[test]
