@@ -63,6 +63,7 @@ mod rxffe_search_v1;
 mod sampled_signal_pdf_v1;
 mod search_loop_v1;
 mod search_support_v1;
+mod td_input_v1;
 mod tdiln_v1;
 mod tx_ffe_v1;
 mod value_consumption_v1;
@@ -246,6 +247,11 @@ pub use search_support_v1::{
     CtleParamsV1, SEARCH_SUPPORT_POLICY_V1, SearchErrorV1, apply_ctle_candidate_v1,
     ctle_frequency_response_v1, high_pass_candidates_v1, indexed_config_value_v1,
     qualified_ctle_pair_v1, selected_accm_rms_v1, selected_sndr_v1, system_noise_response_v1,
+};
+pub use td_input_v1::{
+    MAX_TD_FREQUENCY_POINTS_V1, MAX_TD_INPUT_SAMPLES_V1, MAX_TD_WORK_ELEMENTS_V1,
+    TD_INPUT_POLICY_V1, TdFrequencyFillinV1, TdInputErrorV1, TdPulseInputV1, td_fd_fillin_v1,
+    td_pulse_input_v1, validate_td_pulse_input_v1,
 };
 pub use tdiln_v1::{TDILN_POLICY_V1, TdIlnErrorV1, TdIlnResultV1, r480_tdiln_v1};
 pub use tx_ffe_v1::{
