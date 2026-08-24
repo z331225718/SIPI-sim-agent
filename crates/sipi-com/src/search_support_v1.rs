@@ -61,6 +61,26 @@ pub fn high_pass_candidates_v1(
         .collect())
 }
 
+/// Port of Agent-COM's `_selected_package_case`.
+///
+/// `pkg_len_select` stores one-based workbook package-row selections while
+/// `package_case_index` is the zero-based outer-loop ordinal.  Both candidate
+/// and receiver-noise consumers use this single checked conversion so they
+/// cannot silently select different package rows.
+pub fn selected_package_case_v1(
+    pkg_len_select: &[i64],
+    package_case_index: usize,
+) -> Result<usize, SearchErrorV1> {
+    if pkg_len_select.is_empty() || package_case_index >= pkg_len_select.len() {
+        return Err(SearchErrorV1::PackageCaseIndex);
+    }
+    let selected = pkg_len_select[package_case_index];
+    if selected < 1 {
+        return Err(SearchErrorV1::SelectedValue);
+    }
+    usize::try_from(selected - 1).map_err(|_| SearchErrorV1::SelectedValue)
+}
+
 /// Port of `_qualified_ctle_pair` (CL120d G_Qual/G2_Qual matrix).
 pub fn qualified_ctle_pair_v1(
     ctle_type: &str,
@@ -123,17 +143,17 @@ pub fn selected_sndr_v1(
     package_case_index: usize,
 ) -> Result<f64, SearchErrorV1> {
     let index = if wc_portz {
-        tx_rd_sel - 1
+        let zero_based = tx_rd_sel
+            .checked_sub(1)
+            .ok_or(SearchErrorV1::SelectedValue)?;
+        usize::try_from(zero_based).map_err(|_| SearchErrorV1::SelectedValue)?
     } else {
-        if package_case_index >= pkg_len_select.len() {
-            return Err(SearchErrorV1::PackageCaseIndex);
-        }
-        pkg_len_select[package_case_index] - 1
+        selected_package_case_v1(pkg_len_select, package_case_index)?
     };
-    if index < 0 || index as usize >= sndr.len() {
+    if index >= sndr.len() {
         return Err(SearchErrorV1::SelectedValue);
     }
-    Ok(sndr[index as usize])
+    Ok(sndr[index])
 }
 
 /// Port of `_selected_accm_rms`.
@@ -142,17 +162,11 @@ pub fn selected_accm_rms_v1(
     pkg_len_select: &[i64],
     package_case_index: usize,
 ) -> Result<f64, SearchErrorV1> {
-    if package_case_index >= pkg_len_select.len() {
-        return Err(SearchErrorV1::PackageCaseIndex);
-    }
-    let source_index = pkg_len_select[package_case_index] - 1;
-    if source_index < 0
-        || source_index as usize >= ac_cm_rms.len()
-        || ac_cm_rms[source_index as usize] < 0.0
-    {
+    let source_index = selected_package_case_v1(pkg_len_select, package_case_index)?;
+    if source_index >= ac_cm_rms.len() || ac_cm_rms[source_index] < 0.0 {
         return Err(SearchErrorV1::SelectedValue);
     }
-    Ok(ac_cm_rms[source_index as usize])
+    Ok(ac_cm_rms[source_index])
 }
 
 /// Port of `_r480_system_noise_response` (normalized sinc squared).
@@ -373,10 +387,20 @@ mod tests {
 
     #[test]
     fn selected_sndr_and_accm() {
+        assert_eq!(selected_package_case_v1(&[2, 3], 0).expect("package"), 1);
+        assert_eq!(selected_package_case_v1(&[2, 3], 1).expect("package"), 2);
+        assert!(selected_package_case_v1(&[], 0).is_err());
+        assert!(selected_package_case_v1(&[0], 0).is_err());
+        assert!(selected_package_case_v1(&[1], 1).is_err());
+        assert_eq!(
+            selected_package_case_v1(&vec![1; 4097], 0).expect("long package vector"),
+            0
+        );
         let sndr = selected_sndr_v1(&[30.0, 28.0, 32.0], false, 1, &[2, 3], 0).expect("sndr");
         assert_eq!(sndr, 28.0);
         let wc = selected_sndr_v1(&[30.0, 28.0, 32.0], true, 3, &[1], 0).expect("wc");
         assert_eq!(wc, 32.0);
+        assert!(selected_sndr_v1(&[30.0], true, i64::MIN, &[1], 0).is_err());
         assert!(selected_sndr_v1(&[30.0], true, 5, &[1], 0).is_err());
         let accm = selected_accm_rms_v1(&[0.1, 0.2], &[2], 0).expect("accm");
         assert_eq!(accm, 0.2);
