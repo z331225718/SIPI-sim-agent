@@ -58,7 +58,12 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
         if document.get("reproducibility") != {"binary_bit_reproducible": False}:
             blockers.append(f"{label} binary reproducibility claim drift")
         harness = document.get("harness")
-        if not isinstance(harness, dict) or harness.get("source_mode") != "content_addressed_working_tree_files":
+        # This additive archive gate must not inherit the historical
+        # working-tree form: that would let a caller change the helper after
+        # the archive was selected. Historical v1 reports remain readable by
+        # their historical verifiers, but this aggregate only accepts archive
+        # custody.
+        if not isinstance(harness, dict) or harness.get("source_mode") != "git_archive_at_immutable_commit":
             blockers.append(f"{label} content-addressed harness is missing")
         else:
             for key in ("runner", "custody_runner_helper"):
