@@ -10,8 +10,8 @@ import re
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-REPORT_SCHEMA = "sipi.com.workbook-accm-replay-prep.v2"
-AGGREGATE_SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v2"
+REPORT_SCHEMA = "sipi.com.workbook-accm-replay-prep.v3"
+AGGREGATE_SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v3"
 CANDIDATE = {"commit": "0f38e3e796b2312f476c6c5a181dd83d2752bb43", "tree": "241d86cc898616aa656f50ac47536fe169098115", "archive": {"command": "git -c core.autocrlf=false archive --format=tar <candidate>", "exit": 0, "bytes": 44492800, "sha256": "9d627a57821db2f66e522eedacbefbca06a11eaa4e5b5f4c476b6ea95590cb01"}}
 UPSTREAM = {"commit": "5272ffe74702cd585054d975559b06f8afae7b6e", "tree": "7094ab6e84989b218730c52432c70da10261f8ea", "runtime": "not_executed_external_only"}
 FIXTURE_KEYS = ("workbook", "s4p")
@@ -29,6 +29,8 @@ EXPECTED_SOURCE_INVENTORY = {
 EXPECTED_FIXTURES = {"workbook": {"path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx", "git_blob_sha1": "22b633b6092b4b0de0ca89273515329b362eabae", "bytes": 67087, "sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925"}, "s4p": {"path": "fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p", "git_blob_sha1": "a1fe8618043b31f63dfb24454ac1d296000010c0", "bytes": 6457063, "sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"}}
 REPORT_KEYS = {"schema", "run_id", "nonce", "candidate", "upstream", "fixtures", "toolchain", "build", "execution", "controls", "runs", "parity", "non_claims"}
 RESULT_KEYS = {"schema_version", "source_revision", "profile", "cases", "provenance", "warnings", "timings_s", "input_manifest", "report_manifest"}
+ENV_KEYS = ("SystemRoot", "ComSpec", "PATHEXT", "WINDIR", "PATH", "LIB", "LIBPATH", "INCLUDE", "VCINSTALLDIR", "VCToolsInstallDir", "WindowsSdkDir", "WindowsSDKVersion", "UCRTVersion", "UniversalCRTSdkDir", "TEMP", "TMP", "CARGO_HOME", "RUSTC", "CARGO_BUILD_RUSTC", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_RUSTC_WRAPPER", "CARGO_INCREMENTAL", "CARGO_NET_OFFLINE", "CL", "LINK")
+ENV_ROLES = {"SystemRoot": "system_root", "ComSpec": "cmd", "PATHEXT": "system_path_ext", "WINDIR": "system_root", "TEMP": "fresh_run_temp", "TMP": "fresh_run_temp", "CARGO_HOME": "cargo_home", "RUSTC": "resolved_tool", "CARGO_BUILD_RUSTC": "resolved_tool", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "resolved_tool", "RUSTC_WRAPPER": "cleared_wrapper", "RUSTC_WORKSPACE_WRAPPER": "cleared_wrapper", "CARGO_BUILD_RUSTC_WRAPPER": "cleared_wrapper", "CARGO_INCREMENTAL": "incremental_zero", "CARGO_NET_OFFLINE": "offline", "CL": "cleared_compiler_override", "LINK": "cleared_linker_override"}
 
 
 def sha(path: Path) -> str:
@@ -43,6 +45,8 @@ def hex64(value: Any, label: str) -> None:
 def path_free(value: Any) -> None:
     if isinstance(value, str):
         if value == "<abs-path>":
+            return
+        if value in {"/Bv", "/?", "/nologo", "/d", "/c"}:
             return
         if "<abs-path>" in value:
             raise ValueError("embedded redaction token")
@@ -116,32 +120,74 @@ def verify_report(path: Path) -> dict[str, Any]:
         if item != expected_fixture:
             raise ValueError(f"{key} fixture identity drift")
     toolchain = value["toolchain"]
-    if set(toolchain) != {"pre", "post"} or toolchain["pre"] != toolchain["post"]:
+    if set(toolchain) != {"pre", "post", "vcvars64_pre", "vcvars64_post", "native_pre", "native_post"} or toolchain["pre"] != toolchain["post"] or toolchain["vcvars64_pre"] != toolchain["vcvars64_post"] or toolchain["native_pre"] != toolchain["native_post"]:
         raise ValueError("toolchain role drift")
-    if set(toolchain["pre"]) != {"cargo", "rustc", "linker"}:
+    if set(toolchain["pre"]) != {"cargo", "rustc", "linker", "cmd"}:
         raise ValueError("toolchain roles drift")
     for role, item in toolchain["pre"].items():
         exact(item, {"role", "basename", "file_sha256", "version_args", "version_output_sha256", "version_exit", "timeout_s", "path_redacted"}, f"{role} identity")
         if item["role"] != role or not isinstance(item["basename"], str) or Path(item["basename"]).name != item["basename"] or item["version_exit"] != 0 or item["timeout_s"] != 15 or item["path_redacted"] is not True:
             raise ValueError("tool identity invalid")
+        if role == "cmd" and item["basename"].lower() != "cmd.exe":
+            raise ValueError("cmd identity must be cmd.exe")
         hex64(item["file_sha256"], "tool file sha")
         hex64(item["version_output_sha256"], "tool version sha")
-        expected_args = ["-flavor", "link", "--version"] if role == "linker" and item["basename"].lower() == "rust-lld.exe" else ["--version"]
+        expected_args = ["-flavor", "link", "--version"] if role == "linker" and item["basename"].lower() == "rust-lld.exe" else ["/d", "/c", "ver"] if role == "cmd" else ["--version"]
         if item["version_args"] != expected_args:
             raise ValueError("tool version probe args drift")
+    vcvars = toolchain["vcvars64_pre"]
+    exact(vcvars, {"role", "basename", "bytes", "file_sha256", "path_redacted"}, "vcvars64 identity")
+    if vcvars["role"] != "vcvars64" or vcvars["basename"].lower() != "vcvars64.bat" or not isinstance(vcvars["bytes"], int) or isinstance(vcvars["bytes"], bool) or vcvars["bytes"] <= 0 or vcvars["path_redacted"] is not True:
+        raise ValueError("vcvars64 identity invalid")
+    hex64(vcvars["file_sha256"], "vcvars64 file sha")
+    for group_name in ("native_pre", "native_post"):
+        group = toolchain[group_name]
+        if not isinstance(group, dict) or set(group) != {"cl", "lib", "rc"}:
+            raise ValueError("native tool role drift")
+        for role, item in group.items():
+            exact(item, {"role", "basename", "file_sha256", "version_args", "version_output_sha256", "version_exit", "timeout_s", "path_redacted"}, f"native {role} identity")
+            expected_args = ["/nologo", "/?"] if role == "cl" else ["/Bv"] if role == "lib" else ["/?"]
+            if item["role"] != role or item["basename"].lower() != f"{role}.exe" or item["version_args"] != expected_args or item["version_exit"] != 0 or item["timeout_s"] != 15 or item["path_redacted"] is not True:
+                raise ValueError("native tool identity invalid")
+            hex64(item["file_sha256"], "native tool file sha")
+            hex64(item["version_output_sha256"], "native tool version sha")
     exact(value["build"], {"command", "exit", "stdout_sha256", "stderr_sha256", "timeout_s", "env_policy", "env_receipt"}, "build")
-    if not isinstance(value["build"]["exit"], int) or isinstance(value["build"]["exit"], bool) or not 0 <= value["build"]["exit"] <= 255 or value["build"]["timeout_s"] != 900 or "offline" not in value["build"]["command"] or value["build"]["env_policy"] != "explicit_rustc_wrappers_cleared_offline_incremental_zero":
+    if not isinstance(value["build"]["exit"], int) or isinstance(value["build"]["exit"], bool) or not 0 <= value["build"]["exit"] <= 255 or value["build"]["timeout_s"] != 900 or "offline" not in value["build"]["command"] or value["build"]["env_policy"] != "vcvars64_allowlist_rustc_wrappers_cleared_offline_incremental_zero":
         raise ValueError("build policy drift")
     hex64(value["build"]["stdout_sha256"], "build stdout sha")
     hex64(value["build"]["stderr_sha256"], "build stderr sha")
     receipt = value["build"]["env_receipt"]
-    if set(receipt) != {"PATH", "LIB", "INCLUDE", "CL", "LINK", "RUSTC", "CARGO_BUILD_RUSTC", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER"}:
+    if set(receipt) != set(ENV_KEYS):
         raise ValueError("native environment receipt drift")
-    for item in receipt.values():
-        exact(item, {"entry_basenames", "value_sha256", "path_redacted"}, "native environment receipt")
-        if not isinstance(item["entry_basenames"], list) or item["path_redacted"] is not True:
+    for key, item in receipt.items():
+        exact(item, {"role", "exists", "entry_basenames", "value_sha256", "path_redacted", "relation"}, "native environment receipt")
+        expected_role = ENV_ROLES.get(key, "native_environment")
+        if item["role"] != expected_role or item["exists"] is not True or not isinstance(item["entry_basenames"], list) or any(not isinstance(entry, str) or Path(entry).name != entry for entry in item["entry_basenames"]) or item["path_redacted"] is not True:
             raise ValueError("native environment receipt invalid")
         hex64(item["value_sha256"], "environment sha")
+        expected_relation = "system_root" if key in {"SystemRoot", "WINDIR"} else "system32_under_system_root" if key == "ComSpec" else None
+        if item["relation"] != expected_relation:
+            raise ValueError("native environment relation drift")
+    if [entry.casefold() for entry in receipt["SystemRoot"]["entry_basenames"]] != ["windows"] or [entry.casefold() for entry in receipt["WINDIR"]["entry_basenames"]] != ["windows"]:
+        raise ValueError("system root receipt drift")
+    if receipt["SystemRoot"]["value_sha256"] != receipt["WINDIR"]["value_sha256"]:
+        raise ValueError("system root value drift")
+    if receipt["ComSpec"]["entry_basenames"] != ["cmd.exe"] or receipt["ComSpec"]["relation"] != "system32_under_system_root":
+        raise ValueError("cmd environment receipt drift")
+    if receipt["CARGO_HOME"]["entry_basenames"] != [".cargo"]:
+        raise ValueError("cargo home receipt drift")
+    if receipt["RUSTC"]["entry_basenames"] != ["rustc.exe"] or receipt["CARGO_BUILD_RUSTC"]["entry_basenames"] != ["rustc.exe"] or receipt["RUSTC"]["value_sha256"] != receipt["CARGO_BUILD_RUSTC"]["value_sha256"]:
+        raise ValueError("rustc environment crosswalk drift")
+    if receipt["CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER"]["entry_basenames"] != ["rust-lld.exe"]:
+        raise ValueError("linker environment crosswalk drift")
+    for key in ("TEMP", "TMP"):
+        if receipt[key]["entry_basenames"] != ["<fresh-run-temp>"] or receipt[key]["value_sha256"] != hashlib.sha256(b"<fresh-run-temp>").hexdigest():
+            raise ValueError("fresh temp receipt drift")
+    for key in ("RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_RUSTC_WRAPPER", "CL", "LINK"):
+        if receipt[key]["entry_basenames"] or receipt[key]["value_sha256"] != hashlib.sha256(b"").hexdigest():
+            raise ValueError("cleared override receipt drift")
+    if receipt["CARGO_INCREMENTAL"]["entry_basenames"] != ["0"] or receipt["CARGO_NET_OFFLINE"]["entry_basenames"] != ["true"] or receipt["CARGO_INCREMENTAL"]["value_sha256"] != hashlib.sha256(b"0").hexdigest() or receipt["CARGO_NET_OFFLINE"]["value_sha256"] != hashlib.sha256(b"true").hexdigest():
+        raise ValueError("cargo policy receipt drift")
     execution = value["execution"]
     exact(execution, {"runtime_timeout_s", "source_inventory_before", "source_inventory_after", "source_inventory_equal"}, "execution")
     if execution["runtime_timeout_s"] != 180 or execution["source_inventory_before"] != execution["source_inventory_after"] or execution["source_inventory_equal"] is not True:

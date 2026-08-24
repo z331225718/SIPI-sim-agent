@@ -12,7 +12,7 @@ try:
 except ImportError:
     from verify_com_workbook_accm_replay_v1 import stable_candidate, verify_report
 
-SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v2"
+SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v3"
 
 
 def digest(path: Path) -> str:

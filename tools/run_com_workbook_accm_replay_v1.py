@@ -22,22 +22,58 @@ CANDIDATE_ARCHIVE_SHA256 = "9d627a57821db2f66e522eedacbefbca06a11eaa4e5b5f4c476b
 CANDIDATE_ARCHIVE_BYTES = 44492800
 UPSTREAM_COMMIT = "5272ffe74702cd585054d975559b06f8afae7b6e"
 UPSTREAM_TREE = "7094ab6e84989b218730c52432c70da10261f8ea"
-SCHEMA = "sipi.com.workbook-accm-replay-prep.v2"
+SCHEMA = "sipi.com.workbook-accm-replay-prep.v3"
 RUN_TIMEOUT_S = 180
 BUILD_TIMEOUT_S = 900
 IDENTITY_TIMEOUT_S = 15
 MAX_RESULT_BYTES = 64 * 1024 * 1024
 MAX_CAPTURE_BYTES = 4 * 1024 * 1024
+MAX_IDENTITY_FILE_BYTES = 256 * 1024 * 1024
 RESULT_KEYS = {"schema_version", "source_revision", "profile", "cases", "provenance", "warnings", "timings_s", "input_manifest", "report_manifest"}
 FIXTURES = {
     "workbook": {"path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx", "git_blob_sha1": "22b633b6092b4b0de0ca89273515329b362eabae", "bytes": 67087, "sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925"},
     "s4p": {"path": "fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p", "git_blob_sha1": "a1fe8618043b31f63dfb24454ac1d296000010c0", "bytes": 6457063, "sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"},
 }
 SOURCE_PATHS = ("src/agent_com/api.py", "src/agent_com/_orchestration.py", "src/agent_com/network/package.py", "src/agent_com/network/two_port.py", "src/agent_com/signal/fd_to_td.py", "src/agent_com/equalization/search.py")
+NATIVE_ENV_KEYS = ("PATH", "LIB", "LIBPATH", "INCLUDE", "VCINSTALLDIR", "VCToolsInstallDir", "WindowsSdkDir", "WindowsSDKVersion", "UCRTVersion", "UniversalCRTSdkDir")
+BUILD_ENV_KEYS = ("SystemRoot", "ComSpec", "PATHEXT", "WINDIR", *NATIVE_ENV_KEYS, "TEMP", "TMP", "CARGO_HOME", "RUSTC", "CARGO_BUILD_RUSTC", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_RUSTC_WRAPPER", "CARGO_INCREMENTAL", "CARGO_NET_OFFLINE", "CL", "LINK")
+NATIVE_TOOL_NAMES = {"cl": "cl.exe", "lib": "lib.exe", "rc": "rc.exe"}
+REJECTED_VCVARS_CHARS = set('%!"&|<>^\r\n')
+
+
+def canonicalize_environment(environment: dict[str, str]) -> dict[str, str]:
+    """Normalize Windows' case-insensitive environment names and reject aliases."""
+    known = {key.casefold(): key for key in BUILD_ENV_KEYS}
+    result: dict[str, str] = {}
+    seen: set[str] = set()
+    for raw_key, value in environment.items():
+        if not isinstance(raw_key, str) or not isinstance(value, str):
+            raise ValueError("environment entries must be strings")
+        folded = raw_key.casefold()
+        if folded in seen:
+            raise ValueError(f"duplicate case-insensitive environment key: {raw_key}")
+        seen.add(folded)
+        result[known.get(folded, raw_key)] = value
+    return result
+
+
+def canonical_env_lookup(environment: dict[str, str], key: str) -> str | None:
+    return canonicalize_environment(environment).get(key)
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def bounded_file_bytes(path: Path) -> bytes:
+    stat_result = path.stat()
+    if stat_result.st_size < 0 or stat_result.st_size > MAX_IDENTITY_FILE_BYTES:
+        raise ValueError("identity file exceeds bounded size")
+    with path.open("rb") as stream:
+        payload = stream.read(MAX_IDENTITY_FILE_BYTES + 1)
+    if len(payload) != stat_result.st_size or len(payload) > MAX_IDENTITY_FILE_BYTES:
+        raise ValueError("identity file changed while reading")
+    return payload
 
 
 def redact(text: str) -> str:
@@ -120,14 +156,116 @@ def candidate_inventory(root: Path) -> dict[str, Any]:
     return result
 
 
+def resolve_regular(path: Path, role: str) -> Path:
+    if not path.is_absolute() or path.is_symlink() or not path.is_file():
+        raise ValueError(f"{role} must be an absolute regular file")
+    resolved = path.resolve()
+    if resolved.is_symlink() or not resolved.is_file():
+        raise ValueError(f"{role} resolved to a non-regular file")
+    return resolved
+
+
 def tool_identity(path: Path, role: str) -> dict[str, Any]:
+    path = resolve_regular(path, role)
     if not path.is_file() or path.is_symlink():
         raise ValueError(f"invalid {role} executable")
-    version_args = ["-flavor", "link", "--version"] if role == "linker" and path.name.lower() == "rust-lld.exe" else ["--version"]
+    version_args = ["-flavor", "link", "--version"] if role == "linker" and path.name.lower() == "rust-lld.exe" else ["/d", "/c", "ver"] if role == "cmd" else ["--version"]
     completed = subprocess.run([str(path), *version_args], capture_output=True, text=True, timeout=IDENTITY_TIMEOUT_S, check=False)
     if completed.returncode != 0:
         raise RuntimeError(f"{role} version probe failed")
-    return {"role": role, "basename": path.name, "file_sha256": sha256(path.read_bytes()), "version_args": version_args, "version_output_sha256": sha256((completed.stdout + completed.stderr).encode()), "version_exit": completed.returncode, "timeout_s": IDENTITY_TIMEOUT_S, "path_redacted": True}
+    return {"role": role, "basename": path.name, "file_sha256": sha256(bounded_file_bytes(path)), "version_args": version_args, "version_output_sha256": sha256((completed.stdout + completed.stderr).encode()), "version_exit": completed.returncode, "timeout_s": IDENTITY_TIMEOUT_S, "path_redacted": True}
+
+
+def vcvars_identity(path: Path) -> dict[str, Any]:
+    if not path.is_absolute() or path.name.lower() != "vcvars64.bat" or path.is_symlink() or any(char in str(path) for char in REJECTED_VCVARS_CHARS):
+        raise ValueError("vcvars64 must be an absolute regular vcvars64.bat")
+    resolved = path.resolve()
+    if resolved.name.lower() != "vcvars64.bat" or not resolved.is_file():
+        raise ValueError("vcvars64 must be an existing regular vcvars64.bat")
+    payload = bounded_file_bytes(resolved)
+    return {"role": "vcvars64", "basename": resolved.name, "bytes": len(payload), "file_sha256": sha256(payload), "path_redacted": True}
+
+
+def _parse_vcvars_output(stdout: str, marker: str) -> dict[str, str]:
+    if stdout.count(marker) != 1:
+        raise ValueError("vcvars marker missing or duplicated")
+    stdout = stdout.split(marker, 1)[1]
+    result: dict[str, str] = {}
+    for raw in stdout.splitlines():
+        if not raw.strip():
+            continue
+        if "=" not in raw:
+            raise ValueError("vcvars output contains a malformed line")
+        key, value = raw.split("=", 1)
+        canonical = next((item for item in NATIVE_ENV_KEYS if item.lower() == key.lower()), None)
+        if canonical is not None:
+            if canonical in result:
+                raise ValueError("vcvars output contains a duplicate native variable")
+            result[canonical] = value
+    missing = set(NATIVE_ENV_KEYS) - set(result)
+    if missing:
+        raise ValueError("vcvars output is missing native variables")
+    return result
+
+
+def capture_vcvars_env(vcvars64: Path, cmd_exe: Path) -> tuple[dict[str, str], dict[str, Any]]:
+    vcvars64 = resolve_regular(vcvars64, "vcvars64")
+    cmd_exe = resolve_regular(cmd_exe, "cmd")
+    before = bounded_file_bytes(vcvars64)
+    identity = vcvars_identity(vcvars64)
+    marker = f"__SIPI_COM_VCVARS_{secrets.token_hex(16)}__"
+    probe_env = canonicalize_environment(dict(os.environ))
+    command = ["cmd.exe", "/d", "/u", "/s", "/c", f"call vcvars64.bat amd64 && echo {marker} && set"]
+    try:
+        completed = subprocess.run([str(cmd_exe), *command[1:]], cwd=vcvars64.parent, env=probe_env, capture_output=True, timeout=IDENTITY_TIMEOUT_S, check=False)
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError("vcvars64 environment probe timed out") from error
+    if completed.returncode != 0:
+        raise RuntimeError("vcvars64 environment probe failed")
+    raw_stdout = completed.stdout.encode() if isinstance(completed.stdout, str) else completed.stdout
+    if len(raw_stdout) > MAX_CAPTURE_BYTES:
+        raise RuntimeError("vcvars environment output exceeds bounded size")
+    stdout = raw_stdout.decode("utf-16-le", "strict")
+    after = bounded_file_bytes(vcvars64)
+    if before != after:
+        raise RuntimeError("vcvars64 changed during environment probe")
+    return _parse_vcvars_output(stdout, marker), identity
+
+
+def _find_native_tool(native_env: dict[str, str], name: str) -> Path | None:
+    for directory in native_env["PATH"].split(os.pathsep):
+        if not directory:
+            continue
+        candidate = Path(directory) / name
+        if candidate.is_file() and not candidate.is_symlink():
+            return candidate.resolve()
+    return None
+
+
+def native_tool_identity(path: Path, role: str) -> dict[str, Any]:
+    resolved = resolve_regular(path, f"native {role}")
+    if resolved.name.lower() != NATIVE_TOOL_NAMES[role]:
+        raise ValueError(f"invalid native {role} executable")
+    args = ["/nologo", "/?"] if role == "cl" else ["/Bv"] if role == "lib" else ["/?"]
+    try:
+        completed = subprocess.run([str(resolved), *args], capture_output=True, timeout=IDENTITY_TIMEOUT_S, check=False)
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f"native {role} version probe timed out") from error
+    if completed.returncode != 0:
+        raise RuntimeError(f"native {role} version probe failed")
+    stdout = completed.stdout if isinstance(completed.stdout, bytes) else (completed.stdout or "").encode()
+    stderr = completed.stderr if isinstance(completed.stderr, bytes) else (completed.stderr or "").encode()
+    return {"role": role, "basename": resolved.name, "file_sha256": sha256(bounded_file_bytes(resolved)), "version_args": args, "version_output_sha256": sha256(stdout + stderr), "version_exit": completed.returncode, "timeout_s": IDENTITY_TIMEOUT_S, "path_redacted": True}
+
+
+def native_toolset(native_env: dict[str, str]) -> dict[str, dict[str, Any]]:
+    result = {}
+    for role in ("cl", "lib", "rc"):
+        path = _find_native_tool(native_env, NATIVE_TOOL_NAMES[role])
+        if path is None:
+            raise RuntimeError(f"vcvars64 did not expose {role}.exe")
+        result[role] = native_tool_identity(path, role)
+    return result
 
 
 def binary_identity(path: Path) -> dict[str, Any]:
@@ -169,23 +307,53 @@ def binary_identity(path: Path) -> dict[str, Any]:
 
 
 def env_receipt(env: dict[str, str]) -> dict[str, Any]:
+    env = canonicalize_environment(env)
     result = {}
-    for key in ("PATH", "LIB", "INCLUDE", "CL", "LINK", "RUSTC", "CARGO_BUILD_RUSTC", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER"):
+    roles = {"SystemRoot": "system_root", "ComSpec": "cmd", "PATHEXT": "system_path_ext", "WINDIR": "system_root", "TEMP": "fresh_run_temp", "TMP": "fresh_run_temp", "CARGO_HOME": "cargo_home", "RUSTC": "resolved_tool", "CARGO_BUILD_RUSTC": "resolved_tool", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "resolved_tool", "RUSTC_WRAPPER": "cleared_wrapper", "RUSTC_WORKSPACE_WRAPPER": "cleared_wrapper", "CARGO_BUILD_RUSTC_WRAPPER": "cleared_wrapper", "CARGO_INCREMENTAL": "incremental_zero", "CARGO_NET_OFFLINE": "offline", "CL": "cleared_compiler_override", "LINK": "cleared_linker_override"}
+    for key in BUILD_ENV_KEYS:
         raw = env.get(key, "")
-        entries = [Path(item).name for item in raw.split(os.pathsep) if item]
-        result[key] = {"entry_basenames": entries, "value_sha256": sha256(raw.encode()), "path_redacted": True}
+        if key in {"TEMP", "TMP"}:
+            entries = ["<fresh-run-temp>"]
+            value_hash = sha256(b"<fresh-run-temp>")
+        else:
+            entries = [Path(item).name for item in raw.split(os.pathsep) if item]
+            value_hash = sha256(raw.encode())
+        relation = None
+        if key in {"SystemRoot", "WINDIR"}:
+            relation = "system_root"
+        elif key == "ComSpec":
+            root = Path(env["SystemRoot"]).resolve() if env.get("SystemRoot") else None
+            command = Path(raw).resolve() if raw else None
+            relation = "system32_under_system_root" if root is not None and command is not None and command.parent.name.lower() == "system32" and command.parent.parent == root else "invalid"
+        result[key] = {"role": roles.get(key, "native_environment"), "exists": key in env, "entry_basenames": entries, "value_sha256": value_hash, "path_redacted": True, "relation": relation}
     return result
 
 
-def build_env(rustc: Path, linker: Path) -> dict[str, str]:
-    inherited = os.environ
+def build_env(rustc: Path, linker: Path, vcvars64: Path, cmd_exe: Path, cargo_home: Path | None = None, temp_dir: Path | None = None) -> tuple[dict[str, str], dict[str, Any]]:
+    inherited = canonicalize_environment(dict(os.environ))
     forbidden = tuple(key for key in inherited if key.startswith("CARGO_") or key in {"RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"})
     if any(inherited.get(key) for key in forbidden):
         raise RuntimeError("inherited rust/build flags or wrapper are not admitted")
-    allowed = {"SystemRoot", "ComSpec", "TEMP", "TMP", "PATH", "PATHEXT", "WINDIR", "PROGRAMDATA", "PROGRAMFILES", "USERPROFILE", "HOME", "LOCALAPPDATA", "APPDATA", "NUMBER_OF_PROCESSORS"}
+    system_root = inherited.get("SystemRoot")
+    windir = inherited.get("WINDIR")
+    if system_root is None:
+        raise RuntimeError("SystemRoot is required")
+    if windir is not None and windir != system_root:
+        raise RuntimeError("SystemRoot and WINDIR disagree")
+    native, vcvars = capture_vcvars_env(vcvars64, cmd_exe)
+    cmd_exe = resolve_regular(cmd_exe, "cmd")
+    allowed = {"SystemRoot", "PATHEXT", "WINDIR"}
     env = {key: value for key, value in inherited.items() if key in allowed}
-    env.update({"RUSTC": str(rustc), "CARGO_BUILD_RUSTC": str(rustc), "RUSTC_WRAPPER": "", "RUSTC_WORKSPACE_WRAPPER": "", "CARGO_BUILD_RUSTC_WRAPPER": "", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": str(linker), "CL": "", "LINK": "", "CARGO_INCREMENTAL": "0", "CARGO_NET_OFFLINE": "true"})
-    return env
+    env["SystemRoot"] = system_root
+    env["WINDIR"] = windir or system_root
+    env.update(native)
+    if cargo_home is None or not cargo_home.is_absolute():
+        raise ValueError("cargo home must be an explicit absolute path")
+    if temp_dir is None or not temp_dir.is_absolute():
+        raise ValueError("temporary directory must be an explicit absolute path")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    env.update({"ComSpec": str(cmd_exe), "TEMP": str(temp_dir), "TMP": str(temp_dir), "CARGO_HOME": str(cargo_home), "RUSTC": str(rustc), "CARGO_BUILD_RUSTC": str(rustc), "RUSTC_WRAPPER": "", "RUSTC_WORKSPACE_WRAPPER": "", "CARGO_BUILD_RUSTC_WRAPPER": "", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": str(linker), "CL": "", "LINK": "", "CARGO_INCREMENTAL": "0", "CARGO_NET_OFFLINE": "true"})
+    return env, {"vcvars64": vcvars, "variables": env_receipt(env), "native_tools": native_toolset(native)}
 
 
 def bounded_run(command: list[str], *, cwd: Path, env: dict[str, str], timeout: int) -> subprocess.CompletedProcess[str]:
@@ -290,11 +458,16 @@ def stat_is_regular(mode: int) -> bool:
     return (mode & 0o170000) == 0o100000
 
 
-def run_one(repo: Path, upstream: Path, cargo: Path, rustc: Path, linker: Path, run_id: str, output: Path) -> dict[str, Any]:
+def run_one(repo: Path, upstream: Path, cargo: Path, rustc: Path, linker: Path, vcvars64: Path, cmd_exe: Path, run_id: str, output: Path) -> dict[str, Any]:
     if len(run_id) != 64 or run_id.lower() != run_id or any(c not in "0123456789abcdef" for c in run_id):
         raise ValueError("run_id must be 64 lowercase hex characters")
     if output.exists():
         raise FileExistsError("report path already exists")
+    cargo = resolve_regular(cargo, "cargo")
+    rustc = resolve_regular(rustc, "rustc")
+    linker = resolve_regular(linker, "linker")
+    vcvars64 = resolve_regular(vcvars64, "vcvars64")
+    cmd_exe = resolve_regular(cmd_exe, "cmd")
     with tempfile.TemporaryDirectory(prefix=f"com-workbook-accm-{run_id[:12]}-") as temporary:
         root = Path(temporary)
         archive_path = root / "candidate.tar"
@@ -308,8 +481,8 @@ def run_one(repo: Path, upstream: Path, cargo: Path, rustc: Path, linker: Path, 
         fixture_ids = {key: pinned_blob(upstream, value, work / ("pinned-workbook.xlsx" if key == "workbook" else "pinned-channel.s4p")) for key, value in FIXTURES.items()}
         for fixture in fixture_ids.values():
             fixture["pre_sha256"] = fixture["sha256"]
-        identities_pre = {"cargo": tool_identity(cargo, "cargo"), "rustc": tool_identity(rustc, "rustc"), "linker": tool_identity(linker, "linker")}
-        env = build_env(rustc, linker)
+        identities_pre = {"cargo": tool_identity(cargo, "cargo"), "rustc": tool_identity(rustc, "rustc"), "linker": tool_identity(linker, "linker"), "cmd": tool_identity(cmd_exe, "cmd")}
+        env, native = build_env(rustc, linker, vcvars64, cmd_exe, cargo.parent.parent, root / "native-tmp")
         command = [str(cargo), "build", "--manifest-path", "crates/sipi-agent-com-direct/Cargo.toml", "--bin", "sipi-com-direct-run", "--release", "--locked", "--offline"]
         build = bounded_run(command, cwd=materialized, env=env, timeout=BUILD_TIMEOUT_S)
         binary = materialized / "crates" / "sipi-agent-com-direct" / "target" / "release" / "sipi-com-direct-run.exe"
@@ -361,11 +534,17 @@ def run_one(repo: Path, upstream: Path, cargo: Path, rustc: Path, linker: Path, 
             fixture["post_sha256"] = sha256((work / ("pinned-workbook.xlsx" if fixture["path"].endswith(".xlsx") else "pinned-channel.s4p")).read_bytes())
             if fixture["pre_sha256"] != fixture["post_sha256"]:
                 raise RuntimeError("fixture custody drift")
-        identities_post = {"cargo": tool_identity(cargo, "cargo"), "rustc": tool_identity(rustc, "rustc"), "linker": tool_identity(linker, "linker")}
+        native_post_env, vcvars_post = capture_vcvars_env(vcvars64, cmd_exe)
+        if native_post_env != {key: env[key] for key in NATIVE_ENV_KEYS}:
+            raise RuntimeError("native vcvars environment drift")
+        native_post = native_toolset(native_post_env)
+        if vcvars_post != native["vcvars64"]:
+            raise RuntimeError("vcvars64 identity drift")
+        identities_post = {"cargo": tool_identity(cargo, "cargo"), "rustc": tool_identity(rustc, "rustc"), "linker": tool_identity(linker, "linker"), "cmd": tool_identity(cmd_exe, "cmd")}
         binary_pre = binary_before
         binary_post = binary_identity(binary)
         blocked = any(item["status"] in {"blocked", "artifact_invalid"} for item in runs)
-        result = {"schema": SCHEMA, "run_id": run_id, "nonce": secrets.token_hex(32), "candidate": {"commit": CANDIDATE_COMMIT, "tree": CANDIDATE_TREE, "archive": archive_id, "binary_pre": binary_pre, "binary": binary_post}, "upstream": {"commit": UPSTREAM_COMMIT, "tree": UPSTREAM_TREE, "runtime": "not_executed_external_only", "source_inventory": source_inventory(upstream)}, "fixtures": fixture_ids, "toolchain": {"pre": identities_pre, "post": identities_post}, "build": {"command": "cargo build --manifest-path crates/sipi-agent-com-direct/Cargo.toml --bin sipi-com-direct-run --release --locked --offline", "exit": build.returncode, "stdout_sha256": sha256(build.stdout.encode()), "stderr_sha256": sha256(build.stderr.encode()), "timeout_s": BUILD_TIMEOUT_S, "env_policy": "explicit_rustc_wrappers_cleared_offline_incremental_zero", "env_receipt": env_receipt(env)}, "execution": {"runtime_timeout_s": RUN_TIMEOUT_S, "source_inventory_before": before, "source_inventory_after": after, "source_inventory_equal": before == after}, "controls": {"ac_cm_rms_vectors": controls, "source": "pinned workbook vector override", "no_sparam_fit": True, "channel_policy": "single_fd_to_td_impulse"}, "runs": runs, "parity": {"status": "blocked" if blocked else "numeric_observation", "matched": False, "acceptance": False}, "non_claims": ["no S-parameter fit", "single FD-to-TD impulse", "no upstream numeric parity", "no global/product/release claim"] + (["no final consumer proof while blocked"] if blocked else [])}
+        result = {"schema": SCHEMA, "run_id": run_id, "nonce": secrets.token_hex(32), "candidate": {"commit": CANDIDATE_COMMIT, "tree": CANDIDATE_TREE, "archive": archive_id, "binary_pre": binary_pre, "binary": binary_post}, "upstream": {"commit": UPSTREAM_COMMIT, "tree": UPSTREAM_TREE, "runtime": "not_executed_external_only", "source_inventory": source_inventory(upstream)}, "fixtures": fixture_ids, "toolchain": {"pre": identities_pre, "post": identities_post, "vcvars64_pre": native["vcvars64"], "vcvars64_post": vcvars_post, "native_pre": native["native_tools"], "native_post": native_post}, "build": {"command": "cargo build --manifest-path crates/sipi-agent-com-direct/Cargo.toml --bin sipi-com-direct-run --release --locked --offline", "exit": build.returncode, "stdout_sha256": sha256(build.stdout.encode()), "stderr_sha256": sha256(build.stderr.encode()), "timeout_s": BUILD_TIMEOUT_S, "env_policy": "vcvars64_allowlist_rustc_wrappers_cleared_offline_incremental_zero", "env_receipt": native["variables"]}, "execution": {"runtime_timeout_s": RUN_TIMEOUT_S, "source_inventory_before": before, "source_inventory_after": after, "source_inventory_equal": before == after}, "controls": {"ac_cm_rms_vectors": controls, "source": "pinned workbook vector override", "no_sparam_fit": True, "channel_policy": "single_fd_to_td_impulse"}, "runs": runs, "parity": {"status": "blocked" if blocked else "numeric_observation", "matched": False, "acceptance": False}, "non_claims": ["no S-parameter fit", "single FD-to-TD impulse", "no upstream numeric parity", "no global/product/release claim"] + (["no final consumer proof while blocked"] if blocked else [])}
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("x", encoding="utf-8") as stream:
         json.dump(result, stream, indent=2, sort_keys=True)
@@ -380,10 +559,12 @@ def main() -> int:
     parser.add_argument("--cargo", type=Path, required=True)
     parser.add_argument("--rustc", type=Path, required=True)
     parser.add_argument("--linker", type=Path, required=True)
+    parser.add_argument("--vcvars64", type=Path, required=True)
+    parser.add_argument("--cmd", type=Path, required=True)
     parser.add_argument("--run-id", default=secrets.token_hex(32))
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
-    report = run_one(args.repo, args.upstream_repo, args.cargo, args.rustc, args.linker, args.run_id, args.report)
+    report = run_one(args.repo, args.upstream_repo, args.cargo, args.rustc, args.linker, args.vcvars64, args.cmd, args.run_id, args.report)
     print(json.dumps({"schema": report["schema"], "status": report["parity"]["status"], "run_id": report["run_id"]}, sort_keys=True))
     return 0
 
