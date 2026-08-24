@@ -7,7 +7,9 @@
 //! PDF chain. Calibration, MMSE, and RxFFE publish their numeric payloads,
 //! rather than reducing those source branches to status-only diagnostics.
 
-use crate::package_vtf_v1::{s4p_package_vtf_v1, validate_s4p_package_controls_v1};
+use crate::package_vtf_v1::{
+    s4p_package_dc_vtf_v1, s4p_package_vtf_v1, validate_s4p_package_controls_v1,
+};
 use crate::{
     ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1, config_validate_v1,
 };
@@ -195,6 +197,9 @@ struct ImpulseInputV1 {
     td_fillin: Option<TdFrequencyFillinV1>,
     td_pulse: Option<Vec<f64>>,
     td_crosstalk: Option<Vec<XtalkChannelV1>>,
+    /// ACCM transfer produced only by the typed S4P package route.
+    ac_common_mode_transfer: Option<Vec<Vec<Complex64>>>,
+    ac_common_mode_frequency_hz: Option<Vec<f64>>,
 }
 
 #[derive(Clone, Debug)]
@@ -910,6 +915,8 @@ fn run_with_workflow_token(
                     td_fillin: None,
                     td_pulse: None,
                     td_crosstalk: None,
+                    ac_common_mode_transfer: None,
+                    ac_common_mode_frequency_hz: None,
                 });
             }
         }
@@ -937,6 +944,8 @@ fn run_with_workflow_token(
                     td_fillin: None,
                     td_pulse: None,
                     td_crosstalk: None,
+                    ac_common_mode_transfer: None,
+                    ac_common_mode_frequency_hz: None,
                 });
             }
         }
@@ -951,11 +960,78 @@ fn run_with_workflow_token(
             &loaded.values,
         )?);
     }
+    // The upstream receiver-noise consumer sees the common-mode transfer of
+    // every loaded unequalized role.  Preserve that role order in the typed
+    // channel state; no JSON caller can inject this vector.
+    let ac_common_mode_transfers = std::iter::once(&input_impulse)
+        .chain(fext_inputs.iter())
+        .chain(next_inputs.iter())
+        .filter_map(|input| input.ac_common_mode_transfer.clone())
+        .flatten()
+        .collect::<Vec<_>>();
+    let ac_common_mode_frequency_hz = std::iter::once(&input_impulse)
+        .chain(fext_inputs.iter())
+        .chain(next_inputs.iter())
+        .filter_map(|input| input.ac_common_mode_frequency_hz.clone())
+        .try_fold(None, |axis: Option<Vec<f64>>, candidate| {
+            if axis.as_ref().is_some_and(|existing| existing != &candidate) {
+                Err(DirectRunErrorV1::Unsupported(
+                    "ACCM S4P frequency axes must match exactly across THRU/FEXT/NEXT".to_owned(),
+                ))
+            } else {
+                Ok(axis.or(Some(candidate)))
+            }
+        })?;
+    let resolved_package_case_index = package_case_index.unwrap_or(0);
+    let ac_cm_rms = selected_ac_cm_rms_v1(&loaded.values, resolved_package_case_index)?;
+    if ac_cm_rms != 0.0 {
+        let expected_transfers = 1usize
+            .checked_add(fext_inputs.len())
+            .and_then(|value| value.checked_add(next_inputs.len()))
+            .ok_or_else(|| {
+                DirectRunErrorV1::Unsupported("ACCM transfer count overflow".to_owned())
+            })?;
+        if ac_common_mode_transfers.len() != expected_transfers {
+            return Err(DirectRunErrorV1::Unsupported(
+                "non-S4P or missing THRU/FEXT/NEXT ACCM transfer is not admitted".to_owned(),
+            ));
+        }
+        if let Some(search_index) = loaded
+            .document
+            .get("portable")
+            .and_then(Value::as_object)
+            .and_then(|portable| portable.get("search"))
+            .and_then(Value::as_object)
+            .and_then(|search| search.get("package_case_index"))
+            .and_then(Value::as_u64)
+            .map(|value| value as usize)
+            && search_index != resolved_package_case_index
+        {
+            return Err(DirectRunErrorV1::Unsupported(
+                "portable.search package_case_index conflicts with the typed package token"
+                    .to_owned(),
+            ));
+        }
+        let has_portable_search = loaded
+            .document
+            .get("portable")
+            .and_then(Value::as_object)
+            .and_then(|portable| portable.get("search"))
+            .is_some_and(Value::is_object);
+        if !has_portable_search {
+            return Err(DirectRunErrorV1::Unsupported(
+                "nonzero AC_CM_RMS requires the portable.search receiver consumer".to_owned(),
+            ));
+        }
+    }
+    input_impulse.ac_common_mode_transfer =
+        (!ac_common_mode_transfers.is_empty()).then_some(ac_common_mode_transfers);
+    input_impulse.ac_common_mode_frequency_hz = ac_common_mode_frequency_hz;
     let branches = portable_branch_result_v1(
         &loaded.document,
         &input_impulse,
         Some(request),
-        Some(&controls),
+        Some(&loaded.values),
     )?;
     if fext_inputs
         .len()
@@ -986,6 +1062,8 @@ fn run_with_workflow_token(
             td_fillin: input_impulse.td_fillin.clone(),
             td_pulse: input_impulse.td_pulse.clone(),
             td_crosstalk: input_impulse.td_crosstalk.clone(),
+            ac_common_mode_transfer: input_impulse.ac_common_mode_transfer.clone(),
+            ac_common_mode_frequency_hz: input_impulse.ac_common_mode_frequency_hz.clone(),
         }
     } else {
         input_impulse
@@ -2536,6 +2614,8 @@ fn portable_branch_result_with_sigma_v1(
                     td_fillin: None,
                     td_pulse: None,
                     td_crosstalk: None,
+                    ac_common_mode_transfer: None,
+                    ac_common_mode_frequency_hz: None,
                 };
                 let orchestration = portable_branch_result_with_sigma_v1(
                     &orchestration_document,
@@ -3056,6 +3136,8 @@ fn portable_branch_result_with_sigma_v1(
                 td_fillin: impulse.td_fillin.clone(),
                 td_pulse: impulse.td_pulse.clone(),
                 td_crosstalk: impulse.td_crosstalk.clone(),
+                ac_common_mode_transfer: impulse.ac_common_mode_transfer.clone(),
+                ac_common_mode_frequency_hz: impulse.ac_common_mode_frequency_hz.clone(),
             },
         );
         let canonical_f2_hz = controls
@@ -3072,6 +3154,7 @@ fn portable_branch_result_with_sigma_v1(
             calibration_sigma_ne_override,
             canonical_f2_hz,
             tdiln_f2_hz,
+            controls,
         )?;
         selected_fom_db = Some(result.fom_db);
         if effective_pulse.is_none() {
@@ -3301,6 +3384,7 @@ fn portable_search_v1(
     calibration_sigma_ne_override: Option<f64>,
     canonical_f2_hz: Option<f64>,
     tdiln_f2_hz: Option<f64>,
+    resolved_controls: Option<&BTreeMap<String, ResolvedDefaultV1>>,
 ) -> Result<SearchLoopResultV1, DirectRunErrorV1> {
     let branch = "portable.search";
     let td_fillin = impulse.td_fillin.as_ref();
@@ -3346,6 +3430,14 @@ fn portable_search_v1(
             .transpose()?
             .unwrap_or_else(|| frequency_hz.clone())
     };
+    if let Some(ac_axis) = impulse.ac_common_mode_frequency_hz.as_ref()
+        && ac_axis != &noise_frequency_hz
+    {
+        return Err(DirectRunErrorV1::Unsupported(
+            "ACCM S4P frequency axis must exactly match portable.search noise_frequency_hz"
+                .to_owned(),
+        ));
+    }
     let crosstalk_frequency_hz = if let Some(fillin) = td_fillin {
         if let Some(value) = search.get("crosstalk_frequency_hz") {
             let requested = parse_f64_array_v1(value, "portable.search.crosstalk_frequency_hz")?;
@@ -3382,6 +3474,94 @@ fn portable_search_v1(
         f_hp_p: parse_f64_array_key_v1(ctle_object, "f_hp_p", "portable.search.ctle")?,
     };
     let receiver_object = required_object_v1(search, "receiver", branch)?;
+    if let Some(values) = resolved_controls {
+        let controls_case = search
+            .get("package_case_index")
+            .and_then(Value::as_u64)
+            .map(|value| value as usize)
+            .unwrap_or(0);
+        let resolved_ac = selected_ac_cm_rms_v1(values, controls_case)?;
+        if resolved_ac == 0.0 {
+            // Ordinary portable searches have no ACCM crosswalk.  Do not
+            // require package selectors or ACCM controls for that existing
+            // non-AC path.
+        } else {
+            let receiver_pkg_select = parse_i64_array_key_v1(
+                required_object_v1(
+                    required_object_v1(search, "options", branch)?,
+                    "receiver",
+                    "portable.search.options",
+                )?,
+                "pkg_len_select",
+                "portable.search.options.receiver",
+            )?;
+            let receiver_selected_case =
+                *receiver_pkg_select.get(controls_case).ok_or_else(|| {
+                    DirectRunErrorV1::Parameters(
+                        "portable.search.options.receiver.pkg_len_select has no selected case"
+                            .to_owned(),
+                    )
+                })?;
+            let resolved_selected_case = values
+                .iter()
+                .find(|(key, _)| key.eq_ignore_ascii_case("pkg_len_select"))
+                .and_then(|(_, value)| match value {
+                    ResolvedDefaultV1::Scalar(value) if controls_case == 0 => Some(*value),
+                    ResolvedDefaultV1::Vector(values) => values.get(controls_case).copied(),
+                    _ => None,
+                })
+                .ok_or_else(|| {
+                    DirectRunErrorV1::Parameters("pkg_len_select is required for ACCM".to_owned())
+                })?;
+            if !resolved_selected_case.is_finite()
+                || resolved_selected_case.fract() != 0.0
+                || resolved_selected_case < 1.0
+                || receiver_selected_case < 1
+                || receiver_selected_case != resolved_selected_case as i64
+            {
+                return Err(DirectRunErrorV1::Unsupported(
+                    "resolved pkg_len_select conflicts with portable.search.receiver options"
+                        .to_owned(),
+                ));
+            }
+            let receiver_ac =
+                parse_f64_array_key_v1(receiver_object, "ac_cm_rms", "portable.search.receiver")?;
+            let receiver_selected = receiver_ac
+                .get(receiver_selected_case as usize - 1)
+                .copied()
+                .ok_or_else(|| {
+                    DirectRunErrorV1::Parameters(
+                        "portable.search.receiver.ac_cm_rms has no selected package case"
+                            .to_owned(),
+                    )
+                })?;
+            if receiver_selected.to_bits() != resolved_ac.to_bits() {
+                return Err(DirectRunErrorV1::Unsupported(
+                    "resolved AC_CM_RMS conflicts with portable.search.receiver".to_owned(),
+                ));
+            }
+            let resolved_max = values
+                .iter()
+                .find(|(key, _)| key.eq_ignore_ascii_case("ACCM_MAX_Freq"))
+                .and_then(|(_, value)| match value {
+                    ResolvedDefaultV1::Scalar(value) => Some(*value),
+                    _ => None,
+                })
+                .ok_or_else(|| {
+                    DirectRunErrorV1::Parameters("ACCM_MAX_Freq must be a scalar".to_owned())
+                })?;
+            let receiver_max = required_f64_v1(
+                receiver_object,
+                "accm_max_freq_hz",
+                "portable.search.receiver",
+            )?;
+            if receiver_max.to_bits() != resolved_max.to_bits() {
+                return Err(DirectRunErrorV1::Unsupported(
+                    "resolved ACCM_MAX_Freq conflicts with portable.search.receiver".to_owned(),
+                ));
+            }
+        }
+    }
     let receiver = ReceiverNoiseParamsV1 {
         fb: required_f64_v1(receiver_object, "fb_hz", "portable.search.receiver")?,
         btorder: required_usize_v1(receiver_object, "btorder", "portable.search.receiver")?,
@@ -3657,7 +3837,7 @@ fn portable_search_v1(
         calibration_sigma_ne_override,
         impulse.td_pulse.as_deref(),
         td_crosstalk_outer_product,
-        &[],
+        impulse.ac_common_mode_transfer.as_deref().unwrap_or(&[]),
         search
             .get("package_case_index")
             .and_then(Value::as_u64)
@@ -4547,6 +4727,8 @@ fn load_td_mode_input_v1(
         td_fillin: Some(fillin),
         td_pulse: Some(pulse.pulse),
         td_crosstalk: None,
+        ac_common_mode_transfer: None,
+        ac_common_mode_frequency_hz: None,
     })
 }
 
@@ -4750,6 +4932,8 @@ fn load_impulse_mode_v1(
             td_fillin: None,
             td_pulse: None,
             td_crosstalk: None,
+            ac_common_mode_transfer: None,
+            ac_common_mode_frequency_hz: None,
         });
     }
     if extension.eq_ignore_ascii_case("json") {
@@ -4794,6 +4978,8 @@ fn load_impulse_mode_v1(
             td_fillin: None,
             td_pulse: None,
             td_crosstalk: None,
+            ac_common_mode_transfer: None,
+            ac_common_mode_frequency_hz: None,
         });
     }
     if extension.eq_ignore_ascii_case("csv") || extension.eq_ignore_ascii_case("td") {
@@ -4813,6 +4999,8 @@ fn load_impulse_mode_v1(
             td_fillin: None,
             td_pulse: None,
             td_crosstalk: None,
+            ac_common_mode_transfer: None,
+            ac_common_mode_frequency_hz: None,
         });
     }
     if bytes.len() % std::mem::size_of::<f64>() != 0 {
@@ -4844,6 +5032,8 @@ fn load_impulse_mode_v1(
         td_fillin: None,
         td_pulse: None,
         td_crosstalk: None,
+        ac_common_mode_transfer: None,
+        ac_common_mode_frequency_hz: None,
     })
 }
 
@@ -4908,6 +5098,8 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
         td_fillin: None,
         td_pulse: None,
         td_crosstalk: None,
+        ac_common_mode_transfer: None,
+        ac_common_mode_frequency_hz: None,
     })
 }
 
@@ -5111,9 +5303,23 @@ fn load_s4p_package_impulse_v1(
             Ok(matrix)
         })
         .collect::<Result<Vec<_>, DirectRunErrorV1>>()?;
-    // The single-file S4P request is the typed THRU/DD route.  FEXT/NEXT and
-    // ACCM are selected by their existing crosstalk/metric request consumers,
-    // not by ad-hoc JSON strings on the channel loader.
+    let ac_cm_rms = selected_ac_cm_rms_v1(values, package_case_index)?;
+    if !ac_cm_rms.is_finite() || ac_cm_rms < 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "AC_CM_RMS must be a finite non-negative scalar".to_owned(),
+        ));
+    }
+    let ac_common_mode_transfer = if ac_cm_rms != 0.0 {
+        Some(vec![s4p_package_dc_vtf_v1(
+            &frequency_hz,
+            &samples,
+            values,
+            channel_type,
+            package_case_index,
+        )?])
+    } else {
+        None
+    };
     let vtf = s4p_package_vtf_v1(
         &frequency_hz,
         &samples,
@@ -5126,6 +5332,9 @@ fn load_s4p_package_impulse_v1(
     let mut impulse = result.voltage;
     apply_package_channel_amplitude_v1(&mut impulse, amplitude)?;
     validate_impulse_v1(&impulse)?;
+    let ac_common_mode_frequency_hz = ac_common_mode_transfer
+        .as_ref()
+        .map(|_| frequency_hz.clone());
     Ok(ImpulseInputV1 {
         values: impulse,
         erl_values: None,
@@ -5144,7 +5353,56 @@ fn load_s4p_package_impulse_v1(
         td_fillin: None,
         td_pulse: None,
         td_crosstalk: None,
+        ac_common_mode_transfer,
+        ac_common_mode_frequency_hz,
     })
+}
+
+fn selected_ac_cm_rms_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    package_case_index: usize,
+) -> Result<f64, DirectRunErrorV1> {
+    let Some(value) = values
+        .iter()
+        .find(|(key, _)| key.eq_ignore_ascii_case("AC_CM_RMS"))
+        .map(|(_, value)| value)
+    else {
+        return Ok(0.0);
+    };
+    let selected = values
+        .iter()
+        .find(|(key, _)| key.eq_ignore_ascii_case("pkg_len_select"))
+        .and_then(|(_, value)| match value {
+            ResolvedDefaultV1::Scalar(selection) if package_case_index == 0 => Some(*selection),
+            ResolvedDefaultV1::Vector(selection) => selection.get(package_case_index).copied(),
+            _ => None,
+        })
+        .ok_or_else(|| {
+            DirectRunErrorV1::Parameters("pkg_len_select is required for AC_CM_RMS".to_owned())
+        })?;
+    if !selected.is_finite() || selected < 1.0 || selected.fract() != 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "pkg_len_select contains an invalid ACCM case".to_owned(),
+        ));
+    }
+    let selected = selected as usize - 1;
+    let scalar = match value {
+        ResolvedDefaultV1::Scalar(value) if selected == 0 => *value,
+        ResolvedDefaultV1::Vector(values) => *values.get(selected).ok_or_else(|| {
+            DirectRunErrorV1::Parameters("AC_CM_RMS has no selected package case".to_owned())
+        })?,
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(
+                "AC_CM_RMS scalar cannot broadcast to a nonzero package case".to_owned(),
+            ));
+        }
+    };
+    if !scalar.is_finite() || scalar < 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "AC_CM_RMS must be finite and non-negative".to_owned(),
+        ));
+    }
+    Ok(scalar)
 }
 
 fn load_s4p_calibration_document_v1(path: &Path) -> Result<Value, DirectRunErrorV1> {
@@ -5323,6 +5581,8 @@ fn load_frequency_domain_json_v1(
         td_fillin: None,
         td_pulse: None,
         td_crosstalk: None,
+        ac_common_mode_transfer: None,
+        ac_common_mode_frequency_hz: None,
     })
 }
 
@@ -6108,6 +6368,25 @@ mod tests {
     }
 
     #[test]
+    fn accm_scalar_selection_follows_selected_package_case_without_broadcast() {
+        let mut values = BTreeMap::new();
+        values.insert(
+            "pkg_len_select".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 4.0]),
+        );
+        values.insert(
+            "AC_CM_RMS".to_owned(),
+            ResolvedDefaultV1::Vector(vec![0.0, 0.25, 0.5, 0.75]),
+        );
+        assert_eq!(selected_ac_cm_rms_v1(&values, 1).unwrap(), 0.75);
+        values.insert("AC_CM_RMS".to_owned(), ResolvedDefaultV1::Scalar(0.25));
+        assert!(selected_ac_cm_rms_v1(&values, 1).is_err());
+        values.insert("pkg_len_select".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        assert_eq!(selected_ac_cm_rms_v1(&values, 0).unwrap(), 0.25);
+        assert!(selected_ac_cm_rms_v1(&values, 1).is_err());
+    }
+
+    #[test]
     fn public_s4p_package_workflow_consumes_delayed_lowpass_and_roles() {
         let root = temp_root("public-s4p-package-e2e");
         let config = root.join("params.json");
@@ -6240,7 +6519,6 @@ mod tests {
         let first_com = case["metrics"]["COM_dB"].as_f64().expect("COM metric");
         let first_impulse_sha = report.impulse_sha256.clone();
         let first_probe = probe.values.clone();
-
         // The role amplitude is applied after the single FD-to-TD conversion.
         // Re-running the same public workflow with a doubled THRU amplitude
         // therefore provides a semantic, not merely diagnostic, checkpoint.
@@ -7321,6 +7599,33 @@ mod tests {
         assert_ne!(
             sigma_zero_search["fom_db"], sigma_high_search["fom_db"],
             "search FOM evaluator must consume the per-sigma noise"
+        );
+        let ac_axis = parse_f64_array_v1(
+            &values["portable"]["search"]["frequency_hz"],
+            "test.noise_frequency_hz",
+        )
+        .expect("noise frequency axis");
+        let mut ac_input = probe_input.clone();
+        ac_input.ac_common_mode_transfer = Some(vec![vec![
+            Complex64::try_new(1.0, 0.0)
+                .expect("AC transfer");
+            ac_axis.len()
+        ]]);
+        ac_input.ac_common_mode_frequency_hz = Some(ac_axis);
+        let mut ac_values = values.clone();
+        ac_values["portable"]["search"]["receiver"]["ac_cm_rms"] = json!([0.1]);
+        let mut ac_resolved = probe_loaded.values.clone();
+        ac_resolved.insert("pkg_len_select".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        ac_resolved.insert("AC_CM_RMS".to_owned(), ResolvedDefaultV1::Scalar(0.1));
+        ac_resolved.insert(
+            "ACCM_MAX_Freq".to_owned(),
+            ResolvedDefaultV1::Scalar(30.0e9),
+        );
+        let ac_branch = portable_branch_result_v1(&ac_values, &ac_input, None, Some(&ac_resolved))
+            .expect("positive ACCM receiver consumer");
+        assert_ne!(
+            ac_branch.diagnostics["search"]["fom_db"], search["fom_db"],
+            "nonzero ACCM transfer must change the downstream search FOM"
         );
         let mut td_values = values.clone();
         td_values["parameters"]["samples_per_ui"] = json!(10.0);

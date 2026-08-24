@@ -461,6 +461,41 @@ mod tests {
         )
         .expect("noise");
         assert!(noise.is_finite() && noise > 0.0);
+        assert_eq!(
+            receiver_noise_v1(
+                &frequency,
+                0,
+                0,
+                0.0,
+                &parameters,
+                &options,
+                &[],
+                0,
+                None,
+                None,
+                true,
+            ),
+            Err(NoiseErrorV1::AccmRequiresChannel)
+        );
+        let transfer = vec![
+            Complex64::try_new(1.0, 0.0).unwrap();
+            frequency.len()
+        ];
+        let with_accm = receiver_noise_v1(
+            &frequency,
+            0,
+            0,
+            0.0,
+            &parameters,
+            &options,
+            &[transfer],
+            0,
+            None,
+            None,
+            true,
+        )
+        .expect("positive ACCM");
+        assert!(with_accm.is_finite() && with_accm > noise);
     }
 
     #[test]

@@ -26,7 +26,9 @@ engine, and proprietary golden data remain external blockers.
 | `src/agent_com/equalization/ctle.py` | CTLE branch | `5c913f32563ff27cbf62c0ab0e6a8b6150df9ad5` | 1927 | `c79738b504b2967c17a6bb41e4e1f4af8e88566891ab16ba067b893ff20293f6` | MIT |
 | `src/agent_com/equalization/rx_ffe.py` | RX FFE branch | `8900bd460c9347ec7551dee4224366fbb24b22df` | 12939 | `4165278cfccf21cf7e32011ecea9f368cf1ae6c442619e059b3d15480a0eb34a` | MIT |
 | `src/agent_com/equalization/search.py` | portable non-MMSE/no-RxFFE search loop and receiver filter orchestration | `58f6e5e3f8f36b94faddf0248f3df2ff11e1e3cd` | 53859 | `924930c43332f169ce1d66048d3f70610c8bf459af2f0210d6995533c277003d` | MIT |
-| `src/agent_com/network/package.py::_selected_package_case,_make_full_package,_package_lengths,_package_preset` | one-based `pkg_len_select` selection plus crate-private DD package VTF/length/preset assembly consumed by the S4P run route; DC and ACCM transforms remain open | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
+| `src/agent_com/equalization/search.py::receiver_noise` | ACCM consumer: passes `ac_common_mode_transfers` into receiver-noise evaluation; nonzero `AC_CM_RMS` without a typed transfer is an explicit source error | `58f6e5e3f8f36b94faddf0248f3df2ff11e1e3cd` | 53859 | `924930c43332f169ce1d66048d3f70610c8bf459af2f0210d6995533c277003d` | MIT |
+| `src/agent_com/network/package.py::_selected_package_case,_make_full_package,_package_lengths,_package_preset` | one-based `pkg_len_select` selection plus crate-private DD package VTF/length/preset assembly consumed by the S4P run route | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
+| `src/agent_com/network/package.py::assemble_r480_dc_vtf` | pinned DC common-to-differential package VTF; requires full S4P plus DC-mode TX/RX package transforms and `AC_CM_RMS` | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
 | `src/agent_com/network/two_port.py` | crate-private checked TwoPort cascade, board insertion, package VTF denominator, exact-zero singular handling | `6b1484effc18a25fe8c28373b47f55b0b99b0f4b` | 9600 | `8889d9695a56d83a59a771d938ba8084dbdfec6a24d79e14d88b83c678ddcd6a` | MIT |
 | `src/agent_com/_orchestration.py::_load_s4p_channel,_channel_amplitude` | typed role ordering and package amplitude selection: WC_PORTZ uses `Tx_rd_sel`, otherwise one-based `pkg_len_select`; final DD impulse is the only channel boundary | `5d260a0aab941f1a1955fe3abef36d85a56034c0` | 90877 | `069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69` | MIT |
 | `src/agent_com/equalization/mmse.py` | MMSE KKT solve and strict-best search branch | `61c54806da030dac1cb889261f344564c02f38f6` | 33933 | `d0542c3a091b5c79a1ba69270878387326dcb09c6ed2d385667709f541d9f4c9` | MIT |
@@ -67,7 +69,7 @@ Wiener-Hopf implementation; the direct leaf rejects that request rather than
 inventing a solver.
 
 Package scope is deliberately split: the selector above is reachable by the
-existing SNDR search consumers. ACCM remains open. The direct S4P route admits the typed
+existing SNDR search consumers. The direct S4P route admits the typed
 package-case outer loop one case at a time; each selected case carries its
 `pkg_len_select`, TX-FFE preset, and role amplitude (`a_thru`, `a_fext`, or
 `a_next`) into the same evaluator. Missing or mismatched case controls fail
@@ -93,10 +95,17 @@ S4P workflow is single request plus typed
 THRU/FEXT/NEXT files; JSON package-case fan-out remains the existing bounded
 case runner, not a claim of general upstream package API parity.
 `INC_PACKAGE=false` still admits the board FD path and the typed role amplitude
-is applied after its final FD-to-TD conversion. The source common-mode/DC
-helpers are not exposed: the current direct request has no typed DC or ACCM
-channel consumer, so those branches are explicit open contract blockers rather
-than dead or guessed helpers. Only the DD route is implemented here.
+is applied after its final FD-to-TD conversion. The current additive ACCM scope
+is limited to the typed receiver-noise transfer leaf. For nonzero resolved
+`AC_CM_RMS`, the crate-private S4P route extracts SDC at the four source indices,
+skips DD board/kappa, applies the common-mode TX package plus DD RX package, and
+passes every loaded THRU/FEXT/NEXT transfer to the existing receiver-noise
+consumer. Its frequency axis is stored with the transfer and must exactly match
+the search noise axis; disabled package, selected-case errors, missing/non-S4P
+role transfers, axis mismatch, and unsupported TD/calibration combinations fail
+closed. The pinned canonical `cd_cm_rms` and `sigma_AC_CCM_at_rxpkg_output_mV`
+result fields remain open and are not claimed here; no SDD21 fallback, untyped
+JSON field, or S-parameter fit is introduced.
 Malformed controls, unsupported channel roles, non-rectangular package
 matrices, singular denominators, and numeric budget violations fail closed.
 Focused Rust tests cover the pinned algebraic checkpoints and negative
@@ -106,6 +115,12 @@ policy; upstream's internal nonzero denominator guard is therefore not a
 bit-identical acceptance claim.
 The existing candidate-local JSON package-case route is not used as upstream
 fan-out or as an oracle substitute.
+
+The ACCM evidence is staged composition: the DC transfer and receiver-noise
+consumer are covered by focused algebraic and portable-search tests, while a
+complete public S4P plus legal `portable.search` ACCM run remains open because
+the final COM chain currently rejects that combination at `Chain(Equalizer)`.
+No public diagnostics field is added for the intermediate transfer.
 
 The focused `run_v1::tests::public_s4p_package_workflow_consumes_delayed_lowpass_and_roles`
 is a scoped synthetic workflow checkpoint, not upstream numeric parity: it uses

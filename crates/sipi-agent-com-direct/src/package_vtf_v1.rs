@@ -180,6 +180,92 @@ pub(crate) fn s4p_package_vtf_v1(
     Ok(result)
 }
 
+/// Build the common-mode transfer consumed by the ACCM receiver-noise leaf.
+///
+/// This is deliberately separate from the DD channel route: the upstream
+/// `assemble_r480_dc_vtf` path extracts SDC directly, skips DD kappa/board
+/// processing, uses a common-mode TX package and a DD RX package, and keeps
+/// the frequency axis intact for the FD-domain receiver-noise consumer. Only
+/// the parallel DD channel route performs the final FD-to-TD conversion.
+pub(crate) fn s4p_package_dc_vtf_v1(
+    frequency_hz: &[f64],
+    samples: &[FourPortSMatrixV1],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    channel_type: &str,
+    package_case_index: usize,
+) -> Result<Vec<Complex64>, DirectRunErrorV1> {
+    validate_s4p_axis_v1(frequency_hz, samples)?;
+    if !matches!(channel_type, "THRU" | "FEXT" | "NEXT") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "ACCM common-mode transfer requires a typed channel role".to_owned(),
+        ));
+    }
+    let include_package = boolean(values, &["INC_PACKAGE", "inc_package"])?.ok_or_else(|| {
+        DirectRunErrorV1::Parameters("INC_PACKAGE is required for ACCM".to_owned())
+    })?;
+    if !include_package {
+        return Err(DirectRunErrorV1::Unsupported(
+            "ACCM requires INC_PACKAGE=1; raw SDC fallback is not admitted".to_owned(),
+        ));
+    }
+    let mixed = samples.iter().map(com_mixed_mode_v1).collect::<Vec<_>>();
+    // `_mixed_dc_network` in the pinned source uses SDC=[D(2,1),D(2,3);
+    // D(4,1),D(4,3)] (Python zero-based [1,0],[1,2],[3,0],[3,2]).
+    let raw = TwoPort::new(
+        mixed.iter().map(|sample| sample[1][0]).collect(),
+        mixed.iter().map(|sample| sample[1][2]).collect(),
+        mixed.iter().map(|sample| sample[3][0]).collect(),
+        mixed.iter().map(|sample| sample[3][2]).collect(),
+    )?;
+    let selected = selected_case(values, package_case_index)?;
+    let component_frequency = frequency_hz
+        .iter()
+        .map(|frequency| frequency.max(f64::EPSILON))
+        .collect::<Vec<_>>();
+    let tx = full_package_mode_v1(
+        "TX",
+        &component_frequency,
+        channel_type,
+        selected,
+        values,
+        true,
+        true,
+    )?;
+    let rx = full_package_mode_v1(
+        "RX",
+        &component_frequency,
+        channel_type,
+        selected,
+        values,
+        true,
+        false,
+    )?;
+    let z0_common = scalar_required(values, &["Z0", "z0"])? / 2.0;
+    let r_die = vector_required(values, &["R_diepad", "r_diepad"], 2)?;
+    let tx_sel = selector(values, &["Tx_rd_sel", "tx_rd_sel"])?;
+    let rx_sel = selector(values, &["Rx_rd_sel", "rx_rd_sel"])?;
+    let ideal_tx = boolean(values, &["IDEAL_TX_TERM", "ideal_tx_term"])?.unwrap_or(false);
+    let ideal_rx = boolean(values, &["IDEAL_RX_TERM", "ideal_rx_term"])?.unwrap_or(false);
+    let include_pcb = scalar_required(values, &["include_pcb", "INCLUDE_PCB"])?;
+    let gamma_tx = if ideal_tx || include_pcb == 2.0 {
+        0.0
+    } else {
+        (r_die[tx_sel] / 2.0 - z0_common) / (r_die[tx_sel] / 2.0 + z0_common)
+    };
+    let gamma_rx = if ideal_rx {
+        0.0
+    } else {
+        (r_die[rx_sel] / 2.0 - z0_common) / (r_die[rx_sel] / 2.0 + z0_common)
+    };
+    let mut result = package_vtf_v1(raw, tx, rx, gamma_tx, gamma_rx, ideal_tx, ideal_rx, true)?;
+    if let Some(filter) = transmitter_filter_v1(frequency_hz, values)? {
+        for (value, filter) in result.iter_mut().zip(filter) {
+            *value = mul(*value, filter)?;
+        }
+    }
+    Ok(result)
+}
+
 /// Validate the typed controls before the Touchstone rows are materialized.
 /// The frequency-dependent matrix/package work is rechecked by the consumer,
 /// but malformed case selectors and role amplitudes must never reach parsing
@@ -1468,6 +1554,25 @@ mod tests {
                 .all(|value| (value.real() - 1.0).abs() < 1.0e-12
                     && value.imaginary().abs() < 1.0e-12)
         );
+    }
+
+    #[test]
+    fn dc_common_mode_vtf_uses_pinned_sdc_indices_and_keeps_frequency_axis() {
+        let frequency = vec![0.0, 1.0e9];
+        let mut samples = vec![[[c(0.0, 0.0); 4]; 4]; 2];
+        for sample in &mut samples {
+            // These two single-ended entries produce SDC21=0.5 after the
+            // fixed mixed-mode transform; the zero package profile leaves it
+            // unchanged.  This is a numeric checkpoint before FD-to-TD.
+            sample[0][0] = c(1.0, 0.0);
+            sample[2][0] = c(1.0, 0.0);
+        }
+        let result =
+            s4p_package_dc_vtf_v1(&frequency, &samples, &values(), "THRU", 0).expect("DC VTF");
+        assert_eq!(result.len(), frequency.len());
+        assert!(result.iter().all(|value| {
+            (value.real() - 0.5).abs() < 1.0e-12 && value.imaginary().abs() < 1.0e-12
+        }));
     }
 
     #[test]
