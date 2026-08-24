@@ -14,6 +14,13 @@ clean candidate `e1a9ca87` 记录 15 行的集成去向、运行时可用性、�
 当前 0 行 release-ready；AS-01..03 数值差异仍 open，AS-04..06 的 Rust 控制/产物分支不改变外部
 solver workflow 边界。此快照为 additive successor，不改写 v1-v3，也不提升全局 parity。
 
+**2026-08-24 PyBERT metallic/CTLE 外部复核：** Rust 线性重采样已修正为 pinned
+`interp1d(..., fill_value=0)` 的真实时间轴边界语义。普通 `3 GHz / 10 GHz` 非整数网格在两次
+clean-archive replay 中完成 17/17 stage payload 对照；near-integral 两点网格则被 pinned
+SciPy cubic channel interpolation 明确阻断。该结果仅是 scoped observation，不关闭 PB-02
+全行，也不提升 AMI/IBIS、产品能力或 release。证据见
+`docs/baselines/pb-02-metallic-python-oracle-current-a94.v1.yaml`。
+
 Owner 已明确纠偏：当前阶段不增加新的领域功能。先完整覆盖
 Agent-Spice、PyBERT、Agent-COM 三个固定提交已经公开实现的稳定工作流，
 再逐项以 Rust 替换；迁移、机械重构、算法改进和发布必须分开。
