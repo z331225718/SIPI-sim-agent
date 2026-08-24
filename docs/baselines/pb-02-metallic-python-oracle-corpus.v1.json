@@ -1,0 +1,83 @@
+{
+  "schema": "sipi.pb-02-metallic-python-oracle-corpus.v1",
+  "version": 1,
+  "base_fixture": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+  "base_fixture_sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+  "cases": [
+    {
+      "id": "metallic-ctle-ordinary-3ghz-10ghz",
+      "overrides": {
+        "l_ch": 0.05,
+        "f_step": 3000.0,
+        "f_max": 10.0,
+        "impulse_length": 1.0,
+        "ctle_enable": true,
+        "random_noise_seed": 99
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "legacy_channel_frequency_hz",
+        "legacy_channel_raw_re",
+        "legacy_channel_raw_im",
+        "legacy_channel_terminated_re",
+        "legacy_channel_terminated_im",
+        "legacy_channel_trimmed_re",
+        "legacy_channel_trimmed_im",
+        "rx_filter_impulse_v_per_v",
+        "legacy_stage_ctle_re",
+        "legacy_stage_ctle_im",
+        "legacy_stage_ctle_out_re",
+        "legacy_stage_ctle_out_im",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v"
+      ],
+      "policy": {
+        "candidate_exit_code": 0,
+        "oracle_exit_code": 0,
+        "require_payload_parity": true,
+        "compared_field_count": 17
+      }
+    },
+    {
+      "id": "metallic-ctle-near-integral-3ghz",
+      "overrides": {
+        "l_ch": 0.05,
+        "f_step": 3000.0,
+        "f_max": 3.0000000000000004,
+        "impulse_length": 1.0,
+        "ctle_enable": true,
+        "random_noise_seed": 99
+      },
+      "expected_fields": [
+        "channel_impulse_v_per_v",
+        "channel_output_v",
+        "legacy_channel_frequency_hz",
+        "legacy_channel_raw_re",
+        "legacy_channel_raw_im",
+        "legacy_channel_terminated_re",
+        "legacy_channel_terminated_im",
+        "legacy_channel_trimmed_re",
+        "legacy_channel_trimmed_im",
+        "rx_filter_impulse_v_per_v",
+        "legacy_stage_ctle_re",
+        "legacy_stage_ctle_im",
+        "legacy_stage_ctle_out_re",
+        "legacy_stage_ctle_out_im",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v"
+      ],
+      "policy": {
+        "candidate_exit_code": 0,
+        "oracle_exit_code": 1,
+        "require_payload_parity": false,
+        "compared_field_count": 0,
+        "oracle_failure_code": "pinned_channel_cubic_interp1d_two_point_boundary",
+        "oracle_failure_stage": "channel"
+      }
+    }
+  ],
+  "files": {}
+}
