@@ -1,9 +1,11 @@
 import copy
 import hashlib
+import io
 import json
 import os
 import struct
 import sys
+import tarfile
 import tempfile
 import unittest
 import zipfile
@@ -49,6 +51,87 @@ VALID_TOOLCHAIN = {
 
 
 class Pb02ReplayToolTests(unittest.TestCase):
+    def test_work_root_rejects_candidate_or_upstream_containment(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate = root / "candidate"
+            upstream = root / "upstream"
+            candidate.mkdir()
+            upstream.mkdir()
+            with self.assertRaisesRegex(RuntimeError, "outside candidate"):
+                runner._validate_external_fresh_work_root(candidate / "runs", candidate, upstream)
+            with self.assertRaisesRegex(RuntimeError, "outside upstream"):
+                runner._validate_external_fresh_work_root(upstream / "runs", candidate, upstream)
+
+    def test_work_root_rejects_nonempty_or_nondirectory_reuse(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate = root / "candidate"
+            upstream = root / "upstream"
+            candidate.mkdir()
+            upstream.mkdir()
+            reused = root / "reused"
+            reused.mkdir()
+            (reused / "old-report.json").write_text("old", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "empty"):
+                runner._validate_external_fresh_work_root(reused, candidate, upstream)
+
+            nondir = root / "nondir"
+            nondir.write_bytes(b"not a directory")
+            with self.assertRaisesRegex(RuntimeError, "directory"):
+                runner._validate_external_fresh_work_root(nondir, candidate, upstream)
+
+    def test_work_root_reparse_and_access_denied_are_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate = root / "candidate"
+            upstream = root / "upstream"
+            work = root / "work"
+            candidate.mkdir()
+            upstream.mkdir()
+            work.mkdir()
+            with mock.patch.object(runner.Path, "lstat", return_value=SimpleNamespace(st_file_attributes=0x400)):
+                with self.assertRaisesRegex(RuntimeError, "symlink or reparse"):
+                    runner._validate_external_fresh_work_root(work, candidate, upstream)
+            with mock.patch.object(runner.Path, "is_symlink", side_effect=PermissionError("denied")):
+                with self.assertRaisesRegex(RuntimeError, "inspect work-root"):
+                    runner._validate_external_fresh_work_root(work, candidate, upstream)
+
+    def test_archive_symlink_and_hardlink_members_are_rejected(self):
+        for member_type in (tarfile.SYMTYPE, tarfile.LNKTYPE):
+            with self.subTest(member_type=member_type), tempfile.TemporaryDirectory() as temporary:
+                payload = io.BytesIO()
+                with tarfile.open(fileobj=payload, mode="w") as archive:
+                    member = tarfile.TarInfo("link")
+                    member.type = member_type
+                    member.linkname = "outside"
+                    archive.addfile(member)
+                with self.assertRaisesRegex(RuntimeError, "archive links"):
+                    runner._extract_archive(payload.getvalue(), Path(temporary) / "archive")
+
+    def test_real_symlink_rejection_when_host_allows_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate = root / "candidate"
+            upstream = root / "upstream"
+            candidate.mkdir()
+            upstream.mkdir()
+            link = root / "link"
+            target = root / "link-target"
+            target.mkdir()
+            try:
+                link.symlink_to(target, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("directory symlinks are unavailable on this host")
+            with self.assertRaisesRegex(RuntimeError, "symlink or reparse"):
+                runner._validate_external_fresh_work_root(link, candidate, upstream)
+
+    def test_run_id_cannot_escape_fresh_root(self):
+        for value in ("../escape", "nested/run", "", ".", ".."):
+            with self.subTest(value=value):
+                with self.assertRaises(RuntimeError):
+                    runner._validate_run_id(value)
+
     def test_safe_fixture_relative_rejects_absolute_anchor_drive_unc_and_parent(self):
         unsafe = [
             Path("/tmp/fixture.json"),
@@ -83,6 +166,7 @@ class Pb02ReplayToolTests(unittest.TestCase):
             root = Path(temporary)
             candidate_repo = root / "candidate-repo"
             upstream_repo = root / "upstream-repo"
+            upstream_repo.mkdir()
             fixture_relative = runner.FIXTURE_RELATIVE
             worktree_fixture = candidate_repo / fixture_relative
             worktree_fixture.parent.mkdir(parents=True)
@@ -148,6 +232,18 @@ class Pb02ReplayToolTests(unittest.TestCase):
             self.assertEqual(result["toolchain"]["uv"]["role"], "uv")
             self.assertEqual(result["toolchain"]["uv"]["executable"], "uv.exe")
             self.assertTrue(result["toolchain"]["uv"]["path_redacted"])
+            self.assertEqual(
+                result["custody"],
+                {
+                    "work_root_path_redacted": True,
+                    "work_root_outside_candidate_repo": True,
+                    "work_root_outside_upstream_repo": True,
+                    "work_root_empty_before_run": True,
+                    "run_root_created_new": True,
+                    "run_root_path_redacted": True,
+                    "materialized_archives_created_new": True,
+                },
+            )
             self.assertRegex(result["fresh_run_nonce"], r"^[0-9a-f]{64}$")
             report_text = report_path.read_text(encoding="utf-8")
             self.assertNotIn("C:\\Users\\", report_text)

@@ -20,6 +20,7 @@ import re
 import secrets
 import shutil
 import math
+import stat
 import subprocess
 import sys
 import tarfile
@@ -87,6 +88,11 @@ def _extract_archive(payload: bytes, destination: Path) -> None:
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:") as archive:
         root = destination.resolve()
         for member in archive.getmembers():
+            # Archive links are not part of the replay contract.  Reject them
+            # before extraction so a link cannot redirect a later file write
+            # outside the immutable materialization root.
+            if member.issym() or member.islnk():
+                raise RuntimeError(f"archive links are not allowed: {member.name}")
             target = (destination / member.name).resolve()
             if target != root and root not in target.parents:
                 raise RuntimeError(f"archive path escapes destination: {member.name}")
@@ -202,6 +208,72 @@ def _execution_env(rustc: Path, cargo: Path | None = None) -> dict[str, str]:
         existing_dirs = [item for item in env.get("PATH", "").split(os.pathsep) if item]
         env["PATH"] = os.pathsep.join(dict.fromkeys(tool_dirs + existing_dirs))
     return env
+
+
+def _has_reparse_component(path: Path) -> bool:
+    """Return whether an existing path component is a symlink/reparse point."""
+
+    candidate = Path(path)
+    while True:
+        try:
+            if candidate.is_symlink():
+                return True
+            stat_result = candidate.lstat()
+        except FileNotFoundError:
+            stat_result = None
+        except OSError as error:
+            raise RuntimeError("cannot inspect work-root path component") from error
+        if stat_result is not None:
+            reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+            if getattr(stat_result, "st_file_attributes", 0) & reparse_flag:
+                return True
+        parent = candidate.parent
+        if parent == candidate:
+            return False
+        candidate = parent
+
+
+def _validate_external_fresh_work_root(work_parent: Path, candidate_repo: Path, upstream_repo: Path) -> dict[str, bool]:
+    """Validate the caller-controlled root before any replay files are written."""
+
+    if _has_reparse_component(work_parent):
+        raise RuntimeError("work root cannot contain a symlink or reparse point")
+
+    def validate_identity() -> Path:
+        resolved = work_parent.resolve(strict=True)
+        if _has_reparse_component(work_parent):
+            raise RuntimeError("work root cannot contain a symlink or reparse point")
+        for label, repo in (("candidate", candidate_repo), ("upstream", upstream_repo)):
+            resolved_repo = repo.resolve(strict=True)
+            if resolved == resolved_repo or resolved_repo in resolved.parents:
+                raise RuntimeError(f"work root must be outside {label} repository")
+        return resolved
+
+    if work_parent.exists():
+        if not work_parent.is_dir():
+            raise RuntimeError("work root must be a directory")
+        try:
+            next(work_parent.iterdir())
+        except StopIteration:
+            pass
+        else:
+            raise RuntimeError("work root must be empty before a fresh replay")
+    else:
+        work_parent.parent.mkdir(parents=True, exist_ok=True)
+        work_parent.mkdir()
+    validate_identity()
+    return {
+        "work_root_path_redacted": True,
+        "work_root_outside_candidate_repo": True,
+        "work_root_outside_upstream_repo": True,
+        "work_root_empty_before_run": True,
+    }
+
+
+def _validate_run_id(value: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", value) is None:
+        raise RuntimeError("run id must be a single safe token")
+    return value
 
 
 def _safe_fixture_relative(value: Path | str) -> Path:
@@ -516,6 +588,7 @@ def _run_one(
 def run(args: argparse.Namespace) -> dict[str, Any]:
     candidate_repo = args.candidate_repo.resolve()
     upstream_repo = args.upstream_repo.resolve()
+    _validate_run_id(args.run_id)
     fixture_relative = _safe_fixture_relative(args.fixture)
     fresh_run_nonce = secrets.token_hex(32)
     toolchain_identity, runtime_tools = _runtime_toolchain_identity(args.cargo, args.uv, args.timeout_seconds)
@@ -523,16 +596,31 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     upstream_commit, upstream_tree = _commit_tree(upstream_repo, args.upstream_commit)
     if upstream_commit != EXPECTED_UPSTREAM_COMMIT or upstream_tree != EXPECTED_UPSTREAM_TREE:
         raise RuntimeError("upstream commit/tree is not the pinned PB-02 source")
-    work_parent = args.work_root.resolve() if args.work_root else Path(tempfile.mkdtemp(prefix="sipi-pb-02-replay-"))
-    work_parent.mkdir(parents=True, exist_ok=True)
+    if args.work_root is None:
+        work_parent = Path(tempfile.mkdtemp(prefix="sipi-pb-02-replay-"))
+    else:
+        # abspath makes a relative CLI value absolute without following a
+        # symlink; the validator must inspect links before resolution.
+        work_parent = Path(os.path.abspath(os.fspath(args.work_root)))
+    custody = _validate_external_fresh_work_root(work_parent, candidate_repo, upstream_repo)
     run_root = work_parent / args.run_id
     if run_root.exists():
         raise RuntimeError(f"run root already exists: {run_root}")
     run_root.mkdir()
+    validated_work_root = work_parent.resolve(strict=True)
+    if _has_reparse_component(run_root) or run_root.resolve(strict=True).parent != validated_work_root:
+        raise RuntimeError("fresh run root escaped validated work root")
+    custody.update(
+        {
+            "run_root_created_new": True,
+            "run_root_path_redacted": True,
+        }
+    )
     candidate_materialized = run_root / "candidate"
     upstream_materialized = run_root / "upstream"
     candidate_info = _materialize_git_archive(candidate_repo, candidate_commit, candidate_materialized)
     upstream_info = _materialize_git_archive(upstream_repo, upstream_commit, upstream_materialized)
+    custody["materialized_archives_created_new"] = True
     # Capture source inventories before uv/cargo can create build outputs in
     # the materialized oracle tree.  Reports bind the immutable archive, not
     # generated .pyd/.pyc files from a particular replay environment.
@@ -561,6 +649,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "upstream": upstream_facts,
         "fixture": {"path": fixture_relative.as_posix(), "sha256": fixture_hash, "bytes": len(fixture_payload), "archive_present": True},
         "toolchain": toolchain_identity,
+        "custody": custody,
         "replay": replay,
         "non_claims": [
             "This report does not prove parity for uncovered SimulationInputV1 branches.",
