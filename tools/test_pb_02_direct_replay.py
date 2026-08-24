@@ -249,7 +249,7 @@ class Pb02ReplayToolTests(unittest.TestCase):
                 return runner.subprocess.CompletedProcess(command, 1 if len(calls) == 1 else 0, b"", b"")
 
             with (
-                mock.patch.dict(os.environ, {"RUSTC_WRAPPER": "wrapper", "RUSTC_WORKSPACE_WRAPPER": "workspace"}, clear=False),
+                mock.patch.dict(os.environ, {"RUSTC_WRAPPER": "wrapper", "RUSTC_WORKSPACE_WRAPPER": "workspace", "CARGO_BUILD_RUSTC_WRAPPER": "cargo-wrapper", "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER": "cargo-workspace", "RUSTFLAGS": "-C target-cpu=native", "CARGO_ENCODED_RUSTFLAGS": "bad" , "PATH": "" + os.pathsep + str(root / "existing") + os.pathsep}, clear=False),
                 mock.patch.object(runner, "_run", side_effect=fake_run),
             ):
                 runner._run_one(
@@ -263,11 +263,58 @@ class Pb02ReplayToolTests(unittest.TestCase):
                     timeout=1,
                 )
 
-            self.assertEqual(len(calls), 2)
+                self.assertEqual(len(calls), 2)
             for _command, _cwd, env, _timeout in calls:
-                self.assertEqual(env["RUSTC"], str(rustc))
+                self.assertEqual(env["RUSTC"], str(rustc.resolve()))
+                self.assertEqual(env["CARGO"], str((root / "cargo.exe").resolve()))
+                self.assertEqual(env["CARGO_BUILD_RUSTC"], str(rustc.resolve()))
+                self.assertEqual(env["CARGO_NET_OFFLINE"], "true")
                 self.assertNotIn("RUSTC_WRAPPER", env)
                 self.assertNotIn("RUSTC_WORKSPACE_WRAPPER", env)
+                self.assertNotIn("CARGO_BUILD_RUSTC_WRAPPER", env)
+                self.assertNotIn("CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", env)
+                self.assertNotIn("RUSTFLAGS", env)
+                self.assertNotIn("CARGO_ENCODED_RUSTFLAGS", env)
+                self.assertNotIn("", env["PATH"].split(os.pathsep))
+
+    def test_successful_build_runtime_and_oracle_share_exact_rust_env_and_offline_uv(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            rustc = root / "rustc.exe"
+            cargo = root / "cargo.exe"
+            uv = root / "uv.exe"
+            binary = root / "pseudo-sipi-pybert-direct.exe"
+            binary.write_bytes(b"pseudo-binary")
+            calls = []
+
+            def fake_run(command, *, cwd, env, timeout):
+                calls.append((command, cwd, env, timeout))
+                return runner.subprocess.CompletedProcess(command, 0, b"", b"")
+
+            with mock.patch.object(runner, "_binary_path", return_value=binary), mock.patch.object(runner, "_run", side_effect=fake_run):
+                runner._run_one(
+                    run_root=root / "run",
+                    candidate_root=root / "candidate",
+                    upstream_root=root / "upstream",
+                    fixture=root / "fixture.json",
+                    cargo=cargo,
+                    rustc=rustc,
+                    uv=uv,
+                    timeout=1,
+                )
+
+            self.assertEqual(len(calls), 3)
+            expected_cargo = str(cargo.resolve())
+            expected_rustc = str(rustc.resolve())
+            for _command, _cwd, env, _timeout in calls:
+                self.assertEqual(env["CARGO"], expected_cargo)
+                self.assertEqual(env["RUSTC"], expected_rustc)
+                self.assertEqual(env["CARGO_BUILD_RUSTC"], expected_rustc)
+                for name in ("RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER", "CARGO_BUILD_RUSTC_WRAPPER", "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", "RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS"):
+                    self.assertNotIn(name, env)
+                self.assertNotIn(os.pathsep + os.pathsep, env["PATH"])
+            self.assertIn("--offline", calls[2][0])
+            self.assertIn("--offline", calls[0][0])
 
     def test_meta_normalization_removes_machine_local_input_path(self):
         value = {

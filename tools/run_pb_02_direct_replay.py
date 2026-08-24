@@ -182,11 +182,25 @@ def _runtime_toolchain_identity(cargo: str, uv: str, timeout_seconds: int) -> tu
     return identities, {"cargo": cargo_path, "rustc": rustc_path, "uv": uv_path}
 
 
-def _execution_env(rustc: Path) -> dict[str, str]:
+def _execution_env(rustc: Path, cargo: Path | None = None) -> dict[str, str]:
     env = dict(os.environ)
-    for variable in ("RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"):
+    for variable in (
+        "RUSTC_WRAPPER",
+        "RUSTC_WORKSPACE_WRAPPER",
+        "CARGO_BUILD_RUSTC_WRAPPER",
+        "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER",
+        "RUSTFLAGS",
+        "CARGO_ENCODED_RUSTFLAGS",
+    ):
         env.pop(variable, None)
-    env["RUSTC"] = str(rustc)
+    env["RUSTC"] = str(rustc.resolve())
+    env["CARGO_BUILD_RUSTC"] = str(rustc.resolve())
+    env["CARGO_NET_OFFLINE"] = "true"
+    if cargo is not None:
+        env["CARGO"] = str(cargo.resolve())
+        tool_dirs = [str(cargo.resolve().parent), str(rustc.resolve().parent)]
+        existing_dirs = [item for item in env.get("PATH", "").split(os.pathsep) if item]
+        env["PATH"] = os.pathsep.join(dict.fromkeys(tool_dirs + existing_dirs))
     return env
 
 
@@ -426,10 +440,10 @@ def _run_one(
     upstream_output = run_root / "upstream-output"
     candidate_target.mkdir(parents=True)
     upstream_target.mkdir(parents=True)
-    env = _execution_env(rustc)
+    env = _execution_env(rustc, cargo)
     env["CARGO_TARGET_DIR"] = str(candidate_target)
     build = _run(
-        [str(cargo), "build", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"],
+        [str(cargo), "build", "--offline", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"],
         cwd=candidate_root,
         env=env,
         timeout=timeout,
@@ -444,7 +458,7 @@ def _run_one(
     }
     candidate_process: dict[str, Any]
     if build.returncode == 0 and binary.is_file():
-        candidate_env = _execution_env(rustc)
+        candidate_env = _execution_env(rustc, cargo)
         candidate_env["CARGO_TARGET_DIR"] = str(candidate_target)
         process = _run(
             [str(binary), str(fixture), "--output-dir", str(candidate_output)],
@@ -456,7 +470,7 @@ def _run_one(
     else:
         candidate_process = {"exit_code": None, "skipped": True, "artifacts": {}}
 
-    upstream_env = _execution_env(rustc)
+    upstream_env = _execution_env(rustc, cargo)
     upstream_env["CARGO_TARGET_DIR"] = str(upstream_target)
     upstream_env["UV_PROJECT_ENVIRONMENT"] = str(run_root / "upstream-venv")
     cargo_executable = cargo
@@ -466,6 +480,7 @@ def _run_one(
         [
             str(uv),
             "run",
+            "--offline",
             "--project",
             str(upstream_root),
             "--frozen",
