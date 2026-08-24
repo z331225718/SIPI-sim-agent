@@ -5661,11 +5661,24 @@ fn workbook_control_json_v1(
     aliases: &[&str],
     label: &str,
 ) -> Result<Value, DirectRunErrorV1> {
-    let matches = values
+    // Workbook keys are case-sensitive when the schema gives two controls
+    // that differ only by case (for example f_HP versus f_hp).  Preserve
+    // that distinction first; legacy spelling variants may still use a
+    // case-insensitive fallback when no exact schema key is present.
+    let exact_matches = values
         .iter()
-        .filter(|(key, _)| aliases.iter().any(|alias| key.eq_ignore_ascii_case(alias)))
+        .filter(|(key, _)| aliases.iter().any(|alias| *key == alias))
         .map(|(_, value)| resolved_json_value_v1(value))
         .collect::<Result<Vec<_>, _>>()?;
+    let matches = if exact_matches.is_empty() {
+        values
+            .iter()
+            .filter(|(key, _)| aliases.iter().any(|alias| key.eq_ignore_ascii_case(alias)))
+            .map(|(_, value)| resolved_json_value_v1(value))
+            .collect::<Result<Vec<_>, _>>()?
+    } else {
+        exact_matches
+    };
     let Some(first) = matches.first() else {
         return Err(DirectRunErrorV1::Unsupported(format!(
             "workbook materialization does not expose required portable.search control {label}"
@@ -7216,7 +7229,10 @@ mod tests {
         let mut values = BTreeMap::new();
         values.insert("INCLUDE_CTLE".to_owned(), ResolvedDefaultV1::Boolean(true));
         values.insert("include_ctle".to_owned(), ResolvedDefaultV1::Boolean(false));
-        assert!(workbook_control_json_v1(&values, &["include_ctle"], "INCLUDE_CTLE").is_err());
+        assert!(
+            workbook_control_json_v1(&values, &["INCLUDE_CTLE", "include_ctle"], "INCLUDE_CTLE")
+                .is_err()
+        );
 
         values.insert("samples_per_ui".to_owned(), ResolvedDefaultV1::Scalar(8.0));
         values.insert("SAMP_PER_UI".to_owned(), ResolvedDefaultV1::Scalar(16.0));
@@ -7259,6 +7275,32 @@ mod tests {
         values.insert("SAMPLES_PER_UI".to_owned(), ResolvedDefaultV1::Scalar(16.0));
         assert!(
             required_td_scalar_alias_v1(&values, &["samples_per_ui"], "samples_per_ui").is_err()
+        );
+    }
+
+    #[test]
+    fn workbook_case_distinct_controls_prefer_exact_schema_keys() {
+        let mut values = BTreeMap::new();
+        values.insert("f_HP".to_owned(), ResolvedDefaultV1::Vector(vec![1.0, 2.0]));
+        values.insert("f_hp".to_owned(), ResolvedDefaultV1::Scalar(3.0));
+        assert_eq!(
+            workbook_control_json_v1(&values, &["f_HP"], "f_HP").unwrap(),
+            json!([1.0, 2.0])
+        );
+        assert_eq!(
+            workbook_control_json_v1(&values, &["f_hp"], "f_hp").unwrap(),
+            json!(3)
+        );
+
+        let mut fallback = BTreeMap::new();
+        fallback.insert("b_float_rss_max".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        assert_eq!(
+            workbook_control_json_v1(&fallback, &["B_float_RSS_MAX"], "B_float_RSS_MAX").unwrap(),
+            json!(1)
+        );
+        fallback.insert("B_FLOAT_RSS_MAX".to_owned(), ResolvedDefaultV1::Scalar(2.0));
+        assert!(
+            workbook_control_json_v1(&fallback, &["B_float_RSS_MAX"], "B_float_RSS_MAX").is_err()
         );
     }
 
