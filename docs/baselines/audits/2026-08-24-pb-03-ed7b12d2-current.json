@@ -1,0 +1,88 @@
+{
+  "schema": "sipi.pb-03-ed7b12d2-audit.v1",
+  "row": "PB-03",
+  "manifest_path": "docs/baselines/pb-03-direct-ed7b12d2-current.v1.yaml",
+  "source_map": "not_applicable_for_scoped_observation",
+  "no_bit_reproducible_build_claim": true,
+  "inventory": {
+    "count": 44,
+    "canonical_sha256": "67e0fb568f1d0461e1b60c2b5cd3e52c5ade90bb689067740bff7d82d0fe02e7",
+    "names": [
+      "ber_auto_correlation.npy", "ber_error_indices.npy", "ber_observed_bits.npy", "ber_reference_bits.npy",
+      "channel_impulse_v_per_v.npy", "channel_output_v.npy", "ctle_output_v.npy", "dfe_bits.npy",
+      "dfe_clock_times_s.npy", "dfe_clocks.npy", "dfe_decision_scalers_v.npy", "dfe_decisions.npy",
+      "dfe_locked.npy", "dfe_output_v.npy", "dfe_signal_samples_v.npy", "dfe_tap_weights_v.npy",
+      "dfe_ui_estimates_s.npy", "legacy_channel_frequency_hz.npy", "legacy_channel_raw_im.npy",
+      "legacy_channel_raw_re.npy", "legacy_channel_terminated_im.npy", "legacy_channel_terminated_re.npy",
+      "legacy_channel_trimmed_im.npy", "legacy_channel_trimmed_re.npy", "legacy_stage_ctle_im.npy",
+      "legacy_stage_ctle_out_im.npy", "legacy_stage_ctle_out_re.npy", "legacy_stage_ctle_re.npy",
+      "legacy_stage_dfe_im.npy", "legacy_stage_dfe_out_im.npy", "legacy_stage_dfe_out_re.npy",
+      "legacy_stage_dfe_re.npy", "legacy_stage_tx_im.npy", "legacy_stage_tx_out_im.npy",
+      "legacy_stage_tx_out_re.npy", "legacy_stage_tx_re.npy", "rx_ffe_impulse_v_per_v.npy",
+      "rx_filter_impulse_v_per_v.npy", "rx_input_v.npy", "rx_output_v.npy", "symbols_v.npy", "time_s.npy",
+      "tx_channel_impulse_v_per_v.npy", "tx_waveform_v.npy"
+    ]
+  },
+  "claims": {
+    "payload_parity": true,
+    "payload_scope": "fixed_pb03_stable_array_subset",
+    "whole_payload_parity": false,
+    "independent_implementation": false,
+    "global_row_closed": false,
+    "product_capability": false,
+    "release_approval": false
+  },
+  "non_claims": [
+    "This is one frozen fixture only.",
+    "PB-03 payload parity is only the fixed stable array subset, not whole-payload parity.",
+    "The candidate and oracle do not prove independent implementations.",
+    "Uncovered branches, global parity, product capability, and release approval remain open.",
+    "No bit-reproducible build claim is made; raw binary identity may vary between fresh runs."
+  ],
+  "aggregate": {
+    "path": "docs/baselines/pb-03-direct-ed7b12d2-aggregate.json",
+      "sha256": "c5f54a591c9ab5037545468e4872e4906a2388686ae4d99497bd193edc1c1d64"
+  },
+  "exact_file_bindings": {
+    "report_01": {
+      "path": "docs/baselines/pb-03-direct-ed7b12d2-run-01.json",
+      "sha256": "5113f55c4c0644e46611db3edad423804cd106864e6616cb383ee69a222aed8f",
+      "run_id": "pb-03-ed7b12d2-formal-01",
+      "fresh_run_nonce": "e454fd35e41c413db389a0c7e7a282ba"
+    },
+    "report_02": {
+      "path": "docs/baselines/pb-03-direct-ed7b12d2-run-02.json",
+      "sha256": "b4bd16f3680828c45a1ec177111c1c62aa137926be09f3f732408017441775ca",
+      "run_id": "pb-03-ed7b12d2-formal-02",
+      "fresh_run_nonce": "30fcfcce25e94ee99a844bb447801a73"
+    },
+    "aggregate": {
+      "path": "docs/baselines/pb-03-direct-ed7b12d2-aggregate.json",
+      "sha256": "c5f54a591c9ab5037545468e4872e4906a2388686ae4d99497bd193edc1c1d64"
+    },
+    "runner": {
+      "path": "tools/run_pb_03_direct_replay.py",
+      "sha256": "c54f238c9bc4a21c62107b939625c75f967558d33098366c017ab928b5709d51"
+    },
+    "helper": {
+      "path": "tools/pb_03_replay_common.py",
+      "sha256": "bd10f6bbc63bde8fe3b7f1fb2083ac568ca41d2c42d21faedf127f8b6540d5c9"
+    },
+    "aggregator": {
+      "path": "tools/aggregate_pb_03_05_direct_replay.py",
+      "sha256": "a11bb2ad01ed9610e4da25cba6fd43261473d12afb68df8d4ade7545038c9ac7"
+    },
+    "aggregate_tests": {
+      "path": "tools/test_aggregate_pb_03_scoped.py",
+      "sha256": "7b017e7b671b6c1380d63bcb44a1cf9ada27dd2860116765368fab82063f2a20"
+    },
+    "verifier": {
+      "path": "tools/verify_pb_03_direct_ed7b12d2_current.py",
+      "sha256": "51835340224e1bd2e0239b858f03175d91b2896a33b9c557a4afbb17284aca33"
+    },
+    "mutation_tests": {
+      "path": "tools/test_verify_pb_03_direct_ed7b12d2_current.py",
+      "sha256": "534745510773b201126d07e1c290b58fc1480107b225a603fd98c8470cfa9471"
+    }
+  }
+}

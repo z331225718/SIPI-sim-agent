@@ -109,3 +109,11 @@ def test_pb04_pb05_aggregate_schema_is_unchanged() -> None:
                 path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
             result = aggregate.aggregate(first, second, root / f"{row}.json", row)
             assert set(result) == expected, result
+
+
+def test_committed_aggregator_reproduces_formal_aggregate_byte_exact() -> None:
+    with tempfile.TemporaryDirectory() as temporary:
+        output = Path(temporary) / "aggregate.json"
+        aggregate.aggregate(REPORTS[0], REPORTS[1], output, "PB-03")
+        expected = (ROOT / "docs/baselines/pb-03-direct-ed7b12d2-aggregate.json").read_bytes()
+        assert output.read_bytes() == expected
