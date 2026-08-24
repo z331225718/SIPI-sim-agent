@@ -8,6 +8,12 @@
 
 ## 0. v0.3 当前执行面：先整合原项目，再统一 Rust 重构
 
+**2026-08-24 v4 治理快照：** 新增
+[`upstream-integration-ledger.v4`](docs/baselines/upstream-integration-ledger.v4.yaml)，以当前
+clean candidate `e1a9ca87` 记录 15 行的集成去向、运行时可用性、证据范围和发布状态。
+当前 0 行 release-ready；AS-01..03 数值差异仍 open，AS-04..06 的 Rust 控制/产物分支不改变外部
+solver workflow 边界。此快照为 additive successor，不改写 v1-v3，也不提升全局 parity。
+
 Owner 已明确纠偏：当前阶段不增加新的领域功能。先完整覆盖
 Agent-Spice、PyBERT、Agent-COM 三个固定提交已经公开实现的稳定工作流，
 再逐项以 Rust 替换；迁移、机械重构、算法改进和发布必须分开。
