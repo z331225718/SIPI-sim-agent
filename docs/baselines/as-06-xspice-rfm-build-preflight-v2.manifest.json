@@ -1,0 +1,44 @@
+{
+  "schema": "sipi.as-06-xspice-rfm-build-preflight.v2.manifest",
+  "status": "blocked_external_build_preflight",
+  "manifest_policy": {
+    "environment_injection": "not_fully_excluded",
+    "external_solver": "not_observed",
+    "path_policy": "redacted",
+    "promotion": "forbidden"
+  },
+  "scope": {
+    "build_attempted": false,
+    "artifact_present": false,
+    "workflow_not_run": true,
+    "parity": false,
+    "as06_row_closed": false,
+    "release": false
+  },
+  "candidate": {
+    "commit": "d3b53057d9751b8edf427bbe74cd34f7e4ed02f7",
+    "tree": "bc297933a116f7a326d144295ca15bc487126fce",
+    "archive_sha256": "6813a94d4bb6cfa2736426a79619ed0aacad6464a5592da06fee841a8440e37c",
+    "archive_bytes": 44349440,
+    "materialization": "candidate_clean_git_archive"
+  },
+  "upstream": {
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402",
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "materialization": "upstream_clean_git_archive"
+  },
+  "report": {"path": "docs/baselines/as-06-xspice-rfm-build-preflight-v2.json", "sha256": "e7f5dc054bade2802b97dad27995de8d5b71ef22322f5836c3bc3a416209eecb", "run_id": "as06-preflight-v2-20260824-01", "os_nonce": "923cf9950bfb531bbd7f72becb6a4e93cc2e901cd0fe2ac687d409e88f17625d"},
+  "runner": {"path": "tools/preflight_as06_xspice_rfm.py", "sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89", "archive_sha256": "6813a94d4bb6cfa2736426a79619ed0aacad6464a5592da06fee841a8440e37c", "materialization": "candidate_archive_member_core_autocrlf_true", "working_tree_sha256": "7a3588f71a9e5516d68297714f4da037c45b56fe2badb974872a06b70c463ddc", "working_tree_bytes": 28498},
+  "toolchain_sha256": "814e784fde7a05752f708d5850a1d254f2f5805e26a1eac71244d24fee8ea0ac",
+  "source_asset_sha256": null,
+  "source_asset_observation_sha256": "7e9f4b42378fda6446c903be14db3fdfbac4e4ec2a7eb00cef6ca3c6f747e884",
+  "closure_sha256": "22ae5eb9c4001d15b62fa2fd3b4d52ea702b72956a2c6f4e1e0728ef1954a7fa",
+  "sources_sha256": "94f101fa5b8f8c0686520e645b2ca19a827e02783ae75383e88dea474ec7c6e4",
+  "docker_sha256": "4f74c75e49a116e86902b00b3448e4a053093c11df5dfd87cff507059e2e2dbd",
+  "blockers": ["source_asset_missing", "docker_info_failed"],
+  "non_claims": ["no_code_model_built", "no_ngspice_replay", "no_numeric_parity", "no_as06_row_closure", "no_release_promotion"],
+  "audit": {"path": "docs/baselines/audits/2026-08-24-as-06-xspice-rfm-build-preflight-v2.json", "sha256": "68a37647472599992e83cc0af69ea446d6b92587b466972b9c74515f676cf775"},
+  "verifier": {"path": "tools/verify_as06_xspice_preflight_v2.py", "sha256": "4b1b9ecbdb1e8a36a780e5479a817d1eb962f9cc6695e687e95777e4f53e5a78"},
+  "mutation_tests": {"path": "tools/test_verify_as06_xspice_preflight_v2.py", "sha256": "e65108dc7502e3b1dddf31a86fcec0a71277a87ec7c363b5645c799de2aa46f0"}
+}

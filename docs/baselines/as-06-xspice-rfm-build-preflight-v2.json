@@ -1,0 +1,313 @@
+{
+  "blockers": [
+    "source_asset_missing",
+    "docker_info_failed"
+  ],
+  "build": {
+    "artifact_present": false,
+    "attempted": false
+  },
+  "candidate": {
+    "archive_observation": {
+      "bytes": 44349440,
+      "extract_status": "ok",
+      "extracted": true,
+      "overflow": false,
+      "returncode": 0,
+      "sha256": "6813a94d4bb6cfa2736426a79619ed0aacad6464a5592da06fee841a8440e37c",
+      "timeout": false
+    },
+    "archive_sha256": "6813a94d4bb6cfa2736426a79619ed0aacad6464a5592da06fee841a8440e37c",
+    "commit": "d3b53057d9751b8edf427bbe74cd34f7e4ed02f7",
+    "materialization": "candidate_clean_git_archive",
+    "observed_commit": "d3b53057d9751b8edf427bbe74cd34f7e4ed02f7",
+    "observed_tree": "bc297933a116f7a326d144295ca15bc487126fce",
+    "overlay_current_worktree": false,
+    "runner_member": {
+      "match": true,
+      "member_bytes": 29061,
+      "member_overflow": false,
+      "member_sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89",
+      "path_redacted": true,
+      "present": true,
+      "runtime_bytes": 29061,
+      "runtime_overflow": false,
+      "runtime_sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89"
+    },
+    "tree": "bc297933a116f7a326d144295ca15bc487126fce"
+  },
+  "closure": {
+    "agent_spice_license": {
+      "bytes": 1088,
+      "overflow": false,
+      "present": true,
+      "sha256": "9cc547b6685180ef62796042633936c697959c10aaa930a4eb47a1ffd136616d",
+      "status": "observed"
+    },
+    "dockerfile": {
+      "bytes": 377,
+      "overflow": false,
+      "present": true,
+      "sha256": "3268462405754de90e5b0bc1cfc2142207c80066182703788c525888698ccb67",
+      "status": "observed"
+    },
+    "ngspice_license": {
+      "path_redacted": true,
+      "reason": "not_inspected",
+      "status": "unknown"
+    },
+    "ngspice_source": {
+      "path_redacted": true,
+      "reason": "not_observed",
+      "status": "unknown"
+    }
+  },
+  "docker": {
+    "exit_code": 1,
+    "output_bytes": 225,
+    "output_sha256": "8bf69fe59662c48af09aa8577b37b1fb78a1e3326c4c24a52aaf71745f410eae",
+    "path_redacted": true,
+    "status": "docker_info_failed",
+    "timeout": false
+  },
+  "non_claims": [
+    "no_code_model_built",
+    "no_ngspice_replay",
+    "no_numeric_parity",
+    "no_as06_row_closure",
+    "no_release_promotion"
+  ],
+  "os_nonce": "923cf9950bfb531bbd7f72becb6a4e93cc2e901cd0fe2ac687d409e88f17625d",
+  "ready_to_build": false,
+  "run_id": "as06-preflight-v2-20260824-01",
+  "runner": {
+    "archive_member": {
+      "bytes": 29061,
+      "overflow": false,
+      "sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89"
+    },
+    "initial": {
+      "bytes": 29061,
+      "overflow": false,
+      "sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89"
+    },
+    "path_redacted": true,
+    "post": {
+      "bytes": 29061,
+      "overflow": false,
+      "sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89"
+    },
+    "runtime": {
+      "bytes": 29061,
+      "overflow": false,
+      "sha256": "f9553dff0c1a1353e09b2fd16f6e83dba5e9261c15868bb96ca4f1b1a5ab0e89"
+    }
+  },
+  "schema": "sipi.as-06-xspice-rfm-build-preflight.v2",
+  "source_asset": {
+    "basename": "ngspice-46.tar.gz",
+    "expected_basename": "ngspice-46.tar.gz",
+    "expected_sha256": "a0d1699af1940b06649276dcd6ff5a566c8c0cad01b2f7b5e99dedbb4d64c19b",
+    "file_count": 0,
+    "identity_stable": true,
+    "kind": "missing",
+    "mid_identity": {
+      "basename": "ngspice-46.tar.gz",
+      "file_count": 0,
+      "kind": "missing",
+      "mismatch": false,
+      "other_entry_count": 0,
+      "path_redacted": true,
+      "present": false,
+      "sha256": null,
+      "single_bytes": null,
+      "total_bytes": 0,
+      "wrong_file_count": 0,
+      "wrong_files": []
+    },
+    "mismatch": false,
+    "other_entry_count": 0,
+    "path_redacted": true,
+    "post_identity": {
+      "basename": "ngspice-46.tar.gz",
+      "file_count": 0,
+      "kind": "missing",
+      "mismatch": false,
+      "other_entry_count": 0,
+      "path_redacted": true,
+      "present": false,
+      "sha256": null,
+      "single_bytes": null,
+      "total_bytes": 0,
+      "wrong_file_count": 0,
+      "wrong_files": []
+    },
+    "pre_identity": {
+      "basename": "ngspice-46.tar.gz",
+      "file_count": 0,
+      "kind": "missing",
+      "mismatch": false,
+      "other_entry_count": 0,
+      "path_redacted": true,
+      "present": false,
+      "sha256": null,
+      "single_bytes": null,
+      "total_bytes": 0,
+      "wrong_file_count": 0,
+      "wrong_files": []
+    },
+    "present": false,
+    "root_path_redacted": true,
+    "sha256": null,
+    "single_bytes": null,
+    "total_bytes": 0,
+    "wrong_file_count": 0,
+    "wrong_files": []
+  },
+  "sources": {
+    "LICENSE": {
+      "bytes": 1088,
+      "overflow": false,
+      "present": true,
+      "sha256": "9cc547b6685180ef62796042633936c697959c10aaa930a4eb47a1ffd136616d",
+      "status": "observed"
+    },
+    "poc/xspice-rfm/Dockerfile": {
+      "bytes": 377,
+      "overflow": false,
+      "present": true,
+      "sha256": "3268462405754de90e5b0bc1cfc2142207c80066182703788c525888698ccb67",
+      "status": "observed"
+    },
+    "poc/xspice-rfm/build-windows.ps1": {
+      "bytes": 2268,
+      "overflow": false,
+      "present": true,
+      "sha256": "1d7514634cc462430bd8905784de656039b01652dccedb7bcda73c44bc2349da",
+      "status": "observed"
+    },
+    "poc/xspice-rfm/cfunc.mod": {
+      "bytes": 30489,
+      "overflow": false,
+      "present": true,
+      "sha256": "b666505ebd85f9818c52c40763b90e6cb690436ac8dedb9a32f1487ab7de14ea",
+      "status": "observed"
+    },
+    "poc/xspice-rfm/ifspec.ifs": {
+      "bytes": 828,
+      "overflow": false,
+      "present": true,
+      "sha256": "c07deab2d091ee36c81a329b83811a4ef54b67513e7fd36f9fea8776b5419274",
+      "status": "observed"
+    },
+    "poc/xspice-rfm/modpath.lst": {
+      "bytes": 11,
+      "overflow": false,
+      "present": true,
+      "sha256": "5b33999027554d6d9538f1245c52ae490c04d3b8bb4c7eed23e1a71f62790fcb",
+      "status": "observed"
+    },
+    "poc/xspice-rfm/udnpath.lst": {
+      "bytes": 0,
+      "overflow": false,
+      "present": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "observed"
+    }
+  },
+  "status": "blocked_external_build_preflight",
+  "toolchain": {
+    "docker_post": {
+      "basename": "docker.exe",
+      "file_bytes": 42748848,
+      "file_sha256": "0cdb9dea2e39a0a29e5dc3f9732f572dc140547b28deab0495589b4f79b31ca1",
+      "path_redacted": true,
+      "version_exit_code": 0,
+      "version_output_bytes": 37,
+      "version_output_sha256": "0df16010a5733c132c2c6cbab6fa7312eb44d1fa0fc1a4dd4a551bdeb9cf0157",
+      "version_overflow": false,
+      "version_timeout": false
+    },
+    "docker_pre": {
+      "basename": "docker.exe",
+      "file_bytes": 42748848,
+      "file_sha256": "0cdb9dea2e39a0a29e5dc3f9732f572dc140547b28deab0495589b4f79b31ca1",
+      "path_redacted": true,
+      "version_exit_code": 0,
+      "version_output_bytes": 37,
+      "version_output_sha256": "0df16010a5733c132c2c6cbab6fa7312eb44d1fa0fc1a4dd4a551bdeb9cf0157",
+      "version_overflow": false,
+      "version_timeout": false
+    },
+    "git_post": {
+      "basename": "git.exe",
+      "file_bytes": 46480,
+      "file_sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5",
+      "path_redacted": true,
+      "version_exit_code": 0,
+      "version_output_bytes": 29,
+      "version_output_sha256": "a0bef3335cdbc9a4a7733503ecdb281e91319f5a15e22026bfbef750ce76aaba",
+      "version_overflow": false,
+      "version_timeout": false
+    },
+    "git_pre": {
+      "basename": "git.exe",
+      "file_bytes": 46480,
+      "file_sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5",
+      "path_redacted": true,
+      "version_exit_code": 0,
+      "version_output_bytes": 29,
+      "version_output_sha256": "a0bef3335cdbc9a4a7733503ecdb281e91319f5a15e22026bfbef750ce76aaba",
+      "version_overflow": false,
+      "version_timeout": false
+    },
+    "python_post": {
+      "basename": "python.exe",
+      "file_bytes": 106208,
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "runtime_version_sha256": "55bb7af14269b325a6cf4305449a1149fc747135780f9ac9e8e86c14c79aefa3",
+      "version_exit_code": 0,
+      "version_output_bytes": 15,
+      "version_output_sha256": "cf25165865edf0baea5fff58088b4987aa3f34df958a794c11cdf73702d4c9c7",
+      "version_overflow": false,
+      "version_timeout": false
+    },
+    "python_pre": {
+      "basename": "python.exe",
+      "file_bytes": 106208,
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "path_redacted": true,
+      "runtime_version_sha256": "55bb7af14269b325a6cf4305449a1149fc747135780f9ac9e8e86c14c79aefa3",
+      "version_exit_code": 0,
+      "version_output_bytes": 15,
+      "version_output_sha256": "cf25165865edf0baea5fff58088b4987aa3f34df958a794c11cdf73702d4c9c7",
+      "version_overflow": false,
+      "version_timeout": false
+    },
+    "tarfile": {
+      "basename": "tarfile.py",
+      "file_bytes": 121266,
+      "file_sha256": "665ad7a006159ef6db252783bc474653da6c40b151f51ba8a6e19a7b1f51749a",
+      "module_version": "python-stdlib",
+      "path_redacted": true
+    }
+  },
+  "upstream": {
+    "archive_observation": {
+      "bytes": 120238080,
+      "extract_status": "ok",
+      "extracted": true,
+      "overflow": false,
+      "returncode": 0,
+      "sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+      "timeout": false
+    },
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "materialization": "upstream_clean_git_archive",
+    "observed_commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "observed_tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}
