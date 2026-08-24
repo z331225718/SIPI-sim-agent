@@ -16,11 +16,21 @@ use crate::receiver_noise_v1::{NoiseErrorV1, rx_ffe_frequency_response_v1};
 /// Explicit scope policy of the crosstalk noise stage.
 pub const CROSSTALK_NOISE_POLICY_V1: &str = "sipi.p5-04p.crosstalk-noise-v1.fext-next-integration";
 
+/// Bound the TD source outer product before any downstream allocation or
+/// indexed expansion. The limit is deliberately below the generic TD work
+/// budget because this stage represents one response by one COM frequency
+/// axis for every admitted channel.
+pub const MAX_TD_CROSSTALK_CHANNELS_V1: usize = 64;
+pub const MAX_TD_CROSSTALK_MATRIX_ELEMENTS_V1: usize = 8_388_608;
+pub const MAX_TD_CROSSTALK_MATRIX_BYTES_V1: usize =
+    MAX_TD_CROSSTALK_MATRIX_ELEMENTS_V1 * std::mem::size_of::<f64>();
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum XtalkErrorV1 {
     FrequencyTooShort,
     RxFfePairing,
     AxisMismatch,
+    Oversize,
     UnsupportedRole,
     TdRxffeUncertified,
     EmptyTdResponse,
@@ -61,6 +71,21 @@ pub fn crosstalk_noise_v1(
 ) -> Result<f64, XtalkErrorV1> {
     if channels.is_empty() {
         return Ok(0.0);
+    }
+    if !parameters.fb.is_finite()
+        || parameters.fb <= 0.0
+        || !parameters.f2.is_finite()
+        || parameters.f2 <= 0.0
+        || !parameters.sigma_x.is_finite()
+        || parameters.sigma_x < 0.0
+    {
+        return Err(XtalkErrorV1::InvalidControls);
+    }
+    if channels.len() > MAX_TD_CROSSTALK_CHANNELS_V1 {
+        return Err(XtalkErrorV1::Oversize);
+    }
+    if frequency.len() != h_ctf.len() {
+        return Err(XtalkErrorV1::AxisMismatch);
     }
     let index_f2 = frequency.partition_point(|value| *value <= parameters.fb);
     if index_f2 == 0 {
@@ -176,6 +201,31 @@ pub fn td_source_crosstalk_noise_v1(
     channels: &[XtalkChannelV1],
     parameters: &XtalkParamsV1,
 ) -> Result<f64, XtalkErrorV1> {
+    if !parameters.fb.is_finite()
+        || parameters.fb <= 0.0
+        || !parameters.f2.is_finite()
+        || parameters.f2 <= 0.0
+        || !parameters.sigma_x.is_finite()
+        || parameters.sigma_x < 0.0
+    {
+        return Err(XtalkErrorV1::InvalidControls);
+    }
+    if frequency.len() < 11 {
+        return Err(XtalkErrorV1::FrequencyTooShort);
+    }
+    if frequency.len() != h_ctf.len()
+        || frequency.len() != tx_filter.len()
+        || frequency.len() != sinc.len()
+    {
+        return Err(XtalkErrorV1::AxisMismatch);
+    }
+    if channels.is_empty() || channels.len() > MAX_TD_CROSSTALK_CHANNELS_V1 {
+        return if channels.is_empty() {
+            Ok(0.0)
+        } else {
+            Err(XtalkErrorV1::Oversize)
+        };
+    }
     let first_above = frequency.iter().position(|value| *value > parameters.fb);
     let count = match first_above {
         None => frequency.len(),
@@ -184,81 +234,75 @@ pub fn td_source_crosstalk_noise_v1(
     if count == 0 {
         return Ok(0.0);
     }
-    let weight_fext: Vec<f64> = (0..count)
-        .map(|index| sinc[index] * sinc[index] * magnitude(tx_filter[index]))
-        .collect();
-    let weight_next: Vec<f64> = (0..count).map(|index| sinc[index] * sinc[index]).collect();
-    let mut fext_matrix: Option<Vec<f64>> = None;
-    let mut next_matrix: Option<Vec<f64>> = None;
-    let mut fext_amplitude = 0.0_f64;
-    let mut next_amplitude = 0.0_f64;
     let response_row_count = channels
         .first()
         .map(|(_, response, _)| response.len())
         .unwrap_or(0);
-    for (role, response, amplitude) in channels {
-        if response.is_empty() {
-            return Err(XtalkErrorV1::EmptyTdResponse);
+    if response_row_count == 0 {
+        return Err(XtalkErrorV1::EmptyTdResponse);
+    }
+    checked_td_outer_product_budget_v1(response_row_count, h_ctf.len())?;
+    for (_, response, _) in channels {
+        if response.len() != response_row_count {
+            return Err(XtalkErrorV1::AxisMismatch);
         }
-        // Outer product: values[:, None] * h_ctf[None, :]
-        let rows = response.len();
-        let columns = h_ctf.len();
-        let mut power = Vec::with_capacity(rows * columns);
-        for row in 0..rows {
-            for column in 0..columns {
-                let product = complex_mul(response[row], h_ctf[column]);
-                let magnitude_squared = magnitude(product) * magnitude(product);
-                power.push(magnitude_squared);
+    }
+    let weight_fext: Vec<f64> = (0..count)
+        .map(|index| sinc[index] * sinc[index] * magnitude(tx_filter[index]))
+        .collect();
+    let weight_next: Vec<f64> = (0..count).map(|index| sinc[index] * sinc[index]).collect();
+    let mut fext_sum = 0.0_f64;
+    let mut next_sum = 0.0_f64;
+    let mut fext_amplitude = 0.0_f64;
+    let mut next_amplitude = 0.0_f64;
+    // The upstream reshapes the outer product in Fortran order and consumes
+    // only the first `count` entries. Stream those entries directly so the
+    // public result is unchanged without allocating the full matrix. The
+    // accumulation order is intentionally element-major: channels of one
+    // role are combined before the weight is applied, matching NumPy's
+    // matrix sum followed by the weighted reduction.
+    for index in 0..count {
+        let mut fext_element = 0.0_f64;
+        let mut next_element = 0.0_f64;
+        for (role, response, amplitude) in channels {
+            let row = index % response_row_count;
+            let column = index / response_row_count;
+            let product = complex_mul(response[row], h_ctf[column]);
+            let magnitude_squared = magnitude(product) * magnitude(product);
+            match role.as_str() {
+                "FEXT" => {
+                    fext_element += magnitude_squared;
+                    fext_amplitude = *amplitude;
+                }
+                "NEXT" => {
+                    next_element += magnitude_squared;
+                    next_amplitude = *amplitude;
+                }
+                other => return Err(XtalkErrorV1::UnsupportedRole.with_role(other)),
             }
         }
-        match role.as_str() {
-            "FEXT" => {
-                fext_matrix = Some(match fext_matrix {
-                    Some(acc) => acc.iter().zip(power.iter()).map(|(a, b)| a + b).collect(),
-                    None => power,
-                });
-                fext_amplitude = *amplitude;
-            }
-            "NEXT" => {
-                next_matrix = Some(match next_matrix {
-                    Some(acc) => acc.iter().zip(power.iter()).map(|(a, b)| a + b).collect(),
-                    None => power,
-                });
-                next_amplitude = *amplitude;
-            }
-            other => return Err(XtalkErrorV1::UnsupportedRole.with_role(other)),
+        if fext_element != 0.0 {
+            fext_sum += weight_fext[index] * fext_element;
+        }
+        if next_element != 0.0 {
+            next_sum += weight_next[index] * next_element;
         }
     }
     let delta_f = frequency[10] - frequency[9];
-    let mut fext_power = 0.0_f64;
-    if let Some(matrix) = fext_matrix {
-        // reshape(-1, order='F')[:count]: column-major flatten, first
-        // count entries; element index -> (row = index % rows, column = index / rows).
-        let rows = response_row_count;
-        let columns = h_ctf.len();
-        let mut sum = 0.0_f64;
-        for index in 0..count {
-            let row = index % rows;
-            let column = index / rows;
-            let value = matrix[row * columns + column];
-            sum += weight_fext[index] * value;
-        }
-        fext_power = 2.0 * delta_f / parameters.f2 * fext_amplitude * fext_amplitude * sum;
-    }
-    let mut next_power = 0.0_f64;
-    if let Some(matrix) = next_matrix {
-        let rows = response_row_count;
-        let columns = h_ctf.len();
-        let mut sum = 0.0_f64;
-        for index in 0..count {
-            let row = index % rows;
-            let column = index / rows;
-            let value = matrix[row * columns + column];
-            sum += weight_next[index] * value;
-        }
-        next_power = 2.0 * delta_f / parameters.f2 * next_amplitude * next_amplitude * sum;
-    }
+    let fext_power = 2.0 * delta_f / parameters.f2 * fext_amplitude * fext_amplitude * fext_sum;
+    let next_power = 2.0 * delta_f / parameters.f2 * next_amplitude * next_amplitude * next_sum;
     Ok((fext_power + next_power).sqrt() * parameters.sigma_x)
+}
+
+fn checked_td_outer_product_budget_v1(rows: usize, columns: usize) -> Result<(), XtalkErrorV1> {
+    let elements = rows.checked_mul(columns).ok_or(XtalkErrorV1::Oversize)?;
+    let bytes = elements
+        .checked_mul(std::mem::size_of::<f64>())
+        .ok_or(XtalkErrorV1::Oversize)?;
+    if elements > MAX_TD_CROSSTALK_MATRIX_ELEMENTS_V1 || bytes > MAX_TD_CROSSTALK_MATRIX_BYTES_V1 {
+        return Err(XtalkErrorV1::Oversize);
+    }
+    Ok(())
 }
 
 /// Error with the unsupported role name attached for diagnostics.
@@ -384,7 +428,90 @@ mod tests {
             &parameters,
         )
         .expect("noise");
+        // Checkpoint from the pinned Agent-COM search.py outer-product
+        // formula (source map records blob 58f6e5e3...); this is more than a
+        // shape/self-finiteness check and freezes the FEXT amplitude/axis
+        // ordering used by the direct TDMODE consumer.
+        assert!((noise - 0.004441284617118329).abs() < 1.0e-15);
+    }
+
+    #[test]
+    fn td_outer_product_accepts_the_channel_count_ceiling() {
+        let frequency: Vec<f64> = (0..32).map(|index| index as f64 * 1e9).collect();
+        let h_ctf = vec![complex(1.0, 0.0); frequency.len()];
+        let tx_filter = vec![complex(1.0, 0.0); frequency.len()];
+        let sinc = vec![1.0; frequency.len()];
+        let response = vec![complex(0.25, 0.0); frequency.len()];
+        let channels = (0..MAX_TD_CROSSTALK_CHANNELS_V1)
+            .map(|index| {
+                (
+                    if index % 2 == 0 { "FEXT" } else { "NEXT" }.to_owned(),
+                    response.clone(),
+                    0.5,
+                )
+            })
+            .collect::<Vec<_>>();
+        let parameters = XtalkParamsV1 {
+            fb: 26.5625e9,
+            f2: 26.5625e9,
+            sigma_x: 0.03,
+        };
+        let noise = td_source_crosstalk_noise_v1(
+            &frequency,
+            &h_ctf,
+            &tx_filter,
+            &sinc,
+            &channels,
+            &parameters,
+        )
+        .expect("64-channel outer product");
         assert!(noise.is_finite() && noise > 0.0);
+    }
+
+    #[test]
+    fn td_outer_product_budget_rejects_overflow_channel_and_axis_mutations() {
+        assert_eq!(
+            checked_td_outer_product_budget_v1(usize::MAX, 2),
+            Err(XtalkErrorV1::Oversize)
+        );
+        let too_many_channels = vec![
+            ("FEXT".to_owned(), vec![complex(1.0, 0.0); 32], 0.5);
+            MAX_TD_CROSSTALK_CHANNELS_V1 + 1
+        ];
+        let frequency: Vec<f64> = (0..32).map(|index| index as f64 * 1e9).collect();
+        let axis = vec![complex(1.0, 0.0); frequency.len()];
+        let parameters = XtalkParamsV1 {
+            fb: 26.5625e9,
+            f2: 26.5625e9,
+            sigma_x: 0.03,
+        };
+        assert_eq!(
+            td_source_crosstalk_noise_v1(
+                &frequency,
+                &axis,
+                &axis,
+                &vec![1.0; frequency.len()],
+                &too_many_channels,
+                &parameters,
+            ),
+            Err(XtalkErrorV1::Oversize)
+        );
+
+        let side = 2_897usize;
+        let long_frequency: Vec<f64> = (0..side).map(|index| index as f64 * 1.0e6).collect();
+        let long_axis = vec![complex(1.0, 0.0); side];
+        let long_channel = vec![("FEXT".to_owned(), long_axis.clone(), 0.5)];
+        assert_eq!(
+            td_source_crosstalk_noise_v1(
+                &long_frequency,
+                &long_axis,
+                &long_axis,
+                &vec![1.0; side],
+                &long_channel,
+                &parameters,
+            ),
+            Err(XtalkErrorV1::Oversize)
+        );
     }
 
     #[test]

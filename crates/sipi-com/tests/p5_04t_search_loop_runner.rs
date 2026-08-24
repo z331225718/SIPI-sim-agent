@@ -140,6 +140,10 @@ fn search_case(value: &Value) -> serde_json::Value {
     let full_params = SearchFullParamsV1 {
         samples_per_ui: p["samples_per_ui"].as_u64().expect("spu") as usize,
         fb: p["fb"].as_f64().expect("fb"),
+        f2: p
+            .get("f2")
+            .and_then(Value::as_f64)
+            .unwrap_or_else(|| p["fb"].as_f64().expect("fb")),
         tx_ffe_values,
         tx_ffe_c0_min: p["tx_ffe_c0_min"].as_f64().expect("c0"),
         ts_anchor: p["ts_anchor"].as_i64().expect("tsa"),

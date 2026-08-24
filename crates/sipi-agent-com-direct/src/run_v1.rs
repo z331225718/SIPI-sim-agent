@@ -17,7 +17,7 @@ use sipi_com::{
     CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
     SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultV1, TdFrequencyFillinV1,
-    apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
+    XtalkChannelV1, apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
     calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1,
     execute_com_run_v1, execute_com_run_with_crosstalk_v1, merge_com_parameters_v1, r480_tdiln_v1,
     raised_cosine_filter_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
@@ -193,6 +193,7 @@ struct ImpulseInputV1 {
     /// TD preparation result.
     td_fillin: Option<TdFrequencyFillinV1>,
     td_pulse: Option<Vec<f64>>,
+    td_crosstalk: Option<Vec<XtalkChannelV1>>,
 }
 
 #[derive(Clone, Debug)]
@@ -755,7 +756,7 @@ fn run_with_workflow(
         let baud_hz = required_td_scalar_alias_v1(&loaded.values, &["fb", "baud_hz"], "fb")?;
         reject_td_transformed_channel_v1(&loaded.document)?;
         validate_td_search_crosswalk_v1(&loaded.document, &loaded.values, samples_per_ui, baud_hz)?;
-        validate_td_thru_scope_v1(&loaded.document, request)?;
+        validate_td_scope_v1(&loaded.document, request)?;
         let extension = request
             .pulse
             .extension()
@@ -768,7 +769,7 @@ fn run_with_workflow(
         }
     }
     let erl_s2p_exact = exact_erl_s2p_profile_v1(&loaded.document, &request.pulse)?;
-    let input_impulse = if request
+    let mut input_impulse = if request
         .pulse
         .extension()
         .and_then(|value| value.to_str())
@@ -798,15 +799,28 @@ fn run_with_workflow(
                 .to_owned(),
         ));
     }
+    let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
     let mut fext_inputs = request
         .fext
         .iter()
-        .map(|path| load_channel_input_v1(path))
+        .map(|path| {
+            if td_mode {
+                load_td_mode_input_v1(path, &loaded.values, samples_per_ui)
+            } else {
+                load_channel_input_v1(path)
+            }
+        })
         .collect::<Result<Vec<_>, _>>()?;
     let mut next_inputs = request
         .next
         .iter()
-        .map(|path| load_channel_input_v1(path))
+        .map(|path| {
+            if td_mode {
+                load_td_mode_input_v1(path, &loaded.values, samples_per_ui)
+            } else {
+                load_channel_input_v1(path)
+            }
+        })
         .collect::<Result<Vec<_>, _>>()?;
     // A parsed package_case is itself an admitted channel source.  When the
     // public request did not provide separate FEXT/NEXT files, retain those
@@ -841,6 +855,7 @@ fn run_with_workflow(
                     causality_iterations: None,
                     td_fillin: None,
                     td_pulse: None,
+                    td_crosstalk: None,
                 });
             }
         }
@@ -867,9 +882,20 @@ fn run_with_workflow(
                     causality_iterations: None,
                     td_fillin: None,
                     td_pulse: None,
+                    td_crosstalk: None,
                 });
             }
         }
+    }
+    if td_mode {
+        input_impulse.td_crosstalk = Some(td_crosstalk_channels_v1(
+            input_impulse.td_fillin.as_ref().ok_or_else(|| {
+                DirectRunErrorV1::Channel("TDMODE THRU fill-in is missing".to_owned())
+            })?,
+            &fext_inputs,
+            &next_inputs,
+            &loaded.values,
+        )?);
     }
     let branches = portable_branch_result_v1(
         &loaded.document,
@@ -905,11 +931,11 @@ fn run_with_workflow(
             causality_iterations: input_impulse.causality_iterations,
             td_fillin: input_impulse.td_fillin.clone(),
             td_pulse: input_impulse.td_pulse.clone(),
+            td_crosstalk: input_impulse.td_crosstalk.clone(),
         }
     } else {
         input_impulse
     };
-    let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
     // Channel files are impulse responses; the COM PDF chain consumes the
     // source's zero-state rectangular pulse response. Search/Apply_EQ may
     // already provide the selected pulse, otherwise form it here exactly once.
@@ -1616,6 +1642,7 @@ fn canonical_controls_v1(
         ("sigma_N", &["sigma_N", "SIGMA_N"]),
         ("A_DD", &["A_DD", "AMPLITUDE_DD"]),
         ("spec_ber", &["spec_ber", "SPEC_BER", "specBER", "DER_0"]),
+        ("f2", &["f2", "F2", "f2_hz"]),
     ];
     let mut result = BTreeMap::new();
     for (canonical, names) in aliases {
@@ -1833,15 +1860,23 @@ fn validate_td_search_crosswalk_v1(
     Ok(())
 }
 
-fn validate_td_thru_scope_v1(
+fn validate_td_scope_v1(
     document: &Value,
     request: &DirectRunRequestV1,
 ) -> Result<(), DirectRunErrorV1> {
-    if !request.fext.is_empty() || !request.next.is_empty() {
-        return Err(DirectRunErrorV1::Unsupported(
-            "TDMODE scope is THRU/no-crosstalk; FEXT/NEXT requires an admitted FD channel response"
-                .to_owned(),
-        ));
+    for (role, paths) in [("FEXT", &request.fext), ("NEXT", &request.next)] {
+        if paths.iter().any(|path| {
+            !path
+                .extension()
+                .and_then(|value| value.to_str())
+                .is_some_and(|value| {
+                    value.eq_ignore_ascii_case("csv") || value.eq_ignore_ascii_case("td")
+                })
+        }) {
+            return Err(DirectRunErrorV1::Unsupported(format!(
+                "TDMODE {role} requires a strict TD CSV/TD fill-in source"
+            )));
+        }
     }
     if document
         .get("package_case")
@@ -1864,7 +1899,7 @@ fn validate_td_thru_scope_v1(
         .and_then(|value| value.get("search"))
         .and_then(Value::as_object);
     if search.is_some_and(|value| {
-        ["crosstalk", "fext", "next", "crosstalk_frequency_hz"]
+        ["crosstalk", "fext", "next"]
             .iter()
             .any(|key| value.contains_key(*key))
     }) {
@@ -2419,6 +2454,7 @@ fn portable_branch_result_with_sigma_v1(
                     causality_iterations: None,
                     td_fillin: None,
                     td_pulse: None,
+                    td_crosstalk: None,
                 };
                 let orchestration = portable_branch_result_with_sigma_v1(
                     &orchestration_document,
@@ -2938,9 +2974,24 @@ fn portable_branch_result_with_sigma_v1(
                 causality_iterations: impulse.causality_iterations,
                 td_fillin: impulse.td_fillin.clone(),
                 td_pulse: impulse.td_pulse.clone(),
+                td_crosstalk: impulse.td_crosstalk.clone(),
             },
         );
-        let result = portable_search_v1(search, &search_input, calibration_sigma_ne_override)?;
+        let canonical_f2_hz = controls
+            .map(|values| required_td_scalar_alias_v1(values, &["f2", "F2", "f2_hz"], "f2"))
+            .transpose()?;
+        let tdiln_f2_hz = root
+            .get("tdiln")
+            .and_then(Value::as_object)
+            .map(|tdiln| required_f64_v1(tdiln, "f2_hz", "portable.tdiln"))
+            .transpose()?;
+        let result = portable_search_v1(
+            search,
+            &search_input,
+            calibration_sigma_ne_override,
+            canonical_f2_hz,
+            tdiln_f2_hz,
+        )?;
         selected_fom_db = Some(result.fom_db);
         if effective_pulse.is_none() {
             effective_pulse = Some(result.selected_pulse.clone());
@@ -2966,10 +3017,12 @@ fn portable_branch_result_with_sigma_v1(
                 "td_input": search_input.td_fillin.as_ref().map(|fillin| json!({
                     "frequency_sha256": sha256_f64_v1(&fillin.frequency_hz),
                     "noise_frequency_sha256": sha256_f64_v1(&fillin.noise_frequency_hz),
+                    "crosstalk_axis": "noise_frequency_hz",
                     "insertion_loss_sha256": sha256_complex_v1(&fillin.insertion_loss),
                     "peak_window_pulse_sha256": search_input.td_pulse.as_ref().map(|pulse| sha256_f64_v1(pulse)),
                     "consumer": "search_r480_nonmmse_no_xtalk_with_sigma_v1",
-                    "scope": "THRU/no-crosstalk axis+pulse consumer"
+                    "scope": "THRU plus validated TD FEXT/NEXT outer-product consumer",
+                    "crosstalk_channel_count": search_input.td_crosstalk.as_ref().map_or(0, Vec::len)
                 })),
             }),
         );
@@ -3159,12 +3212,14 @@ fn portable_branch_result_with_sigma_v1(
 /// bounded canonical JSON branch.  The upstream loop is deliberately given
 /// explicit frequency and receiver/equalizer controls here; we do not infer
 /// an S-parameter model from the impulse or silently fall back to a fixed
-/// status.  Crosstalk and calibration are separate direct-run inputs and are
-/// therefore not fabricated for this no-Xtalk search leaf.
+/// status.  Validated TDMODE FEXT/NEXT channels use the existing
+/// outer-product crosstalk consumer.
 fn portable_search_v1(
     search: &Map<String, Value>,
     impulse: &ImpulseInputV1,
     calibration_sigma_ne_override: Option<f64>,
+    canonical_f2_hz: Option<f64>,
+    tdiln_f2_hz: Option<f64>,
 ) -> Result<SearchLoopResultV1, DirectRunErrorV1> {
     let branch = "portable.search";
     let td_fillin = impulse.td_fillin.as_ref();
@@ -3213,14 +3268,14 @@ fn portable_search_v1(
     let crosstalk_frequency_hz = if let Some(fillin) = td_fillin {
         if let Some(value) = search.get("crosstalk_frequency_hz") {
             let requested = parse_f64_array_v1(value, "portable.search.crosstalk_frequency_hz")?;
-            if requested != fillin.frequency_hz {
+            if requested != fillin.noise_frequency_hz {
                 return Err(DirectRunErrorV1::Parameters(
                     "portable.search.crosstalk_frequency_hz conflicts with TDMODE FD fill-in"
                         .to_owned(),
                 ));
             }
         }
-        fillin.frequency_hz.clone()
+        fillin.noise_frequency_hz.clone()
     } else {
         search
             .get("crosstalk_frequency_hz")
@@ -3228,6 +3283,8 @@ fn portable_search_v1(
             .transpose()?
             .unwrap_or_else(|| frequency_hz.clone())
     };
+    let td_crosstalk = impulse.td_crosstalk.as_deref().unwrap_or(&[]);
+    let td_crosstalk_outer_product = td_fillin.is_some() && !td_crosstalk.is_empty();
     let ctle_object = required_object_v1(search, "ctle", branch)?;
     let ctle = CtleParamsV1 {
         ctle_gdc_values: parse_f64_array_key_v1(
@@ -3353,9 +3410,37 @@ fn portable_search_v1(
             Ok((key.clone(), values))
         })
         .collect::<Result<BTreeMap<_, _>, DirectRunErrorV1>>()?;
+    let fb_hz = required_f64_v1(search, "fb_hz", branch)?;
+    let configured_f2_hz = search
+        .get("f2_hz")
+        .or_else(|| search.get("f2"))
+        .map(|value| {
+            value
+                .as_f64()
+                .filter(|candidate| candidate.is_finite())
+                .ok_or_else(|| {
+                    DirectRunErrorV1::Parameters(
+                        "portable.search.f2_hz must be a finite number".to_owned(),
+                    )
+                })
+        })
+        .transpose()?;
+    let f2_hz = resolve_f2_crosswalk_v1(
+        configured_f2_hz,
+        tdiln_f2_hz,
+        canonical_f2_hz,
+        fb_hz,
+        td_fillin.is_some(),
+    )?;
+    if !f2_hz.is_finite() || f2_hz <= 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "portable.search.f2_hz must be finite and positive".to_owned(),
+        ));
+    }
     let full = SearchFullParamsV1 {
         samples_per_ui: required_usize_v1(search, "samples_per_ui", branch)?,
-        fb: required_f64_v1(search, "fb_hz", branch)?,
+        fb: fb_hz,
+        f2: f2_hz,
         tx_ffe_values,
         tx_ffe_c0_min: required_f64_v1(search, "tx_ffe_c0_min", branch)?,
         ts_anchor: required_i64_v1(search, "ts_anchor", branch)?,
@@ -3486,11 +3571,11 @@ fn portable_search_v1(
         &frequency_hz,
         &noise_frequency_hz,
         &crosstalk_frequency_hz,
-        &[],
+        td_crosstalk,
         zero_calibration_noise_v1,
         calibration_sigma_ne_override,
         impulse.td_pulse.as_deref(),
-        false,
+        td_crosstalk_outer_product,
         &[],
         search
             .get("package_case_index")
@@ -3501,6 +3586,51 @@ fn portable_search_v1(
         &options,
     )
     .map_err(|error| DirectRunErrorV1::Unsupported(format!("portable.search: {error:?}")))
+}
+
+fn resolve_f2_crosswalk_v1(
+    search_f2_hz: Option<f64>,
+    tdiln_f2_hz: Option<f64>,
+    canonical_f2_hz: Option<f64>,
+    fallback_f2_hz: f64,
+    require_canonical: bool,
+) -> Result<f64, DirectRunErrorV1> {
+    let sources = [
+        ("canonical f2", canonical_f2_hz),
+        ("portable.search.f2_hz", search_f2_hz),
+        ("portable.tdiln.f2_hz", tdiln_f2_hz),
+    ];
+    if require_canonical && canonical_f2_hz.is_none() {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDMODE requires canonical resolved f2".to_owned(),
+        ));
+    }
+    let mut selected: Option<f64> = None;
+    for (label, value) in sources {
+        if let Some(value) = value {
+            if !value.is_finite() || value <= 0.0 {
+                return Err(DirectRunErrorV1::Parameters(format!(
+                    "{label} must be finite and positive"
+                )));
+            }
+            if let Some(previous) = selected {
+                if previous.to_bits() != value.to_bits() {
+                    return Err(DirectRunErrorV1::Parameters(
+                        "f2 sources disagree across canonical/search/tdiln".to_owned(),
+                    ));
+                }
+            } else {
+                selected = Some(value);
+            }
+        }
+    }
+    let value = selected.unwrap_or(fallback_f2_hz);
+    if !value.is_finite() || value <= 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "portable.search.f2_hz must be finite and positive".to_owned(),
+        ));
+    }
+    Ok(value)
 }
 
 fn zero_calibration_noise_v1(
@@ -4335,7 +4465,57 @@ fn load_td_mode_input_v1(
         causality_iterations: None,
         td_fillin: Some(fillin),
         td_pulse: Some(pulse.pulse),
+        td_crosstalk: None,
     })
+}
+
+fn td_crosstalk_channels_v1(
+    main_fillin: &TdFrequencyFillinV1,
+    fext_inputs: &[ImpulseInputV1],
+    next_inputs: &[ImpulseInputV1],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+) -> Result<Vec<XtalkChannelV1>, DirectRunErrorV1> {
+    let mut channels = Vec::with_capacity(fext_inputs.len() + next_inputs.len());
+    let main_axis = &main_fillin.frequency_hz;
+    let response = |role: &str,
+                    input: &ImpulseInputV1,
+                    amplitude_key: &str|
+     -> Result<XtalkChannelV1, DirectRunErrorV1> {
+        let fillin = input.td_fillin.as_ref().ok_or_else(|| {
+            DirectRunErrorV1::Channel(format!("TDMODE {role} fill-in is missing"))
+        })?;
+        if fillin.frequency_hz != *main_axis
+            || fillin.sdd.len() != fillin.frequency_hz.len()
+            || fillin.insertion_loss.len() != fillin.frequency_hz.len()
+            || !fillin.final_voltage_v.is_finite()
+            || fillin.final_voltage_v == 0.0
+        {
+            return Err(DirectRunErrorV1::Channel(format!(
+                "TDMODE {role} FD fill-in axis/response/final-voltage mismatch"
+            )));
+        }
+        let mut transfer = Vec::with_capacity(fillin.sdd.len());
+        for (index, row) in fillin.sdd.iter().enumerate() {
+            if row[2] != fillin.insertion_loss[index]
+                || !row[2].real().is_finite()
+                || !row[2].imaginary().is_finite()
+            {
+                return Err(DirectRunErrorV1::Channel(format!(
+                    "TDMODE {role} SDD21/insertion-loss mismatch at {index}"
+                )));
+            }
+            transfer.push(row[2]);
+        }
+        let amplitude = required_td_scalar_alias_v1(values, &[amplitude_key], amplitude_key)?;
+        Ok((role.to_owned(), transfer, amplitude))
+    };
+    for input in fext_inputs {
+        channels.push(response("FEXT", input, "a_fext")?);
+    }
+    for input in next_inputs {
+        channels.push(response("NEXT", input, "a_next")?);
+    }
+    Ok(channels)
 }
 
 fn parse_td_mode_rows_v1(
@@ -4488,6 +4668,7 @@ fn load_impulse_mode_v1(
             causality_iterations: Some(result.causality_iterations),
             td_fillin: None,
             td_pulse: None,
+            td_crosstalk: None,
         });
     }
     if extension.eq_ignore_ascii_case("json") {
@@ -4531,6 +4712,7 @@ fn load_impulse_mode_v1(
             causality_iterations: None,
             td_fillin: None,
             td_pulse: None,
+            td_crosstalk: None,
         });
     }
     if extension.eq_ignore_ascii_case("csv") || extension.eq_ignore_ascii_case("td") {
@@ -4549,6 +4731,7 @@ fn load_impulse_mode_v1(
             causality_iterations: None,
             td_fillin: None,
             td_pulse: None,
+            td_crosstalk: None,
         });
     }
     if bytes.len() % std::mem::size_of::<f64>() != 0 {
@@ -4579,6 +4762,7 @@ fn load_impulse_mode_v1(
         causality_iterations: None,
         td_fillin: None,
         td_pulse: None,
+        td_crosstalk: None,
     })
 }
 
@@ -4642,6 +4826,7 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
         causality_iterations: Some(result.causality_iterations),
         td_fillin: None,
         td_pulse: None,
+        td_crosstalk: None,
     })
 }
 
@@ -4820,6 +5005,7 @@ fn load_frequency_domain_json_v1(
         causality_iterations: Some(result.causality_iterations),
         td_fillin: None,
         td_pulse: None,
+        td_crosstalk: None,
     })
 }
 
@@ -5510,7 +5696,8 @@ mod tests {
                 "h_J": [0.3, 0.5, 0.2],
                 "sigma_N": 0.01,
                 "A_DD": 0.4,
-                "spec_ber": 1.0e-4
+                "spec_ber": 1.0e-4,
+                "f2": 50.0e9
             }
         })
     }
@@ -6041,6 +6228,18 @@ mod tests {
         ]);
         validate_td_search_crosswalk_v1(&valid, &controls, 2, 1.0e9)
             .expect("matching TD crosswalk");
+        assert_eq!(
+            resolve_f2_crosswalk_v1(Some(50.0e9), Some(50.0e9), Some(50.0e9), 1.0e9, true)
+                .expect("matching f2 crosswalk"),
+            50.0e9
+        );
+        assert!(
+            resolve_f2_crosswalk_v1(Some(49.0e9), Some(50.0e9), Some(50.0e9), 1.0e9, true).is_err()
+        );
+        assert!(
+            resolve_f2_crosswalk_v1(Some(50.0e9), Some(49.0e9), Some(50.0e9), 1.0e9, true).is_err()
+        );
+        assert!(resolve_f2_crosswalk_v1(Some(50.0e9), Some(50.0e9), None, 1.0e9, true).is_err());
         let mut conflict = valid.clone();
         conflict["portable"]["search"]["samples_per_ui"] = json!(4);
         assert!(validate_td_search_crosswalk_v1(&conflict, &controls, 2, 1.0e9).is_err());
@@ -6575,7 +6774,8 @@ mod tests {
             "fb_BT_cutoff": 0.75,
             "fb_BW_cutoff": 0.75,
             "Bessel_Thomson": false,
-            "Butterworth": false
+            "Butterworth": false,
+            "a_fext": 0.2
         });
         td_values["portable"]["search"]
             .as_object_mut()
@@ -6628,9 +6828,35 @@ mod tests {
         let mut td_xtalk_request =
             DirectRunRequestV1::new(&config, &td_path, root.join("td-xtalk-out"));
         td_xtalk_request.fext.push(td_path.clone());
-        let error = run_com_v1(&td_xtalk_request).expect_err("TDMODE FEXT scope");
-        assert!(
-            matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains("THRU/no-crosstalk"))
+        let td_xtalk_report = run_com_v1(&td_xtalk_request).expect("TDMODE FEXT search");
+        let td_xtalk_search =
+            &td_xtalk_report.result["cases"][0]["diagnostics"]["portable_branches"]["search"];
+        assert_eq!(td_xtalk_search["td_input"]["crosstalk_channel_count"], 1);
+        assert_eq!(
+            td_xtalk_search["td_input"]["crosstalk_axis"],
+            "noise_frequency_hz"
+        );
+        assert_ne!(
+            td_xtalk_search["td_input"]["frequency_sha256"],
+            td_xtalk_search["td_input"]["noise_frequency_sha256"],
+            "TD crosstalk must use the full noise-frequency axis"
+        );
+        assert_ne!(
+            td_xtalk_search["fom_db"], td_search["fom_db"],
+            "validated TD FEXT response must affect the search FOM"
+        );
+        let mut td_f2 = td_values.clone();
+        td_f2["parameters"]["f2"] = json!(13.0e9);
+        td_f2["portable"]["search"]["f2_hz"] = json!(13.0e9);
+        fs::write(&config, serde_json::to_vec(&td_f2).unwrap()).unwrap();
+        let mut td_f2_request = DirectRunRequestV1::new(&config, &td_path, root.join("td-f2-out"));
+        td_f2_request.fext.push(td_path.clone());
+        let td_f2_report = run_com_v1(&td_f2_request).expect("TDMODE independent f2 search");
+        let td_f2_search =
+            &td_f2_report.result["cases"][0]["diagnostics"]["portable_branches"]["search"];
+        assert_ne!(
+            td_f2_search["fom_db"], td_xtalk_search["fom_db"],
+            "TDMODE crosstalk integration limit f2 must affect the numeric search"
         );
         let mut td_package = td_values.clone();
         td_package["package_case"] = json!({"fext": [[0.0, 1.0]]});

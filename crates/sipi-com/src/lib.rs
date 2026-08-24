@@ -154,8 +154,9 @@ pub use compliance_report_v1::{
     MetricComplianceV1, compliance_report_v1,
 };
 pub use crosstalk_noise_v1::{
-    CROSSTALK_NOISE_POLICY_V1, XtalkChannelV1, XtalkErrorV1, XtalkParamsV1, crosstalk_noise_v1,
-    td_source_crosstalk_noise_v1,
+    CROSSTALK_NOISE_POLICY_V1, MAX_TD_CROSSTALK_CHANNELS_V1, MAX_TD_CROSSTALK_MATRIX_BYTES_V1,
+    MAX_TD_CROSSTALK_MATRIX_ELEMENTS_V1, XtalkChannelV1, XtalkErrorV1, XtalkParamsV1,
+    crosstalk_noise_v1, td_source_crosstalk_noise_v1,
 };
 pub use csv_reader_v1::{CSV_READER_POLICY_V1, csv_value_v1, read_com_settings_csv_v1};
 pub use db_tolerance_v1::{

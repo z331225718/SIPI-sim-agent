@@ -367,6 +367,10 @@ pub struct SearchLoopOptionsV1 {
 pub struct SearchFullParamsV1 {
     pub samples_per_ui: usize,
     pub fb: f64,
+    /// Integration limit used by the pinned r4.80 crosstalk consumer. It is
+    /// intentionally distinct from the baud rate when the source resolves a
+    /// separate `f2` control.
+    pub f2: f64,
     pub tx_ffe_values: BTreeMap<String, Vec<f64>>,
     pub tx_ffe_c0_min: f64,
     pub ts_anchor: i64,
@@ -621,7 +625,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_v1(
                     crosstalk,
                     &XtalkParamsV1 {
                         fb: full.fb,
-                        f2: full.fb,
+                        f2: full.f2,
                         sigma_x: full.candidate.sigma_x,
                     },
                     td_crosstalk_outer_product,
@@ -873,6 +877,7 @@ mod tests {
         let full = SearchFullParamsV1 {
             samples_per_ui: spu,
             fb: 26.5625e9,
+            f2: 26.5625e9,
             tx_ffe_values: txv,
             tx_ffe_c0_min: 0.2,
             ts_anchor: 0,
