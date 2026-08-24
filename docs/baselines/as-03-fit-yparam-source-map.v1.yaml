@@ -1,0 +1,87 @@
+schema: sipi.as-03-fit-yparam-source-map.v1
+status: scoped_numeric_mismatch_open
+upstream:
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_blob: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_bytes: 1067
+  license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - path: src/agent_spice/sparam/yparam.py
+    role: fit-yparam conversion, passivity, delivery, metrics
+    blob: 473746afe5efb3e5117c58b446e2a7ccb3ca8872
+    bytes: 30937
+    sha256: ca6ec999b93f78094c7ea58997676bd886130baf0bdaec04957c3c480ba5b713
+  - path: src/agent_spice/sparam/native_vf.py
+    role: NativeVectorFitting residue refit and relocation orchestration
+    blob: 971a98924d52b9fb57738a6a729501dfda934968
+    bytes: 61818
+    sha256: 90db63aadeeb0be5c0a29b750d617079d598f0afe7c441a0398a8648daad31a6
+  - path: src/agent_spice/sparam/pole_relocation.py
+    role: streaming common-denominator pole relocation
+    blob: befdbbfbd3dd98a9d45ea5133e17aa3a252d50f3
+    bytes: 18535
+    sha256: 515bdc4ebaa6f1c1642ff9ebd5ebe773fae8723c59f779f496f389d38545a0a5
+  - path: src/agent_spice/sparam/artifacts.py
+    role: Y/SPICE artifact delivery and RFM evaluation
+    blob: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+    bytes: 18185
+    sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+  - path: src/agent_spice/sparam/rfm.py
+    role: RFM parsing and model contract
+    blob: 508e7ae8594fd25d5c2dc152b225c0cf84f61413
+    bytes: 13119
+    sha256: af2e2e3ab1ed7e9ac458dc73f15aedfd9cd8292dc9e5a2430cd095bc21415df4
+  - path: src/agent_spice/sparam/z_metrics.py
+    role: strict Z-domain diagnostic metrics used by fit-yparam reports
+    blob: 67d5fad8a192c35e0bb55f5c8b0c15f60b7f384c
+    bytes: 2508
+    sha256: 8d3f129217fa1b653306c3c6a013926a05fa5887bcd83796aaee19333c05af38
+  - path: src/agent_spice/sparam/rational_lft.py
+    role: exact Y-to-S rational LFT delivery
+    blob: 969f7657565e67492e8b53ecfc35def0f00b7ee1
+    bytes: 9569
+    sha256: bc43fb22b4c4e49f4e0b5c654a58a6576d18c36e4e8c421d8f155d8aca5045a4
+  - path: src/agent_spice/sparam/y_pr.py
+    role: continuous positive-real/KYP enforcement
+    blob: 40e3a7abc18de1ef234a6870df7a4c7d4b83a9f2
+    bytes: 16910
+    sha256: 317df34b898bb912f7b6e033f371aa568759303a30024914c0c8739071f2d38f
+  - path: src/agent_spice/cli.py
+    role: fit-yparam command wiring
+    blob: 321a32b860f969f0be74f883bedbbae3f67d6284
+    bytes: 135330
+    sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+  - path: tests/test_yparam.py
+    role: pinned Y conversion, fitting, passivity, and delivery tests
+    blob: 8bb2c3d8f3d9946e7d6170918bc5315f17ce642f
+    bytes: 18671
+    sha256: 49f6d186f74a9bda3bc63720010017654cf90d0f5ecccbc2b5a6bfbb3c0c1d5b
+  - path: tests/test_rational_lft.py
+    role: exact Y-to-S LFT and KYP delivery tests
+    source_port: false
+    blob: ac76099147e96e77c97bbd0e46c81b33a7d8eb66
+    bytes: 2798
+    sha256: 37367cc23625511a6d764c7d458bcdc193afac0cf4c2b2b7eb885154e86d996d
+  - path: tests/test_z_metrics.py
+    role: Z-domain metric tests
+    source_port: false
+    blob: 39c034cfec2b211a0264cda3d855d04a8426d47c
+    bytes: 1159
+    sha256: 6e1a94e596dccba850a542fcd151110d0fb44268aa16fa910ed5e2cbb5bfe8eb
+scope:
+  fits_y_parameters: true
+  fits_si_s_parameters: false
+  exact_y_to_s_delivery: true
+  numeric_parity: false
+  mismatch_stage: audit_located_solver_implementation_divergence_at_residue_least_squares
+  candidate_solver: faer_column_pivoted_qr
+  upstream_solver: numpy_linalg_lstsq
+evidence_scope:
+  governing_v2_global_mismatch_open: true
+  v3_fixed_fixture_observation_only: true
+  v3_scoped_tolerance: 1.0e-12
+  v3_supersedes_v2: false
+  row_closed: false
