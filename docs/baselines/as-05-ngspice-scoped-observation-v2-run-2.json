@@ -1,0 +1,324 @@
+{
+  "build": {
+    "binary_bytes": 3608064,
+    "binary_path_redacted": true,
+    "binary_sha256": "6269eb59d37d105f9f49666de162ade2ef689ffdeb48deccebb51b7f3df7301d",
+    "exit_code": 0,
+    "locked": true,
+    "offline": true,
+    "rustc_env_identity": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target_dir_redacted": true,
+    "wrapper_policy": "RUSTC_WRAPPER_RUSTC_WORKSPACE_WRAPPER_CARGO_BUILD_RUSTC_WRAPPER_cleared"
+  },
+  "candidate": {
+    "archive_sha256": "abcb30a71d9821356c317e04c8f7e72331a1081be7e6386a92cd5bb6edd47e73",
+    "commit": "d10a136ded035fbcbeebf075fd68f0f9ab197652",
+    "tree": "d8e2cded5ddd2ef1dc60b95764d7d08d88ba593c"
+  },
+  "cases": [
+    {
+      "cli": {
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_bytes": 116,
+        "stdout_sha256": "800f27e691776b314f2c9d35d234e928a1288bda55efbc3a5b62751b0cce2aad"
+      },
+      "consumed_input": {
+        "bytes": 134,
+        "path": "fixtures/uppercase_tran.sp",
+        "sha256": "5a1f333ae65169cf158e023e4f1935d2cbee96b5e9823faee9e1840535358086"
+      },
+      "id": "uppercase_tran",
+      "kind": "uppercase_tran_v1",
+      "returncode": 0,
+      "run_report": {
+        "backend": "ngspice",
+        "bytes": 764,
+        "execute": true,
+        "path": "uppercase_tran/run_report.json",
+        "sha256": "be9840215bd398a6aa1a2ad01c2bee309d50ca1dd1fbe57fa8984dc20ac80272",
+        "status": "compatible"
+      },
+      "summary": {
+        "artifacts": [
+          {
+            "bytes": 3181,
+            "path": "case",
+            "sha256": "3d41cca51c81534ca2d972a897711c101f6c56c58a4b9214c43700393fbb17ad"
+          },
+          {
+            "bytes": 515,
+            "path": "stdout.log",
+            "sha256": "a8fc4648542f11222e01f59469e3f4b48ef384d69419c5dfaae6abf601ecf508"
+          },
+          {
+            "bytes": 0,
+            "path": "stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "bytes": 2724,
+            "path": "waveform.csv",
+            "sha256": "bc01decd0dbc16e2526d27de546d188812d7802e64617974ae4f79d2e14fdca1"
+          }
+        ],
+        "backend": "ngspice",
+        "bytes": 2372,
+        "external_runtime_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+        "measurements": [
+          {
+            "name": "m_rms",
+            "value": 1.0
+          }
+        ],
+        "ok": true,
+        "output_contract": {
+          "caller_input_attestation": "caller_input_unattested",
+          "normalizer": {
+            "upstream_path": "src/agent_spice/hspice/measure.py::normalize_outputs",
+            "upstream_sha256": "cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4"
+          },
+          "requested": {
+            "measures": [
+              {
+                "analysis": "tran",
+                "name": "M_RMS",
+                "operation": "find",
+                "raw": ".MEASURE TRAN M_RMS FIND V(OUT) AT=0",
+                "target": "V(OUT)"
+              }
+            ],
+            "probes": [
+              "V(OUT)"
+            ]
+          },
+          "result_kind": "ngspice_print_table_observation",
+          "returned": {
+            "measurements": [
+              {
+                "name": "m_rms",
+                "value": 1.0
+              }
+            ],
+            "waveform_rows": 59
+          },
+          "verification": "external_solver_not_verified"
+        },
+        "path": "uppercase_tran/run_summary.json",
+        "sha256": "1b2d4bfbe97c32f82c8c37f308dd2ebcacf3c0df2548f2ef822d0ccf81b8e23c",
+        "waveform_rows": 59
+      },
+      "waveform": {
+        "bytes": 2724,
+        "path": "waveform.csv",
+        "present": true,
+        "sha256": "bc01decd0dbc16e2526d27de546d188812d7802e64617974ae4f79d2e14fdca1"
+      }
+    },
+    {
+      "cli": {
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_bytes": 116,
+        "stdout_sha256": "800f27e691776b314f2c9d35d234e928a1288bda55efbc3a5b62751b0cce2aad"
+      },
+      "consumed_input": {
+        "bytes": 114,
+        "path": "fixtures/measure_only.sp",
+        "sha256": "3b82ffc2bf980d6dc0e89b5fb321bfb495823295c36e93cdce515c5045e9595b"
+      },
+      "id": "measure_only",
+      "kind": "measure_only_v1",
+      "returncode": 0,
+      "run_report": {
+        "backend": "ngspice",
+        "bytes": 764,
+        "execute": true,
+        "path": "measure_only/run_report.json",
+        "sha256": "be9840215bd398a6aa1a2ad01c2bee309d50ca1dd1fbe57fa8984dc20ac80272",
+        "status": "compatible"
+      },
+      "summary": {
+        "artifacts": [
+          {
+            "bytes": 897,
+            "path": "case",
+            "sha256": "3ddfbaa6831dff34ecfb33f893d1c6c3b04a3701dac54ed34cd7143f3a99f2b1"
+          },
+          {
+            "bytes": 515,
+            "path": "stdout.log",
+            "sha256": "a8fc4648542f11222e01f59469e3f4b48ef384d69419c5dfaae6abf601ecf508"
+          },
+          {
+            "bytes": 0,
+            "path": "stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ],
+        "backend": "ngspice",
+        "bytes": 2071,
+        "external_runtime_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+        "measurements": [
+          {
+            "name": "m_only",
+            "value": 1.0
+          }
+        ],
+        "ok": true,
+        "output_contract": {
+          "caller_input_attestation": "caller_input_unattested",
+          "normalizer": {
+            "upstream_path": "src/agent_spice/hspice/measure.py::normalize_outputs",
+            "upstream_sha256": "cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4"
+          },
+          "requested": {
+            "measures": [
+              {
+                "analysis": "tran",
+                "name": "M_ONLY",
+                "operation": "find",
+                "raw": ".MEASURE TRAN M_ONLY FIND V(OUT) AT=0",
+                "target": "V(OUT)"
+              }
+            ],
+            "probes": []
+          },
+          "result_kind": "ngspice_print_table_observation",
+          "returned": {
+            "measurements": [
+              {
+                "name": "m_only",
+                "value": 1.0
+              }
+            ],
+            "waveform_rows": 0
+          },
+          "verification": "external_solver_not_verified"
+        },
+        "path": "measure_only/run_summary.json",
+        "sha256": "24b906806e8396e8145c7e034d7c0c594c842b4dd5a517030eff1e1d07692a39",
+        "waveform_rows": 0
+      },
+      "waveform": {
+        "bytes": 0,
+        "path": null,
+        "present": false,
+        "sha256": null
+      }
+    }
+  ],
+  "fixtures": [
+    {
+      "bytes": 134,
+      "generated_by_runner": "tools/run_as05_ngspice_bound.py::fixtures_v1",
+      "id": "uppercase_tran",
+      "kind": "uppercase_tran_v1",
+      "path": "fixtures/uppercase_tran.sp",
+      "sha256": "5a1f333ae65169cf158e023e4f1935d2cbee96b5e9823faee9e1840535358086"
+    },
+    {
+      "bytes": 114,
+      "generated_by_runner": "tools/run_as05_ngspice_bound.py::fixtures_v1",
+      "id": "measure_only",
+      "kind": "measure_only_v1",
+      "path": "fixtures/measure_only.sp",
+      "sha256": "3b82ffc2bf980d6dc0e89b5fb321bfb495823295c36e93cdce515c5045e9595b"
+    }
+  ],
+  "fresh_run_nonce": "402f74bd2cd39fce92d475c8903a1bc6fba37b0eeaeb9c439ab165163a16984f",
+  "path_policy": "path_free_report_create_new_scoped_external_observation_no_parity_no_release",
+  "run_id": "as05-ngspice-v2-20260824-02",
+  "runner": {
+    "path": "tools/run_as05_ngspice_bound.py",
+    "sha256": "daae5b749c87d5a072c4ed7fec7fe91d27620fd09e7a57189c8448c474ac68f1"
+  },
+  "schema": "sipi.as-05-ngspice-scoped-observation.v2-prep",
+  "scope": {
+    "as05_row_closed": false,
+    "environment_injection_not_fully_excluded": true,
+    "external_solver_not_verified": true,
+    "numeric_parity": false,
+    "parity_claim": false,
+    "release": false
+  },
+  "solver": {
+    "basename": "ngspice.exe",
+    "caller_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "file_bytes": 7602688,
+    "file_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "max_output_bytes": 65536,
+    "path_redacted": true,
+    "post_basename": "ngspice.exe",
+    "post_file_bytes": 7602688,
+    "post_file_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "pre_basename": "ngspice.exe",
+    "pre_file_bytes": 7602688,
+    "pre_file_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "role": "ngspice",
+    "timeout_seconds": 10,
+    "version_exit_code": 0,
+    "version_output_bytes": 453,
+    "version_output_sha256": "94753c3afca9b187b815b2c257051fa56258e70b3dff33db8a2d127e47b6b3ed"
+  },
+  "status": "scoped_external_runtime_observation_open",
+  "toolchain": {
+    "cargo": {
+      "basename": "cargo.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "cargo",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 36,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "git": {
+      "basename": "git.exe",
+      "file_bytes": 46480,
+      "file_sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "git",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 29,
+      "version_output_sha256": "5c3cb4e67e4390d4c31533d4ba722036e0494abc4d77a48da2447699f81c574b"
+    },
+    "python": {
+      "basename": "python.exe",
+      "file_bytes": 106208,
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "python",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 15,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "basename": "rustc.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "rustc",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 36,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "build": {
+    "binary_bytes": 3601920,
+    "binary_path_redacted": true,
+    "binary_sha256": "01819bd536cdbb50f70f72e702b37b30aeb1d07ad6dec53da65376d1c5f58722",
+    "exit_code": 0,
+    "locked": true,
+    "offline": true,
+    "rustc_env_identity": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+    "stderr_bytes": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_bytes": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target_dir_redacted": true,
+    "wrapper_policy": "RUSTC_WRAPPER_RUSTC_WORKSPACE_WRAPPER_CARGO_BUILD_RUSTC_WRAPPER_cleared"
+  },
+  "candidate": {
+    "archive_sha256": "abcb30a71d9821356c317e04c8f7e72331a1081be7e6386a92cd5bb6edd47e73",
+    "commit": "d10a136ded035fbcbeebf075fd68f0f9ab197652",
+    "tree": "d8e2cded5ddd2ef1dc60b95764d7d08d88ba593c"
+  },
+  "path_policy": "path_free_report_create_new_scoped_external_observation_no_parity_no_release",
+  "reports": [
+    {
+      "fresh_run_nonce": "c3fa8e883f276bbf521f6189a46f079f69710a2098d6960bf504ebce390608d9",
+      "path": "docs\\baselines\\as-05-ngspice-scoped-observation-v2-run-1.json",
+      "run_id": "as05-ngspice-v2-20260824-01",
+      "sha256": "fa38359bfc251cd91052e850a809f0c4dbedbdbf7c433aeb78147a82e11cbc77"
+    },
+    {
+      "fresh_run_nonce": "402f74bd2cd39fce92d475c8903a1bc6fba37b0eeaeb9c439ab165163a16984f",
+      "path": "docs\\baselines\\as-05-ngspice-scoped-observation-v2-run-2.json",
+      "run_id": "as05-ngspice-v2-20260824-02",
+      "sha256": "973f77b861125c75191e8fe7f0cd90bf58316bc9128a5df124ee04995d8142ac"
+    }
+  ],
+  "runner": {
+    "path": "tools/run_as05_ngspice_bound.py",
+    "sha256": "daae5b749c87d5a072c4ed7fec7fe91d27620fd09e7a57189c8448c474ac68f1"
+  },
+  "schema": "sipi.as-05-ngspice-scoped-observation.v2-aggregate",
+  "scope": {
+    "as05_row_closed": false,
+    "environment_injection_not_fully_excluded": true,
+    "external_solver_not_verified": true,
+    "numeric_parity": false,
+    "parity_claim": false,
+    "release": false
+  },
+  "solver": {
+    "basename": "ngspice.exe",
+    "caller_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "file_bytes": 7602688,
+    "file_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "max_output_bytes": 65536,
+    "path_redacted": true,
+    "post_basename": "ngspice.exe",
+    "post_file_bytes": 7602688,
+    "post_file_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "pre_basename": "ngspice.exe",
+    "pre_file_bytes": 7602688,
+    "pre_file_sha256": "86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453",
+    "role": "ngspice",
+    "timeout_seconds": 10,
+    "version_exit_code": 0,
+    "version_output_bytes": 453,
+    "version_output_sha256": "94753c3afca9b187b815b2c257051fa56258e70b3dff33db8a2d127e47b6b3ed"
+  },
+  "status": "scoped_external_runtime_observation_open",
+  "toolchain": {
+    "cargo": {
+      "basename": "cargo.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "cargo",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 36,
+      "version_output_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "git": {
+      "basename": "git.exe",
+      "file_bytes": 46480,
+      "file_sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "git",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 29,
+      "version_output_sha256": "5c3cb4e67e4390d4c31533d4ba722036e0494abc4d77a48da2447699f81c574b"
+    },
+    "python": {
+      "basename": "python.exe",
+      "file_bytes": 106208,
+      "file_sha256": "3adbbf2af609e206e3ca18cd55fc7c4b52f5c8bb8218dd99fd5a9e50d7a193cd",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "python",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 15,
+      "version_output_sha256": "92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e"
+    },
+    "rustc": {
+      "basename": "rustc.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "max_output_bytes": 65536,
+      "path_redacted": true,
+      "role": "rustc",
+      "timeout_seconds": 10,
+      "version_exit_code": 0,
+      "version_output_bytes": 36,
+      "version_output_sha256": "55a904cb05398062de6886178bd3fe78d04d7a0355df50c8e09ed9e3c86dc42e"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144",
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  }
+}
