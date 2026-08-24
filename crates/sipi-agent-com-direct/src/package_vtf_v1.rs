@@ -1222,22 +1222,44 @@ fn selected_case(
     Ok(value as usize - 1)
 }
 
-fn scalar(values: &BTreeMap<String, ResolvedDefaultV1>, names: &[&str]) -> Option<f64> {
-    names.iter().find_map(|name| {
-        values
-            .iter()
-            .find(|(key, _)| key.eq_ignore_ascii_case(name))
-            .and_then(|(_, value)| match value {
-                ResolvedDefaultV1::Scalar(v) if v.is_finite() => Some(*v),
-                _ => None,
-            })
-    })
+fn unique_alias_value<'a>(
+    values: &'a BTreeMap<String, ResolvedDefaultV1>,
+    names: &[&str],
+) -> Result<Option<&'a ResolvedDefaultV1>, DirectRunErrorV1> {
+    let matches: Vec<&ResolvedDefaultV1> = values
+        .iter()
+        .filter(|(key, _)| names.iter().any(|name| key.eq_ignore_ascii_case(name)))
+        .map(|(_, value)| value)
+        .collect();
+    let Some(first) = matches.first().copied() else {
+        return Ok(None);
+    };
+    if matches.iter().any(|value| *value != first) {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "case-insensitive package aliases conflict for {}",
+            names[0]
+        )));
+    }
+    Ok(Some(first))
+}
+
+fn scalar(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    names: &[&str],
+) -> Result<Option<f64>, DirectRunErrorV1> {
+    let Some(value) = unique_alias_value(values, names)? else {
+        return Ok(None);
+    };
+    match value {
+        ResolvedDefaultV1::Scalar(v) if v.is_finite() => Ok(Some(*v)),
+        _ => Ok(None),
+    }
 }
 fn scalar_required(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     names: &[&str],
 ) -> Result<f64, DirectRunErrorV1> {
-    scalar(values, names).ok_or_else(|| {
+    scalar(values, names)?.ok_or_else(|| {
         DirectRunErrorV1::Parameters(format!("missing finite package scalar {}", names[0]))
     })
 }
@@ -1259,27 +1281,17 @@ fn vector_any(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     names: &[&str],
 ) -> Result<Vec<f64>, DirectRunErrorV1> {
-    let result = names
-        .iter()
-        .find_map(|name| {
-            values
-                .iter()
-                .find(|(key, _)| key.eq_ignore_ascii_case(name))
-                .map(|(_, value)| match value {
-                    ResolvedDefaultV1::Scalar(v) => Ok(vec![*v]),
-                    ResolvedDefaultV1::Vector(v) => Ok(v.clone()),
-                    _ => Err(DirectRunErrorV1::Parameters(format!(
-                        "package {} must be numeric vector",
-                        name
-                    ))),
-                })
-        })
-        .unwrap_or_else(|| {
-            Err(DirectRunErrorV1::Parameters(format!(
-                "missing package vector {}",
-                names[0]
-            )))
-        })?;
+    let value = unique_alias_value(values, names)?.ok_or_else(|| {
+        DirectRunErrorV1::Parameters(format!("missing package vector {}", names[0]))
+    })?;
+    let result = match value {
+        ResolvedDefaultV1::Scalar(v) => Ok(vec![*v]),
+        ResolvedDefaultV1::Vector(v) => Ok(v.clone()),
+        _ => Err(DirectRunErrorV1::Parameters(format!(
+            "package {} must be numeric vector",
+            names[0]
+        ))),
+    }?;
     if result.is_empty()
         || result
             .iter()
@@ -1296,26 +1308,16 @@ fn matrix_required(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     names: &[&str],
 ) -> Result<Vec<Vec<f64>>, DirectRunErrorV1> {
-    let result = names
-        .iter()
-        .find_map(|name| {
-            values
-                .iter()
-                .find(|(key, _)| key.eq_ignore_ascii_case(name))
-                .map(|(_, value)| match value {
-                    ResolvedDefaultV1::Matrix(v) => Ok(v.clone()),
-                    _ => Err(DirectRunErrorV1::Parameters(format!(
-                        "package {} must be numeric matrix",
-                        name
-                    ))),
-                })
-        })
-        .unwrap_or_else(|| {
-            Err(DirectRunErrorV1::Parameters(format!(
-                "missing package matrix {}",
-                names[0]
-            )))
-        })?;
+    let value = unique_alias_value(values, names)?.ok_or_else(|| {
+        DirectRunErrorV1::Parameters(format!("missing package matrix {}", names[0]))
+    })?;
+    let result = match value {
+        ResolvedDefaultV1::Matrix(v) => Ok(v.clone()),
+        _ => Err(DirectRunErrorV1::Parameters(format!(
+            "package {} must be numeric matrix",
+            names[0]
+        ))),
+    }?;
     let width = result.first().map_or(0, Vec::len);
     if result.is_empty()
         || width == 0
@@ -1338,17 +1340,9 @@ fn chain(
     names: &[&str],
     side: usize,
 ) -> Result<Vec<f64>, DirectRunErrorV1> {
-    let value = names
-        .iter()
-        .find_map(|name| {
-            values
-                .iter()
-                .find(|(key, _)| key.eq_ignore_ascii_case(name))
-                .map(|(_, v)| v)
-        })
-        .ok_or_else(|| {
-            DirectRunErrorV1::Parameters(format!("missing package chain {}", names[0]))
-        })?;
+    let value = unique_alias_value(values, names)?.ok_or_else(|| {
+        DirectRunErrorV1::Parameters(format!("missing package chain {}", names[0]))
+    })?;
     let result = match value {
         ResolvedDefaultV1::Vector(v) if v.len() == 2 => vec![v[side]],
         ResolvedDefaultV1::Matrix(v) if v.len() == 2 => v[side].clone(),
@@ -1386,15 +1380,15 @@ fn boolean(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     names: &[&str],
 ) -> Result<Option<bool>, DirectRunErrorV1> {
-    let Some((_, value)) = names.iter().find_map(|name| {
-        values
-            .iter()
-            .find(|(key, _)| key.eq_ignore_ascii_case(name))
-    }) else {
+    let Some(value) = unique_alias_value(values, names)? else {
         return Ok(None);
     };
     match value {
         ResolvedDefaultV1::Boolean(v) => Ok(Some(*v)),
+        // Numeric 0/1 reaches this typed leaf only after the trusted
+        // workbook materializer has normalized its source controls.  The
+        // public JSON parser rejects the same spelling before this boundary.
+        ResolvedDefaultV1::Scalar(v) if *v == 0.0 || *v == 1.0 => Ok(Some(*v != 0.0)),
         _ => Err(DirectRunErrorV1::Parameters(format!(
             "package {} must be boolean",
             names[0]
@@ -1535,6 +1529,30 @@ mod tests {
             ("a_fext".to_owned(), ResolvedDefaultV1::Scalar(1.0)),
             ("a_next".to_owned(), ResolvedDefaultV1::Scalar(1.0)),
         ])
+    }
+
+    #[test]
+    fn package_aliases_require_typed_consistency() {
+        let mut config = values();
+        config.insert("inc_package".to_owned(), ResolvedDefaultV1::Boolean(true));
+        assert_eq!(
+            boolean(&config, &["INC_PACKAGE", "inc_package"]).unwrap(),
+            Some(true)
+        );
+        config.insert("inc_package".to_owned(), ResolvedDefaultV1::Boolean(false));
+        assert!(boolean(&config, &["INC_PACKAGE", "inc_package"]).is_err());
+
+        let mut matrix_aliases = values();
+        matrix_aliases.insert(
+            "PKG_Z_C".to_owned(),
+            ResolvedDefaultV1::Matrix(vec![vec![50.0], vec![50.0]]),
+        );
+        assert!(matrix_required(&matrix_aliases, &["pkg_Z_c", "package_Z_c"]).is_ok());
+        matrix_aliases.insert(
+            "package_Z_c".to_owned(),
+            ResolvedDefaultV1::Matrix(vec![vec![51.0], vec![50.0]]),
+        );
+        assert!(matrix_required(&matrix_aliases, &["pkg_Z_c", "package_Z_c"]).is_err());
     }
 
     #[test]

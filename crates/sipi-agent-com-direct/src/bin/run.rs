@@ -47,7 +47,9 @@ fn parse_args() -> Result<DirectRunRequestV1, DirectRunErrorV1> {
     let mut output_dir = None;
     let mut artifact_id = "com-run".to_owned();
     let mut profile = "r480".to_owned();
-    let mut reader = Some("r480".to_owned());
+    // The pinned r4.80 profile owns its reader selection.  Supplying an
+    // explicit reader is only valid for the custom profile.
+    let mut reader = None;
     let mut fix_ids = Vec::new();
     let mut overrides = Vec::new();
     let mut overwrite = false;

@@ -116,11 +116,17 @@ bit-identical acceptance claim.
 The existing candidate-local JSON package-case route is not used as upstream
 fan-out or as an oracle substitute.
 
-The ACCM evidence is staged composition: the DC transfer and receiver-noise
-consumer are covered by focused algebraic and portable-search tests, while a
-complete public S4P plus legal `portable.search` ACCM run remains open because
-the final COM chain currently rejects that combination at `Chain(Equalizer)`.
-No public diagnostics field is added for the intermediate transfer.
+The ACCM transfer is consumed by the existing receiver-noise search path; no
+public diagnostics field is added for the intermediate transfer. An unbound
+local CLI observation using the pinned 100G workbook and pinned four-port S4P
+completed the two workbook package cases with the workbook's original
+AC_CM_RMS=[0,0] controls. A separate manual observation used an explicit
+caller override AC_CM_RMS=[0,0.02] and saw the selected case change FOM/COM and
+sigma_N; that override is a test control, not a production default or a claim
+about the workbook's original values. These observations are not clean-archive
+receipts, upstream numeric parity, or release evidence; the noncanonical
+explicit nonzero override/manual observation and canonical `cd_cm_rms` fields
+remain unclaimed.
 
 The focused `run_v1::tests::public_s4p_package_workflow_consumes_delayed_lowpass_and_roles`
 is a scoped synthetic workflow checkpoint, not upstream numeric parity: it uses
@@ -131,3 +137,39 @@ typed S4P input as FEXT/NEXT.  It also reruns the workflow with `a_thru` 0.5
 and 1.0, checking exact two-times internal impulse samples plus changed
 impulse/COM digests.  This is a bounded synthetic E2E nonclaim, not a claim of
 full upstream package or numeric COM parity.
+
+## Workbook-to-search crosswalk
+
+The workbook-backed S4P route has a crate-private source-derived crosswalk
+from COM-01 materialization into the existing `portable.search` consumer. It
+does not add a public JSON field or a default profile: every required search,
+receiver, candidate, CTLE, package selector, and ACCM control must be present
+in the materialized workbook map, finite, and alias-consistent. The S4P axis
+is read once from the staged input bytes and copied into the search frequency,
+noise, and crosstalk axes; a changed file or an axis mismatch fails closed.
+The dynamic TX grid preserves the pinned workbook's `cm1/cm2/cm3/cp1` value
+arrays, while `tx_ffe_c0_min` remains the source cursor admission scalar and is
+not invented as a separate grid. `dfe_first_max` is the first source `bmax`
+entry, matching the pinned search evaluator. CTLE `f_HP` is preserved as the
+corner-frequency vector, while `g_DC_HP_values` is carried separately as the
+CL120d gain-candidate vector; they are not interchangeable. `AC_CM_RMS`, `ACCM_MAX_Freq`, and
+`pkg_len_select` are cross-checked against the receiver consumer only when the
+selected resolved ACCM value is nonzero.
+
+The pinned source/control anchors used for this mapping are:
+
+| Input or source path | Role | Git blob | Bytes | Raw SHA-256 | License |
+| --- | --- | --- | ---: | --- | --- |
+| `matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx` | pinned 100G materialized workbook input | `22b633b6092b4b0de0ca89273515329b362eabae` | 67087 | `e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925` | MIT project asset |
+| `fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p` | pinned S4P frequency-axis/input fixture | `a1fe8618043b31f63dfb24454ac1d296000010c0` | 6457063 | `3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec` | MIT project asset |
+| `src/agent_com/api.py` | workbook materialize/prepare-run entry path | `3e7808982a63123f2bac65a86f3abb627c287be1` | 21445 | `b7527f60d55b6f73fb449bc2472f957a6bc2a9ecf1d7bc8808756bf7fba39570` | MIT |
+| `src/agent_com/_orchestration.py` | materialized parameter and receiver/search orchestration | `5d260a0aab941f1a1955fe3abef36d85a56034c0` | 90877 | `069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69` | MIT |
+| `src/agent_com/equalization/search.py` | source search/receiver-noise consumer | `58f6e5e3f8f36b94faddf0248f3df2ff11e1e3cd` | 53859 | `924930c43332f169ce1d66048d3f70610c8bf459af2f0210d6995533c277003d` | MIT |
+| `tests/test_snp_ports_order.py` | source-derived ACCM package-path checkpoint | `73da0a892e7d78781ffb1077c56977ee54632889` | 41262 | `0dbbbbcc7e5188371da1b2014168c4f1c707d510f6fe360c1377c620de420b69` | MIT |
+
+This is a scoped pinned-100G materialization route, not a claim of global
+workbook coverage or upstream numeric parity. Missing workbook controls,
+unsupported data-rate/case shapes, and nonzero ACCM without a real S4P
+transfer remain fail-closed/open; canonical upstream `cd_cm_rms` and global
+numeric parity remain unclaimed. S-parameter fitting remains forbidden and the
+channel boundary remains the existing single final FD-to-TD impulse leaf.

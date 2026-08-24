@@ -210,21 +210,70 @@ pub fn ctle_frequency_response_v1(
     high_pass_gain_db: f64,
     parameters: &CtleParamsV1,
 ) -> Result<Vec<Complex64>, SearchErrorV1> {
+    // Preserve the historical V1 surface.  The workbook-aware search route
+    // uses the additive function below with its separate gain vector.
+    ctle_frequency_response_impl_v1(
+        frequency,
+        ctle_index,
+        high_pass_index,
+        high_pass_gain_db,
+        None,
+        parameters,
+    )
+}
+
+/// CTLE response with the source's independent high-pass gain candidates.
+/// This additive API keeps `CtleParamsV1` source-compatible for existing
+/// callers while allowing the workbook route to distinguish gains from the
+/// `f_hp` corner-frequency vector.
+pub fn ctle_frequency_response_with_gdc_v1(
+    frequency: &[f64],
+    ctle_index: usize,
+    high_pass_index: usize,
+    high_pass_gain_db: f64,
+    g_dc_hp_values: &[f64],
+    parameters: &CtleParamsV1,
+) -> Result<Vec<Complex64>, SearchErrorV1> {
+    ctle_frequency_response_impl_v1(
+        frequency,
+        ctle_index,
+        high_pass_index,
+        high_pass_gain_db,
+        Some(g_dc_hp_values),
+        parameters,
+    )
+}
+
+fn ctle_frequency_response_impl_v1(
+    frequency: &[f64],
+    ctle_index: usize,
+    high_pass_index: usize,
+    high_pass_gain_db: f64,
+    g_dc_hp_values: Option<&[f64]>,
+    parameters: &CtleParamsV1,
+) -> Result<Vec<Complex64>, SearchErrorV1> {
     let gain = indexed_config_value_v1(&parameters.ctle_gdc_values, ctle_index, "ctle_gdc_values")?;
     let fz = indexed_config_value_v1(&parameters.ctle_fz, ctle_index, "CTLE_fz")?;
     let fp1 = indexed_config_value_v1(&parameters.ctle_fp1, ctle_index, "CTLE_fp1")?;
     let fp2 = indexed_config_value_v1(&parameters.ctle_fp2, ctle_index, "CTLE_fp2")?;
-    let base: Vec<Complex64> = frequency
-        .iter()
-        .map(|value| {
-            let numerator =
-                Complex64::try_new(10.0_f64.powf(gain / 20.0), *value / fz).expect("complex");
-            let d1 = Complex64::try_new(1.0, *value / fp1).expect("complex");
-            let d2 = Complex64::try_new(1.0, *value / fp2).expect("complex");
-            complex_div(numerator, complex_mul(d1, d2))
-        })
-        .collect();
+    let mut base = Vec::with_capacity(frequency.len());
+    for value in frequency {
+        let numerator = Complex64::try_new(10.0_f64.powf(gain / 20.0), *value / fz)
+            .map_err(|_| SearchErrorV1::InvalidControls)?;
+        let d1 =
+            Complex64::try_new(1.0, *value / fp1).map_err(|_| SearchErrorV1::InvalidControls)?;
+        let d2 =
+            Complex64::try_new(1.0, *value / fp2).map_err(|_| SearchErrorV1::InvalidControls)?;
+        base.push(complex_div(numerator, complex_mul(d1, d2)));
+    }
     if parameters.ctle_type == "CL120d" {
+        if let Some(g_dc_hp_values) = g_dc_hp_values {
+            let selected_gdc =
+                indexed_config_value_v1(g_dc_hp_values, high_pass_index, "g_DC_HP_values")?;
+            if selected_gdc != high_pass_gain_db {
+                return Err(SearchErrorV1::InvalidControls);
+            }
+        }
         let high_pass = indexed_config_value_v1(&parameters.f_hp, high_pass_index, "f_HP")?;
         let shaped: Vec<Complex64> = frequency
             .iter()
@@ -232,11 +281,12 @@ pub fn ctle_frequency_response_v1(
             .map(|(value, entry)| {
                 let numerator =
                     Complex64::try_new(10.0_f64.powf(high_pass_gain_db / 20.0), *value / high_pass)
-                        .expect("complex");
-                let denominator = Complex64::try_new(1.0, *value / high_pass).expect("complex");
-                complex_mul(*entry, complex_div(numerator, denominator))
+                        .map_err(|_| SearchErrorV1::InvalidControls)?;
+                let denominator = Complex64::try_new(1.0, *value / high_pass)
+                    .map_err(|_| SearchErrorV1::InvalidControls)?;
+                Ok(complex_mul(*entry, complex_div(numerator, denominator)))
             })
-            .collect();
+            .collect::<Result<Vec<_>, SearchErrorV1>>()?;
         return Ok(shaped);
     }
     if parameters.ctle_type == "CL120e" {
@@ -246,12 +296,13 @@ pub fn ctle_frequency_response_v1(
             .iter()
             .zip(base.iter())
             .map(|(value, entry)| {
-                let numerator = Complex64::try_new(1.0, *value / high_pass_zero).expect("complex");
-                let denominator =
-                    Complex64::try_new(1.0, *value / high_pass_pole).expect("complex");
-                complex_mul(*entry, complex_div(numerator, denominator))
+                let numerator = Complex64::try_new(1.0, *value / high_pass_zero)
+                    .map_err(|_| SearchErrorV1::InvalidControls)?;
+                let denominator = Complex64::try_new(1.0, *value / high_pass_pole)
+                    .map_err(|_| SearchErrorV1::InvalidControls)?;
+                Ok(complex_mul(*entry, complex_div(numerator, denominator)))
             })
-            .collect();
+            .collect::<Result<Vec<_>, SearchErrorV1>>()?;
         return Ok(shaped);
     }
     Ok(base)
@@ -443,7 +494,7 @@ mod tests {
             ctle_fp1: vec![30e9],
             ctle_fp2: vec![40e9],
             ctle_type: "CL120e".to_string(),
-            f_hp: vec![1.0],
+            f_hp: vec![],
             f_hp_z: vec![5e9],
             f_hp_p: vec![1e9],
         };
@@ -458,6 +509,21 @@ mod tests {
             .expect("td");
         assert_eq!(filtered.len(), impulse.len());
         assert!(filtered.iter().all(|value| value.is_finite()));
+    }
+
+    #[test]
+    fn ctle_nonfinite_gain_fails_closed() {
+        let parameters = CtleParamsV1 {
+            ctle_gdc_values: vec![0.0],
+            ctle_fz: vec![10e9],
+            ctle_fp1: vec![30e9],
+            ctle_fp2: vec![40e9],
+            ctle_type: "CL120d".to_string(),
+            f_hp: vec![664.0625e6],
+            f_hp_z: vec![],
+            f_hp_p: vec![],
+        };
+        assert!(ctle_frequency_response_v1(&[1.0e9], 0, 0, 1.0e308, &parameters).is_err());
     }
 
     #[test]

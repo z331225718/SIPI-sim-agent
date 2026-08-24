@@ -239,16 +239,17 @@ pub use sampled_signal_pdf_v1::{
 };
 pub use search_loop_v1::{
     SEARCH_LOOP_POLICY_V1, SearchFullOptionsV1, SearchFullParamsV1, SearchLoopErrorV1,
-    SearchLoopOptionsV1, SearchLoopParamsV1, SearchLoopResultV1, anchored_cursor, peak_window,
-    r480_sample_offsets, rectangular_pulse_response_v1, search_r480_nonmmse_no_xtalk_v1,
+    SearchLoopOptionsV1, SearchLoopParamsV1, SearchLoopResultV1, SearchLoopResultWithMetricsV1,
+    anchored_cursor, peak_window, r480_sample_offsets, rectangular_pulse_response_v1,
+    search_r480_nonmmse_no_xtalk_v1, search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1,
     search_r480_nonmmse_no_xtalk_with_sigma_v1, shift_matrix, skip_high_pass_local_search,
     skip_local_search, validate_supported_branch,
 };
 pub use search_support_v1::{
     CtleParamsV1, SEARCH_SUPPORT_POLICY_V1, SearchErrorV1, apply_ctle_candidate_v1,
-    ctle_frequency_response_v1, high_pass_candidates_v1, indexed_config_value_v1,
-    qualified_ctle_pair_v1, selected_accm_rms_v1, selected_package_case_v1, selected_sndr_v1,
-    system_noise_response_v1,
+    ctle_frequency_response_v1, ctle_frequency_response_with_gdc_v1, high_pass_candidates_v1,
+    indexed_config_value_v1, qualified_ctle_pair_v1, selected_accm_rms_v1,
+    selected_package_case_v1, selected_sndr_v1, system_noise_response_v1,
 };
 pub use td_input_v1::{
     MAX_TD_FREQUENCY_POINTS_V1, MAX_TD_INPUT_SAMPLES_V1, MAX_TD_WORK_ELEMENTS_V1,

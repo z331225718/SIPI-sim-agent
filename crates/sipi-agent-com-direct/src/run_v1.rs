@@ -19,13 +19,13 @@ use sipi_com::{
     CalibrationErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, ComRunResultEnvelopeV1,
     CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
-    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultV1, TdFrequencyFillinV1,
+    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1, TdFrequencyFillinV1,
     XtalkChannelV1, apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
     calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1,
     execute_com_run_v1, execute_com_run_with_crosstalk_v1, merge_com_parameters_v1, r480_tdiln_v1,
     raised_cosine_filter_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
     sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1, search_mmse_candidates_v1,
-    search_r480_nonmmse_no_xtalk_with_sigma_v1, td_fd_fillin_v1, td_pulse_input_v1,
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1, td_fd_fillin_v1, td_pulse_input_v1,
 };
 use sipi_touchstone::selected_four_port_v1::parse_selected_four_port_hz_s_ri_50_v2;
 use sipi_touchstone::{TouchstoneParseLimitsV1, parse_touchstone_hz_s_ri_50_two_port_v1};
@@ -35,6 +35,7 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 pub const COM_02_DIRECT_PORT_SCHEMA_V1: &str = "sipi.com-02.direct-port.v1";
 pub const COM_04_DIRECT_PORT_SCHEMA_V1: &str = "sipi.com-04.direct-port.v1";
@@ -47,6 +48,26 @@ pub const MAX_DIAGNOSTICS_BYTES_V1: usize = 256 * 1024;
 pub const MAX_CROSSTALK_CHANNELS_V1: usize = 64;
 pub const MAX_SEARCH_FREQUENCY_POINTS_V1: usize = 262_144;
 pub const MAX_SEARCH_TX_FFE_CANDIDATES_V1: u64 = 1_000_000;
+const MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1: u64 = 128 * 1024 * 1024;
+
+fn validate_workbook_snapshot_budget_v1(
+    source_len: usize,
+    case_count: usize,
+) -> Result<(), DirectRunErrorV1> {
+    let total = (source_len as u64)
+        .checked_mul(case_count as u64)
+        .ok_or_else(|| DirectRunErrorV1::InputLimit {
+            path: "workbook package-case S4P snapshots".to_owned(),
+            limit: MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1,
+        })?;
+    if total > MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1 {
+        return Err(DirectRunErrorV1::InputLimit {
+            path: "workbook package-case S4P snapshots".to_owned(),
+            limit: MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1,
+        });
+    }
+    Ok(())
+}
 const MAX_TOUCHSTONE_RECORDS_V1: usize = 65_536;
 const MAX_TD_BESSEL_ORDER_V1: usize = 32;
 
@@ -174,6 +195,13 @@ struct LoadedConfigV1 {
     source_sha256: String,
     profile: String,
     document: Value,
+    origin: ConfigOriginV1,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ConfigOriginV1 {
+    Json,
+    TrustedWorkbook,
 }
 
 #[derive(Clone, Debug)]
@@ -227,6 +255,11 @@ struct PortableBranchResultV1 {
     effective_next: Vec<Vec<f64>>,
     effective_fext_pulses: Vec<Vec<f64>>,
     effective_next_pulses: Vec<Vec<f64>>,
+    // Search consumer outputs needed by trusted workbook materialization stay
+    // in this crate-private sidecar instead of expanding the public JSON wire.
+    search_available_signal_v: Option<f64>,
+    search_sigma_n_v: Option<f64>,
+    search_h_j: Option<Vec<f64>>,
 }
 
 /// Execute the bounded COM-02 run route and publish deterministic artifacts.
@@ -245,7 +278,7 @@ pub fn load_config_run_com_write_artifacts_v1(
 struct PackageChannelV1 {
     values: Vec<f64>,
     source: Option<PathBuf>,
-    source_bytes: Option<Vec<u8>>,
+    source_bytes: Option<Arc<[u8]>>,
     already_pulse: bool,
     source_sha256: String,
     source_kind: &'static str,
@@ -255,10 +288,11 @@ struct PackageChannelV1 {
 struct PackageCaseV1 {
     identity: String,
     calibration_identity: String,
-    document: Value,
+    document: Arc<Value>,
     pulse: PackageChannelV1,
     fext: Vec<PackageChannelV1>,
     next: Vec<PackageChannelV1>,
+    trusted_workbook: bool,
 }
 
 fn package_cases_from_config_v1(
@@ -394,13 +428,91 @@ fn package_cases_from_config_v1(
         result.push(PackageCaseV1 {
             identity,
             calibration_identity,
-            document: case_document,
+            document: Arc::new(case_document),
             pulse,
             fext,
             next,
+            trusted_workbook: false,
         });
     }
     Ok(Some(result))
+}
+
+fn workbook_package_cases_from_config_v1(
+    request: &DirectRunRequestV1,
+) -> Result<Option<Vec<PackageCaseV1>>, DirectRunErrorV1> {
+    let is_workbook = request
+        .config
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| matches!(value.to_ascii_lowercase().as_str(), "xlsx" | "xlsm"));
+    if !is_workbook {
+        return Ok(None);
+    }
+    let loaded = load_config_v1(request)?;
+    let selections = loaded
+        .values
+        .iter()
+        .filter(|(key, _)| key.eq_ignore_ascii_case("pkg_len_select"))
+        .map(|(_, value)| value)
+        .collect::<Vec<_>>();
+    let selection = selections.first().copied().ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialization does not expose pkg_len_select".to_owned(),
+        )
+    })?;
+    if selections.iter().skip(1).any(|value| *value != selection) {
+        return Err(DirectRunErrorV1::Parameters(
+            "workbook aliases conflict for pkg_len_select".to_owned(),
+        ));
+    }
+    let selected = match selection {
+        ResolvedDefaultV1::Scalar(value) => vec![*value],
+        ResolvedDefaultV1::Vector(values) => values.clone(),
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(
+                "workbook pkg_len_select must be scalar/vector".to_owned(),
+            ));
+        }
+    };
+    if selected.len() <= 1 {
+        return Ok(None);
+    }
+    if selected.len() > MAX_CROSSTALK_CHANNELS_V1
+        || selected
+            .iter()
+            .any(|value| !value.is_finite() || *value < 1.0 || value.fract() != 0.0)
+    {
+        return Err(DirectRunErrorV1::InputLimit {
+            path: "workbook pkg_len_select".to_owned(),
+            limit: MAX_CROSSTALK_CHANNELS_V1 as u64,
+        });
+    }
+    let source_bytes: Arc<[u8]> =
+        Arc::from(bounded_read_v1(&request.pulse, MAX_IMPULSE_FILE_BYTES_V1)?);
+    validate_workbook_snapshot_budget_v1(source_bytes.len(), selected.len())?;
+    let shared_document = Arc::new(loaded.document);
+    let cases = selected
+        .iter()
+        .enumerate()
+        .map(|(index, _)| PackageCaseV1 {
+            identity: format!("workbook-case-{index}"),
+            calibration_identity: format!("workbook-case-{index}:calibration"),
+            document: shared_document.clone(),
+            pulse: PackageChannelV1 {
+                values: Vec::new(),
+                source: Some(request.pulse.clone()),
+                source_bytes: Some(source_bytes.clone()),
+                already_pulse: false,
+                source_sha256: sha256_bytes_v1(&source_bytes),
+                source_kind: "workbook-s4p-source",
+            },
+            fext: Vec::new(),
+            next: Vec::new(),
+            trusted_workbook: true,
+        })
+        .collect();
+    Ok(Some(cases))
 }
 
 fn parse_case_channels_v1(
@@ -448,7 +560,7 @@ fn parse_package_channel_v1(
         return Ok(PackageChannelV1 {
             values: loaded.values,
             source: Some(source),
-            source_bytes: Some(source_bytes),
+            source_bytes: Some(Arc::from(source_bytes)),
             already_pulse: loaded.already_pulse,
             source_sha256: loaded.source_sha256,
             source_kind: loaded.source_kind,
@@ -583,7 +695,7 @@ fn run_package_cases_v1(
             let pulse_path = stage_package_channel_v1(&case_root, "thru", 0, &case.pulse)?;
             fs::write(
                 &config_path,
-                serde_json::to_vec(&case.document)
+                serde_json::to_vec(case.document.as_ref())
                     .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?,
             )
             .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
@@ -600,7 +712,7 @@ fn run_package_cases_v1(
                 let path = stage_package_channel_v1(&case_root, "next", channel, source)?;
                 child.next.push(path);
             }
-            let report = run_with_package_case_token(&child, schema, index)?;
+            let report = run_with_package_case_token(&child, schema, index, case.trusted_workbook)?;
             if first_report.is_none() {
                 first_report = Some(report.clone());
             }
@@ -750,8 +862,18 @@ fn run_with_package_case_token(
     request: &DirectRunRequestV1,
     schema: &'static str,
     package_case_index: usize,
+    trusted_workbook: bool,
 ) -> Result<DirectRunReportV1, DirectRunErrorV1> {
-    run_with_workflow_token(request, schema, Some(package_case_index))
+    run_with_workflow_token_origin(
+        request,
+        schema,
+        Some(package_case_index),
+        Some(if trusted_workbook {
+            ConfigOriginV1::TrustedWorkbook
+        } else {
+            ConfigOriginV1::Json
+        }),
+    )
 }
 
 fn run_with_workflow_token(
@@ -759,15 +881,51 @@ fn run_with_workflow_token(
     schema: &'static str,
     package_case_index: Option<usize>,
 ) -> Result<DirectRunReportV1, DirectRunErrorV1> {
+    run_with_workflow_token_origin(request, schema, package_case_index, None)
+}
+
+fn run_with_workflow_token_origin(
+    request: &DirectRunRequestV1,
+    schema: &'static str,
+    package_case_index: Option<usize>,
+    origin_override: Option<ConfigOriginV1>,
+) -> Result<DirectRunReportV1, DirectRunErrorV1> {
     validate_request(request)?;
-    if package_case_index.is_none()
-        && let Some(package_cases) = package_cases_from_config_v1(request)?
-    {
-        return run_package_cases_v1(request, schema, package_cases);
+    if package_case_index.is_none() {
+        if let Some(package_cases) = package_cases_from_config_v1(request)? {
+            return run_package_cases_v1(request, schema, package_cases);
+        }
+        if let Some(package_cases) = workbook_package_cases_from_config_v1(request)? {
+            return run_package_cases_v1(request, schema, package_cases);
+        }
     }
     let loaded = load_config_v1(request)?;
-    validate_output_input_custody_v1(request, Some(&loaded.document))?;
-    let controls = canonical_controls_v1(&loaded.values)?;
+    let mut document = loaded.document.clone();
+    validate_output_input_custody_v1(request, Some(&document))?;
+    let trusted_workbook =
+        origin_override.unwrap_or(loaded.origin) == ConfigOriginV1::TrustedWorkbook;
+    let mut controls = if trusted_workbook {
+        BTreeMap::new()
+    } else {
+        canonical_controls_v1(&loaded.values)?
+    };
+    let samples_per_ui = if trusted_workbook {
+        let value = required_td_scalar_alias_v1(
+            &loaded.values,
+            &["samples_per_ui", "SAMP_PER_UI", "N_v", "M"],
+            "samples_per_ui",
+        )?;
+        if !value.is_finite() || value < 1.0 || value.fract() != 0.0 {
+            return Err(DirectRunErrorV1::Parameters(
+                "workbook samples_per_ui must be a positive integer".to_owned(),
+            ));
+        }
+        usize::try_from(value as u64).map_err(|_| {
+            DirectRunErrorV1::Parameters("workbook samples_per_ui is too large".to_owned())
+        })?
+    } else {
+        required_usize_from_controls_v1(&controls, "samples_per_ui")?
+    };
     // The workbook materializer supplies the upstream false default when the
     // option is omitted.  Once enabled, all TD controls below are required.
     let td_mode = if loaded.values.contains_key("TDMODE") {
@@ -776,11 +934,10 @@ fn run_with_workflow_token(
         false
     };
     if td_mode {
-        let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
         let baud_hz = required_td_scalar_alias_v1(&loaded.values, &["fb", "baud_hz"], "fb")?;
-        reject_td_transformed_channel_v1(&loaded.document)?;
-        validate_td_search_crosswalk_v1(&loaded.document, &loaded.values, samples_per_ui, baud_hz)?;
-        validate_td_scope_v1(&loaded.document, request)?;
+        reject_td_transformed_channel_v1(&document)?;
+        validate_td_search_crosswalk_v1(&document, &loaded.values, samples_per_ui, baud_hz)?;
+        validate_td_scope_v1(&document, request)?;
         let extension = request
             .pulse
             .extension()
@@ -792,35 +949,50 @@ fn run_with_workflow_token(
             ));
         }
     }
-    let erl_s2p_exact = exact_erl_s2p_profile_v1(&loaded.document, &request.pulse)?;
+    let erl_s2p_exact = exact_erl_s2p_profile_v1(&document, &request.pulse)?;
     let is_s4p = request
         .pulse
         .extension()
         .and_then(|value| value.to_str())
         .is_some_and(|value| value.eq_ignore_ascii_case("s4p"));
     let package_s4p = is_s4p && s4p_fd_route_v1(&loaded.values)?;
+    if package_s4p
+        && trusted_workbook
+        && document
+            .get("portable")
+            .and_then(Value::as_object)
+            .and_then(|portable| portable.get("search"))
+            .is_none()
+    {
+        let bytes = bounded_read_v1(&request.pulse, MAX_IMPULSE_FILE_BYTES_V1)?;
+        let source_sha256 = sha256_bytes_v1(&bytes);
+        let frequency_hz = s4p_frequency_axis_v1(&request.pulse, &source_sha256)?;
+        materialize_workbook_search_v1(&mut document, &loaded.values, &frequency_hz)?;
+        if let Some(case_index) = package_case_index {
+            document["portable"]["search"]["package_case_index"] = json!(case_index);
+        }
+    }
     let mut input_impulse = if package_s4p {
         load_s4p_package_impulse_v1(
             &request.pulse,
             &loaded.values,
-            &loaded.document,
+            &document,
             "THRU",
             package_case_index,
+            trusted_workbook,
         )?
     } else if is_s4p {
         load_s4p_impulse_v1(&request.pulse)?
     } else if erl_s2p_exact {
         load_erl_s2p_impulse_v1(&request.pulse)?
     } else if td_mode {
-        let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
         load_td_mode_input_v1(&request.pulse, &loaded.values, samples_per_ui)?
     } else {
         load_impulse_v1(&request.pulse)?
     };
     if td_mode
         && input_impulse.td_fillin.is_some()
-        && loaded
-            .document
+        && document
             .get("portable")
             .and_then(Value::as_object)
             .and_then(|portable| portable.get("search"))
@@ -832,7 +1004,6 @@ fn run_with_workflow_token(
                 .to_owned(),
         ));
     }
-    let samples_per_ui = required_usize_from_controls_v1(&controls, "samples_per_ui")?;
     let mut fext_inputs = request
         .fext
         .iter()
@@ -848,9 +1019,10 @@ fn run_with_workflow_token(
                 load_s4p_package_impulse_v1(
                     path,
                     &loaded.values,
-                    &loaded.document,
+                    &document,
                     "FEXT",
                     package_case_index,
+                    trusted_workbook,
                 )
             } else {
                 load_channel_input_v1(path)
@@ -872,9 +1044,10 @@ fn run_with_workflow_token(
                 load_s4p_package_impulse_v1(
                     path,
                     &loaded.values,
-                    &loaded.document,
+                    &document,
                     "NEXT",
                     package_case_index,
+                    trusted_workbook,
                 )
             } else {
                 load_channel_input_v1(path)
@@ -886,11 +1059,7 @@ fn run_with_workflow_token(
     // package channels in the final COM chain instead of using them only for
     // calibration diagnostics.  Package fan-out supplies explicit child
     // files, so this guard avoids duplicating those channels.
-    if let Some(package_case) = loaded
-        .document
-        .get("package_case")
-        .and_then(Value::as_object)
-    {
+    if let Some(package_case) = document.get("package_case").and_then(Value::as_object) {
         if request.fext.is_empty() {
             for (index, value) in package_case
                 .get("fext")
@@ -996,8 +1165,7 @@ fn run_with_workflow_token(
                 "non-S4P or missing THRU/FEXT/NEXT ACCM transfer is not admitted".to_owned(),
             ));
         }
-        if let Some(search_index) = loaded
-            .document
+        if let Some(search_index) = document
             .get("portable")
             .and_then(Value::as_object)
             .and_then(|portable| portable.get("search"))
@@ -1012,8 +1180,7 @@ fn run_with_workflow_token(
                     .to_owned(),
             ));
         }
-        let has_portable_search = loaded
-            .document
+        let has_portable_search = document
             .get("portable")
             .and_then(Value::as_object)
             .and_then(|portable| portable.get("search"))
@@ -1027,12 +1194,21 @@ fn run_with_workflow_token(
     input_impulse.ac_common_mode_transfer =
         (!ac_common_mode_transfers.is_empty()).then_some(ac_common_mode_transfers);
     input_impulse.ac_common_mode_frequency_hz = ac_common_mode_frequency_hz;
-    let branches = portable_branch_result_v1(
-        &loaded.document,
+    let branches = portable_branch_result_with_sigma_v1(
+        &document,
         &input_impulse,
         Some(request),
         Some(&loaded.values),
+        None,
+        trusted_workbook,
     )?;
+    if trusted_workbook {
+        controls = workbook_controls_from_search_v1(
+            &loaded.values,
+            &branches,
+            resolved_package_case_index,
+        )?;
+    }
     if fext_inputs
         .len()
         .saturating_add(next_inputs.len())
@@ -1547,6 +1723,7 @@ fn load_config_v1(request: &DirectRunRequestV1) -> Result<LoadedConfigV1, Direct
             source_sha256,
             profile: request.profile.clone(),
             document,
+            origin: ConfigOriginV1::Json,
         });
     }
 
@@ -1568,6 +1745,7 @@ fn load_config_v1(request: &DirectRunRequestV1) -> Result<LoadedConfigV1, Direct
         source_sha256,
         profile: request.profile.clone(),
         document,
+        origin: ConfigOriginV1::TrustedWorkbook,
     })
 }
 
@@ -1586,9 +1764,57 @@ fn parameter_map_from_materialized_v1(
         let Some(map) = object.get(key).and_then(Value::as_object) else {
             continue;
         };
-        values.extend(parse_parameter_object_v1(map)?);
+        values.extend(parse_parameter_object_v1(map, true)?);
     }
+    normalize_workbook_boolean_controls_v1(&mut values);
     Ok(values)
+}
+
+fn normalize_workbook_boolean_controls_v1(values: &mut BTreeMap<String, ResolvedDefaultV1>) {
+    const BOOLEAN_KEYS: &[&str] = &[
+        "AUTO_TFX",
+        "Bessel_Thomson",
+        "Butterworth",
+        "CONFIG2MAT_ONLY",
+        "DEBUG",
+        "ENFORCE_CAUSALITY",
+        "ERL_ONLY",
+        "EW",
+        "Floating_DFE",
+        "GET_FD",
+        "IDEAL_RX_TERM",
+        "IDEAL_TX_TERM",
+        "INCLUDE_CTLE",
+        "INCLUDE_FILTER",
+        "INC_PACKAGE",
+        "LIMIT_JITTER_CONTRIB_TO_DFE_SPAN",
+        "Raised_Cosine",
+        "RL_norm_test",
+        "RxFFE",
+        "SNR_TXwC0",
+        "TDMODE",
+        "USE_ETA0_PSD",
+        "WC_PORTZ",
+        "force_BBN_Q_factor",
+        "force_pdf_bin_size",
+        "use_simple_EP_model",
+    ];
+    let keys = values
+        .keys()
+        .filter(|key| {
+            BOOLEAN_KEYS
+                .iter()
+                .any(|name| key.eq_ignore_ascii_case(name))
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    for key in keys {
+        if let Some(ResolvedDefaultV1::Scalar(value)) = values.get(&key).cloned()
+            && (value == 0.0 || value == 1.0)
+        {
+            values.insert(key, ResolvedDefaultV1::Boolean(value != 0.0));
+        }
+    }
 }
 
 fn merge_cli_calibration_v1(
@@ -1658,46 +1884,124 @@ fn parameter_map_from_json_v1(
     if let Some(materialized) = object.get("materialized").and_then(Value::as_object) {
         for key in ["parameters", "options"] {
             if let Some(map) = materialized.get(key).and_then(Value::as_object) {
-                values.extend(parse_parameter_object_v1(map)?);
+                reject_json_numeric_boolean_controls_v1(map)?;
+                values.extend(parse_parameter_object_v1(map, false)?);
             }
         }
     }
     for key in ["parameters", "params", "options"] {
         if let Some(map) = object.get(key).and_then(Value::as_object) {
-            values.extend(parse_parameter_object_v1(map)?);
+            reject_json_numeric_boolean_controls_v1(map)?;
+            values.extend(parse_parameter_object_v1(map, false)?);
         }
     }
     if values.is_empty() {
-        values.extend(parse_parameter_object_v1(object)?);
+        reject_json_numeric_boolean_controls_v1(object)?;
+        values.extend(parse_parameter_object_v1(object, false)?);
     }
     Ok(values)
 }
 
+fn reject_json_numeric_boolean_controls_v1(
+    object: &Map<String, Value>,
+) -> Result<(), DirectRunErrorV1> {
+    const BOOLEAN_KEYS: &[&str] = &[
+        "AUTO_TFX",
+        "Bessel_Thomson",
+        "Butterworth",
+        "CONFIG2MAT_ONLY",
+        "DEBUG",
+        "ENFORCE_CAUSALITY",
+        "ERL_ONLY",
+        "EW",
+        "Floating_DFE",
+        "GET_FD",
+        "IDEAL_RX_TERM",
+        "IDEAL_TX_TERM",
+        "INCLUDE_CTLE",
+        "INCLUDE_FILTER",
+        "INC_PACKAGE",
+        "LIMIT_JITTER_CONTRIB_TO_DFE_SPAN",
+        "Raised_Cosine",
+        "RL_norm_test",
+        "RxFFE",
+        "SNR_TXwC0",
+        "TDMODE",
+        "USE_ETA0_PSD",
+        "WC_PORTZ",
+        "force_BBN_Q_factor",
+        "force_pdf_bin_size",
+        "use_simple_EP_model",
+    ];
+    let numeric_boolean = |value: &Value| -> bool {
+        value
+            .as_f64()
+            .is_some_and(|number| number == 0.0 || number == 1.0)
+            || value
+                .as_object()
+                .and_then(|object| object.get("scalar"))
+                .is_some_and(|scalar| {
+                    scalar
+                        .as_f64()
+                        .is_some_and(|number| number == 0.0 || number == 1.0)
+                })
+    };
+    if let Some((key, _)) = object.iter().find(|(key, value)| {
+        BOOLEAN_KEYS
+            .iter()
+            .any(|alias| key.eq_ignore_ascii_case(alias))
+            && numeric_boolean(value)
+    }) {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "JSON boolean control {key} must be a JSON boolean; numeric 0/1 is workbook-only"
+        )));
+    }
+    Ok(())
+}
+
 fn parse_parameter_object_v1(
     object: &Map<String, Value>,
+    allow_workbook_specials: bool,
 ) -> Result<BTreeMap<String, ResolvedDefaultV1>, DirectRunErrorV1> {
     object
         .iter()
         .map(|(key, value)| {
+            let source_max_veo = allow_workbook_specials
+                && key.eq_ignore_ascii_case("Max_VEO")
+                && value
+                    .get("$special_float")
+                    .and_then(Value::as_str)
+                    .is_some_and(|special| special == "Infinity");
             Ok((
                 key.clone(),
-                resolved_from_json_v1(value)
-                    .map_err(|message| DirectRunErrorV1::Parameters(format!("{key}: {message}")))?,
+                if source_max_veo {
+                    ResolvedDefaultV1::Scalar(f64::INFINITY)
+                } else {
+                    resolved_from_json_v1(value, allow_workbook_specials).map_err(|message| {
+                        DirectRunErrorV1::Parameters(format!("{key}: {message}"))
+                    })?
+                },
             ))
         })
         .collect()
 }
 
-fn resolved_from_json_v1(value: &Value) -> Result<ResolvedDefaultV1, String> {
+fn resolved_from_json_v1(
+    value: &Value,
+    allow_workbook_specials: bool,
+) -> Result<ResolvedDefaultV1, String> {
     if let Some(object) = value.as_object() {
         if let Some(special) = object.get("$special_float").and_then(Value::as_str) {
+            if allow_workbook_specials && special == "Infinity" {
+                return Ok(ResolvedDefaultV1::Scalar(f64::INFINITY));
+            }
             return Err(format!("special float {special} is not admitted"));
         }
         if let Some(scalar) = object.get("scalar") {
-            return resolved_from_json_v1(scalar);
+            return resolved_from_json_v1(scalar, allow_workbook_specials);
         }
         if let Some(vector) = object.get("vector") {
-            return resolved_from_json_v1(vector);
+            return resolved_from_json_v1(vector, allow_workbook_specials);
         }
         return Err("object values are not canonical scalar/vector values".to_owned());
     }
@@ -1764,8 +2068,11 @@ fn canonical_controls_v1(
             &["samples_per_ui", "SAMP_PER_UI", "N_v", "M"],
         ),
         ("LEVELS", &["LEVELS", "PAM_LEVELS", "levels", "L"]),
-        ("bin_size", &["bin_size", "BIN_SIZE", "force_pdf_bin_size"]),
-        ("A_v", &["A_v", "AVAILABLE_SIGNAL", "a_thru"]),
+        (
+            "bin_size",
+            &["bin_size", "BIN_SIZE", "BinSize", "force_pdf_bin_size"],
+        ),
+        ("A_v", &["A_v", "AVAILABLE_SIGNAL"]),
         ("R_LM", &["R_LM", "R_LM_OHM"]),
         ("SNR_TX", &["SNR_TX", "TX_SNR_DB", "SNDR"]),
         ("sigma_X", &["sigma_X", "SIGMA_X", "sigma_r"]),
@@ -1778,7 +2085,7 @@ fn canonical_controls_v1(
     ];
     let mut result = BTreeMap::new();
     for (canonical, names) in aliases {
-        let Some(value) = names.iter().find_map(|name| source.get(*name).cloned()) else {
+        let Some(value) = unique_alias_value_v1(source, names, canonical)?.cloned() else {
             return Err(DirectRunErrorV1::Unsupported(format!(
                 "config does not expose direct COM control {canonical}; supply a canonical JSON parameter document"
             )));
@@ -1820,11 +2127,101 @@ fn canonical_controls_v1(
         ("t_o_s", &["t_o_s", "T_O_S"]),
     ];
     for (canonical, names) in optional_aliases {
-        if let Some(value) = names.iter().find_map(|name| source.get(*name).cloned()) {
+        if let Some(value) = unique_alias_value_v1(source, names, canonical)?.cloned() {
             result.insert((*canonical).to_owned(), value);
         }
     }
     Ok(result)
+}
+
+fn workbook_case_scalar_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    value_aliases: &[&str],
+    case_index: usize,
+    label: &str,
+) -> Result<f64, DirectRunErrorV1> {
+    let matches = values
+        .iter()
+        .filter(|(key, _)| {
+            value_aliases
+                .iter()
+                .any(|alias| key.eq_ignore_ascii_case(alias))
+        })
+        .map(|(_, value)| value)
+        .collect::<Vec<_>>();
+    if matches.is_empty() {
+        return Err(DirectRunErrorV1::Unsupported(format!(
+            "workbook materialization does not expose required control {label}"
+        )));
+    }
+    let mut selected_value: Option<f64> = None;
+    for value in matches {
+        let candidate = match value {
+            ResolvedDefaultV1::Scalar(value) if case_index == 0 && value.is_finite() => *value,
+            ResolvedDefaultV1::Vector(values) => {
+                values.get(case_index).copied().ok_or_else(|| {
+                    DirectRunErrorV1::Unsupported(format!(
+                        "workbook control {label} has no selected package case"
+                    ))
+                })?
+            }
+            _ => {
+                return Err(DirectRunErrorV1::Parameters(format!(
+                    "workbook control {label} must be finite scalar/vector"
+                )));
+            }
+        };
+        if !candidate.is_finite()
+            || selected_value.is_some_and(|selected| selected.to_bits() != candidate.to_bits())
+        {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "workbook aliases conflict for control {label}"
+            )));
+        }
+        selected_value = Some(candidate);
+    }
+    selected_value.ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(format!(
+            "workbook materialization does not expose required control {label}"
+        ))
+    })
+}
+
+fn workbook_controls_from_search_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    branch: &PortableBranchResultV1,
+    package_case_index: usize,
+) -> Result<BTreeMap<String, ResolvedDefaultV1>, DirectRunErrorV1> {
+    let available_signal_v = branch.search_available_signal_v.ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialized search did not produce a final candidate".to_owned(),
+        )
+    })?;
+    let sigma_n_v = branch.search_sigma_n_v.ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialized search did not produce sigma_N".to_owned(),
+        )
+    })?;
+    let h_j = branch.search_h_j.as_ref().ok_or_else(|| {
+        DirectRunErrorV1::Unsupported(
+            "workbook materialized search did not produce jitter response".to_owned(),
+        )
+    })?;
+    let mut source = values.clone();
+    source.insert(
+        "A_v".to_owned(),
+        ResolvedDefaultV1::Scalar(available_signal_v),
+    );
+    source.insert("sigma_N".to_owned(), ResolvedDefaultV1::Scalar(sigma_n_v));
+    source.insert("h_J".to_owned(), ResolvedDefaultV1::Vector(h_j.clone()));
+    let sndr = workbook_case_scalar_v1(&source, &["SNDR"], package_case_index, "SNDR")?;
+    source.retain(|key, _| {
+        !["SNR_TX", "TX_SNR_DB", "SNDR"]
+            .iter()
+            .any(|alias| key.eq_ignore_ascii_case(alias))
+    });
+    source.insert("SNR_TX".to_owned(), ResolvedDefaultV1::Scalar(sndr));
+    canonical_controls_v1(&source)
 }
 
 fn required_usize_from_controls_v1(
@@ -1857,7 +2254,7 @@ fn resolved_bool_alias_v1(
     aliases: &[&str],
     label: &str,
 ) -> Result<bool, DirectRunErrorV1> {
-    let Some(value) = aliases.iter().find_map(|key| values.get(*key)) else {
+    let Some(value) = unique_alias_value_v1(values, aliases, label)? else {
         return Err(DirectRunErrorV1::Parameters(format!(
             "TDMODE control {label} is missing"
         )));
@@ -1879,10 +2276,8 @@ fn s4p_fd_route_v1(values: &BTreeMap<String, ResolvedDefaultV1>) -> Result<bool,
     } else {
         false
     };
-    let include_pcb = values
-        .iter()
-        .find(|(key, _)| key.eq_ignore_ascii_case("include_pcb"))
-        .map(|(_, value)| match value {
+    let include_pcb = unique_alias_value_v1(values, &["include_pcb"], "include_pcb")?
+        .map(|value| match value {
             ResolvedDefaultV1::Scalar(value)
                 if value.is_finite() && matches!(*value, 0.0 | 1.0 | 2.0) =>
             {
@@ -1902,7 +2297,7 @@ fn required_td_scalar_alias_v1(
     aliases: &[&str],
     label: &str,
 ) -> Result<f64, DirectRunErrorV1> {
-    let Some(value) = aliases.iter().find_map(|key| values.get(*key)) else {
+    let Some(value) = unique_alias_value_v1(values, aliases, label)? else {
         return Err(DirectRunErrorV1::Parameters(format!(
             "TDMODE control {label} is missing"
         )));
@@ -1922,6 +2317,27 @@ fn required_td_scalar_alias_v1(
         )));
     }
     Ok(scalar)
+}
+
+fn unique_alias_value_v1<'a>(
+    values: &'a BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Option<&'a ResolvedDefaultV1>, DirectRunErrorV1> {
+    let matches = values
+        .iter()
+        .filter(|(key, _)| aliases.iter().any(|alias| key.eq_ignore_ascii_case(alias)))
+        .map(|(_, value)| value)
+        .collect::<Vec<_>>();
+    let Some(first) = matches.first().copied() else {
+        return Ok(None);
+    };
+    if matches.iter().skip(1).any(|value| *value != first) {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "case-insensitive aliases conflict for control {label}"
+        )));
+    }
+    Ok(Some(first))
 }
 
 fn validate_td_search_crosswalk_v1(
@@ -2100,13 +2516,14 @@ fn materialize_selected_pulse_v1(source: &[f64], selected: &[f64]) -> Vec<f64> {
     result
 }
 
+#[cfg(test)]
 fn portable_branch_result_v1(
     document: &Value,
     impulse: &ImpulseInputV1,
     request: Option<&DirectRunRequestV1>,
     controls: Option<&BTreeMap<String, ResolvedDefaultV1>>,
 ) -> Result<PortableBranchResultV1, DirectRunErrorV1> {
-    portable_branch_result_with_sigma_v1(document, impulse, request, controls, None)
+    portable_branch_result_with_sigma_v1(document, impulse, request, controls, None, false)
 }
 
 fn portable_branch_result_with_sigma_v1(
@@ -2115,6 +2532,7 @@ fn portable_branch_result_with_sigma_v1(
     request: Option<&DirectRunRequestV1>,
     controls: Option<&BTreeMap<String, ResolvedDefaultV1>>,
     calibration_sigma_ne_override: Option<f64>,
+    trusted_workbook: bool,
 ) -> Result<PortableBranchResultV1, DirectRunErrorV1> {
     let document_object = document.as_object().ok_or_else(|| {
         DirectRunErrorV1::Json("canonical config object must be an object".to_owned())
@@ -2158,6 +2576,9 @@ fn portable_branch_result_with_sigma_v1(
     let mut effective_next = Vec::new();
     let mut effective_fext_pulses = Vec::new();
     let mut effective_next_pulses = Vec::new();
+    let mut search_available_signal_v = None;
+    let mut search_sigma_n_v = None;
+    let mut search_h_j = None;
     if root.contains_key("workbook") {
         diagnostics.insert(
             "workbook".to_owned(),
@@ -2623,6 +3044,7 @@ fn portable_branch_result_with_sigma_v1(
                     None,
                     Some(controls),
                     Some(noise.sigma_ne_v),
+                    false,
                 )
                 .map_err(|_| CalibrationErrorV1::Evaluator)?;
                 let source_values = orchestration
@@ -3155,8 +3577,12 @@ fn portable_branch_result_with_sigma_v1(
             canonical_f2_hz,
             tdiln_f2_hz,
             controls,
+            trusted_workbook,
         )?;
         selected_fom_db = Some(result.fom_db);
+        search_available_signal_v = Some(result.available_signal_v);
+        search_sigma_n_v = Some(result.sigma_n_v);
+        search_h_j = Some(result.h_j.clone());
         if effective_pulse.is_none() {
             effective_pulse = Some(result.selected_pulse.clone());
         }
@@ -3369,6 +3795,9 @@ fn portable_branch_result_with_sigma_v1(
         effective_next,
         effective_fext_pulses,
         effective_next_pulses,
+        search_available_signal_v,
+        search_sigma_n_v,
+        search_h_j,
     })
 }
 
@@ -3385,7 +3814,8 @@ fn portable_search_v1(
     canonical_f2_hz: Option<f64>,
     tdiln_f2_hz: Option<f64>,
     resolved_controls: Option<&BTreeMap<String, ResolvedDefaultV1>>,
-) -> Result<SearchLoopResultV1, DirectRunErrorV1> {
+    trusted_workbook: bool,
+) -> Result<SearchLoopResultWithMetricsV1, DirectRunErrorV1> {
     let branch = "portable.search";
     let td_fillin = impulse.td_fillin.as_ref();
     let frequency_hz = if let Some(fillin) = td_fillin {
@@ -3459,6 +3889,19 @@ fn portable_search_v1(
     let td_crosstalk = impulse.td_crosstalk.as_deref().unwrap_or(&[]);
     let td_crosstalk_outer_product = td_fillin.is_some() && !td_crosstalk.is_empty();
     let ctle_object = required_object_v1(search, "ctle", branch)?;
+    let f_hp = parse_f64_array_key_v1(ctle_object, "f_hp", "portable.search.ctle")?;
+    let g_dc_hp_values = if let Some(value) = ctle_object.get("g_dc_hp_values") {
+        parse_f64_array_v1(value, "portable.search.ctle.g_dc_hp_values")?
+    } else if trusted_workbook {
+        return Err(DirectRunErrorV1::Unsupported(
+            "trusted workbook portable.search.ctle.g_dc_hp_values is required".to_owned(),
+        ));
+    } else {
+        // Legacy JSON search documents used f_hp for the CL120d gain vector.
+        // Keep that compatibility only outside the trusted workbook route;
+        // workbook materialization always supplies the typed field above.
+        f_hp.clone()
+    };
     let ctle = CtleParamsV1 {
         ctle_gdc_values: parse_f64_array_key_v1(
             ctle_object,
@@ -3469,7 +3912,7 @@ fn portable_search_v1(
         ctle_fp1: parse_f64_array_key_v1(ctle_object, "ctle_fp1", "portable.search.ctle")?,
         ctle_fp2: parse_f64_array_key_v1(ctle_object, "ctle_fp2", "portable.search.ctle")?,
         ctle_type: required_str_v1(ctle_object, "ctle_type", "portable.search.ctle")?.to_owned(),
-        f_hp: parse_f64_array_key_v1(ctle_object, "f_hp", "portable.search.ctle")?,
+        f_hp,
         f_hp_z: parse_f64_array_key_v1(ctle_object, "f_hp_z", "portable.search.ctle")?,
         f_hp_p: parse_f64_array_key_v1(ctle_object, "f_hp_p", "portable.search.ctle")?,
     };
@@ -3827,7 +4270,7 @@ fn portable_search_v1(
             .to_owned(),
         },
     };
-    search_r480_nonmmse_no_xtalk_with_sigma_v1(
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1(
         &impulse.values,
         &frequency_hz,
         &noise_frequency_hz,
@@ -3843,6 +4286,7 @@ fn portable_search_v1(
             .and_then(Value::as_u64)
             .map(|value| value as usize)
             .unwrap_or(0),
+        &g_dc_hp_values,
         &full,
         &options,
     )
@@ -5109,10 +5553,8 @@ fn package_fd_to_td_options_v1(
     // Only resolved workbook controls are admitted. Candidate-local JSON
     // fd_to_td/defaults are deliberately not consulted.
     let scalar = |key: &str| -> Result<f64, DirectRunErrorV1> {
-        values
-            .iter()
-            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
-            .and_then(|(_, value)| match value {
+        unique_alias_value_v1(values, &[key], key)?
+            .and_then(|value| match value {
                 ResolvedDefaultV1::Scalar(value) => Some(*value),
                 _ => None,
             })
@@ -5124,11 +5566,12 @@ fn package_fd_to_td_options_v1(
             })
     };
     let boolean = |key: &str| -> Result<bool, DirectRunErrorV1> {
-        values
-            .iter()
-            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
-            .and_then(|(_, value)| match value {
+        unique_alias_value_v1(values, &[key], key)?
+            .and_then(|value| match value {
                 ResolvedDefaultV1::Boolean(value) => Some(*value),
+                ResolvedDefaultV1::Scalar(value) if *value == 0.0 || *value == 1.0 => {
+                    Some(*value != 0.0)
+                }
                 _ => None,
             })
             .ok_or_else(|| {
@@ -5138,10 +5581,8 @@ fn package_fd_to_td_options_v1(
             })
     };
     let string = |key: &str| -> Result<String, DirectRunErrorV1> {
-        values
-            .iter()
-            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
-            .and_then(|(_, value)| match value {
+        unique_alias_value_v1(values, &[key], key)?
+            .and_then(|value| match value {
                 ResolvedDefaultV1::String(value) => Some(value.clone()),
                 _ => None,
             })
@@ -5174,6 +5615,317 @@ fn package_fd_to_td_options_v1(
         ));
     }
     Ok(options)
+}
+
+fn resolved_json_value_v1(value: &ResolvedDefaultV1) -> Result<Value, DirectRunErrorV1> {
+    match value {
+        ResolvedDefaultV1::Scalar(value)
+            if value.is_finite()
+                && value.fract() == 0.0
+                && *value >= i64::MIN as f64
+                && *value <= i64::MAX as f64 =>
+        {
+            Ok(json!(*value as i64))
+        }
+        ResolvedDefaultV1::Scalar(value) => Ok(json!(value)),
+        ResolvedDefaultV1::Boolean(value) => Ok(json!(value)),
+        ResolvedDefaultV1::String(value) => Ok(json!(value)),
+        ResolvedDefaultV1::Vector(values) => Ok(json!(values)),
+        ResolvedDefaultV1::Matrix(values) => Ok(json!(values)),
+        // COM materialization uses an explicit empty vector for optional
+        // source controls such as gqual and f_HP_Z/P.  Preserve that source
+        // value; a required scalar consumer will reject it at its typed edge.
+        ResolvedDefaultV1::Empty => Ok(json!([])),
+    }
+}
+
+fn workbook_control_json_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Value, DirectRunErrorV1> {
+    let matches = values
+        .iter()
+        .filter(|(key, _)| aliases.iter().any(|alias| key.eq_ignore_ascii_case(alias)))
+        .map(|(_, value)| resolved_json_value_v1(value))
+        .collect::<Result<Vec<_>, _>>()?;
+    let Some(first) = matches.first() else {
+        return Err(DirectRunErrorV1::Unsupported(format!(
+            "workbook materialization does not expose required portable.search control {label}"
+        )));
+    };
+    if matches.iter().skip(1).any(|value| value != first) {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "workbook aliases conflict for portable.search control {label}"
+        )));
+    }
+    Ok(first.clone())
+}
+
+fn workbook_bool_json_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Value, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, aliases, label)?;
+    if let Some(value) = value.as_bool() {
+        return Ok(json!(value));
+    }
+    if let Some(value) = value.as_f64()
+        && (value == 0.0 || value == 1.0)
+    {
+        return Ok(json!(value != 0.0));
+    }
+    Err(DirectRunErrorV1::Parameters(format!(
+        "workbook control {label} must be boolean or 0/1"
+    )))
+}
+
+fn workbook_first_scalar_json_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Value, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, aliases, label)?;
+    if let Some(number) = value.as_f64()
+        && number.is_finite()
+    {
+        return Ok(json!(number));
+    }
+    let Some(array) = value.as_array() else {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "workbook control {label} must be a scalar or non-empty vector"
+        )));
+    };
+    let first = array.first().and_then(Value::as_f64).ok_or_else(|| {
+        DirectRunErrorV1::Parameters(format!(
+            "workbook control {label} must contain a finite scalar"
+        ))
+    })?;
+    if !first.is_finite() {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "workbook control {label} must contain a finite scalar"
+        )));
+    }
+    Ok(json!(first))
+}
+
+fn workbook_integer_vector_json_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Value, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, aliases, label)?;
+    let items = match value {
+        Value::Array(items) => items,
+        Value::Number(_) => vec![value],
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "workbook control {label} must be an integer vector"
+            )));
+        }
+    };
+    let mut result = Vec::with_capacity(items.len());
+    for item in items {
+        let number = item.as_f64().ok_or_else(|| {
+            DirectRunErrorV1::Parameters(format!(
+                "workbook control {label} must contain integer values"
+            ))
+        })?;
+        if !number.is_finite() || number.fract() != 0.0 {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "workbook control {label} must contain integer values"
+            )));
+        }
+        result.push(json!(number as i64));
+    }
+    Ok(Value::Array(result))
+}
+
+fn s4p_frequency_axis_v1(path: &Path, expected_sha256: &str) -> Result<Vec<f64>, DirectRunErrorV1> {
+    let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
+    if sha256_bytes_v1(&bytes) != expected_sha256 {
+        return Err(DirectRunErrorV1::Input {
+            path: path.display().to_string(),
+            message: "S4P source changed during workbook/search crosswalk".to_owned(),
+        });
+    }
+    let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, touchstone_limits_v1()?)
+        .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
+    let axis = parsed
+        .rows()
+        .iter()
+        .map(|row| row.frequency_hz())
+        .collect::<Vec<_>>();
+    if axis.len() < 2
+        || !axis.iter().all(|value| value.is_finite())
+        || !axis.windows(2).all(|pair| pair[1] > pair[0])
+    {
+        return Err(DirectRunErrorV1::Touchstone(
+            "workbook/search S4P frequency axis is invalid".to_owned(),
+        ));
+    }
+    Ok(axis)
+}
+
+/// Build the typed search surface that r4.80 constructs internally from a
+/// materialized workbook. JSON callers still need to provide explicit
+/// `portable.search`; only the COM-01 workbook materializer may use this
+/// source-derived crosswalk.
+fn materialize_workbook_search_v1(
+    document: &mut Value,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    frequency_hz: &[f64],
+) -> Result<(), DirectRunErrorV1> {
+    let root = document.as_object_mut().ok_or_else(|| {
+        DirectRunErrorV1::Json("workbook materialized document must be an object".to_owned())
+    })?;
+    if root
+        .get("portable")
+        .and_then(Value::as_object)
+        .and_then(|portable| portable.get("search"))
+        .is_some()
+    {
+        return Ok(());
+    }
+    let mut search = Map::new();
+    let copy = |aliases: &[&str], label: &str| workbook_control_json_v1(values, aliases, label);
+    for (key, aliases) in [
+        ("samples_per_ui", &["samples_per_ui"][..]),
+        ("fb_hz", &["fb"][..]),
+        ("f2_hz", &["f2"][..]),
+        ("tx_ffe_c0_min", &["tx_ffe_c0_min"][..]),
+        ("ts_anchor", &["ts_anchor"][..]),
+        ("local_search", &["LOCAL_SEARCH"][..]),
+        ("ts_sample_adj_range", &["ts_sample_adj_range"][..]),
+        ("gdc_min", &["GDC_MIN"][..]),
+        ("gqual", &["gqual"][..]),
+        ("g2qual", &["g2qual"][..]),
+        ("r_lm", &["R_LM"][..]),
+        ("levels", &["levels"][..]),
+        ("sigma_x", &["sigma_X"][..]),
+        ("dfe_delta", &["dfe_delta"][..]),
+        ("n_tail_start", &["N_tail_start"][..]),
+        ("b_float_rss_max", &["B_float_RSS_MAX"][..]),
+        ("a_dd", &["A_DD"][..]),
+        ("sigma_rj", &["sigma_RJ"][..]),
+        ("t_o", &["T_O"][..]),
+        ("min_veo_test", &["Min_VEO_Test"][..]),
+        ("noise_crest_factor", &["Noise_Crest_Factor"][..]),
+        ("spec_ber", &["specBER"][..]),
+        ("samples_for_c2m", &["samples_for_C2M"][..]),
+        ("ql", &["QL"][..]),
+        ("ndfe", &["ndfe"][..]),
+        ("n_bmax", &["N_bmax"][..]),
+        ("n_bf", &["N_bf"][..]),
+        ("n_bg", &["N_bg"][..]),
+        ("bmaxg", &["bmaxg"][..]),
+    ] {
+        search.insert(key.to_owned(), copy(aliases, key)?);
+    }
+    search.insert(
+        "ts_sample_adj_range".to_owned(),
+        workbook_integer_vector_json_v1(values, &["ts_sample_adj_range"], "ts_sample_adj_range")?,
+    );
+    search.insert(
+        "dfe_first_max".to_owned(),
+        workbook_first_scalar_json_v1(values, &["bmax"], "bmax")?,
+    );
+    search.insert("frequency_hz".to_owned(), json!(frequency_hz));
+    search.insert("noise_frequency_hz".to_owned(), json!(frequency_hz));
+    search.insert("crosstalk_frequency_hz".to_owned(), json!(frequency_hz));
+    search.insert(
+        "include_ctle".to_owned(),
+        workbook_bool_json_v1(values, &["INCLUDE_CTLE"], "INCLUDE_CTLE")?,
+    );
+    search.insert(
+        "tx_ffe_values".to_owned(),
+        json!({
+            "tx_ffe_cm1_values": copy(&["tx_ffe_cm1_values"], "tx_ffe_cm1_values")?,
+            "tx_ffe_cm2_values": copy(&["tx_ffe_cm2_values"], "tx_ffe_cm2_values")?,
+            "tx_ffe_cm3_values": copy(&["tx_ffe_cm3_values"], "tx_ffe_cm3_values")?,
+            "tx_ffe_cp1_values": copy(&["tx_ffe_cp1_values"], "tx_ffe_cp1_values")?,
+        }),
+    );
+    let ctle = json!({
+        "ctle_gdc_values": copy(&["ctle_gdc_values"], "ctle_gdc_values")?,
+        "ctle_fz": copy(&["CTLE_fz"], "CTLE_fz")?, "ctle_fp1": copy(&["CTLE_fp1"], "CTLE_fp1")?,
+        "ctle_fp2": copy(&["CTLE_fp2"], "CTLE_fp2")?, "ctle_type": copy(&["CTLE_type"], "CTLE_type")?,
+        "g_dc_hp_values": copy(&["g_DC_HP_values"], "g_DC_HP_values")?,
+        "f_hp": copy(&["f_HP"], "f_HP")?, "f_hp_z": copy(&["f_HP_Z"], "f_HP_Z")?,
+        "f_hp_p": copy(&["f_HP_P"], "f_HP_P")?,
+    });
+    search.insert("ctle".to_owned(), ctle.clone());
+    let receiver = json!({
+        "fb_hz": copy(&["fb"], "fb")?, "btorder": copy(&["BTorder"], "BTorder")?,
+        "fb_bt_cutoff": copy(&["fb_BT_cutoff"], "fb_BT_cutoff")?, "fb_bw_cutoff": copy(&["fb_BW_cutoff"], "fb_BW_cutoff")?,
+        "rc_start_hz": copy(&["RC_Start"], "RC_Start")?, "rc_end_hz": copy(&["RC_end"], "RC_end")?,
+        "eta_0": copy(&["eta_0"], "eta_0")?, "accm_max_freq_hz": copy(&["ACCM_MAX_Freq"], "ACCM_MAX_Freq")?,
+        "ac_cm_rms": copy(&["AC_CM_RMS"], "AC_CM_RMS")?,
+        "ctle_gdc_values": ctle["ctle_gdc_values"].clone(), "ctle_fz": ctle["ctle_fz"].clone(),
+        "ctle_fp1": ctle["ctle_fp1"].clone(), "ctle_fp2": ctle["ctle_fp2"].clone(),
+        "ctle_type": ctle["ctle_type"].clone(), "f_hp": ctle["f_hp"].clone(),
+        "f_hp_z": ctle["f_hp_z"].clone(), "f_hp_p": ctle["f_hp_p"].clone(),
+    });
+    search.insert("receiver".to_owned(), receiver);
+    search.insert(
+        "candidate".to_owned(),
+        json!({
+            "samples_per_ui": copy(&["samples_per_ui"], "samples_per_ui")?,
+            "r_lm": copy(&["R_LM"], "R_LM")?,
+            "levels": copy(&["levels"], "levels")?,
+            "sigma_x": copy(&["sigma_X"], "sigma_X")?,
+            "dfe_delta": copy(&["dfe_delta"], "dfe_delta")?,
+            "n_tail_start": copy(&["N_tail_start"], "N_tail_start")?,
+            "b_float_rss_max": copy(&["B_FLOAT_RSS_MAX"], "B_FLOAT_RSS_MAX")?,
+            "a_dd": copy(&["A_DD"], "A_DD")?,
+            "sigma_rj": copy(&["sigma_RJ"], "sigma_RJ")?,
+            "t_o": copy(&["T_O"], "T_O")?,
+            "min_veo_test": copy(&["Min_VEO_Test"], "Min_VEO_Test")?,
+            "noise_crest_factor": copy(&["Noise_Crest_Factor"], "Noise_Crest_Factor")?,
+            "spec_ber": copy(&["specBER"], "specBER")?,
+            "samples_for_c2m": copy(&["samples_for_C2M"], "samples_for_C2M")?,
+            "ql": copy(&["QL"], "QL")?,
+            "floating_dfe": workbook_bool_json_v1(values, &["Floating_DFE"], "Floating_DFE")?,
+            "ndfe": copy(&["ndfe"], "ndfe")?,
+            "n_bmax": copy(&["N_bmax"], "N_bmax")?,
+            "n_bf": copy(&["N_bf"], "N_bf")?,
+            "n_bg": copy(&["N_bg"], "N_bg")?,
+            "bmaxg": copy(&["bmaxg"], "bmaxg")?,
+            "bmax": copy(&["bmax"], "bmax")?,
+            "bmin": copy(&["bmin"], "bmin")?,
+        }),
+    );
+    let options_receiver = json!({
+        "bessel_thomson": workbook_bool_json_v1(values, &["Bessel_Thomson"], "Bessel_Thomson")?,
+        "butterworth": workbook_bool_json_v1(values, &["Butterworth"], "Butterworth")?,
+        "raised_cosine": workbook_bool_json_v1(values, &["Raised_Cosine"], "Raised_Cosine")?,
+        "use_eta0_psd": workbook_bool_json_v1(values, &["USE_ETA0_PSD"], "USE_ETA0_PSD")?,
+        "wc_portz": workbook_bool_json_v1(values, &["WC_PORTZ"], "WC_PORTZ")?,
+        "pkg_len_select": workbook_integer_vector_json_v1(values, &["pkg_len_select"], "pkg_len_select")?,
+    });
+    let options_candidate = json!({
+        "snr_txw_c0": workbook_bool_json_v1(values, &["SNR_TXwC0"], "SNR_TXwC0")?,
+        "wc_portz": workbook_bool_json_v1(values, &["WC_PORTZ"], "WC_PORTZ")?,
+        "tx_rd_sel": copy(&["Tx_rd_sel"], "Tx_rd_sel")?, "pkg_len_select": workbook_integer_vector_json_v1(values, &["pkg_len_select"], "pkg_len_select")?,
+        "sndr": copy(&["SNDR"], "SNDR")?, "limit_jitter_contrib_to_dfe_span": workbook_bool_json_v1(values, &["LIMIT_JITTER_CONTRIB_TO_DFE_SPAN"], "LIMIT_JITTER_CONTRIB_TO_DFE_SPAN")?,
+        "force_pdf_bin_size": workbook_bool_json_v1(values, &["force_pdf_bin_size"], "force_pdf_bin_size")?,
+        "bin_size": copy(&["BinSize"], "BinSize")?, "force_bbn_q_factor": workbook_bool_json_v1(values, &["force_BBN_Q_factor"], "force_BBN_Q_factor")?,
+        "bbn_q_factor": copy(&["BBN_Q_factor"], "BBN_Q_factor")?, "histogram_window_weight": copy(&["Histogram_Window_Weight"], "Histogram_Window_Weight")?,
+    });
+    search.insert("options".to_owned(), json!({
+        "ffe_opt_method": copy(&["FFE_OPT_METHOD"], "FFE_OPT_METHOD")?, "rx_ffe_enabled": workbook_bool_json_v1(values, &["RxFFE"], "RxFFE")?,
+        "ts_srch_mode": copy(&["TS_SRCH_MODE"], "TS_SRCH_MODE")?, "cdr": copy(&["CDR"], "CDR")?,
+        "receiver": options_receiver, "candidate": options_candidate,
+    }));
+    search.insert("package_case_index".to_owned(), json!(0));
+    let portable = root
+        .entry("portable".to_owned())
+        .or_insert_with(|| Value::Object(Map::new()))
+        .as_object_mut()
+        .ok_or_else(|| DirectRunErrorV1::Json("portable must be object".to_owned()))?;
+    portable.insert("search".to_owned(), Value::Object(search));
+    Ok(())
 }
 
 fn reject_ad_hoc_package_controls_v1(value: &Value, path: &str) -> Result<(), DirectRunErrorV1> {
@@ -5236,13 +5988,19 @@ fn load_s4p_package_impulse_v1(
     document: &Value,
     channel_type: &str,
     package_case_token: Option<usize>,
+    trusted_workbook: bool,
 ) -> Result<ImpulseInputV1, DirectRunErrorV1> {
     if !matches!(channel_type, "THRU" | "FEXT" | "NEXT") {
         return Err(DirectRunErrorV1::Unsupported(
             "S4P package role must be selected by the typed THRU/FEXT/NEXT request path".to_owned(),
         ));
     }
-    reject_ad_hoc_package_controls_v1(document, "config")?;
+    // The workbook crosswalk adds the typed outer-loop case index to the
+    // cloned internal document. Caller JSON still goes through the recursive
+    // ad-hoc control rejection below.
+    if !trusted_workbook {
+        reject_ad_hoc_package_controls_v1(document, "config")?;
+    }
     if document.get("fd_to_td").is_some() || document.get("defaults").is_some() {
         return Err(DirectRunErrorV1::Unsupported(
             "package S4P FD-to-TD must use resolved workbook controls, not candidate-local fd_to_td/defaults"
@@ -5362,47 +6120,84 @@ fn selected_ac_cm_rms_v1(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     package_case_index: usize,
 ) -> Result<f64, DirectRunErrorV1> {
-    let Some(value) = values
+    let ac_values = values
         .iter()
-        .find(|(key, _)| key.eq_ignore_ascii_case("AC_CM_RMS"))
+        .filter(|(key, _)| key.eq_ignore_ascii_case("AC_CM_RMS"))
         .map(|(_, value)| value)
-    else {
+        .collect::<Vec<_>>();
+    if ac_values.is_empty() {
         return Ok(0.0);
-    };
-    let selected = values
+    }
+    let package_selections = values
         .iter()
-        .find(|(key, _)| key.eq_ignore_ascii_case("pkg_len_select"))
-        .and_then(|(_, value)| match value {
-            ResolvedDefaultV1::Scalar(selection) if package_case_index == 0 => Some(*selection),
-            ResolvedDefaultV1::Vector(selection) => selection.get(package_case_index).copied(),
-            _ => None,
-        })
-        .ok_or_else(|| {
-            DirectRunErrorV1::Parameters("pkg_len_select is required for AC_CM_RMS".to_owned())
-        })?;
+        .filter(|(key, _)| key.eq_ignore_ascii_case("pkg_len_select"))
+        .map(|(_, value)| value)
+        .collect::<Vec<_>>();
+    if package_selections.is_empty() {
+        return Err(DirectRunErrorV1::Parameters(
+            "pkg_len_select is required for AC_CM_RMS".to_owned(),
+        ));
+    }
+    let mut selected: Option<f64> = None;
+    for value in package_selections {
+        let candidate = match value {
+            ResolvedDefaultV1::Scalar(selection) if package_case_index == 0 => *selection,
+            ResolvedDefaultV1::Vector(selection) => {
+                selection.get(package_case_index).copied().ok_or_else(|| {
+                    DirectRunErrorV1::Parameters(
+                        "pkg_len_select has no selected package case".to_owned(),
+                    )
+                })?
+            }
+            _ => {
+                return Err(DirectRunErrorV1::Parameters(
+                    "pkg_len_select must be finite scalar/vector".to_owned(),
+                ));
+            }
+        };
+        if !candidate.is_finite()
+            || candidate < 1.0
+            || candidate.fract() != 0.0
+            || selected.is_some_and(|value| value.to_bits() != candidate.to_bits())
+        {
+            return Err(DirectRunErrorV1::Parameters(
+                "pkg_len_select aliases conflict or contain an invalid ACCM case".to_owned(),
+            ));
+        }
+        selected = Some(candidate);
+    }
+    let selected = selected
+        .ok_or_else(|| DirectRunErrorV1::Parameters("pkg_len_select is empty".to_owned()))?;
     if !selected.is_finite() || selected < 1.0 || selected.fract() != 0.0 {
         return Err(DirectRunErrorV1::Parameters(
             "pkg_len_select contains an invalid ACCM case".to_owned(),
         ));
     }
     let selected = selected as usize - 1;
-    let scalar = match value {
-        ResolvedDefaultV1::Scalar(value) if selected == 0 => *value,
-        ResolvedDefaultV1::Vector(values) => *values.get(selected).ok_or_else(|| {
-            DirectRunErrorV1::Parameters("AC_CM_RMS has no selected package case".to_owned())
-        })?,
-        _ => {
+    let mut result: Option<f64> = None;
+    for value in ac_values {
+        let scalar = match value {
+            ResolvedDefaultV1::Scalar(value) if selected == 0 => *value,
+            ResolvedDefaultV1::Vector(values) => *values.get(selected).ok_or_else(|| {
+                DirectRunErrorV1::Parameters("AC_CM_RMS has no selected package case".to_owned())
+            })?,
+            _ => {
+                return Err(DirectRunErrorV1::Parameters(
+                    "AC_CM_RMS scalar cannot broadcast to a nonzero package case".to_owned(),
+                ));
+            }
+        };
+        if !scalar.is_finite()
+            || scalar < 0.0
+            || result.is_some_and(|value| value.to_bits() != scalar.to_bits())
+        {
             return Err(DirectRunErrorV1::Parameters(
-                "AC_CM_RMS scalar cannot broadcast to a nonzero package case".to_owned(),
+                "AC_CM_RMS aliases conflict or contain an invalid value".to_owned(),
             ));
         }
-    };
-    if !scalar.is_finite() || scalar < 0.0 {
-        return Err(DirectRunErrorV1::Parameters(
-            "AC_CM_RMS must be finite and non-negative".to_owned(),
-        ));
+        result = Some(scalar);
     }
-    Ok(scalar)
+    result.ok_or_else(|| DirectRunErrorV1::Parameters("AC_CM_RMS is empty".to_owned()))
 }
 
 fn load_s4p_calibration_document_v1(path: &Path) -> Result<Value, DirectRunErrorV1> {
@@ -6387,6 +7182,229 @@ mod tests {
     }
 
     #[test]
+    fn forged_json_materialized_marker_never_grants_workbook_origin() {
+        let root = temp_root("forged-materialized-origin");
+        let config = root.join("params.json");
+        let mut document = canonical_parameters();
+        document["materialized"] = json!({"parameters": {"INCLUDE_CTLE": true}});
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        let request = DirectRunRequestV1::new(&config, root.join("pulse.f64le"), root.join("out"));
+        let loaded = load_config_v1(&request).expect("JSON config is readable");
+        assert_eq!(loaded.origin, ConfigOriginV1::Json);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn workbook_aliases_reject_case_insensitive_conflicts() {
+        let mut values = BTreeMap::new();
+        values.insert("INCLUDE_CTLE".to_owned(), ResolvedDefaultV1::Boolean(true));
+        values.insert("include_ctle".to_owned(), ResolvedDefaultV1::Boolean(false));
+        assert!(workbook_control_json_v1(&values, &["include_ctle"], "INCLUDE_CTLE").is_err());
+
+        values.insert("samples_per_ui".to_owned(), ResolvedDefaultV1::Scalar(8.0));
+        values.insert("SAMP_PER_UI".to_owned(), ResolvedDefaultV1::Scalar(16.0));
+        assert!(
+            required_td_scalar_alias_v1(
+                &values,
+                &["samples_per_ui", "SAMP_PER_UI"],
+                "samples_per_ui"
+            )
+            .is_err()
+        );
+
+        let mut fd_values = BTreeMap::new();
+        fd_values.insert("sample_dt".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        fd_values.insert("SAMPLE_DT".to_owned(), ResolvedDefaultV1::Scalar(2.0));
+        assert!(package_fd_to_td_options_v1(&fd_values).is_err());
+
+        let mut bool_values = BTreeMap::new();
+        bool_values.insert("INC_PACKAGE".to_owned(), ResolvedDefaultV1::Boolean(true));
+        bool_values.insert("inc_package".to_owned(), ResolvedDefaultV1::Boolean(false));
+        assert!(
+            resolved_bool_alias_v1(&bool_values, &["INC_PACKAGE", "inc_package"], "INC_PACKAGE")
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn public_json_rejects_workbook_numeric_boolean_and_special_float() {
+        let numeric = json!({"parameters": {"INCLUDE_CTLE": 1.0}});
+        assert!(parameter_map_from_json_v1(&numeric).is_err());
+        let special = json!({"parameters": {"Max_VEO": {"$special_float": "Infinity"}}});
+        assert!(parameter_map_from_json_v1(&special).is_err());
+    }
+
+    #[test]
+    fn workbook_case_snapshot_budget_is_checked_before_case_clones() {
+        assert!(validate_workbook_snapshot_budget_v1(8 * 1024 * 1024, 64).is_err());
+        assert!(validate_workbook_snapshot_budget_v1(1024, 64).is_ok());
+        assert!(validate_workbook_snapshot_budget_v1(usize::MAX, usize::MAX).is_err());
+    }
+
+    #[test]
+    fn workbook_materialization_crosswalks_source_controls_into_search() {
+        let scalar = |value: f64| ResolvedDefaultV1::Scalar(value);
+        let boolean = |value: bool| ResolvedDefaultV1::Boolean(value);
+        let vector = |values: Vec<f64>| ResolvedDefaultV1::Vector(values);
+        let mut values = BTreeMap::new();
+        for (key, value) in [
+            ("samples_per_ui", scalar(32.0)),
+            ("fb", scalar(53.125e9)),
+            ("f2", scalar(40.0e9)),
+            ("tx_ffe_c0_min", scalar(0.54)),
+            ("ts_anchor", scalar(0.0)),
+            ("LOCAL_SEARCH", scalar(2.0)),
+            ("GDC_MIN", scalar(0.0)),
+            ("R_LM", scalar(0.95)),
+            ("levels", scalar(4.0)),
+            ("sigma_X", scalar(0.7453559925)),
+            ("dfe_delta", scalar(0.0)),
+            ("N_tail_start", scalar(25.0)),
+            ("B_float_RSS_MAX", scalar(0.02)),
+            ("A_DD", scalar(0.02)),
+            ("sigma_RJ", scalar(0.01)),
+            ("T_O", scalar(0.0)),
+            ("Min_VEO_Test", scalar(0.0)),
+            ("Noise_Crest_Factor", scalar(0.0)),
+            ("specBER", scalar(1.0e-5)),
+            ("samples_for_C2M", scalar(100.0)),
+            ("QL", scalar(0.0)),
+            ("ndfe", scalar(6.0)),
+            ("N_bmax", scalar(40.0)),
+            ("N_bf", scalar(3.0)),
+            ("N_bg", scalar(0.0)),
+            ("bmaxg", scalar(0.05)),
+            ("BTorder", scalar(4.0)),
+            ("fb_BT_cutoff", scalar(0.35477775)),
+            ("fb_BW_cutoff", scalar(0.75)),
+            ("RC_Start", scalar(26.5625e9)),
+            ("RC_end", scalar(39.84375e9)),
+            ("eta_0", scalar(2.0e-8)),
+            ("ACCM_MAX_Freq", scalar(53.125e9)),
+            ("Tx_rd_sel", scalar(1.0)),
+            ("BinSize", scalar(1.0e-5)),
+            ("BBN_Q_factor", scalar(5.0)),
+        ] {
+            values.insert(key.to_owned(), value);
+        }
+        for (key, value) in [
+            ("ts_sample_adj_range", vector(vec![0.0, 0.0])),
+            ("gqual", vector(vec![])),
+            ("g2qual", vector(vec![])),
+            ("bmax", vector(vec![0.65, 0.15])),
+            ("bmin", vector(vec![0.3, 0.05])),
+            ("tx_ffe_cm1_values", vector(vec![-0.28, 0.0])),
+            ("tx_ffe_cm2_values", vector(vec![0.0, 0.1])),
+            ("tx_ffe_cm3_values", vector(vec![-0.04, 0.0])),
+            ("tx_ffe_cp1_values", vector(vec![-0.1, 0.0])),
+            ("ctle_gdc_values", vector(vec![-20.0, 0.0])),
+            ("CTLE_fz", vector(vec![21.25e9, 21.25e9])),
+            ("CTLE_fp1", vector(vec![21.25e9, 21.25e9])),
+            ("CTLE_fp2", vector(vec![53.125e9, 53.125e9])),
+            ("f_HP", vector(vec![664.0625e6, 664.0625e6])),
+            ("g_DC_HP_values", vector(vec![-4.0, -3.0, -2.0, -1.0, 0.0])),
+            ("f_HP_Z", vector(vec![])),
+            ("f_HP_P", vector(vec![])),
+            ("AC_CM_RMS", vector(vec![0.0, 0.02])),
+            ("pkg_len_select", vector(vec![1.0, 2.0])),
+            ("SNDR", vector(vec![33.0, 33.0])),
+        ] {
+            values.insert(key.to_owned(), value);
+        }
+        values.insert(
+            "CTLE_type".to_owned(),
+            ResolvedDefaultV1::String("CL120d".to_owned()),
+        );
+        values.insert("include_ctle".to_owned(), boolean(true));
+        values.insert("INCLUDE_CTLE".to_owned(), boolean(true));
+        values.insert("Bessel_Thomson".to_owned(), boolean(false));
+        values.insert("Butterworth".to_owned(), boolean(true));
+        values.insert("Raised_Cosine".to_owned(), boolean(false));
+        values.insert("USE_ETA0_PSD".to_owned(), boolean(false));
+        values.insert("WC_PORTZ".to_owned(), boolean(false));
+        values.insert("SNR_TXwC0".to_owned(), boolean(false));
+        values.insert(
+            "LIMIT_JITTER_CONTRIB_TO_DFE_SPAN".to_owned(),
+            boolean(false),
+        );
+        values.insert("force_pdf_bin_size".to_owned(), boolean(false));
+        values.insert("force_BBN_Q_factor".to_owned(), boolean(false));
+        values.insert("Floating_DFE".to_owned(), boolean(false));
+        values.insert(
+            "FFE_OPT_METHOD".to_owned(),
+            ResolvedDefaultV1::String("MMSE".to_owned()),
+        );
+        values.insert("RxFFE".to_owned(), boolean(false));
+        values.insert(
+            "TS_SRCH_MODE".to_owned(),
+            ResolvedDefaultV1::String("full-sweep".to_owned()),
+        );
+        values.insert("CDR".to_owned(), ResolvedDefaultV1::String("MM".to_owned()));
+        values.insert(
+            "Histogram_Window_Weight".to_owned(),
+            ResolvedDefaultV1::String("rectangle".to_owned()),
+        );
+
+        let mut document = json!({"materialized": {"parameters": {}, "options": {}}});
+        materialize_workbook_search_v1(&mut document, &values, &[1.0e9, 2.0e9])
+            .expect("source-derived workbook crosswalk");
+        let search = &document["portable"]["search"];
+        assert_eq!(search["dfe_first_max"], 0.65);
+        assert!(search["candidate"]["bmin"].is_array());
+        assert!(search["tx_ffe_values"].get("tx_ffe_c0_values").is_none());
+        assert_eq!(
+            search["ctle"]["g_dc_hp_values"],
+            json!([-4.0, -3.0, -2.0, -1.0, 0.0])
+        );
+        assert_eq!(search["receiver"]["ac_cm_rms"], json!([0.0, 0.02]));
+        assert_eq!(
+            search["options"]["receiver"]["pkg_len_select"],
+            json!([1, 2])
+        );
+        assert_eq!(
+            search["options"]["candidate"]["pkg_len_select"],
+            json!([1, 2])
+        );
+        let mut missing_gain = document.clone();
+        missing_gain["portable"]["search"]["ctle"]
+            .as_object_mut()
+            .expect("CTLE object")
+            .remove("g_dc_hp_values");
+        let impulse = ImpulseInputV1 {
+            values: vec![0.0, 1.0],
+            erl_values: None,
+            erl_time_s: None,
+            source_sha256: "test".to_owned(),
+            sample_interval_s: None,
+            source_kind: "test",
+            already_pulse: false,
+            causality_correction_db: None,
+            truncation_db: None,
+            causality_iterations: None,
+            td_fillin: None,
+            td_pulse: None,
+            td_crosstalk: None,
+            ac_common_mode_transfer: None,
+            ac_common_mode_frequency_hz: None,
+        };
+        let missing_gain_result = portable_search_v1(
+            missing_gain["portable"]["search"]
+                .as_object()
+                .expect("search object"),
+            &impulse,
+            None,
+            None,
+            None,
+            Some(&values),
+            true,
+        );
+        match missing_gain_result {
+            Ok(_) => panic!("trusted workbook must not substitute f_HP for g_DC_HP_values"),
+            Err(error) => assert!(error.to_string().contains("g_dc_hp_values")),
+        }
+    }
+
+    #[test]
     fn public_s4p_package_workflow_consumes_delayed_lowpass_and_roles() {
         let root = temp_root("public-s4p-package-e2e");
         let config = root.join("params.json");
@@ -6481,9 +7499,15 @@ mod tests {
         request.fext.push(s4p.clone());
         request.next.push(s4p.clone());
         let loaded = load_config_v1(&request).expect("config");
-        let probe =
-            load_s4p_package_impulse_v1(&s4p, &loaded.values, &loaded.document, "THRU", None)
-                .expect("S4P impulse");
+        let probe = load_s4p_package_impulse_v1(
+            &s4p,
+            &loaded.values,
+            &loaded.document,
+            "THRU",
+            None,
+            false,
+        )
+        .expect("S4P impulse");
         let probe_pulse = rectangular_pulse_response_v1(&probe.values, 8).unwrap();
         assert!(probe_pulse.iter().any(|value| *value > 0.1));
         let report = run_com_v1(&request).expect("typed public S4P workflow");
@@ -6533,6 +7557,7 @@ mod tests {
             &loaded_doubled.document,
             "THRU",
             None,
+            false,
         )
         .expect("doubled S4P impulse");
         assert_eq!(doubled_probe.values.len(), first_probe.len());
@@ -7568,6 +8593,9 @@ mod tests {
             .expect("portable search");
         let search = &report.result["cases"][0]["diagnostics"]["portable_branches"]["search"];
         assert!(search["fom_db"].as_f64().is_some_and(|value| value > 0.0));
+        for key in ["available_signal_v", "sigma_n_v", "sigma_ne_v", "h_j"] {
+            assert!(search.get(key).is_none(), "public search wire leaked {key}");
+        }
         assert_eq!(
             report.result["cases"][0]["metrics"]["FOM"],
             search["fom_db"]
@@ -7582,6 +8610,7 @@ mod tests {
             None,
             Some(&probe_controls),
             Some(0.0),
+            false,
         )
         .expect("zero sigma search");
         let sigma_high = portable_branch_result_with_sigma_v1(
@@ -7590,12 +8619,46 @@ mod tests {
             None,
             Some(&probe_controls),
             Some(0.5),
+            false,
         )
         .expect("nonzero sigma search");
         let sigma_zero_search = &sigma_zero.diagnostics["search"];
         let sigma_high_search = &sigma_high.diagnostics["search"];
         assert_eq!(sigma_zero_search["calibration_sigma_ne_v"], 0.0);
         assert_eq!(sigma_high_search["calibration_sigma_ne_v"], 0.5);
+        assert!(
+            sigma_zero
+                .search_available_signal_v
+                .is_some_and(f64::is_finite)
+        );
+        assert!(sigma_zero.search_sigma_n_v.is_some_and(f64::is_finite));
+        assert!(
+            sigma_zero
+                .search_h_j
+                .as_ref()
+                .is_some_and(|values| values.iter().all(|value| value.is_finite()))
+        );
+        let mut workbook_values = probe_loaded.values.clone();
+        workbook_values.retain(|key, _| {
+            !["SNR_TX", "TX_SNR_DB", "SNDR"]
+                .iter()
+                .any(|alias| key.eq_ignore_ascii_case(alias))
+        });
+        workbook_values.insert("SNDR".to_owned(), ResolvedDefaultV1::Vector(vec![33.0]));
+        let workbook_sidecar = workbook_controls_from_search_v1(&workbook_values, &sigma_zero, 0)
+            .expect("typed workbook sidecar");
+        assert!(matches!(
+            workbook_sidecar.get("A_v"),
+            Some(ResolvedDefaultV1::Scalar(value)) if value.is_finite()
+        ));
+        assert!(matches!(
+            workbook_sidecar.get("sigma_N"),
+            Some(ResolvedDefaultV1::Scalar(value)) if value.is_finite()
+        ));
+        assert!(matches!(
+            workbook_sidecar.get("h_J"),
+            Some(ResolvedDefaultV1::Vector(values)) if values.iter().all(|value| value.is_finite())
+        ));
         assert_ne!(
             sigma_zero_search["fom_db"], sigma_high_search["fom_db"],
             "search FOM evaluator must consume the per-sigma noise"
@@ -7777,6 +8840,7 @@ mod tests {
             None,
             Some(&probe_controls),
             Some(0.0),
+            false,
         )
         .expect("TDMODE search consumer");
         assert_eq!(
