@@ -2204,7 +2204,7 @@ pub(crate) fn trim_legacy_impulse_with_start(
 fn first_maximum_index(values: &[f64]) -> usize {
     let mut maximum = 0;
     for index in 1..values.len() {
-        if values[index].total_cmp(&values[maximum]).is_gt() {
+        if values[index] > values[maximum] {
             maximum = index;
         }
     }
@@ -2214,7 +2214,7 @@ fn first_maximum_index(values: &[f64]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{
-        ComplexMatrix2, complex_multiply, complex_right_solve, complex_solve,
+        ComplexMatrix2, complex_multiply, complex_right_solve, complex_solve, first_maximum_index,
         legacy_power_wave_nudge_v1, trim_legacy_impulse_with_start,
     };
     use num_complex::Complex64;
@@ -2247,6 +2247,7 @@ mod tests {
         let (trimmed, start) = trim_legacy_impulse_with_start(&flat, 3, 3, 1);
         assert_eq!(start, -4);
         assert_eq!(trimmed, vec![0.0, 0.0, 0.0]);
+        assert_eq!(first_maximum_index(&[-0.0, 0.0, 0.0]), 0);
     }
 
     #[test]

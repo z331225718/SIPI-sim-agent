@@ -1431,19 +1431,11 @@ fn reference_trim_impulse(
 ) -> Vec<f64> {
     let mut impulse = values.to_vec();
     let half_length = impulse.len() / 2;
-    let maximum_index = impulse
-        .iter()
-        .enumerate()
-        .max_by(|(_, left), (_, right)| left.total_cmp(right))
-        .map_or(0, |(index, _)| index);
+    let maximum_index = reference_first_maximum_index(&impulse);
     if maximum_index < impulse.len() / 4 {
         impulse.rotate_right(half_length);
     }
-    let maximum_index = impulse
-        .iter()
-        .enumerate()
-        .max_by(|(_, left), (_, right)| left.total_cmp(right))
-        .map_or(0, |(index, _)| index);
+    let maximum_index = reference_first_maximum_index(&impulse);
     let derivative_energy = impulse
         .windows(2)
         .map(|pair| (pair[1] - pair[0]).powi(2))
@@ -1472,6 +1464,16 @@ fn reference_trim_impulse(
         ending = beginning.saturating_add(max_length).min(impulse.len());
     }
     impulse[beginning.min(impulse.len())..ending.min(impulse.len())].to_vec()
+}
+
+fn reference_first_maximum_index(values: &[f64]) -> usize {
+    let mut maximum = 0;
+    for index in 1..values.len() {
+        if values[index] > values[maximum] {
+            maximum = index;
+        }
+    }
+    maximum
 }
 
 // The following small matrix implementation is kept local to the reference
@@ -1671,4 +1673,14 @@ fn reference_transpose_conjugate(matrix: ComplexMatrix2) -> ComplexMatrix2 {
         matrix[1].conj(),
         matrix[3].conj(),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::reference_first_maximum_index;
+
+    #[test]
+    fn reference_argmax_keeps_first_signed_zero() {
+        assert_eq!(reference_first_maximum_index(&[-0.0, 0.0, 0.0]), 0);
+    }
 }
