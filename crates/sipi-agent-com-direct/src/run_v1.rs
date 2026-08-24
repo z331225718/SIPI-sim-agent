@@ -912,7 +912,10 @@ fn run_with_workflow_token_origin(
     let samples_per_ui = if trusted_workbook {
         let value = required_td_scalar_alias_v1(
             &loaded.values,
-            &["samples_per_ui", "SAMP_PER_UI", "N_v", "M"],
+            // The workbook schema maps M to the canonical
+            // `samples_per_ui` materialized parameter.  N_v is a separate
+            // upstream control, not an alias for the UI sample count.
+            &["samples_per_ui"],
             "samples_per_ui",
         )?;
         if !value.is_finite() || value < 1.0 || value.fract() != 0.0 {
@@ -7237,6 +7240,25 @@ mod tests {
         assert!(
             resolved_bool_alias_v1(&bool_values, &["INC_PACKAGE", "inc_package"], "INC_PACKAGE")
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn workbook_samples_per_ui_uses_canonical_target_not_nv() {
+        let mut values = BTreeMap::new();
+        values.insert("samples_per_ui".to_owned(), ResolvedDefaultV1::Scalar(8.0));
+        // M is materialized to samples_per_ui by the pinned workbook schema;
+        // N_v remains an independent COM control and may differ.
+        values.insert("M".to_owned(), ResolvedDefaultV1::Scalar(16.0));
+        values.insert("N_v".to_owned(), ResolvedDefaultV1::Scalar(32.0));
+        assert_eq!(
+            required_td_scalar_alias_v1(&values, &["samples_per_ui"], "samples_per_ui").unwrap(),
+            8.0
+        );
+
+        values.insert("SAMPLES_PER_UI".to_owned(), ResolvedDefaultV1::Scalar(16.0));
+        assert!(
+            required_td_scalar_alias_v1(&values, &["samples_per_ui"], "samples_per_ui").is_err()
         );
     }
 
