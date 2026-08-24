@@ -54,6 +54,19 @@ branch completion。COM-02/04
 `Chain(Equalizer)` open，pinned numeric/canonical output、full parity 与 release 均 open；不做
 DC/ACCM public parity 或 S-parameter fit，channel 仍 impulse-only。15 行仍 open，release-ready=0。
 
+**2026-08-24 v8 upstream-first 治理快照：** 新增
+[`upstream-integration-ledger.v8`](docs/baselines/upstream-integration-ledger.v8.yaml)，绑定当前
+clean candidate `b2de8ed6`、tree `b7903ef2` 与显式
+`git -c core.autocrlf=true archive --format=tar` archive
+`3b59eb25ce7b8bd942d3d6e82d666da369136fb48d56154cd390228474a78b88`（44963840 bytes）；v1-v7
+保持 immutable。AS-03 仅绑定 source-map/NOTICE，v2 global mismatch 与 v3 fixed-fixture
+scope 仍 open，无 SI fit、numeric parity 或 release；PB-02 仅绑定 43c formal v2 的
+single fixed-fixture environment-local numeric observation，不代表 branch completion、global
+parity、bit-reproducible build、pure-Python legacy、promotion 或 release。COM 保持 v7 的
+internal staged DC/ACCM leaf，完整 public S4P + legal-search ACCM E2E 仍因
+`Chain(Equalizer)` blocker open；无 upstream DC/ACCM numeric parity、canonical output 或
+release。15 行仍 open，release-ready=0。
+
 **2026-08-24 PyBERT metallic/CTLE 外部复核：** Rust 线性重采样已修正为 pinned
 `interp1d(..., fill_value=0)` 的真实时间轴边界语义。普通 `3 GHz / 10 GHz` 非整数网格在两次
 clean-archive replay 中完成 17/17 stage payload 对照；near-integral 两点网格则被 pinned
