@@ -18,6 +18,7 @@ use sipi_ami_text::{
 
 const SUCCESS: c_long = 1;
 const IMAGE_FILE_MACHINE_AMD64: u16 = 0x8664;
+const MAX_PARAMETERS_OUT_BYTES: usize = 65_536;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DllSha256V1([u8; 32]);
@@ -102,6 +103,7 @@ impl AmiGetWaveRequestV1 {
 pub struct AmiGetWaveResultV1 {
     waveform: Vec<f64>,
     clocks_s: Vec<f64>,
+    parameters_out: String,
 }
 impl AmiGetWaveResultV1 {
     pub fn waveform(&self) -> &[f64] {
@@ -109,6 +111,9 @@ impl AmiGetWaveResultV1 {
     }
     pub fn clocks_s(&self) -> &[f64] {
         &self.clocks_s
+    }
+    pub fn parameters_out(&self) -> &str {
+        &self.parameters_out
     }
 }
 
@@ -189,11 +194,12 @@ impl AmiHostV1 {
         })
     }
 
-    pub fn initialize(
+    fn initialize_internal(
         self,
         request: AmiInitRequestV1,
         binding: &AmiTextBindingV1,
         limits: ParseLimitsV1,
+        capture_parameters_out: bool,
     ) -> Result<AmiInstanceV1, AmiHostErrorV1> {
         verify_binding_v1(binding.raw().bytes(), binding, limits)
             .map_err(|_| AmiHostErrorV1::InvalidParameters)?;
@@ -219,13 +225,34 @@ impl AmiHostV1 {
         if status != SUCCESS {
             return Err(AmiHostErrorV1::InitFailed(status));
         }
+        let parameters_out_text = if capture_parameters_out {
+            match copy_parameters_out(parameters_out) {
+                Ok(value) => value,
+                Err(error) => {
+                    let _ = unsafe { (self.close)(handle) };
+                    return Err(error);
+                }
+            }
+        } else {
+            String::new()
+        };
         Ok(AmiInstanceV1 {
             _module: self.module,
             get_wave: self.get_wave,
             close: self.close,
             handle,
+            parameters_out: parameters_out_text,
             active: true,
         })
+    }
+
+    pub fn initialize(
+        self,
+        request: AmiInitRequestV1,
+        binding: &AmiTextBindingV1,
+        limits: ParseLimitsV1,
+    ) -> Result<AmiInstanceV1, AmiHostErrorV1> {
+        self.initialize_internal(request, binding, limits, false)
     }
 
     /// Validate an exact typed host-forwarded subset before forwarding the
@@ -241,7 +268,30 @@ impl AmiHostV1 {
         subset
             .verify_binding_v1(binding)
             .map_err(|_| AmiHostErrorV1::InvalidParameters)?;
-        self.initialize(request, binding, limits)
+        self.initialize_internal(request, binding, limits, false)
+    }
+
+    /// V2 explicitly opts into the typed InitOut payload.
+    pub fn initialize_v2(
+        self,
+        request: AmiInitRequestV1,
+        binding: &AmiTextBindingV1,
+        limits: ParseLimitsV1,
+    ) -> Result<AmiInstanceV1, AmiHostErrorV1> {
+        self.initialize_internal(request, binding, limits, true)
+    }
+
+    pub fn initialize_forwarded_subset_v2(
+        self,
+        request: AmiInitRequestV1,
+        binding: &AmiTextBindingV1,
+        subset: &AmiForwardedParameterSubsetV1,
+        limits: ParseLimitsV1,
+    ) -> Result<AmiInstanceV1, AmiHostErrorV1> {
+        subset
+            .verify_binding_v1(binding)
+            .map_err(|_| AmiHostErrorV1::InvalidParameters)?;
+        self.initialize_internal(request, binding, limits, true)
     }
 }
 
@@ -250,12 +300,18 @@ pub struct AmiInstanceV1 {
     get_wave: Option<AmiGetWaveFn>,
     close: AmiCloseFn,
     handle: *mut c_void,
+    parameters_out: String,
     active: bool,
 }
 impl AmiInstanceV1 {
-    pub fn get_wave(
+    pub fn init_parameters_out(&self) -> &str {
+        &self.parameters_out
+    }
+
+    fn get_wave_internal(
         &mut self,
         request: AmiGetWaveRequestV1,
+        capture_parameters_out: bool,
     ) -> Result<AmiGetWaveResultV1, AmiHostErrorV1> {
         if !self.active {
             return Err(AmiHostErrorV1::Closed);
@@ -277,6 +333,17 @@ impl AmiInstanceV1 {
             self.close_after_error();
             return Err(AmiHostErrorV1::GetWaveFailed(status));
         }
+        let parameters_out_text = if capture_parameters_out {
+            match copy_parameters_out(parameters_out) {
+                Ok(value) => value,
+                Err(error) => {
+                    self.close_after_error();
+                    return Err(error);
+                }
+            }
+        } else {
+            String::new()
+        };
         if let Some((index, _)) = waveform
             .iter()
             .enumerate()
@@ -303,7 +370,23 @@ impl AmiInstanceV1 {
         Ok(AmiGetWaveResultV1 {
             waveform,
             clocks_s: clocks[..count].to_vec(),
+            parameters_out: parameters_out_text,
         })
+    }
+
+    pub fn get_wave(
+        &mut self,
+        request: AmiGetWaveRequestV1,
+    ) -> Result<AmiGetWaveResultV1, AmiHostErrorV1> {
+        self.get_wave_internal(request, false)
+    }
+
+    /// V2 explicitly opts into the typed GetWave parameters-out payload.
+    pub fn get_wave_v2(
+        &mut self,
+        request: AmiGetWaveRequestV1,
+    ) -> Result<AmiGetWaveResultV1, AmiHostErrorV1> {
+        self.get_wave_internal(request, true)
     }
     pub fn close(mut self) -> Result<(), AmiHostErrorV1> {
         self.close_once()
@@ -330,6 +413,24 @@ impl Drop for AmiInstanceV1 {
             let _ = self.close_once();
         }
     }
+}
+
+fn copy_parameters_out(pointer: *mut c_char) -> Result<String, AmiHostErrorV1> {
+    if pointer.is_null() {
+        return Ok(String::new());
+    }
+    let mut bytes = Vec::new();
+    for index in 0..=MAX_PARAMETERS_OUT_BYTES {
+        let value = unsafe { pointer.add(index).read() } as u8;
+        if value == 0 {
+            return String::from_utf8(bytes).map_err(|_| AmiHostErrorV1::InvalidParameters);
+        }
+        if index == MAX_PARAMETERS_OUT_BYTES {
+            return Err(AmiHostErrorV1::InvalidParameters);
+        }
+        bytes.push(value);
+    }
+    Err(AmiHostErrorV1::InvalidParameters)
 }
 
 fn validate_amd64_pe(bytes: &[u8]) -> Result<(), AmiHostErrorV1> {

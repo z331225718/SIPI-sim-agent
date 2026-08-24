@@ -11,6 +11,7 @@ mod decoder;
 mod equalization;
 mod error;
 mod event;
+mod external_host;
 mod input;
 mod jitter;
 mod legacy_runtime;
@@ -47,6 +48,11 @@ pub use equalization::{
 };
 pub use error::ContractError;
 pub use event::RunEventV1;
+pub use external_host::{
+    PYBERT_AMI_ADAPTER_SCHEMA_V2, PybertAmiAssetBundleV1, PybertAmiHostResultV2, PybertAmiLaunchV2,
+    PybertAmiModeV1, PybertAmiRequestV1, PybertAmiWorkerErrorV1, consume_pybert_ami_result,
+    prepare_pybert_ami_launch, sha256_bytes, supervise_prepared_pybert_ami_job,
+};
 pub use input::{
     AdditiveNoiseV1, AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, CtleConfigV1,
     DfeConfigV1, ExternalModelRefV1, FfeConfigV1, MetallicLineChannelV1, ModulationV1, PatternV1,
@@ -97,6 +103,7 @@ pub use simulation::{
     NativeCancellationToken, NativeSimulationError, simulate_native_v1,
     simulate_native_v1_with_cancellation,
 };
+pub use sipi_ami_worker::{SupervisorReceiptV1, WorkerIdentityV1};
 pub use statistical_eye::{
     StatisticalEyeContourV1, StatisticalEyeError, StatisticalEyeInputV1, StatisticalEyeResultV1,
     calculate_statistical_contours, calculate_statistical_eye,
