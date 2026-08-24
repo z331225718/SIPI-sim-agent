@@ -63,3 +63,11 @@ SHA-256 `42568dce88669a1b443b7402561b731f4c41293284cd836ed673b8143a21f0fc`).
 Its only public function raises `UnsupportedPathError` because r4.80 has no
 Wiener-Hopf implementation; the direct leaf rejects that request rather than
 inventing a solver.
+
+Package scope is deliberately split: the selector above is reachable by the
+existing SNDR/ACCM search consumers and preserves upstream outer-loop order;
+the subsequent `package.py` VTF assembly (`_make_full_package`, package
+length/preset chains, and S4P cascade) is not claimed here because the current
+Rust runtime has no corresponding package-network consumer. The existing
+candidate-local JSON package-case route is not used as upstream fan-out or as
+an oracle substitute.

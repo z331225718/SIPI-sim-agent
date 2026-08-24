@@ -408,6 +408,26 @@ mod tests {
     }
 
     #[test]
+    fn package_case_order_matches_pinned_outer_loop() {
+        // The Python orchestration enumerates selections in source order;
+        // sparse/repeated one-based rows must remain observable to both
+        // consumers rather than being sorted or deduplicated.
+        let selections = [3, 1, 3];
+        let sndr = [10.0, 20.0, 30.0];
+        let accm = [0.1, 0.2, 0.3];
+        for (case_index, expected) in [2usize, 0, 2].into_iter().enumerate() {
+            assert_eq!(
+                selected_sndr_v1(&sndr, false, 1, &selections, case_index).expect("SNDR"),
+                sndr[expected]
+            );
+            assert_eq!(
+                selected_accm_rms_v1(&accm, &selections, case_index).expect("ACCM"),
+                accm[expected]
+            );
+        }
+    }
+
+    #[test]
     fn system_noise_response() {
         let off = system_noise_response_v1(&[0.0, 1e9, 2e9], false);
         assert_eq!(off, vec![1.0, 1.0, 1.0]);
