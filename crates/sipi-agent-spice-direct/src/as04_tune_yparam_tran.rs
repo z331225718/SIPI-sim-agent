@@ -281,6 +281,43 @@ fn replace_token(source: &str, token: &str, replacement: &str) -> Result<String,
     Ok(source.replace(token, replacement))
 }
 
+fn relative_path(target: &Path, base: &Path) -> Result<String, TuneError> {
+    let target = if target.is_absolute() {
+        target.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(|error| TuneError::Output(error.to_string()))?
+            .join(target)
+    };
+    let base = if base.is_absolute() {
+        base.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(|error| TuneError::Output(error.to_string()))?
+            .join(base)
+    };
+    let target = target.components().collect::<Vec<_>>();
+    let base = base.components().collect::<Vec<_>>();
+    let common = target.iter().zip(&base).take_while(|(a, b)| a == b).count();
+    if common == 0 {
+        return Err(TuneError::Input(
+            "trial RFM and deck must share a path root".to_owned(),
+        ));
+    }
+    let mut parts = Vec::new();
+    for _ in common..base.len() {
+        parts.push("..".to_owned());
+    }
+    for component in &target[common..] {
+        parts.push(component.as_os_str().to_string_lossy().into_owned());
+    }
+    Ok(if parts.is_empty() {
+        ".".to_owned()
+    } else {
+        parts.join("/")
+    })
+}
+
 fn measure(path: &Path, name: &str) -> Result<f64, TuneError> {
     let text = fs::read_to_string(path).map_err(|error| TuneError::External(error.to_string()))?;
     let lower = text.to_ascii_lowercase();
@@ -442,10 +479,7 @@ pub fn tune_yparam_tran(
             history.push(record);
             return Ok(1.0 + static_rms);
         }
-        let relative_rfm = trial_rfm.strip_prefix(deck_dir).map_or_else(
-            |_| trial_rfm.to_string_lossy().replace('\\', "/"),
-            |value| value.to_string_lossy().replace('\\', "/"),
-        );
+        let relative_rfm = relative_path(&trial_rfm, deck_dir)?;
         let trial_deck = work_dir.join(format!("trial_{ordinal:03}.sp"));
         fs::write(
             &trial_deck,
@@ -663,6 +697,20 @@ mod tests {
     fn token_replacement_requires_exactly_one_occurrence() {
         assert!(replace_token("x a x", "x", "y").is_err());
         assert_eq!(replace_token("x a", "x", "y").unwrap(), "y a");
+    }
+
+    #[test]
+    fn trial_rfm_reference_is_relative_outside_deck_directory() {
+        let root = std::env::temp_dir().join(format!("sipi-as04-relative-{}", std::process::id()));
+        let deck_dir = root.join("deck");
+        let trial = root.join("work").join("trial_000.rfm");
+        fs::create_dir_all(&deck_dir).unwrap();
+        fs::create_dir_all(trial.parent().unwrap()).unwrap();
+        assert_eq!(
+            relative_path(&trial, &deck_dir).unwrap(),
+            "../work/trial_000.rfm"
+        );
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

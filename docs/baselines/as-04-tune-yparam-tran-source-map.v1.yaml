@@ -1,0 +1,40 @@
+schema: sipi.as-04-tune-yparam-tran-source-map.v1
+status: pinned_source_scope_only
+upstream:
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_blob: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_bytes: 1067
+  license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - path: src/agent_spice/sparam/y_tran_tuning.py
+    role: tune-yparam-tran orchestration, gates, Nelder-Mead, measure parsing
+    blob: 9e23303dc75ea84b9fda079d0a24edb04ce8290c
+    bytes: 10527
+    sha256: da377cf4121da50b0b6e69ca0feec45999350a67d7aafa63e7e1e04357f9ec28
+  - path: src/agent_spice/sparam/artifacts.py
+    role: RFM evaluation and frozen best-model serialization
+    blob: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+    bytes: 18185
+    sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+  - path: src/agent_spice/sparam/rfm.py
+    role: RFM parser/model contract
+    blob: 508e7ae8594fd25d5c2dc152b225c0cf84f61413
+    bytes: 13119
+    sha256: af2e2e3ab1ed7e9ac458dc73f15aedfd9cd8292dc9e5a2430cd095bc21415df4
+  - path: src/agent_spice/cli.py
+    role: tune-yparam-tran public command wiring
+    blob: 321a32b860f969f0be74f883bedbbae3f67d6284
+    bytes: 135330
+    sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+  - path: tests/test_y_tran_tuning.py
+    role: pinned parser, gate, and orchestration tests
+    blob: 5b315b2226d3aa76c9854710af659a9ce2bb39c3
+    bytes: 3422
+    sha256: 78f15506a76aec0f648e33feb04aa0336a770e297a75bd06752d734ae82d6517
+scope:
+  tunes_existing_y_derived_s_rfm: true
+  fits_si_s_parameters: false
+  hspice_result_portable: false
