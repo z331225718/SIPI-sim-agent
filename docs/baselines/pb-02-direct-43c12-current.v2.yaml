@@ -1,0 +1,68 @@
+{
+  "schema": "sipi.pb-02-direct-replay-current.v2",
+  "version": 2,
+  "row": "PB-02",
+  "status": "scoped_numeric_parity_environment_local",
+  "claims": {
+    "external_asset_parity": false,
+    "fixture_payload_parity": true,
+    "global_row_closed": false,
+    "independent_execution_roots": true,
+    "promotion": false
+  },
+  "source": {
+    "candidate": {
+      "commit": "43c12e0825a8c28125d195ec69750e696c6f470f",
+      "tree": "2e146d6f10759126f42d03548dc724166be783ce",
+      "archive_sha256": "c08a6a5c7bcd73b515d58794e196491622c6d857175417aa8fde322ef7c728a3"
+    },
+    "upstream": {
+      "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+      "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+      "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25"
+    }
+  },
+  "fixture": {
+    "path": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json",
+    "sha256": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13",
+    "bytes": 1245,
+    "archive_present": true
+  },
+  "replay_policy": {
+    "source_mode": "git_archive_at_immutable_commit",
+    "working_tree_overlay": false,
+    "external_work_root_required": true,
+    "fresh_runs_required": 2,
+    "independent_execution_roots": true,
+    "reports": [
+      {"path": "docs/baselines/pb-02-direct-43c12-current-run-01.json", "sha256": "9906e4801dc462242ad064db3899cc98ea74f9eb81d24ad210859c3d8647034c", "run_id": "pb02-43c12-run-01", "fresh_run_nonce": "92c6ea25ab22d3f2c4d4102892e4c5aebe8f1bf2ad9d2559338282c15ee1136e"},
+      {"path": "docs/baselines/pb-02-direct-43c12-current-run-02.json", "sha256": "6956f44c3a25c211e32f3bd32e882d9cb5e01aec5713c215d130b8db8268fd4e", "run_id": "pb02-43c12-run-02", "fresh_run_nonce": "8f6b306fa858744e7cb4cda54378034cf29384829d2fb9e7e43aa663be86a1e2"}
+    ],
+    "aggregate": {"path": "docs/baselines/pb-02-direct-43c12-current-aggregate.json", "sha256": "30253d5ec770ea69187d9211dcc5bb6700447c6eb052d7ac8b5155dc3b763c15"}
+  },
+  "payload": {
+    "candidate_exit_code": 0,
+    "oracle_exit_code": 0,
+    "member_count": 11,
+    "member_names": ["channel_impulse_v_per_v.npy", "channel_output_v.npy", "ctle_output_v.npy", "rx_ffe_impulse_v_per_v.npy", "rx_filter_impulse_v_per_v.npy", "rx_input_v.npy", "rx_output_v.npy", "symbols_v.npy", "time_s.npy", "tx_channel_impulse_v_per_v.npy", "tx_waveform_v.npy"],
+    "logical_array_sha256": "5090a1478ea6e985342d8500c6220cdde5c7fa2c416abbdeb595dcdc380c275a",
+    "parity": true
+  },
+  "harness": {
+    "runner": {"path": "tools/run_pb_02_direct_replay.py", "sha256": "c7839a7d67425fda0df675c35925a87f7e3527996fa3b659e2ee7c036408d863"},
+    "aggregator": {"path": "tools/aggregate_pb_02_direct_replay.py", "sha256": "04a2d35fd7f1df1fc3728c0918fc752980b0e7c718eedf5a0285ff0bae24043a"},
+    "verifier": {"path": "tools/verify_pb_02_direct_43c12_current.py", "sha256": "cf39e0e2418f223b90929e0517f5c6816a8ef1922c0ccc565351b503ceee9f25"},
+    "mutation_tests": {"path": "tools/test_verify_pb_02_direct_43c12_current.py", "sha256": "481ec3a926aebee1efe7c9c3252c3a632f33006087041447efebfc252807c96c"}
+  },
+  "audit": {"path": "docs/baselines/audits/2026-08-24-pb-02-direct-43c12.v2.json", "sha256": "9897ec1d1c0a17c038ecfe57aff1eaf43abe9a44aa05db9261e91b0feadddafe"},
+  "non_claims": [
+    "explicit fixture only",
+    "not independent implementation",
+    "not pure-Python legacy sim parity",
+    "uncovered SimulationInputV1 branches remain open",
+    "external AMI/IBIS/DLL/TS4 assets remain quarantined",
+    "environment-local toolchain custody, not cross-machine reproducibility",
+    "no bit-reproducible build claim",
+    "not a license decision, release approval, or product capability admission"
+  ]
+}
