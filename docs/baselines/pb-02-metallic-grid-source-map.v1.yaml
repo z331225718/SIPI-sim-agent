@@ -1,0 +1,50 @@
+schema: sipi.pb-02-metallic-grid-source-map.v1
+status: scoped_source_binding_open
+candidate:
+  commit: 7c27d24d0080f274405863724627ffad8bb90bec
+  tree: 8de8205c66989ebfc28df334bd6bcbe33067a85e
+  archive_sha256: 6d526e98429c23380a9987830331cf2d3421e05b54f3bdbacac95ee7a834f074
+  archive:
+    format: tar
+    command: git -c core.autocrlf=false archive --format=tar <commit>
+upstream:
+  repository: pybert
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  archive:
+    format: tar
+    command: git -c core.autocrlf=false archive --format=tar <commit>
+  files:
+    - path: src/pybert/pybert.py
+      blob_sha1: 1af665c4595fff1ff5fb30341fe063bd10e5cd89
+      sha256: a2fdd33db845db09155e323a26465688d759e77ed2bcc4a23cb7a5298d5457dd
+      role: _get_f uses NumPy arange stop-exclusive grid
+    - path: src/pybert/utility/channel.py
+      blob_sha1: 5526c1c4d46a98e63e5600c5f5bb90cb96db4f96
+      sha256: 0c49010fc0b69eea0982eef6296d250fa558077ce4dcdc1d914ef37360301181
+      role: metallic-line gamma checkpoint
+lane_files:
+  - source_path: native/pybert-core/src/input.rs
+    target_path: crates/sipi-pybert-direct/src/input.rs
+    target_blob_sha1: c7820beb25c051b8d3c43652c83d906cff185728
+    target_sha256: 25a0af0d0442f9d96e1488518404254ea058468b48b8294e13afcc878a3f1947
+    role: metallic_grid_input
+    classification: adapted
+  - source_path: native/pybert-core/src/simulation.rs
+    target_path: crates/sipi-pybert-direct/src/simulation.rs
+    target_blob_sha1: 21dc15d3e330c1f9a246a91494a88fa53a35281a
+    target_sha256: 74475c5832413ffdb4bf48b0b06a1532e6b1dd85de30f690cf013a74deea5e39
+    role: metallic_grid_implementation
+    classification: adapted
+  - source_path: native/pybert-core/tests/native_branch_matrix.rs
+    target_path: crates/sipi-pybert-direct/tests/native_branch_matrix.rs
+    target_blob_sha1: 34739b906671d5664bf5ff56c0041a9e649ea5b6
+    target_sha256: aeba651902ba002c71661d7ceec9507be7bfa2db3ec7fce3804d86e7e366fef5
+    role: metallic_grid_external_checkpoint
+    classification: additive_test
+harness_files:
+  - path: tools/verify_pb_02_metallic_grid.py
+    sha256: a37e624a836a4c792afc9c78e6cfc636e8e13a81e26321092dd54b8dc6ba4a4a
+  - path: tools/test_verify_pb_02_metallic_grid.py
+    sha256: 7ad474d7202ed5c025b4e69ec8d5f24be06844b9cb109e74f69cf3eef64a2295

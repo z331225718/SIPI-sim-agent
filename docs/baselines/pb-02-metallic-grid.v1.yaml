@@ -1,0 +1,75 @@
+schema: sipi.pb-02-metallic-grid.v1
+status: scoped_numeric_checkpoint_open
+row: PB-02
+workflow: sim-native
+candidate:
+  commit: 7c27d24d0080f274405863724627ffad8bb90bec
+  tree: 8de8205c66989ebfc28df334bd6bcbe33067a85e
+  archive_sha256: 6d526e98429c23380a9987830331cf2d3421e05b54f3bdbacac95ee7a834f074
+  archive:
+    format: tar
+    command: git -c core.autocrlf=false archive --format=tar <commit>
+upstream:
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  archive:
+    format: tar
+    command: git -c core.autocrlf=false archive --format=tar <commit>
+source_map:
+  path: docs/baselines/pb-02-metallic-grid-source-map.v1.yaml
+  sha256: e3a5c4c67647f3d8bc24b22b701c7aa344e59e4d460cdf5b2ea2f7f150bfe276
+audit:
+  path: docs/baselines/audits/2026-08-24-pb-02-metallic-grid.v1.md
+  sha256: 8e334999608186c2b2bf7b28b6bfedf5685a17b41371324d5cfb1f4dbc34d5a4
+checkpoint:
+  oracle: pinned_external_python
+  source_files:
+    - src/pybert/pybert.py
+    - src/pybert/utility/channel.py
+  grid_cases:
+    ordinary:
+      length_m: 0.05
+      step_hz: 3000000000.0
+      requested_max_hz: 10000000000.0
+      impulse_length_s: 1.0e-9
+      expected_grid_hz: [0.0, 3000000000.0, 6000000000.0, 9000000000.0, 12000000000.0]
+    near_integral_stop:
+      length_m: 0.05
+      step_hz: 3000000000.0
+      requested_max_hz: 3000000000.0000005
+      impulse_length_s: 1.0e-9
+      expected_grid_hz: [0.0, 3000000000.0]
+  input_parameters:
+    sample_interval_s: 1.0e-12
+    length_m: 0.05
+    skin_effect_resistance_ohm_per_m: 1.452
+    crossover_angular_frequency_rad_per_s: 10000000.0
+    dc_resistance_ohm_per_m: 0.1876
+    characteristic_impedance_ohm: 100.0
+    propagation_velocity_m_per_s: 201000000.0
+    loss_tangent: 0.02
+    source_impedance_ohm: 50.0
+    source_capacitance_f: 5.0e-13
+    load_impedance_ohm: 100.0
+    load_capacitance_f: 5.0e-13
+    apply_raised_cosine_window: true
+    frequency_step_hz: 3000000000.0
+    frequency_max_hz: 10000000000.0
+    impulse_length_s: 1.0e-9
+  metallic_raw_re:
+    parameters: {length_m: 0.05, skin_effect_resistance_ohm_per_m: 1.452, crossover_angular_frequency_rad_per_s: 10000000.0, dc_resistance_ohm_per_m: 0.1876, characteristic_impedance_ohm: 100.0, propagation_velocity_m_per_s: 201000000.0, loss_tangent: 0.02, step_hz: 3000000000.0, requested_max_hz: 10000000000.0}
+    values: [0.9999999999998559, -0.21346019040916128, -0.7836205535132831, 0.6107703954011926, 0.3676296985687409]
+    tolerance: 1.0e-12
+claims:
+  source_binding: true
+  numeric_checkpoint: true
+  clean_archive_replay: false
+  global_payload_parity: false
+  global_row_closed: false
+  promotion: false
+  external_reference_required: true
+non_claims:
+  - This is a scoped metallic-grid/source/numeric checkpoint, not PB-02 global parity evidence.
+  - No two-fresh replay or aggregate is claimed by this successor.
+  - PB-03, PB-04, and PB-05 remain outside this successor.
