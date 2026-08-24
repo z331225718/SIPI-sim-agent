@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use sipi_agent_spice_direct::{RunHspiceRequest, run_hspice};
+use sipi_agent_spice_direct::{
+    NgspiceCustody, RunHspiceRequest, run_hspice, run_hspice_with_ngspice_custody,
+};
 
 fn take(args: &[String], index: &mut usize, option: &str) -> Result<String, String> {
     *index += 1;
@@ -14,7 +16,7 @@ fn main() -> ExitCode {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.iter().any(|value| value == "--help" || value == "-h") {
         println!(
-            "usage: sipi-agent-spice-run-hspice DECK --backend native|ngspice|xyce|xyce-xdm --output-root DIR [--execute]"
+            "usage: sipi-agent-spice-run-hspice DECK --backend native|ngspice|xyce|xyce-xdm --output-root DIR [--execute] [--ngspice PATH --ngspice-sha256 SHA256]"
         );
         return ExitCode::SUCCESS;
     }
@@ -32,6 +34,8 @@ fn main() -> ExitCode {
     let mut rfm = None;
     let mut rfm_subckt = "rfm_direct".to_owned();
     let mut dotnet = "dotnet".to_owned();
+    let mut ngspice = None;
+    let mut ngspice_sha256 = None;
     let mut index = 1;
     while index < args.len() {
         let option = &args[index];
@@ -46,6 +50,12 @@ fn main() -> ExitCode {
             }
             "--rfm-subckt" => take(&args, &mut index, option).map(|value| rfm_subckt = value),
             "--dotnet" => take(&args, &mut index, option).map(|value| dotnet = value),
+            "--ngspice" => {
+                take(&args, &mut index, option).map(|value| ngspice = Some(PathBuf::from(value)))
+            }
+            "--ngspice-sha256" => {
+                take(&args, &mut index, option).map(|value| ngspice_sha256 = Some(value))
+            }
             "--execute" => {
                 execute = true;
                 Ok(())
@@ -57,6 +67,10 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
         index += 1;
+    }
+    if ngspice.is_some() != ngspice_sha256.is_some() {
+        eprintln!("--ngspice and --ngspice-sha256 must be supplied together");
+        return ExitCode::from(2);
     }
     let backend = match backend {
         Some(value) => value,
@@ -86,7 +100,13 @@ fn main() -> ExitCode {
         request = request.with_rfm(path, rfm_subckt);
     }
     request = request.with_dotnet(dotnet);
-    match run_hspice(deck, request) {
+    let run = match (ngspice, ngspice_sha256) {
+        (Some(executable), Some(sha256)) => {
+            run_hspice_with_ngspice_custody(deck, request, NgspiceCustody::new(executable, sha256))
+        }
+        _ => run_hspice(deck, request),
+    };
+    match run {
         Ok(result) => {
             println!(
                 "{{\"status\":\"{}\",\"case_count\":{},\"output_root\":\"{}\"}}",

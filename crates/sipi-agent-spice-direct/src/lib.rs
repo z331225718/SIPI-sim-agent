@@ -17,8 +17,15 @@ pub mod fit_sparam;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Formatter};
 use std::fs;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus, Stdio};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, AtomicUsize, Ordering},
+};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime};
 
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -27,6 +34,8 @@ pub const UPSTREAM_REPOSITORY: &str = "agent-spice";
 pub const UPSTREAM_COMMIT: &str = "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5";
 pub const UPSTREAM_TREE: &str = "b6bde97128030d6cea0d68b2f0a35d807be8c402";
 pub const UPSTREAM_LICENSE: &str = "MIT";
+pub const UPSTREAM_MEASURE_SOURCE_SHA256: &str =
+    "cbb851db87c951e1d3a76cc99f6d1bb9fc31a3c4c20234d25507cd85d71695f4";
 pub const WORKFLOW_ID: &str = "AS-05";
 pub const WORKFLOW_NAME: &str = "run-hspice";
 
@@ -63,6 +72,12 @@ const SUPPORTED_DIRECTIVES: &[&str] = &[
 ];
 const MAX_DECK_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_PROJECT_MANIFEST_BYTES: u64 = 1024 * 1024;
+const MAX_EXECUTABLE_BYTES: u64 = 256 * 1024 * 1024;
+const EXTERNAL_TIMEOUT: Duration = Duration::from_secs(120);
+const MAX_EXTERNAL_PIPE_BYTES: usize = 8 * 1024 * 1024;
+const MAX_EXTERNAL_TRANSCRIPT_BYTES: usize = 8 * 1024 * 1024;
+const MAX_EXTERNAL_COMBINED_PARSE_BYTES: usize = 16 * 1024 * 1024;
+const MAX_EXTERNAL_ARTIFACT_BYTES: usize = 8 * 1024 * 1024;
 
 /// Project-level input accepted by the pinned `project.py` path.
 ///
@@ -194,6 +209,240 @@ pub(crate) fn absolute_path(path: &Path) -> Result<PathBuf, std::io::Error> {
 fn file_sha256(path: &Path) -> Result<String, DirectPortError> {
     let bytes = fs::read(path).map_err(|e| DirectPortError::InputIo(e.to_string()))?;
     Ok(format!("{:x}", Sha256::digest(bytes)))
+}
+
+fn attest_external_executable(
+    path: &Path,
+    expected_sha256: Option<&str>,
+    label: &str,
+) -> Result<(PathBuf, String), DirectPortError> {
+    if !path.is_absolute() {
+        return Err(DirectPortError::UnsupportedExecution(format!(
+            "{label} requires an absolute executable path"
+        )));
+    }
+    let path = absolute_path(path).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!("{label} path resolution failed: {error}"))
+    })?;
+    let metadata = fs::symlink_metadata(&path).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!("{label} is unavailable: {error}"))
+    })?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(DirectPortError::UnsupportedExecution(format!(
+            "{label} must be a regular non-symlink executable"
+        )));
+    }
+    if metadata.len() > MAX_EXECUTABLE_BYTES {
+        return Err(DirectPortError::UnsupportedExecution(format!(
+            "{label} exceeds the executable byte budget"
+        )));
+    }
+    let expected = expected_sha256.ok_or_else(|| {
+        DirectPortError::UnsupportedExecution(format!("{label} requires a caller-supplied SHA-256"))
+    })?;
+    if expected.len() != 64 || !expected.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(DirectPortError::UnsupportedExecution(format!(
+            "{label} SHA-256 must be exactly 64 hexadecimal characters"
+        )));
+    }
+    let actual = file_sha256(&path)?;
+    if actual != expected.to_ascii_lowercase() {
+        return Err(DirectPortError::UnsupportedExecution(format!(
+            "{label} SHA-256 does not match caller attestation"
+        )));
+    }
+    Ok((path, actual))
+}
+
+struct ExternalProcessResult {
+    status: ExitStatus,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+}
+
+fn external_file_stamp(path: &Path) -> Option<(u64, SystemTime)> {
+    let metadata = fs::metadata(path).ok()?;
+    Some((metadata.len(), metadata.modified().ok()?))
+}
+
+fn external_artifact_changed(path: &Path, before: Option<(u64, SystemTime)>) -> bool {
+    let Some(after) = external_file_stamp(path) else {
+        return false;
+    };
+    before.is_none_or(|value| value != after)
+}
+
+fn external_artifact_record(
+    path: &Path,
+    relative: &str,
+) -> Result<serde_json::Value, DirectPortError> {
+    let bytes = fs::metadata(path)
+        .map_err(|error| DirectPortError::OutputIo(error.to_string()))?
+        .len();
+    if bytes as usize > MAX_EXTERNAL_ARTIFACT_BYTES {
+        return Err(DirectPortError::OutputIo(format!(
+            "external artifact '{relative}' exceeds the bounded 8 MiB output budget"
+        )));
+    }
+    Ok(json!({
+        "path": relative,
+        "bytes": bytes,
+        "sha256": file_sha256(path)?,
+    }))
+}
+
+fn read_external_output<R: Read>(
+    mut reader: R,
+    total: Arc<AtomicUsize>,
+    overflow: Arc<AtomicBool>,
+    read_error: Arc<AtomicBool>,
+) -> Result<Vec<u8>, io::Error> {
+    let mut output = Vec::new();
+    let mut chunk = [0_u8; 16 * 1024];
+    loop {
+        match reader.read(&mut chunk) {
+            Ok(0) => break,
+            Ok(count) => {
+                let mut reserved = false;
+                loop {
+                    let current = total.load(Ordering::Acquire);
+                    let Some(next) = current.checked_add(count) else {
+                        overflow.store(true, Ordering::Release);
+                        break;
+                    };
+                    if next > MAX_EXTERNAL_PIPE_BYTES {
+                        overflow.store(true, Ordering::Release);
+                        break;
+                    }
+                    if total
+                        .compare_exchange(current, next, Ordering::AcqRel, Ordering::Acquire)
+                        .is_ok()
+                    {
+                        reserved = true;
+                        break;
+                    }
+                }
+                if !reserved {
+                    break;
+                }
+                output.extend_from_slice(&chunk[..count]);
+            }
+            Err(error) => {
+                read_error.store(true, Ordering::Release);
+                return Err(error);
+            }
+        }
+    }
+    Ok(output)
+}
+
+fn run_external_process(
+    program: &Path,
+    arguments: &[PathBuf],
+    current_dir: &Path,
+) -> Result<ExternalProcessResult, DirectPortError> {
+    let mut child = Command::new(program)
+        .args(arguments.iter().map(|value| value.as_os_str()))
+        .current_dir(current_dir)
+        .env_remove("SPICE_SCRIPTS")
+        .env_remove("SPICEINIT")
+        .env_remove("SPICE_INIT")
+        .env_remove("SPICE_PATH")
+        .env_remove("NGSPICE_INPUT_DIR")
+        .env_remove("NGSPICE_INPUT_PATH")
+        .env_remove("NGSPICE_SCRIPTS")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| DirectPortError::UnsupportedExecution(error.to_string()))?;
+    let overflow = Arc::new(AtomicBool::new(false));
+    let total = Arc::new(AtomicUsize::new(0));
+    let read_error = Arc::new(AtomicBool::new(false));
+    let Some(stdout) = child.stdout.take() else {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(DirectPortError::UnsupportedExecution(
+            "external stdout pipe unavailable".to_owned(),
+        ));
+    };
+    let Some(stderr) = child.stderr.take() else {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(DirectPortError::UnsupportedExecution(
+            "external stderr pipe unavailable".to_owned(),
+        ));
+    };
+    let stdout_overflow = Arc::clone(&overflow);
+    let stdout_total = Arc::clone(&total);
+    let stdout_read_error = Arc::clone(&read_error);
+    let stdout_thread = thread::spawn(move || {
+        read_external_output(stdout, stdout_total, stdout_overflow, stdout_read_error)
+    });
+    let stderr_overflow = Arc::clone(&overflow);
+    let stderr_total = Arc::clone(&total);
+    let stderr_read_error = Arc::clone(&read_error);
+    let stderr_thread = thread::spawn(move || {
+        read_external_output(stderr, stderr_total, stderr_overflow, stderr_read_error)
+    });
+    let deadline = Instant::now() + EXTERNAL_TIMEOUT;
+    let mut failure = None;
+    let status = loop {
+        if overflow.load(Ordering::Acquire) {
+            failure = Some("external solver output exceeded the bounded 8 MiB budget".to_owned());
+            break None;
+        }
+        if read_error.load(Ordering::Acquire) {
+            failure = Some("external solver output read failed".to_owned());
+            break None;
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => break Some(status),
+            Ok(None) if Instant::now() >= deadline => {
+                failure = Some("external solver exceeded the 120 second timeout".to_owned());
+                break None;
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(10)),
+            Err(error) => {
+                failure = Some(error.to_string());
+                break None;
+            }
+        }
+    };
+    if failure.is_some() {
+        let _ = child.kill();
+    }
+    if failure.is_some() || status.is_none() {
+        let _ = child.wait();
+    }
+    let stdout = stdout_thread
+        .join()
+        .map_err(|_| {
+            DirectPortError::UnsupportedExecution("external stdout reader failed".to_owned())
+        })?
+        .map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!("external stdout read failed: {error}"))
+        })?;
+    let stderr = stderr_thread
+        .join()
+        .map_err(|_| {
+            DirectPortError::UnsupportedExecution("external stderr reader failed".to_owned())
+        })?
+        .map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!("external stderr read failed: {error}"))
+        })?;
+    if let Some(error) = failure {
+        return Err(DirectPortError::UnsupportedExecution(error));
+    }
+    if overflow.load(Ordering::Acquire) {
+        return Err(DirectPortError::UnsupportedExecution(
+            "external solver output exceeded the bounded 8 MiB budget".to_owned(),
+        ));
+    }
+    Ok(ExternalProcessResult {
+        status: status.expect("successful external process must have a status"),
+        stdout,
+        stderr,
+    })
 }
 
 type StagedCaseDependencies = (
@@ -377,6 +626,24 @@ impl RunHspiceRequest {
     pub fn with_dotnet(mut self, executable: impl Into<String>) -> Self {
         self.dotnet_executable = executable.into();
         self
+    }
+}
+
+/// Caller-custodied ngspice runtime identity.  The executable is never
+/// resolved through `PATH`; the supplied digest is checked before and after
+/// the child process runs.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NgspiceCustody {
+    pub executable: PathBuf,
+    pub sha256: String,
+}
+
+impl NgspiceCustody {
+    pub fn new(executable: impl Into<PathBuf>, sha256: impl Into<String>) -> Self {
+        Self {
+            executable: executable.into(),
+            sha256: sha256.into(),
+        }
     }
 }
 
@@ -584,14 +851,47 @@ pub fn run_hspice(
     deck_path: impl AsRef<Path>,
     request: RunHspiceRequest,
 ) -> Result<RunHspiceResult, DirectPortError> {
-    if request.execute && !external_execution_available() {
+    run_hspice_internal(deck_path.as_ref(), request, None)
+}
+
+/// Execute the ngspice branch with an explicitly attested caller-owned
+/// executable. The ordinary `run_hspice` API deliberately fails closed for
+/// ngspice execution because it has no runtime custody parameter.
+pub fn run_hspice_with_ngspice_custody(
+    deck_path: impl AsRef<Path>,
+    request: RunHspiceRequest,
+    custody: NgspiceCustody,
+) -> Result<RunHspiceResult, DirectPortError> {
+    run_hspice_internal(deck_path.as_ref(), request, Some(custody))
+}
+
+fn run_hspice_internal(
+    deck_path: &Path,
+    request: RunHspiceRequest,
+    ngspice_custody: Option<NgspiceCustody>,
+) -> Result<RunHspiceResult, DirectPortError> {
+    let attested_ngspice = if request.execute && request.backend == Backend::Ngspice {
+        let custody = ngspice_custody.as_ref().ok_or_else(|| {
+            DirectPortError::UnsupportedExecution(
+                "ngspice execution requires explicit caller custody".to_owned(),
+            )
+        })?;
+        Some(attest_external_executable(
+            &custody.executable,
+            Some(&custody.sha256),
+            "ngspice",
+        )?)
+    } else {
+        None
+    };
+    if request.execute && request.backend != Backend::Ngspice {
         return Err(DirectPortError::UnsupportedExecution(
-            "external simulator execution is fail-closed: executable custody is required"
+            "only attested ngspice execution is available; other solver custody remains external"
                 .to_owned(),
         ));
     }
-    let deck_path = absolute_path(deck_path.as_ref())
-        .map_err(|error| DirectPortError::InputIo(error.to_string()))?;
+    let deck_path =
+        absolute_path(deck_path).map_err(|error| DirectPortError::InputIo(error.to_string()))?;
     if deck_path
         .metadata()
         .map(|metadata| metadata.len() > MAX_DECK_BYTES)
@@ -626,6 +926,11 @@ pub fn run_hspice(
     let mut returncodes = Vec::with_capacity(admission.cases.len());
     let mut overall_status = PreparationStatus::Compatible;
     let project_root = output_root.join(stem);
+    if project_root.exists() {
+        return Err(DirectPortError::UnsupportedExecution(
+            "run-hspice output project directory must be fresh".to_owned(),
+        ));
+    }
     for case in &admission.cases {
         let mut case_status = case.preparation_status;
         if case_status == PreparationStatus::Blocked {
@@ -635,9 +940,18 @@ pub fn run_hspice(
         {
             overall_status = PreparationStatus::AutoConverted;
         }
-        let directory = prepare_project_run_directory(&output_root, stem, &case.case.name)?;
-        fs::create_dir_all(&directory)
+        let directory = output_root.join(stem).join(&case.case.name);
+        fs::create_dir_all(directory.parent().unwrap_or_else(|| Path::new(".")))
             .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        fs::create_dir(&directory).map_err(|error| {
+            if error.kind() == std::io::ErrorKind::AlreadyExists {
+                DirectPortError::UnsupportedExecution(
+                    "run-hspice case execution directory must be fresh".to_owned(),
+                )
+            } else {
+                DirectPortError::OutputIo(error.to_string())
+            }
+        })?;
         let (runtime_deck, sparam_actions, sparam_unsupported) =
             if admission.backend == Backend::Ngspice {
                 compile_touchstone_s_elements(
@@ -784,12 +1098,17 @@ pub fn run_hspice(
                     (program, args)
                 }
                 Backend::Ngspice => (
-                    PathBuf::from("ngspice"),
+                    attested_ngspice
+                        .as_ref()
+                        .expect("attested ngspice was checked before dispatch")
+                        .0
+                        .clone(),
                     vec![
+                        PathBuf::from("-n"),
                         PathBuf::from("-b"),
-                        directory.join("case.cir"),
+                        PathBuf::from("case.cir"),
                         PathBuf::from("-o"),
-                        directory.join("case"),
+                        PathBuf::from("case"),
                     ],
                 ),
                 Backend::Xyce => (PathBuf::from("Xyce"), vec![directory.join("case.cir")]),
@@ -806,13 +1125,47 @@ pub fn run_hspice(
                     ],
                 ),
             };
-            let output = Command::new(&program)
-                .args(args.iter().map(|value| value.as_os_str()))
-                .current_dir(&directory)
-                .output()
-                .map_err(|error| {
-                    DirectPortError::UnsupportedExecution(format!("{}: {error}", program.display()))
-                })?;
+            let transcript_path = directory.join("case");
+            if admission.backend == Backend::Ngspice
+                && (transcript_path.exists() || directory.join("waveform.csv").exists())
+            {
+                return Err(DirectPortError::UnsupportedExecution(
+                    "ngspice output directory contains pre-existing result artifacts".to_owned(),
+                ));
+            }
+            let transcript_before = external_file_stamp(&transcript_path);
+            let waveform_before = external_file_stamp(&directory.join("waveform.csv"));
+            let executable_before = if admission.backend == Backend::Ngspice {
+                Some((external_file_stamp(&program), file_sha256(&program)?))
+            } else {
+                None
+            };
+            let output = run_external_process(&program, &args, &directory)?;
+            if let Some((before_stamp, before_sha256)) = executable_before {
+                let after_stamp = external_file_stamp(&program);
+                let after_sha256 = file_sha256(&program)?;
+                if after_stamp != before_stamp || after_sha256 != before_sha256 {
+                    return Err(DirectPortError::UnsupportedExecution(
+                        "external solver identity changed during execution".to_owned(),
+                    ));
+                }
+            }
+            if admission.backend == Backend::Ngspice
+                && !external_artifact_changed(&transcript_path, transcript_before)
+            {
+                return Err(DirectPortError::UnsupportedExecution(
+                    "ngspice completed without a fresh bounded transcript".to_owned(),
+                ));
+            }
+            if admission.backend == Backend::Ngspice
+                && fs::metadata(&transcript_path)
+                    .map(|metadata| metadata.len() as usize > MAX_EXTERNAL_TRANSCRIPT_BYTES)
+                    .unwrap_or(true)
+            {
+                return Err(DirectPortError::UnsupportedExecution(
+                    "ngspice transcript exceeds the bounded 8 MiB artifact budget".to_owned(),
+                ));
+            }
             fs::write(directory.join("stdout.log"), &output.stdout)
                 .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
             fs::write(directory.join("stderr.log"), &output.stderr)
@@ -919,12 +1272,63 @@ pub fn run_hspice(
                     })
                 };
                 let mut summary = json!({"schema_version":1,"backend":admission.backend.name(),"returncode":output.status.code(),"ok":output.status.success(),"logs":{"stdout":"stdout.log","stderr":"stderr.log"},"waveform":null,"measurements":[],"error":error_text});
+                if let Some((solver, solver_sha256)) = &attested_ngspice {
+                    summary["external_runtime"] = json!({
+                        "basename": solver.file_name().and_then(|value| value.to_str()).unwrap_or("ngspice"),
+                        "sha256": solver_sha256,
+                        "path_redacted": true,
+                        "timeout_seconds": EXTERNAL_TIMEOUT.as_secs(),
+                        "pipe_output_budget_bytes": MAX_EXTERNAL_PIPE_BYTES,
+                        "transcript_budget_bytes": MAX_EXTERNAL_TRANSCRIPT_BYTES,
+                        "combined_parse_budget_bytes": MAX_EXTERNAL_COMBINED_PARSE_BYTES,
+                        "custody": "caller_custody",
+                        "writer_safety": "non_hostile_writer_safe",
+                        "identity_check": "absolute_regular_non_symlink_sha256_attested_process_identity_rechecked",
+                        "sandbox": "none_external_process",
+                    });
+                }
                 let backend_text = if admission.backend == Backend::Ngspice {
-                    let mut text = String::from_utf8_lossy(&output.stdout).into_owned();
+                    let mut text = String::from_utf8(output.stdout.clone()).map_err(|error| {
+                        DirectPortError::UnsupportedExecution(format!(
+                            "ngspice stdout is not valid UTF-8: {error}"
+                        ))
+                    })?;
                     let transcript = directory.join("case");
-                    if transcript.is_file()
-                        && let Ok(value) = fs::read_to_string(transcript)
-                    {
+                    if transcript.is_file() {
+                        let transcript_bytes = fs::metadata(&transcript)
+                            .map_err(|error| DirectPortError::InputIo(error.to_string()))?
+                            .len()
+                            .try_into()
+                            .map_err(|_| {
+                                DirectPortError::UnsupportedExecution(
+                                    "ngspice transcript size does not fit the bounded parser budget"
+                                        .to_owned(),
+                                )
+                            })?;
+                        if transcript_bytes > MAX_EXTERNAL_TRANSCRIPT_BYTES {
+                            return Err(DirectPortError::UnsupportedExecution(
+                                "ngspice transcript exceeds the bounded 8 MiB artifact budget"
+                                    .to_owned(),
+                            ));
+                        }
+                        let combined_bytes = text
+                            .len()
+                            .checked_add(transcript_bytes)
+                            .and_then(|value| value.checked_add(usize::from(!text.is_empty())))
+                            .ok_or_else(|| {
+                                DirectPortError::UnsupportedExecution(
+                                    "ngspice combined parse size overflows the bounded budget"
+                                        .to_owned(),
+                                )
+                            })?;
+                        if combined_bytes > MAX_EXTERNAL_COMBINED_PARSE_BYTES {
+                            return Err(DirectPortError::UnsupportedExecution(
+                                "ngspice stdout/transcript combined parse exceeds the bounded 16 MiB budget"
+                                    .to_owned(),
+                            ));
+                        }
+                        let value = fs::read_to_string(transcript)
+                            .map_err(|error| DirectPortError::InputIo(error.to_string()))?;
                         if !text.is_empty() {
                             text.push('\n');
                         }
@@ -936,9 +1340,57 @@ pub fn run_hspice(
                 };
                 if admission.backend == Backend::Ngspice {
                     let waveform = directory.join("waveform.csv");
-                    let rows = write_ngspice_waveform_csv(&backend_text, &waveform);
-                    summary["waveform"] = json!({"path":"waveform.csv","format":"csv","exists":waveform.is_file(),"rows":rows});
-                    summary["measurements"] = json!(parse_ngspice_measurements(&backend_text));
+                    let waveform_payload = parse_ngspice_waveform(&backend_text)?;
+                    let requested_probes = output_probes(&case.case.text);
+                    validate_ngspice_waveform_columns(
+                        waveform_payload.as_ref(),
+                        &requested_probes,
+                    )?;
+                    let rows = write_ngspice_waveform_csv(waveform_payload.as_ref(), &waveform)?;
+                    if rows == 0 {
+                        if waveform.exists() {
+                            fs::remove_file(&waveform)
+                                .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+                        }
+                    } else if !external_artifact_changed(&waveform, waveform_before) {
+                        return Err(DirectPortError::UnsupportedExecution(
+                            "ngspice waveform artifact is not fresh".to_owned(),
+                        ));
+                    }
+                    if !requested_probes.is_empty() && rows == 0 {
+                        return Err(DirectPortError::UnsupportedExecution(
+                            "ngspice returned no waveform for requested probes".to_owned(),
+                        ));
+                    }
+                    let requested_measures = output_measures(&case.case.text);
+                    let measurements = parse_ngspice_measurements(&backend_text);
+                    validate_ngspice_measurements(&requested_measures, &measurements)?;
+                    summary["waveform"] = if rows > 0 {
+                        json!({"kind":"ngspice_print_table_observation","path":"waveform.csv","format":"csv","exists":true,"rows":rows})
+                    } else {
+                        serde_json::Value::Null
+                    };
+                    summary["measurements"] = json!(measurements);
+                    summary["output_contract"] = json!({
+                        "normalizer": {
+                            "upstream_path": "src/agent_spice/hspice/measure.py::normalize_outputs",
+                            "upstream_sha256": UPSTREAM_MEASURE_SOURCE_SHA256,
+                        },
+                        "requested": {"probes": requested_probes, "measures": requested_measures},
+                        "returned": {"waveform_rows": rows, "measurements": summary["measurements"]},
+                        "result_kind": "ngspice_print_table_observation",
+                        "verification": "external_solver_not_verified",
+                        "caller_input_attestation": "caller_input_unattested",
+                    });
+                    let mut artifacts = vec![
+                        external_artifact_record(&transcript_path, "case")?,
+                        external_artifact_record(&directory.join("stdout.log"), "stdout.log")?,
+                        external_artifact_record(&directory.join("stderr.log"), "stderr.log")?,
+                    ];
+                    if rows > 0 {
+                        artifacts.push(external_artifact_record(&waveform, "waveform.csv")?);
+                    }
+                    summary["artifacts"] = json!(artifacts);
                 }
                 if admission.backend == Backend::Native {
                     let result_path = directory.join("native_result.json");
@@ -1035,10 +1487,6 @@ pub fn run_hspice(
         execution_returncodes: returncodes,
         numerical_parity: ParityStatus::NotEvaluated,
     })
-}
-
-fn external_execution_available() -> bool {
-    false
 }
 
 /// Resolve and dispatch the upstream project-manifest branch through the
@@ -1156,59 +1604,195 @@ fn output_measures(text: &str) -> Vec<serde_json::Value> {
     measures
 }
 
-fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
-    let mut measurements = Vec::new();
-    for line in text.lines() {
-        let fields = line.split_whitespace().collect::<Vec<_>>();
-        let Some(first) = fields.first() else {
-            continue;
-        };
-        let (name, number_token, suffix_start) = if let Some((name, value)) = first.split_once('=')
-        {
-            (name, value, 1usize)
-        } else if fields.get(1).is_some_and(|value| *value == "=") {
-            let Some(value) = fields.get(2) else {
-                continue;
-            };
-            (*first, *value, 3usize)
-        } else {
-            continue;
-        };
-        let Some(number) = number_token.parse::<f64>().ok() else {
-            continue;
-        };
-        let mut entry = json!({"name": name, "value": number});
-        let at = fields[suffix_start..]
-            .iter()
-            .enumerate()
-            .find_map(|(index, field)| {
-                let lower = field.to_ascii_lowercase();
-                if let Some(value) = lower.strip_prefix("at=") {
-                    return value.parse::<f64>().ok();
-                }
-                if lower == "at=" {
-                    return fields.get(suffix_start + index + 1)?.parse::<f64>().ok();
-                }
-                None
-            });
-        if let Some(at) = at {
-            entry["at"] = json!(at);
-        }
-        measurements.push(entry);
-    }
-    measurements
+fn canonical_ascii_key(value: &str) -> String {
+    value
+        .bytes()
+        .map(|byte| byte.to_ascii_lowercase())
+        .map(char::from)
+        .collect()
 }
 
-fn write_ngspice_waveform_csv(text: &str, path: &Path) -> usize {
-    let mut columns: Option<Vec<&str>> = None;
+fn measurement_name_char(value: char, first: bool) -> bool {
+    if first {
+        value.is_ascii_alphabetic() || value == '_'
+    } else {
+        value.is_alphanumeric() || matches!(value, '_' | '.' | '$' | '-')
+    }
+}
+
+fn parse_measurement_number(value: &str) -> Option<(f64, usize)> {
+    let bytes = value.as_bytes();
+    let mut index = usize::from(
+        bytes
+            .first()
+            .is_some_and(|byte| matches!(byte, b'+' | b'-')),
+    );
+    let integer_start = index;
+    while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+        index += 1;
+    }
+    let integer_digits = index - integer_start;
+    let fraction_digits = if bytes.get(index) == Some(&b'.') {
+        index += 1;
+        let start = index;
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+        index - start
+    } else {
+        0
+    };
+    if integer_digits == 0 && fraction_digits == 0 {
+        return None;
+    }
+    if bytes
+        .get(index)
+        .is_some_and(|byte| matches!(byte, b'e' | b'E'))
+    {
+        index += 1;
+        if bytes
+            .get(index)
+            .is_some_and(|byte| matches!(byte, b'+' | b'-'))
+        {
+            index += 1;
+        }
+        let start = index;
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+        if index == start {
+            return None;
+        }
+    }
+    let number = value.get(..index)?.parse::<f64>().ok()?;
+    number.is_finite().then_some((number, index))
+}
+
+fn parse_ngspice_measurement_line(line: &str) -> Option<(String, f64, Option<f64>)> {
+    let line = line.trim();
+    let mut name_end = 0;
+    for (index, character) in line.char_indices() {
+        if !measurement_name_char(character, index == 0) {
+            break;
+        }
+        name_end = index + character.len_utf8();
+    }
+    if name_end == 0 {
+        return None;
+    }
+    let name = line.get(..name_end)?.to_owned();
+    let mut rest = line.get(name_end..)?.trim_start();
+    rest = rest.strip_prefix('=')?.trim_start();
+    let (value, consumed) = parse_measurement_number(rest)?;
+    let tail = rest.get(consumed..)?;
+    if tail.is_empty() {
+        return Some((name, value, None));
+    }
+    if !tail.chars().next()?.is_whitespace() {
+        return None;
+    }
+    rest = tail.trim_start().strip_prefix("at=")?.trim_start();
+    let (at, consumed) = parse_measurement_number(rest)?;
+    rest = rest.get(consumed..)?.trim();
+    rest.is_empty().then_some((name, value, Some(at)))
+}
+
+fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
+    text.lines()
+        .filter_map(parse_ngspice_measurement_line)
+        .map(|(name, value, at)| {
+            let mut entry = json!({"name": name, "value": value});
+            if let Some(at) = at {
+                entry["at"] = json!(at);
+            }
+            entry
+        })
+        .collect()
+}
+
+fn validate_ngspice_measurements(
+    requested: &[serde_json::Value],
+    returned: &[serde_json::Value],
+) -> Result<(), DirectPortError> {
+    if requested.len() != returned.len() {
+        return Err(DirectPortError::UnsupportedExecution(format!(
+            "ngspice returned {} measurements for {} requested measures",
+            returned.len(),
+            requested.len()
+        )));
+    }
+    let expected = requested
+        .iter()
+        .filter_map(|value| value.get("name").and_then(serde_json::Value::as_str))
+        .map(canonical_ascii_key)
+        .collect::<BTreeSet<_>>();
+    if expected.len() != requested.len() {
+        return Err(DirectPortError::UnsupportedExecution(
+            "duplicate requested measurement names are not supported".to_owned(),
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    for value in returned {
+        let name = value
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                DirectPortError::UnsupportedExecution(
+                    "ngspice returned a measurement without a name".to_owned(),
+                )
+            })?;
+        let canonical_name = canonical_ascii_key(name);
+        if !expected.contains(&canonical_name) || !seen.insert(canonical_name) {
+            return Err(DirectPortError::UnsupportedExecution(format!(
+                "ngspice returned an unknown or duplicate measurement '{name}'"
+            )));
+        }
+        let number = value
+            .get("value")
+            .and_then(serde_json::Value::as_f64)
+            .ok_or_else(|| {
+                DirectPortError::UnsupportedExecution(format!(
+                    "ngspice measurement '{name}' is not numeric"
+                ))
+            })?;
+        if !number.is_finite()
+            || value
+                .get("at")
+                .and_then(serde_json::Value::as_f64)
+                .is_some_and(|at| !at.is_finite())
+        {
+            return Err(DirectPortError::UnsupportedExecution(format!(
+                "ngspice measurement '{name}' is non-finite"
+            )));
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug)]
+struct NgspiceWaveform {
+    columns: Vec<String>,
+    rows: Vec<Vec<f64>>,
+}
+
+fn parse_ngspice_waveform(text: &str) -> Result<Option<NgspiceWaveform>, DirectPortError> {
+    let mut columns: Option<Vec<String>> = None;
     let mut rows = Vec::<Vec<f64>>::new();
+    let mut header_conflict = false;
     for line in text.lines() {
         let fields = line.split_whitespace().collect::<Vec<_>>();
         if fields.first() == Some(&"Index") && fields.len() >= 3 {
-            let candidate = fields[1..].to_vec();
+            let candidate = fields[1..]
+                .iter()
+                .map(|field| (*field).to_owned())
+                .collect::<Vec<_>>();
             if columns.as_ref().is_none_or(|value| *value != candidate) {
-                columns = Some(candidate);
-                rows.clear();
+                if columns.is_some() {
+                    header_conflict = true;
+                    break;
+                } else {
+                    columns = Some(candidate);
+                }
             }
             continue;
         }
@@ -1218,28 +1802,102 @@ fn write_ngspice_waveform_csv(text: &str, path: &Path) -> usize {
         if fields.len() != header.len() + 1
             || fields
                 .first()
-                .is_none_or(|value| !value.chars().all(|c| c.is_ascii_digit()))
+                .is_none_or(|value| !value.chars().all(|character| character.is_ascii_digit()))
         {
             continue;
         }
-        let Ok(values) = fields[1..]
+        let values = fields[1..]
             .iter()
             .map(|value| value.parse::<f64>())
             .collect::<Result<Vec<_>, _>>()
-        else {
-            continue;
-        };
+            .map_err(|error| {
+                DirectPortError::UnsupportedExecution(format!(
+                    "ngspice waveform contains a non-numeric value: {error}"
+                ))
+            })?;
+        if values.iter().any(|value| !value.is_finite()) {
+            return Err(DirectPortError::UnsupportedExecution(
+                "ngspice waveform contains a non-finite value".to_owned(),
+            ));
+        }
         rows.push(values);
     }
-    let Some(columns) = columns else {
-        return 0;
-    };
-    if rows.is_empty() {
-        return 0;
+    if header_conflict {
+        return Err(DirectPortError::UnsupportedExecution(
+            "ngspice print table contains conflicting waveform headers".to_owned(),
+        ));
     }
-    let mut csv = columns.join(",");
+    Ok(columns
+        .filter(|_| !rows.is_empty())
+        .map(|columns| NgspiceWaveform { columns, rows }))
+}
+
+fn validate_ngspice_waveform_columns(
+    waveform: Option<&NgspiceWaveform>,
+    requested: &[String],
+) -> Result<(), DirectPortError> {
+    let Some(waveform) = waveform else {
+        return if requested.is_empty() {
+            Ok(())
+        } else {
+            Err(DirectPortError::UnsupportedExecution(
+                "ngspice returned no waveform header for requested probes".to_owned(),
+            ))
+        };
+    };
+    let expected = requested
+        .iter()
+        .map(|value| canonical_ascii_key(value))
+        .collect::<BTreeSet<_>>();
+    if expected.len() != requested.len() {
+        return Err(DirectPortError::UnsupportedExecution(
+            "duplicate requested waveform probes are not supported".to_owned(),
+        ));
+    }
+    let expected_columns = requested.len().checked_add(1).ok_or_else(|| {
+        DirectPortError::UnsupportedExecution(
+            "requested waveform probe count overflows the bounded column contract".to_owned(),
+        )
+    })?;
+    if waveform.columns.len() != expected_columns {
+        return Err(DirectPortError::UnsupportedExecution(
+            "ngspice print table column count does not match requested probes".to_owned(),
+        ));
+    }
+    let Some(axis) = waveform.columns.first() else {
+        return Err(DirectPortError::UnsupportedExecution(
+            "ngspice print table is missing its axis column".to_owned(),
+        ));
+    };
+    if axis.is_empty() {
+        return Err(DirectPortError::UnsupportedExecution(
+            "ngspice print table axis column is empty".to_owned(),
+        ));
+    }
+    let returned = waveform
+        .columns
+        .iter()
+        .skip(1)
+        .map(|value| canonical_ascii_key(value))
+        .collect::<BTreeSet<_>>();
+    if returned.len() != requested.len() || returned != expected {
+        return Err(DirectPortError::UnsupportedExecution(
+            "ngspice waveform columns do not match requested probes".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn write_ngspice_waveform_csv(
+    waveform: Option<&NgspiceWaveform>,
+    path: &Path,
+) -> Result<usize, DirectPortError> {
+    let Some(waveform) = waveform else {
+        return Ok(0);
+    };
+    let mut csv = waveform.columns.join(",");
     csv.push('\n');
-    for row in &rows {
+    for row in &waveform.rows {
         csv.push_str(
             &row.iter()
                 .map(|value| format!("{value:.17e}"))
@@ -1248,13 +1906,13 @@ fn write_ngspice_waveform_csv(text: &str, path: &Path) -> usize {
         );
         csv.push('\n');
     }
-    if csv.len() > MAX_DECK_BYTES as usize {
-        return 0;
+    if csv.len() > MAX_EXTERNAL_ARTIFACT_BYTES {
+        return Err(DirectPortError::UnsupportedExecution(
+            "ngspice waveform CSV exceeds the bounded 8 MiB output budget".to_owned(),
+        ));
     }
-    if fs::write(path, csv).is_err() {
-        return 0;
-    }
-    rows.len()
+    fs::write(path, csv).map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+    Ok(waveform.rows.len())
 }
 
 fn touchstone_port_count(path: &Path) -> Option<usize> {
@@ -2202,12 +2860,110 @@ mod tests {
         assert_eq!(measurements[0]["name"], "m_rms");
         assert_eq!(measurements[0]["at"], 2e-9);
         let path = root.join("waveform.csv");
-        assert_eq!(write_ngspice_waveform_csv(transcript, &path), 2);
+        let waveform = parse_ngspice_waveform(transcript).unwrap();
+        validate_ngspice_waveform_columns(waveform.as_ref(), &["V(OUT)".to_owned()]).unwrap();
+        assert_eq!(
+            write_ngspice_waveform_csv(waveform.as_ref(), &path).unwrap(),
+            2
+        );
         assert!(
             fs::read_to_string(path)
                 .unwrap()
                 .starts_with("time,v(out)\n")
         );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn ngspice_result_contract_rejects_missing_extra_and_nonfinite_values() {
+        let requested = vec![json!({"name": "m_rms"})];
+        assert!(validate_ngspice_measurements(&requested, &[]).is_err());
+        assert!(
+            validate_ngspice_measurements(&requested, &[json!({"name": "other", "value": 1.0})])
+                .is_err()
+        );
+        assert!(
+            validate_ngspice_measurements(&requested, &parse_ngspice_measurements("m_rms = NaN\n"))
+                .is_err()
+        );
+        let waveform = parse_ngspice_waveform("Index time v(out)\n0 0 1\n").unwrap();
+        assert!(
+            validate_ngspice_waveform_columns(waveform.as_ref(), &["v(in)".to_owned()]).is_err()
+        );
+        assert!(
+            validate_ngspice_waveform_columns(
+                parse_ngspice_waveform("Index time v(in)\n0 0 1\n")
+                    .unwrap()
+                    .as_ref(),
+                &["v(in)".to_owned(), "v(in)".to_owned()]
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn ngspice_result_contract_matches_ascii_case_insensitively_and_is_anchored() {
+        let requested = vec![json!({"name": "M_RMS"})];
+        let returned = parse_ngspice_measurements("m_rms = 1.25e-3 at=2e-9\n");
+        validate_ngspice_measurements(&requested, &returned).unwrap();
+        assert_eq!(returned[0]["name"], "m_rms");
+        assert!(parse_ngspice_measurements("m_rms = 1.0 trailing\n").is_empty());
+        assert!(parse_ngspice_measurements("m_rms = 1.0 at=2 at=3\n").is_empty());
+        assert!(parse_ngspice_measurements("m rms = 1.0\n").is_empty());
+        let waveform = parse_ngspice_waveform("Index TIME V(OUT)\n0 0 1\n").unwrap();
+        validate_ngspice_waveform_columns(waveform.as_ref(), &["v(out)".to_owned()]).unwrap();
+    }
+
+    #[test]
+    fn ngspice_waveform_header_drift_is_not_written_from_a_partial_payload() {
+        let text = "Index time v(out)\n0 0 1\nIndex time v(in)\n1 1 2\nIndex time v(out)\n2 2 3\n";
+        let error = parse_ngspice_waveform(text).unwrap_err();
+        assert!(
+            matches!(error, DirectPortError::UnsupportedExecution(message) if message.contains("conflicting waveform headers"))
+        );
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-wave-drift-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("waveform.csv");
+        assert_eq!(write_ngspice_waveform_csv(None, &path).unwrap(), 0);
+        assert!(!path.exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn ngspice_waveform_contract_rejects_missing_axis_and_duplicate_probe_columns() {
+        let missing_axis = parse_ngspice_waveform("Index\n0\n").unwrap();
+        assert!(
+            validate_ngspice_waveform_columns(missing_axis.as_ref(), &["v(out)".to_owned()])
+                .is_err()
+        );
+        let duplicate = parse_ngspice_waveform("Index time V(out) v(OUT)\n0 0 1 1\n").unwrap();
+        assert!(
+            validate_ngspice_waveform_columns(
+                duplicate.as_ref(),
+                &["v(out)".to_owned(), "v(OUT)".to_owned()]
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn ngspice_measurement_only_contract_has_no_waveform_artifact() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-measure-only-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let waveform = root.join("waveform.csv");
+        let text = "m_rms = 1.25e-3\n";
+        let parsed = parse_ngspice_waveform(text).unwrap();
+        assert_eq!(
+            write_ngspice_waveform_csv(parsed.as_ref(), &waveform).unwrap(),
+            0
+        );
+        assert!(!waveform.is_file());
+        let requested = vec![json!({"name": "m_rms"})];
+        let returned = parse_ngspice_measurements(text);
+        validate_ngspice_measurements(&requested, &returned).unwrap();
+        validate_ngspice_waveform_columns(parsed.as_ref(), &[]).unwrap();
         let _ = fs::remove_dir_all(root);
     }
 
@@ -2339,6 +3095,24 @@ mod tests {
     }
 
     #[test]
+    fn file_runner_rejects_stale_project_before_writing_case_artifacts() {
+        let root = std::env::temp_dir().join(format!("sipi-as05-stale-{}", std::process::id()));
+        let stale_case = root.join("out/deck/deck__base");
+        fs::create_dir_all(&stale_case).unwrap();
+        fs::write(stale_case.join("run_summary.json"), "stale").unwrap();
+        let deck = root.join("deck.sp");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        let request = RunHspiceRequest::new("ngspice", root.join("out"), false).unwrap();
+        assert!(matches!(
+            run_hspice(&deck, request),
+            Err(DirectPortError::UnsupportedExecution(message))
+                if message.contains("project directory must be fresh")
+        ));
+        assert!(!stale_case.join("case.cir").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn execute_never_resolves_fake_path_or_alias_executables() {
         let root = std::env::temp_dir().join(format!("sipi-as05-custody-{}", std::process::id()));
         let request = RunHspiceRequest::new("native", root.join("out"), true)
@@ -2349,6 +3123,43 @@ mod tests {
             matches!(result, Err(DirectPortError::UnsupportedExecution(message)) if message.contains("custody"))
         );
         assert!(!root.join("out").exists());
+    }
+
+    #[test]
+    fn ngspice_execution_requires_absolute_sha256_attestation() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-ng-custody-{}", std::process::id()));
+        let deck = root.join("deck.sp");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        let missing = RunHspiceRequest::new("ngspice", root.join("out"), true).unwrap();
+        assert!(matches!(
+            run_hspice(&deck, missing),
+            Err(DirectPortError::UnsupportedExecution(message))
+                if message.contains("caller custody")
+        ));
+        let wrong = RunHspiceRequest::new("ngspice", root.join("wrong-out"), true).unwrap();
+        assert!(matches!(
+            run_hspice_with_ngspice_custody(
+                &deck,
+                wrong,
+                NgspiceCustody::new(std::env::current_exe().unwrap(), "0".repeat(64)),
+            ),
+            Err(DirectPortError::UnsupportedExecution(message))
+                if message.contains("SHA-256")
+        ));
+        let relative_request =
+            RunHspiceRequest::new("ngspice", root.join("relative-out"), true).unwrap();
+        assert!(matches!(
+            run_hspice_with_ngspice_custody(
+                &deck,
+                relative_request,
+                NgspiceCustody::new(PathBuf::from("ngspice.exe"), "0".repeat(64)),
+            ),
+            Err(DirectPortError::UnsupportedExecution(message))
+                if message.contains("absolute executable path")
+        ));
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
