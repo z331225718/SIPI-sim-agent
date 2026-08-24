@@ -26,8 +26,9 @@ engine, and proprietary golden data remain external blockers.
 | `src/agent_com/equalization/ctle.py` | CTLE branch | `5c913f32563ff27cbf62c0ab0e6a8b6150df9ad5` | 1927 | `c79738b504b2967c17a6bb41e4e1f4af8e88566891ab16ba067b893ff20293f6` | MIT |
 | `src/agent_com/equalization/rx_ffe.py` | RX FFE branch | `8900bd460c9347ec7551dee4224366fbb24b22df` | 12939 | `4165278cfccf21cf7e32011ecea9f368cf1ae6c442619e059b3d15480a0eb34a` | MIT |
 | `src/agent_com/equalization/search.py` | portable non-MMSE/no-RxFFE search loop and receiver filter orchestration | `58f6e5e3f8f36b94faddf0248f3df2ff11e1e3cd` | 53859 | `924930c43332f169ce1d66048d3f70610c8bf459af2f0210d6995533c277003d` | MIT |
-| `src/agent_com/network/package.py::_selected_package_case` | one-based `pkg_len_select` to zero-based package-case selection used by search SNDR/ACCM consumers; network/package VTF assembly remains outside this leaf | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
-| `src/agent_com/network/package.py::_make_full_package,_package_lengths,_package_preset` | audited package VTF/length/preset assembly; blocked because the current Rust S4P route discards the retained FD network after SDD21->impulse and has no TwoPort cascade consumer | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
+| `src/agent_com/network/package.py::_selected_package_case,_make_full_package,_package_lengths,_package_preset` | one-based `pkg_len_select` selection plus crate-private DD package VTF/length/preset assembly consumed by the S4P run route; DC and ACCM transforms remain open | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
+| `src/agent_com/network/two_port.py` | crate-private checked TwoPort cascade, board insertion, package VTF denominator, exact-zero singular handling | `6b1484effc18a25fe8c28373b47f55b0b99b0f4b` | 9600 | `8889d9695a56d83a59a771d938ba8084dbdfec6a24d79e14d88b83c678ddcd6a` | MIT |
+| `src/agent_com/_orchestration.py::_load_s4p_channel,_channel_amplitude` | typed role ordering and package amplitude selection: WC_PORTZ uses `Tx_rd_sel`, otherwise one-based `pkg_len_select`; final DD impulse is the only channel boundary | `5d260a0aab941f1a1955fe3abef36d85a56034c0` | 90877 | `069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69` | MIT |
 | `src/agent_com/equalization/mmse.py` | MMSE KKT solve and strict-best search branch | `61c54806da030dac1cb889261f344564c02f38f6` | 33933 | `d0542c3a091b5c79a1ba69270878387326dcb09c6ed2d385667709f541d9f4c9` | MIT |
 | `src/agent_com/equalization/fvlms_rxffe.py` | FV-LMS fixed/floating RxFFE candidate search | `525361878ad4802bf9d4968678ebd512b7c7a527` | 19769 | `16943815872c49de3d3f73639a340adbfb635450c5a3b6f9adb3a7009cc4cb59` | MIT |
 | `src/agent_com/equalization/tx_ffe.py` | search TX-FFE grid construction | `94c3e72471bfe531d1b2b9a1fd1c45c516ed903c` | 6611 | `17a9b2691fcf0281c2b065eca1fe49897866f743ca5e6bdefabb70270e532e84` | MIT |
@@ -66,9 +67,52 @@ Wiener-Hopf implementation; the direct leaf rejects that request rather than
 inventing a solver.
 
 Package scope is deliberately split: the selector above is reachable by the
-existing SNDR/ACCM search consumers and preserves upstream outer-loop order;
-the subsequent `package.py` VTF assembly (`_make_full_package`, package
-length/preset chains, and S4P cascade) is not claimed here because the current
-Rust runtime has no corresponding package-network consumer. The existing
-candidate-local JSON package-case route is not used as upstream fan-out or as
-an oracle substitute.
+existing SNDR search consumers. ACCM remains open. The direct S4P route admits the typed
+package-case outer loop one case at a time; each selected case carries its
+`pkg_len_select`, TX-FFE preset, and role amplitude (`a_thru`, `a_fext`, or
+`a_next`) into the same evaluator. Missing or mismatched case controls fail
+closed rather than falling back to case zero.
+The subsequent `package.py` VTF assembly (`_make_full_package`, package
+length/preset chains, board insertion, and S4P cascade) is now a crate-private
+consumer of the typed S4P run route. It preserves the upstream order:
+mixed-mode TwoPort conversion, optional board insertion, kappa reflection
+scaling, package/VTF and RX-port flip, transmitter transition filter, optional
+receiver-filter product and package TX-FFE preset, one role amplitude applied
+to the final impulse voltage, and only then publication to the COM chain. The
+admitted single-file route is typed THRU/DD; request FEXT/NEXT files use their
+typed request role. It does not accept ad-hoc JSON `channel_type`,
+`package_mode`, or `include_die` keys.
+FD-to-TD reads only resolved workbook controls (`sample_dt`, interpolation
+magnitude/phase, causality, EC tolerances, truncation, and DEBUG); candidate
+local top-level `fd_to_td`/`defaults` controls are rejected. Package-case
+selection is bounded before allocation and applies the selected case's
+role-specific amplitude after the one impulse conversion. The package-case
+index is an internal outer-loop token, never caller JSON. A direct S4P request
+without that token admits only exact single-case selection. The current public
+S4P workflow is single request plus typed
+THRU/FEXT/NEXT files; JSON package-case fan-out remains the existing bounded
+case runner, not a claim of general upstream package API parity.
+`INC_PACKAGE=false` still admits the board FD path and the typed role amplitude
+is applied after its final FD-to-TD conversion. The source common-mode/DC
+helpers are not exposed: the current direct request has no typed DC or ACCM
+channel consumer, so those branches are explicit open contract blockers rather
+than dead or guessed helpers. Only the DD route is implemented here.
+Malformed controls, unsupported channel roles, non-rectangular package
+matrices, singular denominators, and numeric budget violations fail closed.
+Focused Rust tests cover the pinned algebraic checkpoints and negative
+controls; no clean-archive Python numeric replay is claimed by this source map.
+The Rust cascade uses exact-zero singular rejection per the SIPI channel
+policy; upstream's internal nonzero denominator guard is therefore not a
+bit-identical acceptance claim.
+The existing candidate-local JSON package-case route is not used as upstream
+fan-out or as an oracle substitute.
+
+The focused `run_v1::tests::public_s4p_package_workflow_consumes_delayed_lowpass_and_roles`
+is a scoped synthetic workflow checkpoint, not upstream numeric parity: it uses
+64-point, 100 ps delayed low-pass S4P input through the public run/artifact
+boundary, checks the package VTF FD-to-TD impulse source kind, 1 ps sample
+interval and 1000-point published impulse receipt, and integrates the same
+typed S4P input as FEXT/NEXT.  It also reruns the workflow with `a_thru` 0.5
+and 1.0, checking exact two-times internal impulse samples plus changed
+impulse/COM digests.  This is a bounded synthetic E2E nonclaim, not a claim of
+full upstream package or numeric COM parity.

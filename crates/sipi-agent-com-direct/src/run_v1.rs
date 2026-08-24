@@ -7,6 +7,7 @@
 //! PDF chain. Calibration, MMSE, and RxFFE publish their numeric payloads,
 //! rather than reducing those source branches to status-only diagnostics.
 
+use crate::package_vtf_v1::{s4p_package_vtf_v1, validate_s4p_package_controls_v1};
 use crate::{
     ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1, config_validate_v1,
 };
@@ -594,7 +595,7 @@ fn run_package_cases_v1(
                 let path = stage_package_channel_v1(&case_root, "next", channel, source)?;
                 child.next.push(path);
             }
-            let report = run_with_workflow(&child, schema)?;
+            let report = run_with_package_case_token(&child, schema, index)?;
             if first_report.is_none() {
                 first_report = Some(report.clone());
             }
@@ -737,8 +738,26 @@ fn run_with_workflow(
     request: &DirectRunRequestV1,
     schema: &'static str,
 ) -> Result<DirectRunReportV1, DirectRunErrorV1> {
+    run_with_workflow_token(request, schema, None)
+}
+
+fn run_with_package_case_token(
+    request: &DirectRunRequestV1,
+    schema: &'static str,
+    package_case_index: usize,
+) -> Result<DirectRunReportV1, DirectRunErrorV1> {
+    run_with_workflow_token(request, schema, Some(package_case_index))
+}
+
+fn run_with_workflow_token(
+    request: &DirectRunRequestV1,
+    schema: &'static str,
+    package_case_index: Option<usize>,
+) -> Result<DirectRunReportV1, DirectRunErrorV1> {
     validate_request(request)?;
-    if let Some(package_cases) = package_cases_from_config_v1(request)? {
+    if package_case_index.is_none()
+        && let Some(package_cases) = package_cases_from_config_v1(request)?
+    {
         return run_package_cases_v1(request, schema, package_cases);
     }
     let loaded = load_config_v1(request)?;
@@ -769,12 +788,21 @@ fn run_with_workflow(
         }
     }
     let erl_s2p_exact = exact_erl_s2p_profile_v1(&loaded.document, &request.pulse)?;
-    let mut input_impulse = if request
+    let is_s4p = request
         .pulse
         .extension()
         .and_then(|value| value.to_str())
-        .is_some_and(|value| value.eq_ignore_ascii_case("s4p"))
-    {
+        .is_some_and(|value| value.eq_ignore_ascii_case("s4p"));
+    let package_s4p = is_s4p && s4p_fd_route_v1(&loaded.values)?;
+    let mut input_impulse = if package_s4p {
+        load_s4p_package_impulse_v1(
+            &request.pulse,
+            &loaded.values,
+            &loaded.document,
+            "THRU",
+            package_case_index,
+        )?
+    } else if is_s4p {
         load_s4p_impulse_v1(&request.pulse)?
     } else if erl_s2p_exact {
         load_erl_s2p_impulse_v1(&request.pulse)?
@@ -806,6 +834,19 @@ fn run_with_workflow(
         .map(|path| {
             if td_mode {
                 load_td_mode_input_v1(path, &loaded.values, samples_per_ui)
+            } else if package_s4p
+                && path
+                    .extension()
+                    .and_then(|value| value.to_str())
+                    .is_some_and(|value| value.eq_ignore_ascii_case("s4p"))
+            {
+                load_s4p_package_impulse_v1(
+                    path,
+                    &loaded.values,
+                    &loaded.document,
+                    "FEXT",
+                    package_case_index,
+                )
             } else {
                 load_channel_input_v1(path)
             }
@@ -817,6 +858,19 @@ fn run_with_workflow(
         .map(|path| {
             if td_mode {
                 load_td_mode_input_v1(path, &loaded.values, samples_per_ui)
+            } else if package_s4p
+                && path
+                    .extension()
+                    .and_then(|value| value.to_str())
+                    .is_some_and(|value| value.eq_ignore_ascii_case("s4p"))
+            {
+                load_s4p_package_impulse_v1(
+                    path,
+                    &loaded.values,
+                    &loaded.document,
+                    "NEXT",
+                    package_case_index,
+                )
             } else {
                 load_channel_input_v1(path)
             }
@@ -1736,6 +1790,33 @@ fn resolved_bool_alias_v1(
             "TDMODE control {label} must be boolean"
         ))),
     }
+}
+
+fn s4p_fd_route_v1(values: &BTreeMap<String, ResolvedDefaultV1>) -> Result<bool, DirectRunErrorV1> {
+    let include_package = if values
+        .keys()
+        .any(|key| key.eq_ignore_ascii_case("INC_PACKAGE"))
+    {
+        resolved_bool_alias_v1(values, &["INC_PACKAGE", "inc_package"], "INC_PACKAGE")?
+    } else {
+        false
+    };
+    let include_pcb = values
+        .iter()
+        .find(|(key, _)| key.eq_ignore_ascii_case("include_pcb"))
+        .map(|(_, value)| match value {
+            ResolvedDefaultV1::Scalar(value)
+                if value.is_finite() && matches!(*value, 0.0 | 1.0 | 2.0) =>
+            {
+                Ok(*value != 0.0)
+            }
+            _ => Err(DirectRunErrorV1::Parameters(
+                "include_pcb must be exactly 0, 1, or 2".to_owned(),
+            )),
+        })
+        .transpose()?
+        .unwrap_or(false);
+    Ok(include_package || include_pcb)
 }
 
 fn required_td_scalar_alias_v1(
@@ -4830,6 +4911,242 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
     })
 }
 
+fn package_fd_to_td_options_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+) -> Result<FdToTdOptionsV1, DirectRunErrorV1> {
+    // Only resolved workbook controls are admitted. Candidate-local JSON
+    // fd_to_td/defaults are deliberately not consulted.
+    let scalar = |key: &str| -> Result<f64, DirectRunErrorV1> {
+        values
+            .iter()
+            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
+            .and_then(|(_, value)| match value {
+                ResolvedDefaultV1::Scalar(value) => Some(*value),
+                _ => None,
+            })
+            .filter(|value| value.is_finite())
+            .ok_or_else(|| {
+                DirectRunErrorV1::Parameters(format!(
+                    "resolved control {key} is missing or invalid"
+                ))
+            })
+    };
+    let boolean = |key: &str| -> Result<bool, DirectRunErrorV1> {
+        values
+            .iter()
+            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
+            .and_then(|(_, value)| match value {
+                ResolvedDefaultV1::Boolean(value) => Some(*value),
+                _ => None,
+            })
+            .ok_or_else(|| {
+                DirectRunErrorV1::Parameters(format!(
+                    "resolved control {key} is missing or invalid"
+                ))
+            })
+    };
+    let string = |key: &str| -> Result<String, DirectRunErrorV1> {
+        values
+            .iter()
+            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
+            .and_then(|(_, value)| match value {
+                ResolvedDefaultV1::String(value) => Some(value.clone()),
+                _ => None,
+            })
+            .ok_or_else(|| {
+                DirectRunErrorV1::Parameters(format!(
+                    "resolved control {key} is missing or invalid"
+                ))
+            })
+    };
+    let options = FdToTdOptionsV1 {
+        sample_dt_s: scalar("sample_dt")?,
+        magnitude_policy: string("interp_sparam_mag")?,
+        phase_policy: string("interp_sparam_phase")?,
+        enforce_causality: boolean("ENFORCE_CAUSALITY")?,
+        ec_pulse_tolerance: scalar("EC_PULSE_TOL")?,
+        ec_relative_tolerance: scalar("EC_REL_TOL")?,
+        ec_difference_tolerance: scalar("EC_DIFF_TOL")?,
+        truncation_threshold: scalar("impulse_response_truncation_threshold")?,
+        debug: boolean("DEBUG")?,
+        ..FdToTdOptionsV1::default()
+    };
+    if options.sample_dt_s <= 0.0
+        || options.ec_pulse_tolerance <= 0.0
+        || options.ec_relative_tolerance < 0.0
+        || options.ec_difference_tolerance < 0.0
+        || options.truncation_threshold < 0.0
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "resolved FD-to-TD controls are outside their admitted ranges".to_owned(),
+        ));
+    }
+    Ok(options)
+}
+
+fn reject_ad_hoc_package_controls_v1(value: &Value, path: &str) -> Result<(), DirectRunErrorV1> {
+    let Some(object) = value.as_object() else {
+        if let Some(values) = value.as_array() {
+            for (index, value) in values.iter().enumerate() {
+                reject_ad_hoc_package_controls_v1(value, &format!("{path}[{index}]"))?;
+            }
+        }
+        return Ok(());
+    };
+    for (key, child) in object {
+        match key.as_str() {
+            "include_die" | "channel_type" | "package_mode" => {
+                return Err(DirectRunErrorV1::Unsupported(format!(
+                    "{path}.{key} is an ad-hoc package control"
+                )));
+            }
+            "package_case_index" => {
+                return Err(DirectRunErrorV1::Unsupported(format!(
+                    "{path}.package_case_index is an internal outer-loop value, not JSON input"
+                )));
+            }
+            "package_case_token" => {
+                return Err(DirectRunErrorV1::Unsupported(format!(
+                    "{path}.package_case_token is an internal value, not JSON input"
+                )));
+            }
+            _ => {}
+        }
+        reject_ad_hoc_package_controls_v1(child, &format!("{path}.{key}"))?;
+    }
+    Ok(())
+}
+
+fn apply_package_channel_amplitude_v1(
+    impulse: &mut [f64],
+    amplitude: f64,
+) -> Result<(), DirectRunErrorV1> {
+    if !amplitude.is_finite() {
+        return Err(DirectRunErrorV1::Channel(
+            "package role amplitude is non-finite".to_owned(),
+        ));
+    }
+    for value in impulse {
+        let scaled = *value * amplitude;
+        if !scaled.is_finite() {
+            return Err(DirectRunErrorV1::Channel(
+                "package role amplitude produced a non-finite impulse".to_owned(),
+            ));
+        }
+        *value = scaled;
+    }
+    Ok(())
+}
+
+fn load_s4p_package_impulse_v1(
+    path: &Path,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    document: &Value,
+    channel_type: &str,
+    package_case_token: Option<usize>,
+) -> Result<ImpulseInputV1, DirectRunErrorV1> {
+    if !matches!(channel_type, "THRU" | "FEXT" | "NEXT") {
+        return Err(DirectRunErrorV1::Unsupported(
+            "S4P package role must be selected by the typed THRU/FEXT/NEXT request path".to_owned(),
+        ));
+    }
+    reject_ad_hoc_package_controls_v1(document, "config")?;
+    if document.get("fd_to_td").is_some() || document.get("defaults").is_some() {
+        return Err(DirectRunErrorV1::Unsupported(
+            "package S4P FD-to-TD must use resolved workbook controls, not candidate-local fd_to_td/defaults"
+                .to_owned(),
+        ));
+    }
+    let package_case_index = if let Some(index) = package_case_token {
+        index
+    } else {
+        if let Some(ResolvedDefaultV1::Vector(selection)) = values
+            .iter()
+            .find(|(key, _)| key.eq_ignore_ascii_case("pkg_len_select"))
+            .map(|(_, value)| value)
+            && selection.len() > 1
+        {
+            return Err(DirectRunErrorV1::Unsupported(
+                "multi-case S4P requires the bounded package-case outer-loop token".to_owned(),
+            ));
+        }
+        0
+    };
+    for key in ["channel_type", "package_mode", "include_die"] {
+        if values
+            .keys()
+            .any(|candidate| candidate.eq_ignore_ascii_case(key))
+        {
+            return Err(DirectRunErrorV1::Unsupported(format!(
+                "S4P package {key} is not a public JSON control; use the typed channel route"
+            )));
+        }
+    }
+    let options = package_fd_to_td_options_v1(values)?;
+    let amplitude = validate_s4p_package_controls_v1(values, channel_type, package_case_index)?;
+    let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
+    let source_sha256 = sha256_bytes_v1(&bytes);
+    let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, touchstone_limits_v1()?)
+        .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
+    let frequency_hz = parsed
+        .rows()
+        .iter()
+        .map(|row| row.frequency_hz())
+        .collect::<Vec<_>>();
+    let samples = parsed
+        .rows()
+        .iter()
+        .map(|row| {
+            let source = row.matrix();
+            let zero = Complex64::try_new(0.0, 0.0)
+                .map_err(|_| DirectRunErrorV1::Touchstone("invalid zero S4P sample".to_owned()))?;
+            let mut matrix = [[zero; 4]; 4];
+            for (output, line) in matrix.iter_mut().enumerate() {
+                for (incident, value) in line.iter_mut().enumerate() {
+                    *value = source.at(output, incident).ok_or_else(|| {
+                        DirectRunErrorV1::Touchstone("S4P matrix index".to_owned())
+                    })?;
+                }
+            }
+            Ok(matrix)
+        })
+        .collect::<Result<Vec<_>, DirectRunErrorV1>>()?;
+    // The single-file S4P request is the typed THRU/DD route.  FEXT/NEXT and
+    // ACCM are selected by their existing crosstalk/metric request consumers,
+    // not by ad-hoc JSON strings on the channel loader.
+    let vtf = s4p_package_vtf_v1(
+        &frequency_hz,
+        &samples,
+        values,
+        channel_type,
+        package_case_index,
+    )?;
+    let result = s21_to_impulse_dc_v1(&vtf, &frequency_hz, &options)
+        .map_err(|error| DirectRunErrorV1::Channel(format!("package VTF FD-to-TD: {error:?}")))?;
+    let mut impulse = result.voltage;
+    apply_package_channel_amplitude_v1(&mut impulse, amplitude)?;
+    validate_impulse_v1(&impulse)?;
+    Ok(ImpulseInputV1 {
+        values: impulse,
+        erl_values: None,
+        erl_time_s: Some(result.time_s.clone()),
+        source_sha256,
+        sample_interval_s: result
+            .time_s
+            .windows(2)
+            .next()
+            .map(|pair| pair[1] - pair[0]),
+        source_kind: "touchstone-four-port-package-vtf-fd-to-td-impulse",
+        already_pulse: false,
+        causality_correction_db: Some(result.causality_correction_db),
+        truncation_db: Some(result.truncation_db),
+        causality_iterations: Some(result.causality_iterations),
+        td_fillin: None,
+        td_pulse: None,
+        td_crosstalk: None,
+    })
+}
+
 fn load_s4p_calibration_document_v1(path: &Path) -> Result<Value, DirectRunErrorV1> {
     let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
     let limits = touchstone_limits_v1()?;
@@ -5766,6 +6083,209 @@ mod tests {
     }
 
     #[test]
+    fn package_s4p_rejects_ad_hoc_controls_recursively() {
+        for key in ["include_die", "channel_type", "package_mode"] {
+            let value = json!({"portable": {"nested": {key: true}}});
+            let error = reject_ad_hoc_package_controls_v1(&value, "config")
+                .expect_err("nested package control must be rejected");
+            assert!(
+                matches!(error, DirectRunErrorV1::Unsupported(message) if message.contains(key))
+            );
+        }
+        let value = json!({"portable": {"package_case_index": 0}});
+        assert!(reject_ad_hoc_package_controls_v1(&value, "config").is_err());
+        let internal_index = json!({"package_case": {"package_case_index": 0}});
+        assert!(reject_ad_hoc_package_controls_v1(&internal_index, "config").is_err());
+    }
+
+    #[test]
+    fn package_role_amplitude_scales_final_impulse_voltage() {
+        let mut half = vec![0.25, -0.5, 1.0];
+        let expected = half.iter().map(|value| value * 2.0).collect::<Vec<_>>();
+        apply_package_channel_amplitude_v1(&mut half, 2.0).expect("finite scale");
+        assert_eq!(half, expected);
+        assert!(apply_package_channel_amplitude_v1(&mut half, f64::NAN).is_err());
+    }
+
+    #[test]
+    fn public_s4p_package_workflow_consumes_delayed_lowpass_and_roles() {
+        let root = temp_root("public-s4p-package-e2e");
+        let config = root.join("params.json");
+        let s4p = root.join("channel.s4p");
+        let output = root.join("artifacts");
+        let mut parameters = canonical_parameters()["parameters"]
+            .as_object()
+            .cloned()
+            .expect("canonical parameters");
+        for (key, value) in [
+            ("fb", json!(10.0e9)),
+            ("sample_dt", json!(1.0e-12)),
+            ("interp_sparam_mag", json!("trend_to_DC")),
+            ("interp_sparam_phase", json!("interp_to_DC")),
+            ("ENFORCE_CAUSALITY", json!(false)),
+            ("EC_PULSE_TOL", json!(0.05)),
+            ("EC_REL_TOL", json!(0.006)),
+            ("EC_DIFF_TOL", json!(1.0e-4)),
+            ("impulse_response_truncation_threshold", json!(1.0e-7)),
+            ("DEBUG", json!(false)),
+            ("pkg_len_select", json!([1.0])),
+            ("pkg_Z_c", json!([[50.0], [50.0]])),
+            ("z_p_tx_cases", json!([[0.0]])),
+            ("z_p_rx_cases", json!([[0.0]])),
+            ("z_p_fext_cases", json!([[0.0]])),
+            ("z_p_next_cases", json!([[0.0]])),
+            ("C_diepad", json!([0.0, 0.0])),
+            ("L_comp", json!([0.0, 0.0])),
+            ("C_bump", json!([0.0, 0.0])),
+            ("C_v", json!([0.0, 0.0])),
+            ("C_pkg_board", json!([0.0, 0.0])),
+            ("pkg_gamma0_a1_a2", json!([0.0, 0.0, 0.0])),
+            ("pkg_tau", json!(0.0)),
+            ("Z0", json!(50.0)),
+            ("R_diepad", json!([50.0, 50.0])),
+            ("Tx_rd_sel", json!(1.0)),
+            ("Rx_rd_sel", json!(1.0)),
+            ("INC_PACKAGE", json!(true)),
+            ("include_pcb", json!(0.0)),
+            ("INCLUDE_FILTER", json!(false)),
+            ("GET_FD", json!(true)),
+            ("IDEAL_TX_TERM", json!(false)),
+            ("IDEAL_RX_TERM", json!(false)),
+            ("T_r_filter_type", json!(0.0)),
+            ("T_r_meas_point", json!(0.0)),
+            ("kappa1", json!(1.0)),
+            ("kappa2", json!(1.0)),
+            ("a_thru", json!([0.5])),
+            ("a_fext", json!([0.2])),
+            ("a_next", json!([0.3])),
+            ("WC_PORTZ", json!(false)),
+        ] {
+            parameters.insert(key.to_owned(), value);
+        }
+        let mut document = canonical_parameters();
+        document["parameters"] = Value::Object(parameters.clone());
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        let mut s4p_text = String::from("# Hz S RI R 50\n");
+        for index in 0..64 {
+            let frequency = index as f64 * 1.0e9;
+            let magnitude = (-frequency / 80.0e9).exp() * (1.0 + 0.4 * (frequency / 5.0e9).sin());
+            let phase = -2.0 * std::f64::consts::PI * frequency * 100.0e-12;
+            let mut row = Vec::with_capacity(32);
+            for pair in 0..16 {
+                if pair == 2 || pair == 7 {
+                    row.push(magnitude * phase.cos());
+                    row.push(magnitude * phase.sin());
+                } else {
+                    row.push(0.0);
+                    row.push(0.0);
+                }
+            }
+            s4p_text.push_str(&format!(
+                "{} {}\n",
+                frequency,
+                row.iter()
+                    .map(|value| value.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ));
+        }
+        fs::write(&s4p, s4p_text).unwrap();
+        let parsed_rows = parse_selected_four_port_hz_s_ri_50_v2(
+            &fs::read(&s4p).unwrap(),
+            touchstone_limits_v1().unwrap(),
+        )
+        .expect("parse E2E S4P")
+        .rows()
+        .len();
+        assert_eq!(parsed_rows, 64);
+        let mut request = DirectRunRequestV1::new(&config, &s4p, &output).with_overwrite(true);
+        request.fext.push(s4p.clone());
+        request.next.push(s4p.clone());
+        let loaded = load_config_v1(&request).expect("config");
+        let probe =
+            load_s4p_package_impulse_v1(&s4p, &loaded.values, &loaded.document, "THRU", None)
+                .expect("S4P impulse");
+        let probe_pulse = rectangular_pulse_response_v1(&probe.values, 8).unwrap();
+        assert!(probe_pulse.iter().any(|value| *value > 0.1));
+        let report = run_com_v1(&request).expect("typed public S4P workflow");
+        let case = &report.result["cases"][0];
+        assert_eq!(
+            case["diagnostics"]["channel_impulse"]["source_kind"],
+            "touchstone-four-port-package-vtf-fd-to-td-impulse"
+        );
+        assert_eq!(
+            case["diagnostics"]["channel_impulse"]["sample_interval_s"],
+            1.0e-12
+        );
+        assert_eq!(case["diagnostics"]["channel_impulse"]["sample_count"], 1000);
+        assert_eq!(
+            case["diagnostics"]["crosstalk_inputs"]["integrated_into_metrics"],
+            true
+        );
+        assert_eq!(
+            case["diagnostics"]["crosstalk_inputs"]["fext"][0]["source_kind"],
+            "touchstone-four-port-package-vtf-fd-to-td-impulse"
+        );
+        assert_eq!(
+            case["diagnostics"]["crosstalk_inputs"]["next"][0]["source_kind"],
+            "touchstone-four-port-package-vtf-fd-to-td-impulse"
+        );
+        let half_impulse = case["diagnostics"]["channel_impulse"]["impulse_values"]
+            .as_array()
+            .cloned();
+        assert!(
+            half_impulse.is_none(),
+            "raw waveform is intentionally not public"
+        );
+        let first_com = case["metrics"]["COM_dB"].as_f64().expect("COM metric");
+        let first_impulse_sha = report.impulse_sha256.clone();
+        let first_probe = probe.values.clone();
+
+        // The role amplitude is applied after the single FD-to-TD conversion.
+        // Re-running the same public workflow with a doubled THRU amplitude
+        // therefore provides a semantic, not merely diagnostic, checkpoint.
+        let mut doubled_parameters = parameters;
+        doubled_parameters.insert("a_thru".to_owned(), json!([1.0]));
+        document["parameters"] = Value::Object(doubled_parameters);
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+        let loaded_doubled = load_config_v1(&request).expect("doubled config");
+        let doubled_probe = load_s4p_package_impulse_v1(
+            &s4p,
+            &loaded_doubled.values,
+            &loaded_doubled.document,
+            "THRU",
+            None,
+        )
+        .expect("doubled S4P impulse");
+        assert_eq!(doubled_probe.values.len(), first_probe.len());
+        for (half, full) in first_probe.iter().zip(&doubled_probe.values) {
+            assert_eq!(*full, *half * 2.0);
+        }
+        assert_ne!(
+            sha256_f64_v1(&first_probe),
+            sha256_f64_v1(&doubled_probe.values),
+            "doubled amplitude must change the impulse digest"
+        );
+        let doubled_output = root.join("artifacts-doubled");
+        let mut doubled_request =
+            DirectRunRequestV1::new(&config, &s4p, &doubled_output).with_overwrite(true);
+        doubled_request.fext.push(s4p.clone());
+        doubled_request.next.push(s4p.clone());
+        let doubled_report = run_com_v1(&doubled_request).expect("doubled public workflow");
+        let doubled_case = &doubled_report.result["cases"][0];
+        let doubled_com = doubled_case["metrics"]["COM_dB"]
+            .as_f64()
+            .expect("doubled COM metric");
+        assert_ne!(first_impulse_sha, doubled_report.impulse_sha256);
+        assert_ne!(first_com, doubled_com, "THRU amplitude must affect COM");
+        assert_eq!(
+            doubled_case["diagnostics"]["channel_impulse"]["sample_count"],
+            1000
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn package_case_fanout_preserves_case_and_channel_identity() {
         let root = temp_root("package-cases");
         let config = root.join("params.json");
@@ -5805,8 +6325,45 @@ mod tests {
             cases[1]["channel_identity"]["calibration"],
             "pkg-b:calibration"
         );
+        assert_ne!(
+            cases[0]["metrics"]["COM_dB"], cases[1]["metrics"]["COM_dB"],
+            "role-specific FEXT/NEXT inputs must affect final COM metrics"
+        );
         assert!(report.result["provenance"]["package_cases"]["count"].is_number());
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn package_fd_to_td_requires_resolved_workbook_controls() {
+        let mut values = BTreeMap::new();
+        for (key, value) in [
+            ("sample_dt", ResolvedDefaultV1::Scalar(1.0e-12)),
+            (
+                "interp_sparam_mag",
+                ResolvedDefaultV1::String("trend_to_DC".to_owned()),
+            ),
+            (
+                "interp_sparam_phase",
+                ResolvedDefaultV1::String("interp_to_DC".to_owned()),
+            ),
+            ("ENFORCE_CAUSALITY", ResolvedDefaultV1::Boolean(false)),
+            ("EC_PULSE_TOL", ResolvedDefaultV1::Scalar(0.05)),
+            ("EC_REL_TOL", ResolvedDefaultV1::Scalar(0.006)),
+            ("EC_DIFF_TOL", ResolvedDefaultV1::Scalar(1.0e-4)),
+            (
+                "impulse_response_truncation_threshold",
+                ResolvedDefaultV1::Scalar(1.0e-7),
+            ),
+            ("DEBUG", ResolvedDefaultV1::Boolean(false)),
+        ] {
+            values.insert(key.to_owned(), value);
+        }
+        assert_eq!(
+            package_fd_to_td_options_v1(&values).unwrap().sample_dt_s,
+            1.0e-12
+        );
+        values.remove("EC_DIFF_TOL");
+        assert!(package_fd_to_td_options_v1(&values).is_err());
     }
 
     #[test]
