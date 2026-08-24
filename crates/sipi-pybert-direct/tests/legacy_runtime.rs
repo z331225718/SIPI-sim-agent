@@ -302,12 +302,15 @@ fn projection_parses_portable_s2p_channel_and_ctle_files() {
     fs::write(
         &config_path,
         projection_yaml(
-            "eye_bits: 1000\nuse_ch_file: true\nch_file: channel.s2p\nuse_ctle_file: true\nctle_file: ctle.s2p",
+            "eye_bits: 1000\nf_max: 1.0\nf_step: 100.0\nimpulse_length: 0.125\nuse_ch_file: true\nch_file: channel.s2p\nuse_ctle_file: true\nctle_file: ctle.s2p",
         ),
     )
     .unwrap();
     let (_, input) = project_legacy_config_v1(&config_path, "portable-s2p").unwrap();
-    assert!(matches!(input.channel, ChannelInputV1::ImpulseResponse(_)));
+    assert!(matches!(
+        &input.channel,
+        ChannelInputV1::ImpulseResponse(response) if response.impulse_response_volts_per_second.len() == 2
+    ));
     assert!(
         input
             .rx

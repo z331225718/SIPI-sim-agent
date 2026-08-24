@@ -11,10 +11,12 @@ use std::{fs, path::Path};
 use num_complex::Complex64;
 use thiserror::Error;
 
+use crate::simulation::{cubic_resample_uniform, trim_legacy_impulse_with_start};
 use crate::{ChannelResponseV1, Ohms, Seconds, inverse_real_spectrum};
 
 const MAX_TOUCHSTONE_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_TOUCHSTONE_FFT: usize = 1 << 18;
+const MAX_TOUCHSTONE_SYSTEM_SAMPLES: usize = 50_000_000;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum TouchstoneError {
@@ -46,6 +48,76 @@ pub fn parse_s2p_response(
     source_impedance: Ohms,
     load_impedance: Ohms,
 ) -> Result<ChannelResponseV1, TouchstoneError> {
+    parse_s2p_response_with_options(
+        path,
+        sample_interval,
+        sample_count,
+        source_impedance,
+        load_impedance,
+        None,
+        None,
+        0.0,
+        0.0,
+        None,
+    )
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct S2pImportOptions {
+    pub(crate) frequency_step_hz: Option<f64>,
+    pub(crate) frequency_max_hz: Option<f64>,
+    pub(crate) source_capacitance_pf: f64,
+    pub(crate) load_capacitance_pf: f64,
+    pub(crate) output_len: Option<usize>,
+    pub(crate) trim_min_len: Option<usize>,
+    pub(crate) trim_max_len: Option<usize>,
+    pub(crate) trim_front_porch: usize,
+}
+
+/// Legacy projection entry point.  The Python loader constructs its frequency
+/// vector from `f_step`/`f_max`, then renormalizes the complete two-port to the
+/// frequency-dependent source/load terminations before taking S21.  Keeping
+/// those knobs here avoids silently replacing that algebra with a bare S21
+/// inverse FFT while leaving the small public parser backwards compatible.
+pub(crate) fn parse_s2p_response_with_options(
+    path: &Path,
+    sample_interval: Seconds,
+    sample_count: usize,
+    source_impedance: Ohms,
+    load_impedance: Ohms,
+    frequency_step_hz: Option<f64>,
+    frequency_max_hz: Option<f64>,
+    source_capacitance_pf: f64,
+    load_capacitance_pf: f64,
+    output_len: Option<usize>,
+) -> Result<ChannelResponseV1, TouchstoneError> {
+    parse_s2p_response_impl(
+        path,
+        sample_interval,
+        sample_count,
+        source_impedance,
+        load_impedance,
+        S2pImportOptions {
+            frequency_step_hz,
+            frequency_max_hz,
+            source_capacitance_pf,
+            load_capacitance_pf,
+            output_len,
+            trim_min_len: output_len,
+            trim_max_len: output_len,
+            trim_front_porch: usize::from(output_len.is_some()),
+        },
+    )
+}
+
+fn parse_s2p_response_impl(
+    path: &Path,
+    sample_interval: Seconds,
+    sample_count: usize,
+    source_impedance: Ohms,
+    load_impedance: Ohms,
+    options: S2pImportOptions,
+) -> Result<ChannelResponseV1, TouchstoneError> {
     if !sample_interval.is_finite_positive()
         || sample_count < 2
         || !source_impedance.is_finite_positive()
@@ -53,6 +125,21 @@ pub fn parse_s2p_response(
     {
         return Err(TouchstoneError::InvalidData(
             "invalid target timebase".into(),
+        ));
+    }
+    if sample_count > MAX_TOUCHSTONE_SYSTEM_SAMPLES
+        || options.output_len.is_some_and(|length| {
+            length < 2 || length > sample_count || length > MAX_TOUCHSTONE_SYSTEM_SAMPLES
+        })
+        || options.trim_min_len.is_some_and(|length| {
+            length < 2 || length > sample_count || length > MAX_TOUCHSTONE_SYSTEM_SAMPLES
+        })
+        || options.trim_max_len.is_some_and(|length| {
+            length < 2 || length > sample_count || length > MAX_TOUCHSTONE_SYSTEM_SAMPLES
+        })
+    {
+        return Err(TouchstoneError::InvalidData(
+            "S2P impulse request exceeds the bounded sample budget".into(),
         ));
     }
     let metadata =
@@ -66,7 +153,7 @@ pub fn parse_s2p_response(
     let bytes = fs::read(path).map_err(|error| TouchstoneError::Io(error.to_string()))?;
     let text = std::str::from_utf8(&bytes)
         .map_err(|_| TouchstoneError::InvalidData("file must be UTF-8".into()))?;
-    let (frequency_unit, data_format) = parse_options(text)?;
+    let (frequency_unit, data_format, reference_impedance) = parse_options(text)?;
     let mut tokens = Vec::new();
     for line in text.lines() {
         let line = line.split('!').next().unwrap_or("").trim();
@@ -88,8 +175,11 @@ pub fn parse_s2p_response(
                 "frequency must be finite and non-negative".into(),
             ));
         }
+        let s11 = parse_complex(&row[1], &row[2], data_format)?;
         let s21 = parse_complex(&row[3], &row[4], data_format)?;
-        samples.push((frequency, s21));
+        let s12 = parse_complex(&row[5], &row[6], data_format)?;
+        let s22 = parse_complex(&row[7], &row[8], data_format)?;
+        samples.push((frequency, s11, s12, s21, s22));
     }
     if samples.len() < 2 || samples.windows(2).any(|pair| pair[1].0 <= pair[0].0) {
         return Err(TouchstoneError::InvalidData(
@@ -97,10 +187,43 @@ pub fn parse_s2p_response(
         ));
     }
 
-    let fft_len = next_power_of_two(sample_count.min(MAX_TOUCHSTONE_FFT));
+    validate_s2p_options(sample_interval, &options)?;
+    let (fft_len, bin_step, bins) = if let (Some(step), Some(max)) =
+        (options.frequency_step_hz, options.frequency_max_hz)
+    {
+        // Match ``np.arange(0, f_max + f_step, f_step)`` without rounding
+        // the requested endpoint.  A non-integral endpoint therefore keeps
+        // the next actual grid point, just as NumPy does.
+        let limit = max + step;
+        let max_bins = MAX_TOUCHSTONE_FFT / 2 + 1;
+        let count = (0..=max_bins)
+            .find(|index| (*index as f64) * step >= limit)
+            .ok_or_else(|| TouchstoneError::InvalidData("frequency grid is too large".into()))?;
+        let last_frequency = (count - 1) as f64 * step;
+        if last_frequency > 0.5 / sample_interval.0 {
+            return Err(TouchstoneError::InvalidData(
+                "frequency grid exceeds the sample Nyquist limit".into(),
+            ));
+        }
+        let output_len = count
+            .checked_sub(1)
+            .and_then(|value| value.checked_mul(2))
+            .ok_or_else(|| TouchstoneError::InvalidData("frequency grid is too large".into()))?;
+        if !(2..=MAX_TOUCHSTONE_FFT).contains(&output_len) {
+            return Err(TouchstoneError::InvalidData(
+                "frequency grid exceeds the impulse budget".into(),
+            ));
+        }
+        (output_len, step, count)
+    } else {
+        let fft_len = next_power_of_two(sample_count.min(MAX_TOUCHSTONE_FFT));
+        (
+            fft_len,
+            1.0 / (fft_len as f64 * sample_interval.0),
+            fft_len / 2 + 1,
+        )
+    };
     let nyquist = 0.5 / sample_interval.0;
-    let bin_step = 1.0 / (fft_len as f64 * sample_interval.0);
-    let bins = fft_len / 2 + 1;
     let mut real = vec![0.0; bins];
     let mut imag = vec![0.0; bins];
     for index in 0..bins {
@@ -108,16 +231,54 @@ pub fn parse_s2p_response(
         if frequency > nyquist {
             break;
         }
-        let value = interpolate(&samples, frequency);
+        let (s11, s12, s21, s22) = interpolate_s2p(&samples, frequency);
+        let value = renormalized_s21(
+            s11,
+            s12,
+            s21,
+            s22,
+            reference_impedance,
+            source_impedance.0,
+            load_impedance.0,
+            options.source_capacitance_pf * 1.0e-12,
+            options.load_capacitance_pf * 1.0e-12,
+            frequency,
+        )?;
         real[index] = value.re;
         imag[index] = value.im;
     }
     let impulse = inverse_real_spectrum(&real, &imag, fft_len)
         .map_err(|error| TouchstoneError::Signal(error.to_string()))?;
-    let impulse = impulse
-        .into_iter()
-        .map(|value| value / sample_interval.0)
-        .collect();
+    let impulse =
+        if let (Some(min_len), Some(max_len)) = (options.trim_min_len, options.trim_max_len) {
+            if min_len > max_len {
+                return Err(TouchstoneError::InvalidData(
+                    "S2P trim minimum exceeds maximum".into(),
+                ));
+            }
+            resample_impulse(
+                &impulse,
+                bin_step,
+                sample_interval,
+                sample_count,
+                options.output_len.unwrap_or(sample_count),
+                Some((min_len, max_len, options.trim_front_porch)),
+            )
+        } else if let Some(output_len) = options.output_len {
+            resample_impulse(
+                &impulse,
+                bin_step,
+                sample_interval,
+                sample_count,
+                output_len,
+                None,
+            )
+        } else {
+            impulse
+                .into_iter()
+                .map(|value| value / sample_interval.0)
+                .collect()
+        };
     Ok(ChannelResponseV1 {
         sample_interval,
         impulse_response_volts_per_second: impulse,
@@ -137,6 +298,26 @@ pub fn parse_touchstone_response(
     source_impedance: Ohms,
     load_impedance: Ohms,
     renumber: bool,
+) -> Result<ChannelResponseV1, TouchstoneError> {
+    parse_touchstone_response_with_options(
+        path,
+        sample_interval,
+        sample_count,
+        source_impedance,
+        load_impedance,
+        renumber,
+        S2pImportOptions::default(),
+    )
+}
+
+pub(crate) fn parse_touchstone_response_with_options(
+    path: &Path,
+    sample_interval: Seconds,
+    sample_count: usize,
+    source_impedance: Ohms,
+    load_impedance: Ohms,
+    renumber: bool,
+    options: S2pImportOptions,
 ) -> Result<ChannelResponseV1, TouchstoneError> {
     let extension = path
         .extension()
@@ -177,12 +358,13 @@ pub fn parse_touchstone_response(
     // PyBERT's renumber switch is only meaningful for the 4-port mixed-mode
     // conversion.  scikit-rf leaves an S2P's S21 unchanged when it is set.
     if ports == 2 {
-        return parse_s2p_response(
+        return parse_s2p_response_impl(
             path,
             sample_interval,
             sample_count,
             source_impedance,
             load_impedance,
+            options,
         );
     }
     parse_network_response(
@@ -212,7 +394,7 @@ fn parse_network_response(
         load_impedance,
     )?;
     let text = read_touchstone_text(path)?;
-    let (frequency_unit, data_format) = parse_options(&text)?;
+    let (frequency_unit, data_format, _) = parse_options(&text)?;
     let row_width = 1 + 2 * ports * ports;
     let mut tokens = Vec::new();
     for line in text.lines() {
@@ -453,7 +635,189 @@ fn samples_to_response(
     })
 }
 
-fn parse_options(text: &str) -> Result<(f64, DataFormat), TouchstoneError> {
+fn validate_s2p_options(
+    sample_interval: Seconds,
+    options: &S2pImportOptions,
+) -> Result<(), TouchstoneError> {
+    match (options.frequency_step_hz, options.frequency_max_hz) {
+        (Some(step), Some(max))
+            if step.is_finite()
+                && max.is_finite()
+                && step > 0.0
+                && max > 0.0
+                && (max + step).is_finite()
+                && max <= 0.5 / sample_interval.0 => {}
+        (None, None) => {}
+        _ => {
+            return Err(TouchstoneError::InvalidData(
+                "invalid S2P frequency grid".into(),
+            ));
+        }
+    }
+    if !options.source_capacitance_pf.is_finite()
+        || !options.load_capacitance_pf.is_finite()
+        || options.source_capacitance_pf < 0.0
+        || options.load_capacitance_pf < 0.0
+        || options.output_len.is_some_and(|length| length < 2)
+    {
+        return Err(TouchstoneError::InvalidData(
+            "invalid S2P termination or output length".into(),
+        ));
+    }
+    Ok(())
+}
+
+type S2pSample = (f64, Complex64, Complex64, Complex64, Complex64);
+
+fn interpolate_s2p(
+    samples: &[S2pSample],
+    frequency: f64,
+) -> (Complex64, Complex64, Complex64, Complex64) {
+    let s11 = interpolate_s2p_component(samples, frequency, false, |row| row.1);
+    let s12 = interpolate_s2p_component(samples, frequency, true, |row| row.2);
+    let s21 = interpolate_s2p_component(samples, frequency, true, |row| row.3);
+    let s22 = interpolate_s2p_component(samples, frequency, false, |row| row.4);
+    (s11, s12, s21, s22)
+}
+
+fn interpolate_s2p_component(
+    samples: &[S2pSample],
+    frequency: f64,
+    zero_outside: bool,
+    selector: fn(&S2pSample) -> Complex64,
+) -> Complex64 {
+    if frequency < samples[0].0 {
+        return if zero_outside {
+            Complex64::new(0.0, 0.0)
+        } else {
+            selector(&samples[0])
+        };
+    }
+    let Some(last) = samples.last() else {
+        return Complex64::new(0.0, 0.0);
+    };
+    if frequency > last.0 {
+        return if zero_outside {
+            Complex64::new(0.0, 0.0)
+        } else {
+            selector(last)
+        };
+    }
+    if (frequency - samples[0].0).abs() <= f64::EPSILON {
+        return selector(&samples[0]);
+    }
+    if (frequency - last.0).abs() <= f64::EPSILON {
+        return selector(last);
+    }
+    let index = samples.partition_point(|row| row.0 < frequency);
+    let left = selector(&samples[index - 1]);
+    let right = selector(&samples[index]);
+    let ratio = (frequency - samples[index - 1].0) / (samples[index].0 - samples[index - 1].0);
+    polar_interpolate(left, right, ratio)
+}
+
+fn polar_interpolate(left: Complex64, right: Complex64, ratio: f64) -> Complex64 {
+    let magnitude = left.norm() + (right.norm() - left.norm()) * ratio;
+    let left_phase = left.arg();
+    let raw_phase_delta = right.arg() - left_phase;
+    let phase_delta = if raw_phase_delta.abs() > std::f64::consts::PI {
+        raw_phase_delta - raw_phase_delta.signum() * std::f64::consts::TAU
+    } else {
+        raw_phase_delta
+    };
+    Complex64::from_polar(magnitude, left_phase + phase_delta * ratio)
+}
+
+fn renormalized_s21(
+    s11: Complex64,
+    s12: Complex64,
+    s21: Complex64,
+    s22: Complex64,
+    old_reference: f64,
+    source_impedance: f64,
+    load_impedance: f64,
+    source_capacitance: f64,
+    load_capacitance: f64,
+    frequency: f64,
+) -> Result<Complex64, TouchstoneError> {
+    let omega = 2.0 * std::f64::consts::PI * frequency;
+    let zs = Complex64::new(source_impedance, 0.0)
+        / (Complex64::new(1.0, omega * source_impedance * source_capacitance));
+    let zt = Complex64::new(load_impedance, 0.0)
+        / (Complex64::new(1.0, omega * load_impedance * load_capacitance));
+    let one = Complex64::new(1.0, 0.0);
+    let a = one - s11;
+    let b = -s12;
+    let c = -s21;
+    let d = one - s22;
+    let determinant = a * d - b * c;
+    if determinant.norm() <= f64::EPSILON {
+        return Err(TouchstoneError::Signal(
+            "S2P (I-S) matrix is singular".into(),
+        ));
+    }
+    let scale = Complex64::new(old_reference, 0.0);
+    // scikit-rf's ``rsolve`` is a right solve: Z = B @ inv(A), not
+    // inv(A) @ B.  The distinction matters for a non-scalar S matrix.
+    let z11 = (scale * (one + s11) * d - scale * s12 * c) / determinant;
+    let z12 = (-scale * (one + s11) * b + scale * s12 * a) / determinant;
+    let z21 = (scale * s21 * d - scale * (one + s22) * c) / determinant;
+    let z22 = (-scale * s21 * b + scale * (one + s22) * a) / determinant;
+    let aa = z11 + zs;
+    let bb = z12;
+    let cc = z21;
+    let dd = z22 + zt;
+    let z_determinant = aa * dd - bb * cc;
+    if z_determinant.norm() <= f64::EPSILON {
+        return Err(TouchstoneError::Signal(
+            "S2P termination matrix is singular".into(),
+        ));
+    }
+    // For power waves z2s is another right solve.  The row/column F factors
+    // contribute sqrt(Re(Zs)/Re(Zt)) to S21, yielding the exact scikit-rf
+    // term 2*sqrt(Re(Zs)*Re(Zt))*Z21/det.  PyBERT then applies its separate
+    // complex sqrt(Zt/Zs) voltage normalization below the caller.
+    let s21_new = (2.0 * (zs.re * zt.re).sqrt() * z21) / z_determinant;
+    let result = s21_new * (zt / zs).sqrt();
+    if result.re.is_finite() && result.im.is_finite() {
+        Ok(result)
+    } else {
+        Err(TouchstoneError::Signal(
+            "S2P termination produced a non-finite response".into(),
+        ))
+    }
+}
+
+fn resample_impulse(
+    impulse_v_per_v: &[f64],
+    frequency_step_hz: f64,
+    sample_interval: Seconds,
+    system_len: usize,
+    target_len: usize,
+    trim: Option<(usize, usize, usize)>,
+) -> Vec<f64> {
+    let raw_interval = 1.0 / (impulse_v_per_v.len() as f64 * frequency_step_hz);
+    // First reproduce PyBERT's complete system time vector.  The explicit
+    // impulse length is a trim window, not a request to resample from t=0.
+    let full_system_len = trim.map_or(target_len, |_| system_len);
+    let full_system = cubic_resample_uniform(
+        impulse_v_per_v,
+        raw_interval,
+        sample_interval.0,
+        full_system_len,
+    )
+    .into_iter()
+    .map(|value| value / raw_interval)
+    .collect::<Vec<_>>();
+    match trim {
+        Some((min_len, max_len, front_porch)) => {
+            trim_legacy_impulse_with_start(&full_system, min_len, max_len, front_porch).0
+        }
+        None => full_system,
+    }
+}
+
+fn parse_options(text: &str) -> Result<(f64, DataFormat, f64), TouchstoneError> {
     let line = text
         .lines()
         .map(|line| line.split('!').next().unwrap_or("").trim())
@@ -476,7 +840,7 @@ fn parse_options(text: &str) -> Result<(f64, DataFormat), TouchstoneError> {
         "db" => DataFormat::DecibelAngle,
         _ => return Err(TouchstoneError::InvalidOptions),
     };
-    if let Some(index) = fields
+    let reference = if let Some(index) = fields
         .iter()
         .position(|field| field.eq_ignore_ascii_case("r"))
     {
@@ -488,8 +852,11 @@ fn parse_options(text: &str) -> Result<(f64, DataFormat), TouchstoneError> {
         if !reference.is_finite() || reference <= 0.0 {
             return Err(TouchstoneError::InvalidOptions);
         }
-    }
-    Ok((frequency_unit, format))
+        reference
+    } else {
+        50.0
+    };
+    Ok((frequency_unit, format, reference))
 }
 
 fn parse_number(value: &str) -> Result<f64, TouchstoneError> {
@@ -624,6 +991,146 @@ mod tests {
         )
         .unwrap();
         assert!(parse_s2p_response(&path, Seconds(1.0e-12), 64, Ohms(50.0), Ohms(50.0)).is_ok());
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn s2p_legacy_grid_applies_termination_and_impulse_length() {
+        let path = std::env::temp_dir().join(format!("pb-s2p-grid-{}.s2p", std::process::id()));
+        fs::write(
+            &path,
+            "# GHz S RI R 50\n0.1 0 0 0.7 0 0.02 0 0 0\n1 0 0 0.65 0 0.02 0 0 0\n4 0 0 0.5 0 0.02 0 0 0\n",
+        )
+        .unwrap();
+        let response = parse_s2p_response_with_options(
+            &path,
+            Seconds(0.0125e-9),
+            8_000,
+            Ohms(100.0),
+            Ohms(100.0),
+            Some(100.0e6),
+            Some(1.0e9),
+            0.5,
+            0.5,
+            Some(800),
+        )
+        .unwrap();
+        assert_eq!(response.impulse_response_volts_per_second.len(), 800);
+        assert!(
+            response.impulse_response_volts_per_second[0].abs() < 1.0e-6,
+            "first={} next={}",
+            response.impulse_response_volts_per_second[0],
+            response.impulse_response_volts_per_second[1]
+        );
+        assert!((response.impulse_response_volts_per_second[1] - 1.10729942e9).abs() < 1.0e3);
+        assert!(response.impulse_response_volts_per_second[1].is_finite());
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn power_wave_renormalization_matches_pinned_complex_terminations() {
+        let first = renormalized_s21(
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.02, 0.0),
+            Complex64::new(0.7, 0.0),
+            Complex64::new(0.0, 0.0),
+            50.0,
+            80.0,
+            110.0,
+            0.5e-12,
+            0.5e-12,
+            1.0e9,
+        )
+        .unwrap();
+        assert!((first.re - 0.684697565842666).abs() < 1.0e-12);
+        assert!((first.im - 0.23507724434367563).abs() < 1.0e-12);
+        let second = renormalized_s21(
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.02, 0.0),
+            Complex64::new(0.7, 0.0),
+            Complex64::new(0.0, 0.0),
+            50.0,
+            40.0,
+            120.0,
+            0.5e-12,
+            0.5e-12,
+            1.0e9,
+        )
+        .unwrap();
+        assert!((second.re - 1.0379188475001364).abs() < 1.0e-12);
+        assert!((second.im - 0.19697694582358036).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn s2p_resampling_uses_pinned_not_a_knot_cubic_and_zero_boundary() {
+        let source = [0.0, 1.0, 0.0, 2.0, 1.0];
+        let result = cubic_resample_uniform(&source, 1.0, 0.25, 20);
+        let expected = [
+            0.0,
+            0.861328125,
+            1.234375,
+            1.240234375,
+            1.0,
+            0.634765625,
+            0.265625,
+            0.013671875,
+        ];
+        for (actual, expected) in result.iter().zip(expected) {
+            assert!((actual - expected).abs() < 1.0e-12);
+        }
+        assert!(result[19].abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn s2p_grid_rejects_a_requested_nyquist_overrun() {
+        let options = S2pImportOptions {
+            frequency_step_hz: Some(100.0e6),
+            frequency_max_hz: Some(1.1e9),
+            ..S2pImportOptions::default()
+        };
+        assert!(validate_s2p_options(Seconds(0.5e-9), &options).is_err());
+    }
+
+    #[test]
+    fn s2p_trim_preserves_a_nonzero_pinned_start_index() {
+        let values = [0.0, 0.0, 0.0, 0.1, 0.8, 0.2, 0.0, 0.0];
+        let (trimmed, start) = trim_legacy_impulse_with_start(&values, 3, 3, 1);
+        assert_eq!(start, -1);
+        assert_eq!(trimmed, vec![0.1, 0.8, 0.2]);
+    }
+
+    #[test]
+    fn s2p_default_480k_system_grid_is_admitted_then_auto_trimmed() {
+        let path = std::env::temp_dir().join(format!("pb-s2p-default-{}.s2p", std::process::id()));
+        fs::write(
+            &path,
+            "# GHz S RI R 50\n0.1 0 0 0.7 0 0.02 0 0 0\n1 0 0 0.65 0 0.02 0 0 0\n4 0 0 0.5 0 0.02 0 0 0\n",
+        )
+        .unwrap();
+        let response = parse_touchstone_response_with_options(
+            &path,
+            Seconds(1.0 / (10.0e9 * 32.0)),
+            15_000 * 32,
+            Ohms(100.0),
+            Ohms(100.0),
+            false,
+            S2pImportOptions {
+                frequency_step_hz: Some(100.0e6),
+                frequency_max_hz: Some(1.0e9),
+                source_capacitance_pf: 0.5,
+                load_capacitance_pf: 0.5,
+                output_len: None,
+                trim_min_len: Some(20 * 32),
+                trim_max_len: Some(100 * 32),
+                trim_front_porch: 1,
+            },
+        )
+        .unwrap();
+        assert!(
+            (20 * 32..=100 * 32).contains(&response.impulse_response_volts_per_second.len()),
+            "len={}",
+            response.impulse_response_volts_per_second.len()
+        );
         let _ = fs::remove_file(path);
     }
 

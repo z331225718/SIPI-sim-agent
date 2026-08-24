@@ -2052,7 +2052,7 @@ fn complex_transpose_conjugate(matrix: ComplexMatrix2) -> ComplexMatrix2 {
 
 /// Match PyBERT's uniformly-spaced cubic `interp1d` stage without borrowing a
 /// Python/Scipy runtime. The not-a-knot spline keeps the same endpoint model.
-fn cubic_resample_uniform(
+pub(crate) fn cubic_resample_uniform(
     source: &[f64],
     source_sample_interval_s: f64,
     target_sample_interval_s: f64,
@@ -2149,21 +2149,24 @@ fn trim_legacy_impulse(
     max_length: usize,
     front_porch: usize,
 ) -> Vec<f64> {
+    trim_legacy_impulse_with_start(values, min_length, max_length, front_porch).0
+}
+
+/// Apply PyBERT's bounded impulse window and retain the selected source index
+/// for callers that need to preserve the non-zero trim origin.
+pub(crate) fn trim_legacy_impulse_with_start(
+    values: &[f64],
+    min_length: usize,
+    max_length: usize,
+    front_porch: usize,
+) -> (Vec<f64>, isize) {
     let mut impulse = values.to_vec();
     let half_length = impulse.len() / 2;
-    let maximum_index = impulse
-        .iter()
-        .enumerate()
-        .max_by(|(_, left), (_, right)| left.total_cmp(right))
-        .map_or(0, |(index, _)| index);
+    let maximum_index = first_maximum_index(&impulse);
     if maximum_index < impulse.len() / 4 {
         impulse.rotate_right(half_length);
     }
-    let maximum_index = impulse
-        .iter()
-        .enumerate()
-        .max_by(|(_, left), (_, right)| left.total_cmp(right))
-        .map_or(0, |(index, _)| index);
+    let maximum_index = first_maximum_index(&impulse);
     let derivative_energy = impulse
         .windows(2)
         .map(|pair| (pair[1] - pair[0]).powi(2))
@@ -2191,14 +2194,28 @@ fn trim_legacy_impulse(
     if ending.saturating_sub(beginning) > max_length {
         ending = beginning.saturating_add(max_length).min(impulse.len());
     }
-    impulse[beginning.min(impulse.len())..ending.min(impulse.len())].to_vec()
+    let start = beginning.min(impulse.len());
+    (
+        impulse[start..ending.min(impulse.len())].to_vec(),
+        start as isize - half_length as isize,
+    )
+}
+
+fn first_maximum_index(values: &[f64]) -> usize {
+    let mut maximum = 0;
+    for index in 1..values.len() {
+        if values[index].total_cmp(&values[maximum]).is_gt() {
+            maximum = index;
+        }
+    }
+    maximum
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
         ComplexMatrix2, complex_multiply, complex_right_solve, complex_solve,
-        legacy_power_wave_nudge_v1,
+        legacy_power_wave_nudge_v1, trim_legacy_impulse_with_start,
     };
     use num_complex::Complex64;
 
@@ -2217,6 +2234,19 @@ mod tests {
         assert!(((nudged[0] - nudged[1]).re - 2.0e-9).abs() < 1.0e-15);
         assert_eq!(nudged[0], nudged[3]);
         assert_eq!(nudged[1], nudged[2]);
+    }
+
+    #[test]
+    fn trim_legacy_impulse_uses_first_peak_for_ties_and_zero_inputs() {
+        let tied = [0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let (trimmed, start) = trim_legacy_impulse_with_start(&tied, 2, 2, 1);
+        assert_eq!(start, 0);
+        assert_eq!(trimmed, vec![0.0, 1.0]);
+
+        let flat = [0.0; 8];
+        let (trimmed, start) = trim_legacy_impulse_with_start(&flat, 3, 3, 1);
+        assert_eq!(start, -4);
+        assert_eq!(trimmed, vec![0.0, 0.0, 0.0]);
     }
 
     #[test]

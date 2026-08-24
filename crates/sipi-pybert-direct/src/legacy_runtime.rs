@@ -34,12 +34,13 @@ use serde_yaml::Value;
 use thiserror::Error;
 use yaml_rust2::parser::{Event, EventReceiver, Parser, Tag};
 
+use crate::touchstone::{S2pImportOptions, parse_touchstone_response_with_options};
 use crate::{
     AdditiveNoiseV1, AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, CtleConfigV1,
     DfeConfigV1, FfeConfigV1, Hertz, LegacySimError, LegacySimRequestV1, MetallicLineChannelV1,
     ModulationV1, Ohms, PatternV1, PeriodicNoiseV1, ResourceLimitsV1, RxConfigV1,
     SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, SimulationOutputV1, TimebaseV1, TxConfigV1,
-    ViterbiConfigV1, Volts, forward_real_spectrum, parse_touchstone_response, simulate_native_v1,
+    ViterbiConfigV1, Volts, forward_real_spectrum, simulate_native_v1,
 };
 
 const DEFAULT_NBITS: u64 = 15_000;
@@ -798,27 +799,86 @@ pub fn parse_legacy_config_v1(path: &Path) -> Result<LegacyConfigProjectionV1, L
         .ok_or_else(|| LegacyRuntimeError::ResourceLimit("nbits*nspui overflow".into()))?;
     if raw.use_ch_file.unwrap_or(false) {
         let path = resolve_legacy_data_path(path, raw.ch_file.as_deref())?;
+        let frequency_max_hz = config.f_max_ghz * 1.0e9;
+        let frequency_step_hz = config.f_step_mhz * 1.0e6;
+        let grid_is_supported = frequency_max_hz <= 0.5 / sample_interval;
+        if is_touchstone_path(&path) && !grid_is_supported {
+            return Err(LegacyRuntimeError::Unsupported(
+                "S2P frequency grid exceeds the sample Nyquist limit".into(),
+            ));
+        }
+        let output_len = if config.impulse_length_ns > 0.0 {
+            let requested = config.impulse_length_ns * 1.0e-9 / sample_interval;
+            if !requested.is_finite() || requested < 2.0 || requested > usize::MAX as f64 {
+                return Err(LegacyRuntimeError::ResourceLimit(
+                    "impulse_length exceeds the bounded sample budget".into(),
+                ));
+            }
+            Some(requested.floor() as usize)
+        } else {
+            None
+        };
+        let (trim_min_len, trim_max_len) = if let Some(length) = output_len {
+            (length, length)
+        } else {
+            let nspui = config.nspui as usize;
+            let minimum = 20usize.checked_mul(nspui).ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("S2P trim length overflow".into())
+            })?;
+            let maximum = 100usize.checked_mul(nspui).ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("S2P trim length overflow".into())
+            })?;
+            (minimum, maximum)
+        };
         config.channel_response = Some(
-            parse_touchstone_response(
+            parse_touchstone_response_with_options(
                 &path,
                 Seconds(sample_interval),
                 sample_count,
                 Ohms(config.rs_ohm),
                 Ohms(config.rin_ohm),
                 raw.renumber.unwrap_or(false),
+                S2pImportOptions {
+                    frequency_step_hz: grid_is_supported.then_some(frequency_step_hz),
+                    frequency_max_hz: grid_is_supported.then_some(frequency_max_hz),
+                    source_capacitance_pf: config.cout_pf,
+                    load_capacitance_pf: config.cin_pf,
+                    output_len,
+                    trim_min_len: Some(trim_min_len),
+                    trim_max_len: Some(trim_max_len),
+                    trim_front_porch: 1,
+                },
             )
             .map_err(|error| LegacyRuntimeError::Unsupported(format!("S2P channel: {error}")))?,
         );
     }
     if raw.use_ctle_file.unwrap_or(false) {
         let path = resolve_legacy_data_path(path, raw.ctle_file.as_deref())?;
-        let response = parse_touchstone_response(
+        let frequency_max_hz = config.f_max_ghz * 1.0e9;
+        let frequency_step_hz = config.f_step_mhz * 1.0e6;
+        let grid_is_supported = frequency_max_hz <= 0.5 / sample_interval;
+        if is_touchstone_path(&path) && !grid_is_supported {
+            return Err(LegacyRuntimeError::Unsupported(
+                "CTLE S2P frequency grid exceeds the sample Nyquist limit".into(),
+            ));
+        }
+        let response = parse_touchstone_response_with_options(
             &path,
             Seconds(sample_interval),
             sample_count,
             Ohms(50.0),
             Ohms(50.0),
             raw.renumber.unwrap_or(false),
+            S2pImportOptions {
+                frequency_step_hz: grid_is_supported.then_some(frequency_step_hz),
+                frequency_max_hz: grid_is_supported.then_some(frequency_max_hz),
+                source_capacitance_pf: 0.0,
+                load_capacitance_pf: 0.0,
+                output_len: Some(sample_count),
+                trim_min_len: None,
+                trim_max_len: None,
+                trim_front_porch: 0,
+            },
         )
         .map_err(|error| LegacyRuntimeError::Unsupported(format!("CTLE S2P file: {error}")))?;
         config.ctle_impulse_response_v_per_v = Some(
@@ -831,6 +891,16 @@ pub fn parse_legacy_config_v1(path: &Path) -> Result<LegacyConfigProjectionV1, L
     }
     validate_projection_budgets(&config)?;
     Ok(config)
+}
+
+fn is_touchstone_path(path: &Path) -> bool {
+    matches!(
+        path.extension()
+            .and_then(|value| value.to_str())
+            .map(|value| value.to_ascii_lowercase())
+            .as_deref(),
+        Some("s1p" | "s2p" | "s4p")
+    )
 }
 
 /// Decode only the state mapping emitted by PyBERT's `PyBertCfg` pickle.
