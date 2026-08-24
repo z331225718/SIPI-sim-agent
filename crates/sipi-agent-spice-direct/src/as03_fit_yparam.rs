@@ -1882,6 +1882,23 @@ mod tests {
                 .all(|(a, b)| (*a - b).norm() < 1e-12)
         );
     }
+
+    #[test]
+    fn fixed_line_fixture_s_to_y_regression_checkpoint() {
+        let s = vec![
+            Complex::new(0.01, 0.0),
+            Complex::new(0.8, 0.0),
+            Complex::new(0.8, 0.0),
+            Complex::new(0.01, 0.0),
+        ];
+        let (y, condition) = convert_s_to_y(&s, 2, 50.0, 1.0e12).unwrap();
+        assert!(condition.is_finite());
+        assert!((y[0].re - 0.0862878189950013).abs() < 1.0e-14);
+        assert!((y[1].re + 0.0841883714811892).abs() < 1.0e-14);
+        assert!((y[2].re + 0.0841883714811892).abs() < 1.0e-14);
+        assert!((y[3].re - 0.0862878189950013).abs() < 1.0e-14);
+    }
+
     #[test]
     fn exact_rfm_requires_no_proportional() {
         let o = FitYparamOptions {
