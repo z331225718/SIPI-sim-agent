@@ -16,6 +16,7 @@ import math
 import os
 import re
 import shutil
+import stat
 import struct
 import subprocess
 import tarfile
@@ -87,6 +88,78 @@ def canonical(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
+def _has_reparse_component(path: Path) -> bool:
+    current = Path(path)
+    while True:
+        try:
+            if current.is_symlink():
+                return True
+            result = current.lstat()
+        except FileNotFoundError:
+            result = None
+        except OSError as error:
+            raise RuntimeError("cannot inspect replay-root path component") from error
+        if result is not None and getattr(result, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+            return True
+        parent = current.parent
+        if parent == current:
+            return False
+        current = parent
+
+
+def _validate_external_replay_root(work_root: Path, candidate_repo: Path, upstream_repo: Path) -> dict[str, bool]:
+    if _has_reparse_component(work_root):
+        raise RuntimeError("replay root contains a symlink or reparse point")
+    for label, repo in (("candidate", candidate_repo), ("upstream", upstream_repo)):
+        if not repo.is_dir() or _has_reparse_component(repo):
+            raise RuntimeError(f"{label} repository root is unavailable or reparse-backed")
+    candidate_resolved = candidate_repo.resolve(strict=True)
+    upstream_resolved = upstream_repo.resolve(strict=True)
+    if candidate_resolved == upstream_resolved:
+        raise RuntimeError("candidate and upstream repositories must be distinct")
+    resolved = work_root.resolve(strict=True)
+    if candidate_resolved in resolved.parents or upstream_resolved in resolved.parents or resolved in (candidate_resolved, upstream_resolved):
+        raise RuntimeError("replay root must be outside candidate and upstream repositories")
+    if not work_root.is_dir():
+        raise RuntimeError("replay root must be a directory")
+    try:
+        next(work_root.iterdir())
+    except StopIteration:
+        pass
+    else:
+        raise RuntimeError("replay root must be empty for a fresh run")
+    return {
+        "work_root_path_redacted": True,
+        "work_root_created_new": True,
+        "work_root_outside_candidate_repo": True,
+        "work_root_outside_upstream_repo": True,
+    }
+
+
+def _validate_materialized_root(root: Path, replay_root: Path) -> None:
+    if _has_reparse_component(root) or not root.is_dir():
+        raise RuntimeError("materialized archive root is invalid")
+    resolved_root = root.resolve(strict=True)
+    resolved_parent = replay_root.resolve(strict=True)
+    if resolved_root.parent != resolved_parent or resolved_parent not in resolved_root.parents:
+        raise RuntimeError("materialized archive escaped replay root")
+
+
+def _validate_fixture_path(fixture: Any) -> str:
+    """Accept only a repository-relative POSIX fixture name."""
+    if not isinstance(fixture, str) or not fixture or "\\" in fixture:
+        raise RuntimeError("fixture must use repository-relative POSIX separators")
+    normalized = PurePosixPath(fixture).as_posix()
+    if (
+        PureWindowsPath(normalized).is_absolute()
+        or PureWindowsPath(normalized).drive
+        or PurePosixPath(normalized).is_absolute()
+        or ".." in PurePosixPath(normalized).parts
+    ):
+        raise RuntimeError("fixture must be repository-relative")
+    return normalized
+
+
 def git(repo: Path, *args: str, raw: bool = False) -> bytes | str:
     result = subprocess.run(
         ["git", "-c", "core.autocrlf=false", "-C", str(repo), *args],
@@ -97,16 +170,22 @@ def git(repo: Path, *args: str, raw: bool = False) -> bytes | str:
     return result.stdout if raw else result.stdout.decode("ascii").strip()
 
 
-def archive_repo(repo: Path, commit: str, destination: Path) -> dict[str, Any]:
-    payload = bytes(git(repo, "archive", "--format=tar", commit, raw=True))
+def _extract_archive_payload(payload: bytes, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=False)
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:") as archive:
         root = destination.resolve()
         for member in archive.getmembers():
+            if member.issym() or member.islnk():
+                raise RuntimeError(f"archive links are not allowed: {member.name}")
             target = (destination / member.name).resolve()
             if target != root and root not in target.parents:
                 raise RuntimeError(f"archive path escapes destination: {member.name}")
             archive.extract(member, destination)
+
+
+def archive_repo(repo: Path, commit: str, destination: Path) -> dict[str, Any]:
+    payload = bytes(git(repo, "archive", "--format=tar", commit, raw=True))
+    _extract_archive_payload(payload, destination)
     resolved = str(git(repo, "rev-parse", f"{commit}^{{commit}}"))
     tree = str(git(repo, "rev-parse", f"{resolved}^{{tree}}"))
     return {"commit": resolved, "tree": tree, "archive_sha256": sha256(payload)}
@@ -289,13 +368,22 @@ def run_command(command: list[str], cwd: Path, timeout: int, tool_paths: dict[st
     environment = os.environ.copy()
     cargo_bin = Path.home() / ".cargo" / "bin"
     if cargo_bin.is_dir():
-        environment["PATH"] = str(cargo_bin) + os.pathsep + environment.get("PATH", "")
+        existing = [item for item in environment.get("PATH", "").split(os.pathsep) if item]
+        environment["PATH"] = os.pathsep.join(dict.fromkeys([str(cargo_bin), *existing]))
     # Never inherit wrapper state from the host and make the selected compiler
     # explicit for every Cargo invocation.
     environment.pop("RUSTC_WRAPPER", None)
     environment.pop("RUSTC_WORKSPACE_WRAPPER", None)
+    environment.pop("CARGO_BUILD_RUSTC_WRAPPER", None)
+    environment.pop("CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER", None)
+    environment.pop("RUSTFLAGS", None)
+    environment.pop("CARGO_ENCODED_RUSTFLAGS", None)
+    environment["CARGO_NET_OFFLINE"] = "true"
     if tool_paths is not None and "rustc" in tool_paths:
         environment["RUSTC"] = str(tool_paths["rustc"])
+        environment["CARGO_BUILD_RUSTC"] = str(tool_paths["rustc"])
+    if tool_paths is not None and "cargo" in tool_paths:
+        environment["CARGO"] = str(tool_paths["cargo"])
     if resolved and resolved[0] in {"cargo", "rustc", "uv", "python"}:
         executable = tool_paths.get(resolved[0]) if tool_paths is not None else resolve_executable(resolved[0])
         if executable is None:
@@ -750,21 +838,22 @@ def run_once(
     run_id: str,
     timeout: int,
 ) -> dict[str, Any]:
-    fixture = PurePosixPath(fixture).as_posix()
-    if PureWindowsPath(fixture).is_absolute() or PurePosixPath(fixture).is_absolute() or ".." in PurePosixPath(fixture).parts:
-        raise RuntimeError("fixture must be repository-relative")
+    fixture = _validate_fixture_path(fixture)
     toolchain_report, tool_paths = resolve_toolchain(timeout)
     with tempfile.TemporaryDirectory(prefix=f"sipi-{row.lower()}-") as work:
         work_root = Path(work)
+        custody = _validate_external_replay_root(work_root, candidate_repo, upstream_repo)
         candidate_root = work_root / "candidate"
         upstream_root = work_root / "upstream"
         candidate_identity = archive_repo(candidate_repo, candidate_commit, candidate_root)
+        _validate_materialized_root(candidate_root, work_root)
         if candidate_identity.get("tree") != candidate_tree or candidate_identity.get("archive_sha256") != candidate_archive_sha256:
             raise RuntimeError("candidate archive identity does not match the requested prep commit")
         candidate_archive_fixture_present = (candidate_root / fixture).is_file()
         if not candidate_archive_fixture_present:
             raise RuntimeError("fixed fixture is missing from the candidate archive")
         upstream_identity = archive_repo(upstream_repo, UPSTREAM_COMMIT, upstream_root)
+        _validate_materialized_root(upstream_root, work_root)
         fixture_bytes = (candidate_root / fixture).read_bytes()
         oracle_fixture = upstream_root / fixture
         oracle_fixture.parent.mkdir(parents=True, exist_ok=True)
@@ -778,7 +867,7 @@ def run_once(
         candidate_target = candidate_root / "crates" / "sipi-pybert-direct" / "target"
         candidate_output = work_root / "candidate-output"
         upstream_output = work_root / "upstream-output"
-        build_result = run_command(["cargo", "build", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"], candidate_root, timeout, tool_paths)
+        build_result = run_command(["cargo", "build", "--offline", "--manifest-path", str(candidate_root / "crates/sipi-pybert-direct/Cargo.toml"), "--release", "--locked"], candidate_root, timeout, tool_paths)
         binary = _binary(candidate_target)
         build = build_summary(build_result, binary)
         command = {"PB-03": "sim-rust", "PB-04": "sim-auto", "PB-05": "sim-compare"}[row]
@@ -786,7 +875,7 @@ def run_once(
             candidate_process = run_command([str(binary), command, str(fixture_path), "--output-dir", str(candidate_output)], candidate_root, timeout, tool_paths)
         else:
             candidate_process = {"exit_code": None, "skipped": True}
-        oracle_process = run_command(["uv", "run", "--project", str(upstream_root), "--frozen", "--extra", "native", "pybert", command, str(oracle_fixture), "--output-dir", str(upstream_output)], upstream_root, timeout, tool_paths)
+        oracle_process = run_command(["uv", "run", "--offline", "--project", str(upstream_root), "--frozen", "--extra", "native", "pybert", command, str(oracle_fixture), "--output-dir", str(upstream_output)], upstream_root, timeout, tool_paths)
         candidate_artifact = artifact_summary(candidate_output)
         oracle_artifact = artifact_summary(upstream_output)
         candidate_payload = payload_digest(candidate_artifact, row)
@@ -907,6 +996,7 @@ def run_once(
             "candidate": candidate_identity,
             "upstream": upstream_identity,
             "fixture": fixture_record,
+            "custody": dict(custody, run_root_created_new=True, materialized_archives_created_new=True),
             "build": build,
             "toolchain": toolchain_report,
             "replay": {
@@ -920,8 +1010,24 @@ def run_once(
                 "semantic_gate": semantic_ok,
             },
             "blockers": blockers,
-            "claims": {"payload_parity": bool(candidate_ok and oracle_ok and candidate_payload == oracle_payload and semantic_ok), "global_row_closed": False, "release_approval": False},
-            "non_claims": ["This is one frozen fixture only.", "Wrapper, selection, comparison, and uncovered branches remain open unless their payload gate passes.", "This evidence is not a license decision or release approval."],
+            "claims": (
+                {
+                    "payload_parity": bool(candidate_ok and oracle_ok and candidate_payload == oracle_payload and semantic_ok),
+                    "payload_scope": "fixed_pb03_stable_array_subset",
+                    "whole_payload_parity": False,
+                    "independent_implementation": False,
+                    "global_row_closed": False,
+                    "release_approval": False,
+                }
+                if row == "PB-03"
+                else {"payload_parity": bool(candidate_ok and oracle_ok and candidate_payload == oracle_payload and semantic_ok), "global_row_closed": False, "release_approval": False}
+            ),
+            "non_claims": [
+                "This is one frozen fixture only.",
+                "PB-03 payload parity is only the fixed stable array subset, not whole-payload parity.",
+                "The candidate and oracle do not prove independent implementations.",
+                "Uncovered branches, global parity, product capability, and release approval remain open.",
+            ] if row == "PB-03" else ["This is one frozen fixture only.", "Wrapper, selection, comparison, and uncovered branches remain open unless their payload gate passes.", "This evidence is not a license decision or release approval."],
         }
 
 
@@ -943,9 +1049,12 @@ def parse_run_args(row: str, fixture: str) -> argparse.Namespace:
 
 def run_main(args: argparse.Namespace) -> int:
     try:
+        if args.output.exists() or args.output.is_symlink():
+            raise RuntimeError("output report must be a fresh create-new path")
         report = run_once(args.row, args.candidate_repo.resolve(), args.upstream_repo.resolve(), args.fixture, args.candidate_commit, args.candidate_tree, args.candidate_archive_sha256, args.run_id, args.timeout_seconds)
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        with args.output.open("x", encoding="utf-8", newline="\n") as stream:
+            stream.write(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     except (OSError, RuntimeError, ValueError) as error:
         print(json.dumps({"status": "blocked", "error": str(error)}, sort_keys=True))
         return 2
