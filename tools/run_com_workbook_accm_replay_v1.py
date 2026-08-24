@@ -42,7 +42,8 @@ def sha256(data: bytes) -> str:
 
 def redact(text: str) -> str:
     normalized = text.replace("\\", "/")
-    return re.sub(r"(?i)(?<![A-Za-z0-9_])(?:[A-Za-z]:/|\\\\|//|file://|/(?:users|home|opt|tmp|var|etc)/)[^\s,;)]*", "<abs-path>", normalized)
+    redacted = re.sub(r"(?i)(?<![A-Za-z0-9_])(?:[A-Za-z]:/|\\\\|//|file://|/(?:users|home|opt|tmp|var|etc)/)[^\s,;)]*", "<abs-path>", normalized)
+    return "<abs-path>" if "<abs-path>" in redacted else redacted
 
 
 def safe_relative(value: str) -> PurePosixPath:
@@ -122,10 +123,11 @@ def candidate_inventory(root: Path) -> dict[str, Any]:
 def tool_identity(path: Path, role: str) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink():
         raise ValueError(f"invalid {role} executable")
-    completed = subprocess.run([str(path), "--version"], capture_output=True, text=True, timeout=IDENTITY_TIMEOUT_S, check=False)
+    version_args = ["-flavor", "link", "--version"] if role == "linker" and path.name.lower() == "rust-lld.exe" else ["--version"]
+    completed = subprocess.run([str(path), *version_args], capture_output=True, text=True, timeout=IDENTITY_TIMEOUT_S, check=False)
     if completed.returncode != 0:
         raise RuntimeError(f"{role} version probe failed")
-    return {"role": role, "basename": path.name, "file_sha256": sha256(path.read_bytes()), "version_output_sha256": sha256((completed.stdout + completed.stderr).encode()), "version_exit": completed.returncode, "timeout_s": IDENTITY_TIMEOUT_S, "path_redacted": True}
+    return {"role": role, "basename": path.name, "file_sha256": sha256(path.read_bytes()), "version_args": version_args, "version_output_sha256": sha256((completed.stdout + completed.stderr).encode()), "version_exit": completed.returncode, "timeout_s": IDENTITY_TIMEOUT_S, "path_redacted": True}
 
 
 def binary_identity(path: Path) -> dict[str, Any]:

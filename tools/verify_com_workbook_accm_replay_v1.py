@@ -42,6 +42,10 @@ def hex64(value: Any, label: str) -> None:
 
 def path_free(value: Any) -> None:
     if isinstance(value, str):
+        if value == "<abs-path>":
+            return
+        if "<abs-path>" in value:
+            raise ValueError("embedded redaction token")
         normalized = value.replace("\\", "/")
         if PATH_LEAK.search(normalized) or "/../" in normalized or normalized.endswith("/.."):
             raise ValueError("absolute path leaked")
@@ -117,11 +121,14 @@ def verify_report(path: Path) -> dict[str, Any]:
     if set(toolchain["pre"]) != {"cargo", "rustc", "linker"}:
         raise ValueError("toolchain roles drift")
     for role, item in toolchain["pre"].items():
-        exact(item, {"role", "basename", "file_sha256", "version_output_sha256", "version_exit", "timeout_s", "path_redacted"}, f"{role} identity")
+        exact(item, {"role", "basename", "file_sha256", "version_args", "version_output_sha256", "version_exit", "timeout_s", "path_redacted"}, f"{role} identity")
         if item["role"] != role or not isinstance(item["basename"], str) or Path(item["basename"]).name != item["basename"] or item["version_exit"] != 0 or item["timeout_s"] != 15 or item["path_redacted"] is not True:
             raise ValueError("tool identity invalid")
         hex64(item["file_sha256"], "tool file sha")
         hex64(item["version_output_sha256"], "tool version sha")
+        expected_args = ["-flavor", "link", "--version"] if role == "linker" and item["basename"].lower() == "rust-lld.exe" else ["--version"]
+        if item["version_args"] != expected_args:
+            raise ValueError("tool version probe args drift")
     exact(value["build"], {"command", "exit", "stdout_sha256", "stderr_sha256", "timeout_s", "env_policy", "env_receipt"}, "build")
     if not isinstance(value["build"]["exit"], int) or isinstance(value["build"]["exit"], bool) or not 0 <= value["build"]["exit"] <= 255 or value["build"]["timeout_s"] != 900 or "offline" not in value["build"]["command"] or value["build"]["env_policy"] != "explicit_rustc_wrappers_cleared_offline_incremental_zero":
         raise ValueError("build policy drift")

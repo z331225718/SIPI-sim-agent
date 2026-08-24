@@ -18,9 +18,9 @@ except ImportError:
     from verify_com_workbook_accm_replay_v1 import EXPECTED_FIXTURES, EXPECTED_SOURCE_INVENTORY, SOURCE_PATHS, UPSTREAM, verify_aggregate, verify_report
 
 try:
-    from .run_com_workbook_accm_replay_v1 import FIXTURES, binary_identity, build_env, parse_result_artifact, pinned_blob, run_one, safe_extract, safe_relative
+    from .run_com_workbook_accm_replay_v1 import FIXTURES, binary_identity, build_env, parse_result_artifact, pinned_blob, redact, run_one, safe_extract, safe_relative
 except ImportError:
-    from run_com_workbook_accm_replay_v1 import FIXTURES, binary_identity, build_env, parse_result_artifact, pinned_blob, run_one, safe_extract, safe_relative
+    from run_com_workbook_accm_replay_v1 import FIXTURES, binary_identity, build_env, parse_result_artifact, pinned_blob, redact, run_one, safe_extract, safe_relative
 
 
 def aggregator_module():
@@ -34,7 +34,7 @@ def aggregator_module():
 def valid_report(run_id: str, nonce: str) -> dict[str, object]:
     inventory = copy.deepcopy(EXPECTED_SOURCE_INVENTORY)
     fixtures = {key: {**value, "basename": Path(value["path"]).name, "source_commit": UPSTREAM["commit"]} for key, value in EXPECTED_FIXTURES.items()}
-    tool = lambda role: {"role": role, "basename": f"{role}.exe", "file_sha256": "c" * 64, "version_output_sha256": "d" * 64, "version_exit": 0, "timeout_s": 15, "path_redacted": True}
+    tool = lambda role: {"role": role, "basename": f"{role}.exe", "version_args": ["--version"], "file_sha256": "c" * 64, "version_output_sha256": "d" * 64, "version_exit": 0, "timeout_s": 15, "path_redacted": True}
     fixtures = {key: {**item, "basename": Path(item["path"]).name, "source_commit": UPSTREAM["commit"], "pre_sha256": item["sha256"], "post_sha256": item["sha256"]} for key, item in EXPECTED_FIXTURES.items()}
     receipt = {key: {"entry_basenames": [], "value_sha256": "5" * 64, "path_redacted": True} for key in ("PATH", "LIB", "INCLUDE", "CL", "LINK", "RUSTC", "CARGO_BUILD_RUSTC", "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER")}
     runs = [{"control_vector": [0.0, 0.0], "status": "blocked", "exit": 3, "stdout_sha256": "1" * 64, "stderr_sha256": "2" * 64, "final_metrics": None, "consumer_proof": False, "artifact": None, "blocker": "blocked"}, {"control_vector": [0.0, 0.001], "status": "blocked", "exit": 3, "stdout_sha256": "3" * 64, "stderr_sha256": "4" * 64, "final_metrics": None, "consumer_proof": False, "artifact": None, "blocker": "blocked"}]
@@ -160,6 +160,18 @@ class WorkbookAccmPreparationTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as directory, self.assertRaises(ValueError):
                     verify_report(self.write(Path(directory), "report.json", value))
 
+    def test_exact_redaction_token_is_allowed_but_embedded_is_not(self) -> None:
+        value = valid_report("1" * 64, "a" * 64)
+        value["runs"][0]["blocker"] = "<abs-path>"
+        with tempfile.TemporaryDirectory() as directory:
+            verify_report(self.write(Path(directory), "redacted.json", value))
+        value["runs"][0]["blocker"] = "prefix <abs-path> suffix"
+        with tempfile.TemporaryDirectory() as directory, self.assertRaises(ValueError):
+            verify_report(self.write(Path(directory), "embedded.json", value))
+
+    def test_redact_collapses_multiple_absolute_paths(self) -> None:
+        self.assertEqual(redact(r"failed at C:\secret\one and /var/private/two"), "<abs-path>")
+
     def test_safe_archive_paths_reject_escape_and_drive(self) -> None:
         for name in ("../escape", "C:/escape", "/absolute", "//server/share"):
             with self.subTest(name=name), self.assertRaises(ValueError): safe_relative(name)
@@ -209,7 +221,7 @@ class WorkbookAccmPreparationTests(unittest.TestCase):
             import run_com_workbook_accm_replay_v1 as runner
             import verify_com_workbook_accm_replay_v1 as verifier
         def fake_tool(_, role):
-            return {"role": role, "basename": role + ".exe", "file_sha256": "a" * 64, "version_output_sha256": "b" * 64, "version_exit": 0, "timeout_s": 15, "path_redacted": True}
+            return {"role": role, "basename": role + ".exe", "version_args": ["--version"], "file_sha256": "a" * 64, "version_output_sha256": "b" * 64, "version_exit": 0, "timeout_s": 15, "path_redacted": True}
         def fake_archive(_, destination):
             destination.write_bytes(b"archive")
             return {"command": "archive", "exit": 0, "bytes": 7, "sha256": "c" * 64}
