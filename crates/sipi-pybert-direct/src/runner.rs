@@ -12,10 +12,14 @@ use std::{
 };
 
 use flate2::{Compression, write::DeflateEncoder};
+use serde::{Serialize, Serializer, ser::SerializeMap};
 use serde_json::{Map, Value, json};
 use thiserror::Error;
 
-use crate::{NativeSimulationError, SimulationInputV1, SimulationOutputV1, simulate_native_v1};
+use crate::{
+    NativeSimulationError, RunEventV1, RunStageV1, SimulationInputV1, SimulationOutputV1,
+    simulate_native_v1,
+};
 
 pub const UPSTREAM_COMMIT: &str = "5bf6d7ea0ace261891aaeb611ffc1c267e160afe";
 pub const UPSTREAM_TREE: &str = "5faef6bdb341d444ad65d82a11c0018b15805e24";
@@ -23,7 +27,32 @@ pub const NATIVE_CORE_SOURCE: &str = "native/pybert-core";
 pub const PYTHON_BOUNDARY_SOURCE: &str = "native/pybert-python/src/lib.rs";
 pub const NATIVE_CLI_SCHEMA: &str = "pybert.native-cli-result.v1";
 pub const ERROR_SCHEMA: &str = "pybert.native-cli-error.v1";
-const MAX_ARTIFACT_METADATA_BYTES: usize = 1024 * 1024;
+// The nested SimulationOutputV1 envelope carries the same bounded numeric
+// arrays as the NPZ artifact.  Keep the metadata budget aligned with the
+// existing 16 MiB reference-input boundary instead of publishing an empty
+// placeholder for larger, but still bounded, DuoBinary jitter results.
+const MAX_ARTIFACT_METADATA_BYTES: usize = 16 * 1024 * 1024;
+
+const ROOT_METADATA_KEYS: &[&str] = &[
+    "schema",
+    "input_file",
+    "effective_input",
+    "output",
+    "backend_metadata",
+    "effective_randomness",
+    "diagnostics",
+    "arrays_file",
+    "workflow_metadata",
+    "workflow_diagnostics",
+];
+const DIAGNOSTIC_KEYS: &[&str] = &[
+    "pipeline",
+    "capabilities",
+    "events",
+    "cancellation",
+    "source",
+    "workflow_diagnostics",
+];
 
 /// Row-major numeric data accepted by the content-addressed NPZ writer.
 /// JSON control payloads remain one-dimensional for the v1 wire contract;
@@ -173,6 +202,231 @@ pub struct DirectRunReport {
     pub arrays_path: PathBuf,
 }
 
+#[derive(Default)]
+struct BoundedCountingWriter {
+    bytes: usize,
+    limit: usize,
+    limit_hit: bool,
+}
+
+impl BoundedCountingWriter {
+    fn new(limit: usize) -> Self {
+        Self {
+            limit,
+            ..Self::default()
+        }
+    }
+}
+
+impl io::Write for BoundedCountingWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        let Some(next) = self.bytes.checked_add(bytes.len()) else {
+            self.limit_hit = true;
+            return Err(io::Error::other("native artifact metadata size overflow"));
+        };
+        if next > self.limit {
+            self.limit_hit = true;
+            return Err(io::Error::other(
+                "native artifact metadata preflight limit exceeded",
+            ));
+        }
+        self.bytes = next;
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+type ExtraObjectParts = (Map<String, Value>, Map<String, Value>);
+
+fn split_extra_object(
+    value: Value,
+    reserved: &[&str],
+    label: &str,
+) -> Result<ExtraObjectParts, DirectRunError> {
+    let Value::Object(extra) = value else {
+        return Err(DirectRunError::Output(format!(
+            "workflow {label} must be a JSON object"
+        )));
+    };
+    let mut safe = Map::new();
+    let mut namespaced = Map::new();
+    for (key, value) in extra {
+        if reserved.contains(&key.as_str()) {
+            namespaced.insert(key, value);
+        } else {
+            safe.insert(key, value);
+        }
+    }
+    Ok((safe, namespaced))
+}
+
+#[derive(Serialize)]
+struct MetadataSourceV1 {
+    repository: &'static str,
+    commit: &'static str,
+    tree: &'static str,
+    native_core: &'static str,
+    python_extension_boundary: &'static str,
+}
+
+#[derive(Serialize)]
+struct MetadataEngineDetailsV1<'a> {
+    backend: &'a str,
+    native_simulation_v1: bool,
+    source: &'a str,
+    python_extension_boundary: &'static str,
+}
+
+#[derive(Serialize)]
+struct MetadataBackendV1<'a> {
+    schema: &'a str,
+    run_id: &'a str,
+    engine: MetadataEngineDetailsV1<'a>,
+    metrics: &'a BTreeMap<String, f64>,
+    aborted: bool,
+    effective_seed: Option<u64>,
+}
+
+#[derive(Serialize)]
+struct MetadataRandomnessV1<'a> {
+    prbs_seed: Option<u64>,
+    noise_seed: Option<u64>,
+    noise: &'a Option<Value>,
+}
+
+struct MetadataDiagnosticsV1<'a> {
+    safe: &'a Map<String, Value>,
+    stages: &'a [RunStageV1],
+    events: &'a [RunEventV1],
+}
+
+impl Serialize for MetadataDiagnosticsV1<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        for (key, value) in self.safe {
+            map.serialize_entry(key, value)?;
+        }
+        map.serialize_entry("pipeline", "typed_simulation_input_v1")?;
+        map.serialize_entry("capabilities", self.stages)?;
+        map.serialize_entry("events", self.events)?;
+        map.serialize_entry(
+            "cancellation",
+            "checked_before_and_after_the_bounded_native_call",
+        )?;
+        map.serialize_entry(
+            "source",
+            &MetadataSourceV1 {
+                repository: "pybert",
+                commit: UPSTREAM_COMMIT,
+                tree: UPSTREAM_TREE,
+                native_core: NATIVE_CORE_SOURCE,
+                python_extension_boundary: PYTHON_BOUNDARY_SOURCE,
+            },
+        )?;
+        map.end()
+    }
+}
+
+struct MetadataEnvelopeV1<'a> {
+    safe_metadata: &'a Map<String, Value>,
+    reserved_metadata: &'a Map<String, Value>,
+    reserved_diagnostics: &'a Map<String, Value>,
+    artifact_schema: &'a str,
+    source_file: &'a Path,
+    input: &'a SimulationInputV1,
+    output: &'a SimulationOutputV1,
+    backend_label: &'a str,
+    native_core_backend: bool,
+    backend_source: &'a str,
+    effective_seed: Option<u64>,
+    noise_effective_seed: Option<u64>,
+    noise_metadata: &'a Option<Value>,
+    safe_diagnostics: &'a Map<String, Value>,
+}
+
+impl Serialize for MetadataEnvelopeV1<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        for (key, value) in self.safe_metadata {
+            map.serialize_entry(key, value)?;
+        }
+        if !self.reserved_metadata.is_empty() {
+            map.serialize_entry("workflow_metadata", self.reserved_metadata)?;
+        }
+        if !self.reserved_diagnostics.is_empty() {
+            map.serialize_entry("workflow_diagnostics", self.reserved_diagnostics)?;
+        }
+        // Keep this order and field set in lockstep with the materialized
+        // metadata map below.  Every canonical duplicate is counted here,
+        // including nested arrays/metrics/events and provenance labels.
+        map.serialize_entry("schema", self.artifact_schema)?;
+        map.serialize_entry("input_file", self.source_file)?;
+        map.serialize_entry("effective_input", self.input)?;
+        map.serialize_entry("output", self.output)?;
+        map.serialize_entry(
+            "backend_metadata",
+            &MetadataBackendV1 {
+                schema: &self.output.schema,
+                run_id: &self.output.run_id,
+                engine: MetadataEngineDetailsV1 {
+                    backend: self.backend_label,
+                    native_simulation_v1: self.native_core_backend,
+                    source: self.backend_source,
+                    python_extension_boundary: "same_simulation_input_v1_contract",
+                },
+                metrics: &self.output.metrics,
+                aborted: false,
+                effective_seed: self.effective_seed,
+            },
+        )?;
+        map.serialize_entry(
+            "effective_randomness",
+            &MetadataRandomnessV1 {
+                prbs_seed: self.effective_seed,
+                noise_seed: self.noise_effective_seed,
+                noise: self.noise_metadata,
+            },
+        )?;
+        map.serialize_entry(
+            "diagnostics",
+            &MetadataDiagnosticsV1 {
+                safe: self.safe_diagnostics,
+                stages: &self.output.capabilities.stages,
+                events: &self.output.events,
+            },
+        )?;
+        map.serialize_entry("arrays_file", "arrays.npz")?;
+        map.end()
+    }
+}
+
+fn preflight_metadata_size(envelope: &MetadataEnvelopeV1<'_>) -> Result<(), DirectRunError> {
+    // This is the exact final metadata envelope, serialized through the same
+    // pretty JSON writer as `meta.json`.  It borrows all large values and
+    // stops before the budget boundary, so no `to_value` or large clone can
+    // happen before this gate.
+    let mut writer = BoundedCountingWriter::new(MAX_ARTIFACT_METADATA_BYTES);
+    serde_json::to_writer_pretty(&mut writer, envelope).map_err(|error| {
+        if writer.limit_hit {
+            DirectRunError::Output("native artifact metadata preflight exceeds 16 MiB".into())
+        } else {
+            DirectRunError::Output(format!(
+                "native artifact metadata preflight failed: {error}"
+            ))
+        }
+    })?;
+    Ok(())
+}
+
 /// Parse the exact native JSON contract before deserializing it.
 ///
 /// The upstream core's Rust structs intentionally preserve compatibility with
@@ -205,9 +459,15 @@ pub fn run_sim_native_json(
 }
 
 /// Keep implementation-only arrays available to projected/legacy callers,
-/// while matching the pinned `sim-native` artifact member contract.
+/// while matching the pinned `sim-native` artifact member and metric contract.
+///
+/// The native core retains the requested PRBS seed in its typed metrics for
+/// engine-level callers.  The pinned CLI publishes that seed through its
+/// effective-randomness metadata instead; projecting it into the CLI output
+/// metrics creates a false extra key during complete-output comparison.
 fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
     output.arrays.remove("tx_impulse_v_per_v");
+    output.metrics.remove("effective_prbs_seed");
     output
 }
 
@@ -219,7 +479,7 @@ pub fn run_sim_native_input(
     input_file: &Path,
     output_dir: &Path,
 ) -> Result<DirectRunReport, DirectRunError> {
-    let output = simulate_native_v1(&input)?;
+    let output = native_cli_output(simulate_native_v1(&input)?);
     write_simulation_artifacts(input, input_file, output_dir, output, None)
 }
 
@@ -353,39 +613,17 @@ pub fn write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_a
     output
         .validate()
         .map_err(|error| DirectRunError::Output(error.to_string()))?;
-
+    let (safe_diagnostics, reserved_diagnostics) = match extra_diagnostics {
+        Some(value) => split_extra_object(value, DIAGNOSTIC_KEYS, "diagnostics")?,
+        None => (Map::new(), Map::new()),
+    };
+    let (safe_metadata, reserved_metadata) = match extra_metadata {
+        Some(value) => split_extra_object(value, ROOT_METADATA_KEYS, "metadata")?,
+        None => (Map::new(), Map::new()),
+    };
     let source_file = input_file
         .canonicalize()
         .unwrap_or_else(|_| input_file.to_path_buf());
-    prepare_output_directory(output_dir)?;
-    let mut diagnostics = json!({
-        "pipeline": "typed_simulation_input_v1",
-        "capabilities": output.capabilities.stages,
-        "events": output.events,
-        "cancellation": "checked_before_and_after_the_bounded_native_call",
-        "source": {
-            "repository": "pybert",
-            "commit": UPSTREAM_COMMIT,
-            "tree": UPSTREAM_TREE,
-            "native_core": NATIVE_CORE_SOURCE,
-            "python_extension_boundary": PYTHON_BOUNDARY_SOURCE,
-        },
-    });
-    if let Some(extra_diagnostics) = extra_diagnostics {
-        let Some(base) = diagnostics.as_object_mut() else {
-            return Err(DirectRunError::Output(
-                "workflow diagnostics must be a JSON object".into(),
-            ));
-        };
-        let Value::Object(extra) = extra_diagnostics else {
-            return Err(DirectRunError::Output(
-                "workflow diagnostics must be a JSON object".into(),
-            ));
-        };
-        for (key, value) in extra {
-            base.insert(key, value);
-        }
-    }
     let effective_seed = match &input.pattern {
         crate::PatternV1::Prbs { seed, .. } => Some(*seed),
         crate::PatternV1::ExplicitBits { .. } => None,
@@ -433,11 +671,72 @@ pub fn write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_a
     } else {
         "backend_run_result_reference_payload"
     };
-    let mut metadata = json!({
-        "schema": artifact_schema,
-        "input_file": source_file,
-        "effective_input": serde_json::to_value(&input).map_err(|error| DirectRunError::Output(error.to_string()))?,
-        "backend_metadata": {
+    preflight_metadata_size(&MetadataEnvelopeV1 {
+        safe_metadata: &safe_metadata,
+        reserved_metadata: &reserved_metadata,
+        reserved_diagnostics: &reserved_diagnostics,
+        artifact_schema,
+        source_file: source_file.as_path(),
+        input: &input,
+        output: &output,
+        backend_label,
+        native_core_backend,
+        backend_source,
+        effective_seed,
+        noise_effective_seed,
+        noise_metadata: &noise_metadata,
+        safe_diagnostics: &safe_diagnostics,
+    })?;
+    prepare_output_directory(output_dir)?;
+    let mut diagnostics = Map::new();
+    diagnostics.extend(safe_diagnostics);
+    // Canonical diagnostic fields are inserted after caller extras.  A
+    // hostile workflow payload can only be retained in the namespaced map.
+    diagnostics.insert("pipeline".into(), json!("typed_simulation_input_v1"));
+    diagnostics.insert(
+        "capabilities".into(),
+        json!(output.capabilities.stages.clone()),
+    );
+    diagnostics.insert("events".into(), json!(output.events.clone()));
+    diagnostics.insert(
+        "cancellation".into(),
+        json!("checked_before_and_after_the_bounded_native_call"),
+    );
+    diagnostics.insert(
+        "source".into(),
+        json!({
+            "repository": "pybert",
+            "commit": UPSTREAM_COMMIT,
+            "tree": UPSTREAM_TREE,
+            "native_core": NATIVE_CORE_SOURCE,
+            "python_extension_boundary": PYTHON_BOUNDARY_SOURCE,
+        }),
+    );
+    let nested_output = serde_json::to_value(&output).map_err(|error| {
+        DirectRunError::Output(format!("nested output serialization failed: {error}"))
+    })?;
+    let mut metadata = safe_metadata;
+    if !reserved_metadata.is_empty() {
+        metadata.insert("workflow_metadata".into(), Value::Object(reserved_metadata));
+    }
+    if !reserved_diagnostics.is_empty() {
+        metadata.insert(
+            "workflow_diagnostics".into(),
+            Value::Object(reserved_diagnostics),
+        );
+    }
+    // The typed nested envelope and all flat projections are canonical.  They
+    // are deliberately written last so workflow payloads cannot shadow them.
+    metadata.insert("schema".into(), json!(artifact_schema));
+    metadata.insert("input_file".into(), json!(source_file));
+    metadata.insert(
+        "effective_input".into(),
+        serde_json::to_value(&input).map_err(|error| DirectRunError::Output(error.to_string()))?,
+    );
+    metadata.insert("output".into(), nested_output);
+    metadata.insert(
+        "backend_metadata".into(),
+        json!({
             "schema": output.schema,
             "run_id": output.run_id,
             "engine": {
@@ -449,37 +748,26 @@ pub fn write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_a
             "metrics": output.metrics,
             "aborted": false,
             "effective_seed": effective_seed,
-        },
-        "effective_randomness": {
+        }),
+    );
+    metadata.insert(
+        "effective_randomness".into(),
+        json!({
             "prbs_seed": effective_seed,
             "noise_seed": noise_effective_seed,
             "noise": noise_metadata,
-        },
-        "diagnostics": diagnostics,
-        "arrays_file": "arrays.npz",
-    });
-    if let Some(extra_metadata) = extra_metadata {
-        let Some(base) = metadata.as_object_mut() else {
-            return Err(DirectRunError::Output(
-                "native artifact metadata must be a JSON object".into(),
-            ));
-        };
-        let Value::Object(extra) = extra_metadata else {
-            return Err(DirectRunError::Output(
-                "workflow metadata must be a JSON object".into(),
-            ));
-        };
-        for (key, value) in extra {
-            base.insert(key, value);
-        }
-    }
+        }),
+    );
+    let diagnostics_value = Value::Object(diagnostics);
+    metadata.insert("diagnostics".into(), diagnostics_value.clone());
+    metadata.insert("arrays_file".into(), json!("arrays.npz"));
     let meta_path = output_dir.join("meta.json");
     let arrays_path = output_dir.join("arrays.npz");
     let metadata_bytes = serde_json::to_vec_pretty(&metadata)
         .map_err(|error| DirectRunError::Output(error.to_string()))?;
     if metadata_bytes.len() > MAX_ARTIFACT_METADATA_BYTES {
         return Err(DirectRunError::Output(
-            "native artifact metadata exceeds 1 MiB".into(),
+            "native artifact metadata exceeds 16 MiB".into(),
         ));
     }
     fs::write(&meta_path, metadata_bytes)?;
@@ -491,8 +779,8 @@ pub fn write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_a
     Ok(DirectRunReport {
         input,
         output,
-        metadata,
-        diagnostics,
+        metadata: Value::Object(metadata),
+        diagnostics: diagnostics_value,
         meta_path,
         arrays_path,
     })
@@ -1274,7 +1562,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn native_cli_hides_internal_tx_impulse_only() {
+    fn native_cli_hides_internal_arrays_and_engine_only_metrics() {
         let arrays = BTreeMap::from([
             ("tx_impulse_v_per_v".to_owned(), vec![1.0]),
             ("tx_waveform_v".to_owned(), vec![2.0]),
@@ -1286,7 +1574,7 @@ mod tests {
                 stages: Vec::new(),
                 external_models: Vec::new(),
             },
-            metrics: BTreeMap::new(),
+            metrics: BTreeMap::from([("effective_prbs_seed".to_owned(), 17.0)]),
             events: Vec::new(),
             arrays,
             artifacts: Vec::new(),
@@ -1296,5 +1584,22 @@ mod tests {
 
         assert!(!output.arrays.contains_key("tx_impulse_v_per_v"));
         assert_eq!(output.arrays.get("tx_waveform_v"), Some(&vec![2.0]));
+        assert!(!output.metrics.contains_key("effective_prbs_seed"));
+    }
+
+    #[test]
+    fn metadata_preflight_counter_is_bounded_and_checked() {
+        let mut writer = BoundedCountingWriter::new(3);
+        assert!(io::Write::write_all(&mut writer, b"1234").is_err());
+        assert!(writer.limit_hit);
+
+        let writer = BoundedCountingWriter {
+            bytes: usize::MAX,
+            limit: usize::MAX,
+            limit_hit: false,
+        };
+        let mut writer = writer;
+        assert!(io::Write::write_all(&mut writer, b"1").is_err());
+        assert!(writer.limit_hit);
     }
 }

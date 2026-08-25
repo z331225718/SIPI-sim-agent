@@ -1,12 +1,15 @@
 use std::{collections::BTreeMap, fs, io::Read};
 
 use flate2::read::DeflateDecoder;
+use serde_json::json;
 
 use sipi_pybert_direct::{
-    AdditiveNoiseV1, AnalysisConfigV1, ArrayDTypeV1, ChannelInputV1, ChannelResponseV1,
-    FfeConfigV1, Hertz, ModulationV1, NumericArrayV1, Ohms, PatternV1, ResourceLimitsV1,
-    RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, TxConfigV1, TypedArrayV1, Volts,
-    npz_bytes_nd, npz_bytes_typed_nd, run_sim_native_json, strict_simulation_input_json,
+    AdditiveNoiseV1, AnalysisConfigV1, ArrayDTypeV1, ArtifactRefV1, ChannelInputV1,
+    ChannelResponseV1, FfeConfigV1, Hertz, ModulationV1, NumericArrayV1, Ohms, PatternV1,
+    ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
+    SimulationOutputV1, TxConfigV1, TypedArrayV1, Volts, npz_bytes_nd, npz_bytes_typed_nd,
+    run_sim_native_json, sha256_bytes, strict_simulation_input_json, write_simulation_artifacts,
+    write_simulation_artifacts_with_schema_and_backend,
 };
 
 fn input() -> SimulationInputV1 {
@@ -86,11 +89,385 @@ fn direct_run_writes_upstream_artifact_names_and_metadata() {
         report.metadata["backend_metadata"]["engine"]["backend"],
         "rust"
     );
+    let nested = serde_json::from_value::<SimulationOutputV1>(report.metadata["output"].clone())
+        .expect("nested SimulationOutputV1 envelope");
+    assert_eq!(nested, report.output);
+    assert_eq!(
+        report.metadata["backend_metadata"]["schema"],
+        report.metadata["output"]["schema"]
+    );
+    assert_eq!(
+        report.metadata["backend_metadata"]["run_id"],
+        report.metadata["output"]["runId"]
+    );
+    assert_eq!(
+        report.metadata["backend_metadata"]["metrics"],
+        report.metadata["output"]["metrics"]
+    );
+    assert_eq!(
+        report.metadata["diagnostics"]["capabilities"],
+        report.metadata["output"]["capabilities"]["stages"]
+    );
+    assert_eq!(
+        report.metadata["diagnostics"]["events"],
+        report.metadata["output"]["events"]
+    );
+    assert!(
+        report.metadata["backend_metadata"]["metrics"]
+            .get("effective_prbs_seed")
+            .is_none()
+    );
+    assert_eq!(report.metadata["effective_randomness"]["prbs_seed"], 17);
+    assert!(report.metadata["output"]["artifacts"].is_array());
     assert!(!report.output.arrays.contains_key("tx_impulse_v_per_v"));
     assert_eq!(report.diagnostics["pipeline"], "typed_simulation_input_v1");
     assert!(output_path.join("meta.json").is_file());
     assert!(output_path.join("arrays.npz").is_file());
     assert!(fs::metadata(output_path.join("arrays.npz")).unwrap().len() > 22);
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn reserved_workflow_extras_cannot_shadow_nested_or_flat_output() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-reserved-extra-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let output_path = root.join("out");
+    let request = input();
+    let input_json = serde_json::to_vec(&request).expect("serialize input");
+    fs::write(&input_path, &input_json).expect("input");
+    let baseline = run_sim_native_json(&input_json, &input_path, &output_path).expect("run");
+    let safe_output_path = root.join("safe-out");
+    let report = write_simulation_artifacts_with_schema_and_backend(
+        request,
+        &input_path,
+        &safe_output_path,
+        baseline.output.clone(),
+        Some(json!({
+            "pipeline": "evil-pipeline",
+            "capabilities": ["evil-capability"],
+            "events": [{"stage": "evil-event"}],
+            "comparison": {"marker": true}
+        })),
+        "pybert.native-cli-result.v1",
+        "rust",
+        Some(json!({
+            "schema": "evil-schema",
+            "output": {"schema": "evil-output"},
+            "backend_metadata": {"engine": {"backend": "evil-backend"}},
+            "safe_marker": true
+        })),
+    )
+    .expect("reserved extras are isolated");
+
+    let nested = serde_json::from_value::<SimulationOutputV1>(report.metadata["output"].clone())
+        .expect("nested output");
+    assert_eq!(nested, baseline.output);
+    assert_eq!(
+        report.metadata["backend_metadata"]["metrics"],
+        report.metadata["output"]["metrics"]
+    );
+    assert_eq!(
+        report.metadata["diagnostics"]["capabilities"],
+        report.metadata["output"]["capabilities"]["stages"]
+    );
+    assert_eq!(
+        report.metadata["diagnostics"]["events"],
+        report.metadata["output"]["events"]
+    );
+    assert_eq!(
+        report.metadata["diagnostics"]["pipeline"],
+        "typed_simulation_input_v1"
+    );
+    assert_eq!(report.metadata["diagnostics"]["comparison"]["marker"], true);
+    assert_eq!(report.metadata["safe_marker"], true);
+    assert_eq!(
+        report.metadata["workflow_metadata"]["output"]["schema"],
+        "evil-output"
+    );
+    assert_eq!(
+        report.metadata["workflow_metadata"]["backend_metadata"]["engine"]["backend"],
+        "evil-backend"
+    );
+    assert_eq!(
+        report.metadata["workflow_diagnostics"]["pipeline"],
+        "evil-pipeline"
+    );
+    assert_eq!(
+        report.metadata["workflow_diagnostics"]["capabilities"],
+        json!(["evil-capability"])
+    );
+    assert_eq!(
+        report.metadata["workflow_diagnostics"]["events"],
+        json!([{"stage": "evil-event"}])
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn non_empty_artifact_refs_round_trip_and_native_arrays_match_npz() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-artifact-ref-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let output_path = root.join("out");
+    let request = input();
+    let input_json = serde_json::to_vec(&request).expect("serialize input");
+    fs::write(&input_path, &input_json).expect("input");
+    let baseline =
+        run_sim_native_json(&input_json, &input_path, &root.join("baseline")).expect("run");
+    fs::create_dir_all(&output_path).expect("output");
+    let payload = b"artifact-ref-payload-v1";
+    let payload_path = output_path.join("payload.bin");
+    fs::write(&payload_path, payload).expect("payload");
+    let mut output = baseline.output.clone();
+    output.artifacts.push(ArtifactRefV1 {
+        name: "payload".into(),
+        schema: "pybert.payload.v1".into(),
+        relative_path: "payload.bin".into(),
+        mime_type: "application/octet-stream".into(),
+        sha256: sha256_bytes(payload),
+        byte_length: payload.len() as u64,
+    });
+    let report =
+        write_simulation_artifacts(request, &input_path, &output_path, output.clone(), None)
+            .expect("artifact ref output");
+    let disk_metadata: serde_json::Value =
+        serde_json::from_slice(&fs::read(&report.meta_path).expect("meta on disk"))
+            .expect("valid metadata");
+    let disk_output = serde_json::from_value::<SimulationOutputV1>(disk_metadata["output"].clone())
+        .expect("typed output on disk");
+    assert_eq!(disk_output, output);
+    let artifact = &disk_output.artifacts[0];
+    assert_eq!(artifact.name, "payload");
+    assert_eq!(artifact.schema, "pybert.payload.v1");
+    assert_eq!(artifact.relative_path, "payload.bin");
+    assert_eq!(artifact.mime_type, "application/octet-stream");
+    assert_eq!(artifact.sha256, sha256_bytes(payload));
+    assert_eq!(artifact.byte_length, payload.len() as u64);
+    assert_eq!(
+        fs::metadata(&payload_path).expect("payload metadata").len(),
+        artifact.byte_length
+    );
+    assert_eq!(
+        sha256_bytes(&fs::read(&payload_path).expect("payload bytes")),
+        artifact.sha256
+    );
+
+    let expected_arrays = output
+        .arrays
+        .iter()
+        .map(|(name, values)| {
+            (
+                name.clone(),
+                NumericArrayV1 {
+                    shape: vec![values.len()],
+                    values: values.clone(),
+                },
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    assert_eq!(
+        fs::read(&report.arrays_path).expect("arrays on disk"),
+        npz_bytes_nd(&expected_arrays).expect("expected native NPZ")
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn metadata_preflight_rejects_large_nested_arrays_before_materialization() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-metadata-preflight-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let output_path = root.join("out");
+    let request = input();
+    fs::write(
+        &input_path,
+        serde_json::to_vec(&request).expect("input json"),
+    )
+    .expect("input");
+    let output = SimulationOutputV1 {
+        schema: SIMULATION_SCHEMA_V1.into(),
+        run_id: "oversized-output".into(),
+        capabilities: sipi_pybert_direct::EngineCapabilitiesV1 {
+            stages: Vec::new(),
+            external_models: Vec::new(),
+        },
+        metrics: BTreeMap::new(),
+        events: Vec::new(),
+        arrays: BTreeMap::from([("huge".into(), vec![0.0; 5_000_000])]),
+        artifacts: Vec::new(),
+    };
+    let error = write_simulation_artifacts(request, &input_path, &output_path, output, None)
+        .expect_err("large nested output must fail closed");
+    assert!(error.to_string().contains("preflight"));
+    assert!(
+        !output_path.exists(),
+        "preflight runs before output allocation"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn metadata_preflight_counts_metrics_projection_before_materialization() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-metadata-metrics-preflight-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let output_path = root.join("out");
+    let request = input();
+    fs::write(
+        &input_path,
+        serde_json::to_vec(&request).expect("input json"),
+    )
+    .expect("input");
+    let metrics = (0..300_000)
+        .map(|index| (format!("metric_{index:06}"), 1.0))
+        .collect::<BTreeMap<_, _>>();
+    let output = SimulationOutputV1 {
+        schema: SIMULATION_SCHEMA_V1.into(),
+        run_id: "oversized-metrics".into(),
+        capabilities: sipi_pybert_direct::EngineCapabilitiesV1 {
+            stages: Vec::new(),
+            external_models: Vec::new(),
+        },
+        metrics,
+        events: Vec::new(),
+        arrays: BTreeMap::new(),
+        artifacts: Vec::new(),
+    };
+    let error = write_simulation_artifacts(request, &input_path, &output_path, output, None)
+        .expect_err("large duplicated metrics must fail closed");
+    assert!(error.to_string().contains("preflight"));
+    assert!(
+        !output_path.exists(),
+        "preflight runs before output allocation"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn metadata_preflight_counts_capabilities_and_events_projection_before_materialization() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-metadata-events-preflight-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let output_path = root.join("out");
+    let request = input();
+    fs::write(
+        &input_path,
+        serde_json::to_vec(&request).expect("input json"),
+    )
+    .expect("input");
+    let stages = vec![
+        sipi_pybert_direct::RunStageV1::Validate,
+        sipi_pybert_direct::RunStageV1::ChannelResponse,
+        sipi_pybert_direct::RunStageV1::TxProcessing,
+        sipi_pybert_direct::RunStageV1::RxEqualization,
+        sipi_pybert_direct::RunStageV1::DfeAdaptation,
+        sipi_pybert_direct::RunStageV1::ViterbiFec,
+        sipi_pybert_direct::RunStageV1::JitterAnalysis,
+        sipi_pybert_direct::RunStageV1::StatisticalEye,
+        sipi_pybert_direct::RunStageV1::ResultAssembly,
+    ];
+    let message = "e".repeat(1_000_000);
+    let events = stages
+        .iter()
+        .enumerate()
+        .map(|(sequence, stage)| sipi_pybert_direct::RunEventV1 {
+            run_id: "oversized-events".into(),
+            sequence: sequence as u64,
+            stage: *stage,
+            stage_progress: 1.0,
+            total_progress: (sequence + 1) as f64 / stages.len() as f64,
+            message: Some(message.clone()),
+        })
+        .collect();
+    let output = SimulationOutputV1 {
+        schema: SIMULATION_SCHEMA_V1.into(),
+        run_id: "oversized-events".into(),
+        capabilities: sipi_pybert_direct::EngineCapabilitiesV1 {
+            stages,
+            external_models: vec!["capability-".repeat(200_000)],
+        },
+        metrics: BTreeMap::new(),
+        events,
+        arrays: BTreeMap::new(),
+        artifacts: Vec::new(),
+    };
+    let error = write_simulation_artifacts(request, &input_path, &output_path, output, None)
+        .expect_err("large duplicated capability/event payload must fail closed");
+    assert!(error.to_string().contains("preflight"));
+    assert!(
+        !output_path.exists(),
+        "preflight runs before output allocation"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn metadata_preflight_counts_schema_and_backend_labels_before_materialization() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-metadata-label-preflight-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let output_path = root.join("out");
+    let request = input();
+    fs::write(
+        &input_path,
+        serde_json::to_vec(&request).expect("input json"),
+    )
+    .expect("input");
+    let artifact_schema = "s".repeat(9 * 1024 * 1024);
+    let backend_label = "b".repeat(9 * 1024 * 1024);
+    let output = SimulationOutputV1 {
+        schema: SIMULATION_SCHEMA_V1.into(),
+        run_id: "oversized-labels".into(),
+        capabilities: sipi_pybert_direct::EngineCapabilitiesV1 {
+            stages: Vec::new(),
+            external_models: Vec::new(),
+        },
+        metrics: BTreeMap::new(),
+        events: Vec::new(),
+        arrays: BTreeMap::new(),
+        artifacts: Vec::new(),
+    };
+    let error = write_simulation_artifacts_with_schema_and_backend(
+        request,
+        &input_path,
+        &output_path,
+        output,
+        None,
+        &artifact_schema,
+        &backend_label,
+        None,
+    )
+    .expect_err("large schema/backend labels must fail closed");
+    assert!(error.to_string().contains("preflight"));
+    assert!(
+        !output_path.exists(),
+        "preflight runs before output allocation"
+    );
     let _ = fs::remove_dir_all(root);
 }
 

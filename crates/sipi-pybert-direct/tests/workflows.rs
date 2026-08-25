@@ -538,7 +538,7 @@ fn compare_consumes_full_metadata_and_diagnostics_payload() {
     );
     assert_eq!(
         report.metadata["backend_metadata"]["engine"]["backend"],
-        "python"
+        "external_reference"
     );
     let _ = fs::remove_dir_all(root);
 }
