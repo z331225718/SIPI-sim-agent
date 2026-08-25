@@ -153,6 +153,20 @@ migration rows 仍为 open 的总状态。下一步只允许二选一：补充�
 数组 residual evidence，或保留该 profile 为 scoped numeric observation；不得为了
 关账而放宽门槛、拟合 S 参数或抹除 PE 实质差异。
 
+**2026-08-25 v11 upstream-first successor：** 新增
+[`upstream-integration-ledger.v11`](docs/baselines/upstream-integration-ledger.v11.yaml)，以
+clean candidate `e7e9882e`、tree `6bf982df` 和
+`git -c core.autocrlf=true archive --format=tar` SHA
+`4dce7e63ae169f5d1659549ac10433c3befa1f36641ce124719b1abb2de31336`
+（`52152320` bytes）绑定 v10 successor。AS-04 更新为 v2 best-trial frozen
+artifact custody，AS-06 更新为 v3 native caller custody/真实 CLI-output protocol；二者
+仍受 external solver、E2E/parity blockers 约束。PB-01 新增 bounded class-pickle
+compatibility observation，默认 dict 语义保持不变，不代表 branch/global parity 或 release。
+COM-01/02 仅记录 trusted-workbook `Do_White_Noise` source-unimplemented、
+Wiener-Hopf-only diagnostic；不进入通用 DTO/数值链，公共 JSON 不得注入。v1-v10
+保持 immutable；15/15 rows 仍 open/scoped，release-ready=0，保留 no-S-fit、impulse-only、
+no-global-parity/non-release 约束。
+
 以下第 1 节及之后内容是 v0.2 历史计划。其 checklist 继续供旧 evidence/verifier
 解释来源，不再决定 v0.3 的功能优先级。
 
