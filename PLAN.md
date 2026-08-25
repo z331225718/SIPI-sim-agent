@@ -79,6 +79,22 @@ clean candidate `a8a97139`、tree `be7b2b25` 与显式
 不宣称 global parity、release 或产品 promotion；COM PDB 仍 local/nonpublish。15 行仍 open，
 release-ready=0。
 
+**2026-08-25 v10 upstream-first 治理收口：** 新增
+[`upstream-integration-ledger.v10`](docs/baselines/upstream-integration-ledger.v10.yaml)，绑定当前
+HEAD `f628d7f0` 及 `01323d9c`、`d55cce1b`、`6f52e53f`、`85955389`、`f50dc6b0`
+的最新 source-map/NOTICE 变化。AS-01/02 按 owner 的 no-S-parameter-fit 政策
+excluded，AS-03 retained 为 Y-domain reference-only，均不称为实现完成；AS-05
+portable staging 已 direct-port 但 external solver 保留 trusted/non-concurrent roots；
+AS-06 记录 attested external ngspice RFM execution，仍不等于 solver correctness 或
+numeric parity。PB-02 三场景 native arrays/metrics exact diagnostic 仍被 upstream
+flat envelope 缺少 nested output 阻塞，Temp report 不进入 formal evidence，也不宣称
+global parity；PB-04/05 external-asset branches retained。COM-02 仅记录 trusted workbook
+port order 与 opaque winner final metrics 的 unbound manual/local two-case observation，
+不是 formal evidence，且不由 v4 支持或绑定；v4 evidence 仅为 historical scoped evidence。
+SI no-fit、channel impulse-only，仍非 global parity/release。15/15 rows 仍 open/scoped，release-ready=0；
+当前 remaining 为 owner disposition、upstream complete envelope、external solver/assets、
+global parity 与 release evidence，见 v10 audit。
+
 **2026-08-24 PyBERT metallic/CTLE 外部复核：** Rust 线性重采样已修正为 pinned
 `interp1d(..., fill_value=0)` 的真实时间轴边界语义。普通 `3 GHz / 10 GHz` 非整数网格在两次
 clean-archive replay 中完成 17/17 stage payload 对照；near-integral 两点网格则被 pinned
