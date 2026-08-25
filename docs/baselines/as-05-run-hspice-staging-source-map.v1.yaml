@@ -1,0 +1,91 @@
+schema: sipi.as-05-run-hspice-staging-source-map.v1
+status: additive_direct_port_inventory
+scope: include-lib-staging-alter-output-contract
+claims:
+  solver_correctness: false
+  numeric_parity: false
+  touchstone_s_element_fit: false
+  staging_hostile_writer_proof: false
+  staging_scope: trusted_non_concurrent_source_and_output_roots
+  pre_post_identity: best_effort_drift_detection_only
+  windows_reparse_test: optional_supplemental
+  staging_failure_cleanup: reverse_remove_current_call_targets_with_explicit_cleanup_errors
+source:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_git_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_byte_count: 1067
+  license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - upstream: src/agent_spice/hspice/audit.py
+    upstream_git_blob_sha1: 0651fe8a6ebc11423ceb9a55305b0cdf9dae2641
+    upstream_byte_count: 2676
+    upstream_sha256: 47424952b248e7fadb64f8ad9f863f0213b484ae2ac87cc56798fa251c4aed82
+    role: directive and include/library audit
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/hspice/alter.py
+    upstream_git_blob_sha1: d162dc2a6c5a779625ae9fd736c35147b49fbebf
+    upstream_byte_count: 1924
+    upstream_sha256: 5a18f537615b3276bb7c8b4d751e65e7dd21e17b1f5d3ab43d1fa732eb065bf4
+    role: deterministic base and .alter case splitting
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/hspice/converter.py
+    upstream_git_blob_sha1: 1bae09abf2cd52bff7c173311da9fee1458f3ca3
+    upstream_byte_count: 5429
+    upstream_sha256: b33596007cbaa435cc1527677661d6e94a3779c20fd84d8c7f2640e84723e7dd
+    role: backend conversion and nested dependency conversion
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/hspice/results.py
+    upstream_git_blob_sha1: 360b48be3accf8ae455ad9542ad1fc0dcd782779
+    upstream_byte_count: 1902
+    upstream_sha256: e9d472e81de5083ba2ffe4631e5ee64114c42fbceda179b6eb686c58394e1cfe
+    role: measurement and waveform artifact parsing
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/hspice/manifest.py
+    upstream_git_blob_sha1: 35d594ba7e5db9ab87f70abf562004b5ef876e51
+    upstream_byte_count: 2927
+    upstream_sha256: 503fe6884614c5f0c5009535bad1e2f50642a15b398cf38ef667acf4a2458073
+    role: compatibility report and output contract shape
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/cli.py
+    upstream_git_blob_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+    upstream_byte_count: 135330
+    upstream_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+    role: recursive local dependency staging and backend dispatch
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/backend/base.py
+    upstream_git_blob_sha1: 0faf79c29d4f65529de408ee7dd757e28bba7de0
+    upstream_byte_count: 1508
+    upstream_sha256: eada7c38a7a7700882582e5fd0746e1e1f7736c6ba038e4b6027932199136201
+    role: retained external process result boundary
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+  - upstream: src/agent_spice/backend/ngspice.py
+    upstream_git_blob_sha1: e9d1952bf1b43ad9a89bae95f1724b893e8db6b8
+    upstream_byte_count: 2123
+    upstream_sha256: eca6a855df25f44169d13f576f2c169596cfc6de29ef45c4829150d20b740672
+    role: ngspice backend dispatch and caller-run directory
+    rust: crates/sipi-agent-spice-direct/src/lib.rs
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/lib.rs
+  public_entry: run_hspice
+  portable_branches:
+    - recursive-relative-include-lib-staging
+    - missing-and-outside-dependency-blocking
+    - absolute-reference-redaction
+    - nested-reference-sanitization-before-conversion-and-write
+    - portable-relative-component-admission-and-device-name-blocking
+    - symlink-reparse-and-owned-artifact-collision-blocking
+    - bounded-source-staged-identity-and-physical-create-new-receipts
+    - checked-source-plus-staged-byte-budget-and-create-cleanup
+    - alter-case-splitting
+    - measure-probe-contract
+    - bounded-result-artifact-consumption
+  external_runtime_boundary:
+    - native-engine
+    - ngspice
+    - Xyce
+    - xdm_bdl

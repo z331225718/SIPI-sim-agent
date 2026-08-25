@@ -16,8 +16,8 @@ pub mod fit_sparam;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Formatter};
-use std::fs;
-use std::io::{self, Read};
+use std::fs::{self, OpenOptions};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use std::sync::{
@@ -78,6 +78,8 @@ const MAX_EXTERNAL_PIPE_BYTES: usize = 8 * 1024 * 1024;
 const MAX_EXTERNAL_TRANSCRIPT_BYTES: usize = 8 * 1024 * 1024;
 const MAX_EXTERNAL_COMBINED_PARSE_BYTES: usize = 16 * 1024 * 1024;
 const MAX_EXTERNAL_ARTIFACT_BYTES: usize = 8 * 1024 * 1024;
+const MAX_DEPENDENCY_FILE_BYTES: u64 = 16 * 1024 * 1024;
+const MAX_STAGED_DEPENDENCY_FILE_BYTES: u64 = MAX_DEPENDENCY_FILE_BYTES;
 
 /// Project-level input accepted by the pinned `project.py` path.
 ///
@@ -249,6 +251,448 @@ pub(crate) fn file_sha256(path: &Path) -> Result<String, DirectPortError> {
         ));
     }
     Ok(format!("{:x}", digest.finalize()))
+}
+
+fn dependency_reference_is_absolute(reference: &str) -> bool {
+    let bytes = reference.as_bytes();
+    Path::new(reference).is_absolute()
+        || reference.starts_with('/')
+        || reference.starts_with('\\')
+        || (bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':')
+}
+
+fn redacted_dependency_reference(reference: &str) -> String {
+    if !dependency_reference_is_absolute(reference) {
+        return reference.to_owned();
+    }
+    let basename = reference
+        .replace('\\', "/")
+        .rsplit('/')
+        .next()
+        .filter(|value| !value.is_empty())
+        .unwrap_or("unnamed")
+        .chars()
+        .map(|value| {
+            if value.is_ascii_alphanumeric() || matches!(value, '.' | '-' | '_') {
+                value
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>();
+    let digest = Sha256::digest(reference.as_bytes());
+    format!("<absolute:{basename}:{:x}>", digest)
+}
+
+fn redact_deck_line(line: &str) -> String {
+    let leading = line.len() - line.trim_start().len();
+    let trimmed = &line[leading..];
+    let Some((directive, rest)) = trimmed.split_once(char::is_whitespace) else {
+        return line.to_owned();
+    };
+    if !matches!(
+        directive.to_ascii_lowercase().as_str(),
+        ".include" | ".inc" | ".lib"
+    ) {
+        return line.to_owned();
+    }
+    let rest_start = trimmed.len() - rest.len();
+    let rest_trimmed = rest.trim_start();
+    let token_offset = rest_start + (rest.len() - rest_trimmed.len());
+    let quote = rest_trimmed
+        .chars()
+        .next()
+        .filter(|value| *value == '\'' || *value == '"');
+    let token_len = if let Some(quote) = quote {
+        rest_trimmed[quote.len_utf8()..]
+            .find(quote)
+            .map(|index| index + quote.len_utf8())
+            .unwrap_or(rest_trimmed.len())
+            + quote.len_utf8()
+    } else {
+        rest_trimmed
+            .find(char::is_whitespace)
+            .unwrap_or(rest_trimmed.len())
+    };
+    let raw_token = &rest_trimmed[..token_len.min(rest_trimmed.len())];
+    let unquoted = raw_token.trim_matches(['\'', '"']);
+    if !dependency_reference_is_absolute(unquoted) {
+        return line.to_owned();
+    }
+    let replacement = if let Some(quote) = quote {
+        format!(
+            "{}{}{}",
+            quote,
+            redacted_dependency_reference(unquoted),
+            quote
+        )
+    } else {
+        redacted_dependency_reference(unquoted)
+    };
+    let token_end = token_offset + raw_token.len();
+    format!(
+        "{}{}{}{}",
+        &line[..leading + token_offset],
+        replacement,
+        &line[leading + token_end..],
+        ""
+    )
+}
+
+fn redact_deck_text(text: &str) -> String {
+    let mut result = text
+        .lines()
+        .map(redact_deck_line)
+        .collect::<Vec<_>>()
+        .join("\n");
+    if text.ends_with('\n') {
+        result.push('\n');
+    }
+    result
+}
+
+fn redacted_audit(audit: &DeckAudit) -> DeckAudit {
+    DeckAudit {
+        directive_counts: audit.directive_counts.clone(),
+        includes: audit
+            .includes
+            .iter()
+            .map(|value| redacted_dependency_reference(value))
+            .collect(),
+        libraries: audit
+            .libraries
+            .iter()
+            .map(|library| LibraryReference {
+                path: redacted_dependency_reference(&library.path),
+                section: library.section.clone(),
+            })
+            .collect(),
+        unsupported_directives: audit.unsupported_directives.clone(),
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct DependencyIdentity {
+    bytes: u64,
+    modified: Option<SystemTime>,
+    file_id: same_file::Handle,
+}
+
+fn dependency_file_id(path: &Path) -> Result<same_file::Handle, DirectPortError> {
+    // same-file uses the native dev/inode identity on Unix and the native
+    // volume serial/file index pair on Windows, without unstable MetadataExt
+    // methods. Failure is typed rather than falling back to path strings.
+    same_file::Handle::from_path(path).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "dependency file identity unavailable: {error}"
+        ))
+    })
+}
+
+fn dependency_file_id_from_handle(file: &fs::File) -> Result<same_file::Handle, DirectPortError> {
+    same_file::Handle::from_file(file.try_clone().map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "dependency file identity unavailable: {error}"
+        ))
+    })?)
+    .map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "dependency file identity unavailable: {error}"
+        ))
+    })
+}
+
+fn dependency_identity(
+    path: &Path,
+    metadata: &fs::Metadata,
+) -> Result<DependencyIdentity, DirectPortError> {
+    Ok(DependencyIdentity {
+        bytes: metadata.len(),
+        modified: metadata.modified().ok(),
+        file_id: dependency_file_id(path)?,
+    })
+}
+
+fn dependency_identity_for_handle(
+    file: &fs::File,
+    metadata: &fs::Metadata,
+) -> Result<DependencyIdentity, DirectPortError> {
+    Ok(DependencyIdentity {
+        bytes: metadata.len(),
+        modified: metadata.modified().ok(),
+        file_id: dependency_file_id_from_handle(file)?,
+    })
+}
+
+fn metadata_is_reparse(metadata: &fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        metadata.file_attributes() & 0x400 != 0
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = metadata;
+        false
+    }
+}
+
+fn reject_dependency_reparse_chain(path: &Path) -> Result<(), DirectPortError> {
+    for ancestor in path.ancestors() {
+        match fs::symlink_metadata(ancestor) {
+            Ok(metadata) if metadata.file_type().is_symlink() || metadata_is_reparse(&metadata) => {
+                return Err(DirectPortError::UnsupportedExecution(
+                    "dependency path contains a symlink or reparse component".to_owned(),
+                ));
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(DirectPortError::UnsupportedExecution(format!(
+                    "dependency path identity could not be inspected: {error}"
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn read_dependency_once(path: &Path) -> Result<(Vec<u8>, DependencyIdentity), DirectPortError> {
+    reject_dependency_reparse_chain(path)?;
+    let before_path = fs::symlink_metadata(path).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!("dependency identity unavailable: {error}"))
+    })?;
+    if !before_path.is_file()
+        || before_path.file_type().is_symlink()
+        || metadata_is_reparse(&before_path)
+    {
+        return Err(DirectPortError::UnsupportedExecution(
+            "dependency must be a regular non-symlink file".to_owned(),
+        ));
+    }
+    let before = dependency_identity(path, &before_path)?;
+    if before.bytes > MAX_DEPENDENCY_FILE_BYTES {
+        return Err(DirectPortError::UnsupportedExecution(
+            "dependency exceeds the bounded 16 MiB file budget".to_owned(),
+        ));
+    }
+    let mut file = fs::File::open(path).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!("dependency could not be opened: {error}"))
+    })?;
+    let handle_before = dependency_identity_for_handle(
+        &file,
+        &file.metadata().map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!(
+                "dependency handle identity unavailable: {error}"
+            ))
+        })?,
+    )?;
+    if handle_before != before {
+        return Err(DirectPortError::UnsupportedExecution(
+            "dependency changed before bounded read".to_owned(),
+        ));
+    }
+    let mut bytes = Vec::new();
+    (&mut file)
+        .take(MAX_DEPENDENCY_FILE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!("dependency read failed: {error}"))
+        })?;
+    if bytes.len() as u64 > MAX_DEPENDENCY_FILE_BYTES {
+        return Err(DirectPortError::UnsupportedExecution(
+            "dependency exceeds the bounded 16 MiB file budget".to_owned(),
+        ));
+    }
+    let handle_after = dependency_identity_for_handle(
+        &file,
+        &file.metadata().map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!(
+                "dependency handle identity unavailable: {error}"
+            ))
+        })?,
+    )?;
+    let after_path = fs::symlink_metadata(path).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "dependency post-read identity unavailable: {error}"
+        ))
+    })?;
+    let after = dependency_identity(path, &after_path)?;
+    if handle_after != before
+        || after != before
+        || !after_path.is_file()
+        || after_path.file_type().is_symlink()
+        || metadata_is_reparse(&after_path)
+    {
+        return Err(DirectPortError::UnsupportedExecution(
+            "dependency changed during bounded read".to_owned(),
+        ));
+    }
+    if bytes.len() as u64 != before.bytes {
+        return Err(DirectPortError::UnsupportedExecution(
+            "dependency size changed during bounded read".to_owned(),
+        ));
+    }
+    Ok((bytes, before))
+}
+
+fn normalized_relative_path(path: &Path) -> Result<PathBuf, ()> {
+    let mut output = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::Normal(value) => {
+                let value = value.to_str().ok_or(())?;
+                let portable = value.replace('\\', "/");
+                for segment in portable.split('/') {
+                    if segment.is_empty()
+                        || segment == "."
+                        || segment == ".."
+                        || segment.contains(':')
+                        || segment.ends_with('.')
+                        || segment.ends_with(' ')
+                        || is_windows_device_name(segment)
+                    {
+                        return Err(());
+                    }
+                }
+                output.push(value);
+            }
+            std::path::Component::ParentDir => {
+                if !output.pop() {
+                    return Err(());
+                }
+            }
+            std::path::Component::RootDir | std::path::Component::Prefix(_) => return Err(()),
+        }
+    }
+    if output.as_os_str().is_empty() {
+        return Err(());
+    }
+    Ok(output)
+}
+
+fn is_windows_device_name(value: &str) -> bool {
+    let stem = value
+        .split_once('.')
+        .map_or(value, |(stem, _)| stem)
+        .to_ascii_uppercase();
+    matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || (stem.len() == 4
+            && (stem.starts_with("COM") || stem.starts_with("LPT"))
+            && stem.as_bytes()[3].is_ascii_digit()
+            && stem.as_bytes()[3] != b'0')
+}
+
+fn dependency_owned_collision(relative: &Path) -> bool {
+    const OWNED: &[&str] = &[
+        "case.cir",
+        "case.source.sp",
+        "dependencies.json",
+        "compat_report.json",
+        "preflight.log",
+        "run_report.json",
+        "run_summary.json",
+        "waveform.csv",
+        "stdout.log",
+        "stderr.log",
+        "case",
+    ];
+    relative.components().any(|component| {
+        let std::path::Component::Normal(value) = component else {
+            return false;
+        };
+        let Some(value) = value.to_str() else {
+            return false;
+        };
+        OWNED.iter().any(|name| value.eq_ignore_ascii_case(name))
+    })
+}
+
+fn write_dependency_create_new(
+    path: &Path,
+    bytes: &[u8],
+) -> Result<(u64, String, DependencyIdentity), DirectPortError> {
+    let byte_count = u64::try_from(bytes.len()).map_err(|_| {
+        DirectPortError::UnsupportedExecution("staged dependency byte count overflow".to_owned())
+    })?;
+    if byte_count > MAX_STAGED_DEPENDENCY_FILE_BYTES {
+        return Err(DirectPortError::UnsupportedExecution(
+            "staged dependency exceeds the bounded 16 MiB file budget".to_owned(),
+        ));
+    }
+    if let Some(parent) = path.parent() {
+        reject_dependency_reparse_chain(parent)?;
+        fs::create_dir_all(parent).map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        reject_dependency_reparse_chain(parent)?;
+    }
+    let mut created = false;
+    let result = (|| {
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .map_err(|error| {
+                DirectPortError::UnsupportedExecution(format!(
+                    "dependency staging target is not fresh: {error}"
+                ))
+            })?;
+        created = true;
+        file.write_all(bytes)
+            .and_then(|_| file.flush())
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        file.sync_all()
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        reject_dependency_reparse_chain(path)?;
+        let metadata = file
+            .metadata()
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        let written = dependency_identity_for_handle(&file, &metadata)?;
+        if written.bytes != byte_count {
+            return Err(DirectPortError::OutputIo(
+                "dependency staged byte count changed during write".to_owned(),
+            ));
+        }
+        file.seek(SeekFrom::Start(0))
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        let mut physical = Vec::new();
+        (&mut file)
+            .take(MAX_STAGED_DEPENDENCY_FILE_BYTES + 1)
+            .read_to_end(&mut physical)
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        if physical.len() as u64 != written.bytes || physical != bytes {
+            return Err(DirectPortError::OutputIo(
+                "dependency staged bytes changed during physical readback".to_owned(),
+            ));
+        }
+        let post_metadata = file
+            .metadata()
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        let post_handle = dependency_identity_for_handle(&file, &post_metadata)?;
+        let post_path = fs::symlink_metadata(path)
+            .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
+        let post_path_identity = dependency_identity(path, &post_path)?;
+        if post_handle != written
+            || post_path_identity != written
+            || post_metadata.len() != physical.len() as u64
+        {
+            return Err(DirectPortError::OutputIo(
+                "dependency staged identity changed during physical readback".to_owned(),
+            ));
+        }
+        let sha256 = format!("{:x}", Sha256::digest(&physical));
+        Ok((physical.len() as u64, sha256, written))
+    })();
+    match result {
+        Err(original) if created => match fs::remove_file(path) {
+            Ok(()) => Err(original),
+            Err(cleanup) => Err(DirectPortError::OutputIo(format!(
+                "dependency staging failed ({original}); cleanup failed ({cleanup})"
+            ))),
+        },
+        other => other,
+    }
 }
 
 pub(crate) fn attest_external_executable(
@@ -588,44 +1032,126 @@ fn stage_case_dependencies(
     text: &str,
     backend: Backend,
 ) -> Result<StagedCaseDependencies, DirectPortError> {
+    let mut created_targets = Vec::new();
+    let result =
+        stage_case_dependencies_inner(source_root, run_root, text, backend, &mut created_targets);
+    let error = match result {
+        Ok(value) => return Ok(value),
+        Err(error) => error,
+    };
+    let mut cleanup_failures = Vec::new();
+    for target in created_targets.iter().rev() {
+        if let Err(cleanup_error) = fs::remove_file(target) {
+            cleanup_failures.push(format!("{}: {cleanup_error}", target.display()));
+        }
+    }
+    if cleanup_failures.is_empty() {
+        Err(error)
+    } else {
+        Err(DirectPortError::OutputIo(format!(
+            "dependency staging failed: {error}; cleanup failures: {}",
+            cleanup_failures.join("; ")
+        )))
+    }
+}
+
+fn stage_case_dependencies_inner(
+    source_root: &Path,
+    run_root: &Path,
+    text: &str,
+    backend: Backend,
+    created_targets: &mut Vec<PathBuf>,
+) -> Result<StagedCaseDependencies, DirectPortError> {
     const MAX_FILES: usize = 4096;
     const MAX_BYTES: u64 = 64 * 1024 * 1024;
+    reject_dependency_reparse_chain(source_root)?;
+    reject_dependency_reparse_chain(run_root)?;
     let root = source_root
         .canonicalize()
         .map_err(|e| DirectPortError::InputIo(e.to_string()))?;
+    let run_root = run_root
+        .canonicalize()
+        .map_err(|e| DirectPortError::OutputIo(e.to_string()))?;
     let mut queue = audit_deck(text)
         .includes
         .into_iter()
-        .map(|reference| (root.clone(), reference))
+        .map(|reference| (root.clone(), PathBuf::new(), reference))
         .chain(
             audit_deck(text)
                 .libraries
                 .into_iter()
-                .map(|library| (root.clone(), library.path)),
+                .map(|library| (root.clone(), PathBuf::new(), library.path)),
         )
         .collect::<Vec<_>>();
     let mut seen = BTreeSet::new();
+    let mut seen_requests = BTreeSet::new();
     let mut staged = Vec::new();
     let mut actions = Vec::new();
     let mut unsupported = Vec::new();
     let mut total = 0u64;
-    while let Some((parent, reference)) = queue.pop() {
+    while let Some((parent, lexical_parent, reference)) = queue.pop() {
         let path = Path::new(&reference);
-        if path.is_absolute() {
-            return Err(DirectPortError::UnsupportedExecution(format!(
-                "absolute dependency is not staged: {reference}"
-            )));
+        if dependency_reference_is_absolute(&reference) {
+            unsupported.push(UnsupportedIssue {
+                line: redacted_dependency_reference(&reference),
+                reason: "absolute_include_path_not_staged".to_owned(),
+            });
+            continue;
         }
-        let source = parent.join(path).canonicalize().map_err(|e| {
-            DirectPortError::UnsupportedExecution(format!(
-                "dependency {reference} is unavailable: {e}"
-            ))
-        })?;
-        let relative = source.strip_prefix(&root).map_err(|_| {
-            DirectPortError::UnsupportedExecution(format!(
-                "dependency escapes deck root: {reference}"
-            ))
-        })?;
+        let lexical_path = match normalized_relative_path(&lexical_parent.join(path)) {
+            Ok(path) if !path.as_os_str().is_empty() => path,
+            _ => {
+                unsupported.push(UnsupportedIssue {
+                    line: redacted_dependency_reference(&reference),
+                    reason: "include_outside_source_directory".to_owned(),
+                });
+                continue;
+            }
+        };
+        if dependency_owned_collision(&lexical_path) {
+            unsupported.push(UnsupportedIssue {
+                line: redacted_dependency_reference(&reference),
+                reason: "dependency_output_path_collision".to_owned(),
+            });
+            continue;
+        }
+        let candidate = parent.join(path);
+        let request_key = candidate.to_string_lossy().into_owned();
+        if !seen_requests.insert(request_key) {
+            continue;
+        }
+        if let Err(error) = reject_dependency_reparse_chain(&candidate) {
+            unsupported.push(UnsupportedIssue {
+                line: redacted_dependency_reference(&reference),
+                reason: match error {
+                    DirectPortError::UnsupportedExecution(reason) => reason,
+                    other => other.to_string(),
+                },
+            });
+            continue;
+        }
+        let source = match candidate.canonicalize() {
+            Ok(source) => source,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                unsupported.push(UnsupportedIssue {
+                    line: redacted_dependency_reference(&reference),
+                    reason: "include_not_found".to_owned(),
+                });
+                continue;
+            }
+            Err(error) => {
+                return Err(DirectPortError::UnsupportedExecution(format!(
+                    "dependency {reference} is unavailable: {error}"
+                )));
+            }
+        };
+        if source.strip_prefix(&root).is_err() {
+            unsupported.push(UnsupportedIssue {
+                line: redacted_dependency_reference(&reference),
+                reason: "include_outside_source_directory".to_owned(),
+            });
+            continue;
+        }
         if !seen.insert(source.clone()) {
             continue;
         }
@@ -634,22 +1160,32 @@ fn stage_case_dependencies(
                 "dependency file budget exceeded".to_owned(),
             ));
         }
-        let size = fs::metadata(&source)
-            .map_err(|e| DirectPortError::UnsupportedExecution(e.to_string()))?
-            .len();
-        total = total.saturating_add(size);
+        let target = run_root.join(&lexical_path);
+        if target.exists() {
+            unsupported.push(UnsupportedIssue {
+                line: redacted_dependency_reference(&reference),
+                reason: "dependency_output_path_collision".to_owned(),
+            });
+            continue;
+        }
+        let (source_bytes, source_identity) = read_dependency_once(&source)?;
+        total = total
+            .checked_add(source_bytes.len() as u64)
+            .ok_or_else(|| {
+                DirectPortError::UnsupportedExecution("dependency byte budget overflow".to_owned())
+            })?;
         if total > MAX_BYTES {
             return Err(DirectPortError::UnsupportedExecution(
                 "dependency byte budget exceeded".to_owned(),
             ));
         }
-        let target = run_root.join(relative);
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).map_err(|e| DirectPortError::OutputIo(e.to_string()))?;
-        }
-        let nested =
-            fs::read_to_string(&source).map_err(|e| DirectPortError::InputIo(e.to_string()))?;
-        let (staged_text, nested_actions, nested_unsupported) = convert_deck(&nested, backend);
+        let nested = String::from_utf8(source_bytes.clone()).map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!("dependency is not UTF-8: {error}"))
+        })?;
+        let safe_nested = redact_deck_text(&nested);
+        let (converted_text, nested_actions, nested_unsupported) =
+            convert_deck(&safe_nested, backend);
+        let staged_text = redact_deck_text(&converted_text);
         actions.extend(nested_actions);
         unsupported.extend(nested_unsupported);
         for directive in audit_deck(&nested).unsupported_directives {
@@ -658,15 +1194,53 @@ fn stage_case_dependencies(
                 reason: "unsupported_directive_in_dependency".to_owned(),
             });
         }
-        fs::write(&target, staged_text).map_err(|e| DirectPortError::OutputIo(e.to_string()))?;
+        let staged_bytes = staged_text.as_bytes();
+        let staged_len = u64::try_from(staged_bytes.len()).map_err(|_| {
+            DirectPortError::UnsupportedExecution("dependency byte budget overflow".to_owned())
+        })?;
+        total = total.checked_add(staged_len).ok_or_else(|| {
+            DirectPortError::UnsupportedExecution("dependency byte budget overflow".to_owned())
+        })?;
+        if total > MAX_BYTES {
+            return Err(DirectPortError::UnsupportedExecution(
+                "dependency source and staged byte budget exceeded".to_owned(),
+            ));
+        }
+        reject_dependency_reparse_chain(target.parent().unwrap_or(&run_root))?;
+        let (staged_bytes_len, staged_sha256, _staged_identity) =
+            write_dependency_create_new(&target, staged_bytes)?;
+        created_targets.push(target.clone());
         let nested_audit = audit_deck(&nested);
         for child in nested_audit.includes {
-            queue.push((source.parent().unwrap_or(&root).to_path_buf(), child));
+            queue.push((
+                source.parent().unwrap_or(&root).to_path_buf(),
+                lexical_path
+                    .parent()
+                    .unwrap_or(Path::new("."))
+                    .to_path_buf(),
+                child,
+            ));
         }
         for child in nested_audit.libraries {
-            queue.push((source.parent().unwrap_or(&root).to_path_buf(), child.path));
+            queue.push((
+                source.parent().unwrap_or(&root).to_path_buf(),
+                lexical_path
+                    .parent()
+                    .unwrap_or(Path::new("."))
+                    .to_path_buf(),
+                child.path,
+            ));
         }
-        staged.push(json!({"source": source, "staged": relative.to_string_lossy().replace('\\', "/"), "sha256": file_sha256(&source)?}));
+        let lexical = lexical_path.to_string_lossy().replace('\\', "/");
+        let source_sha256 = format!("{:x}", Sha256::digest(&source_bytes));
+        staged.push(json!({
+            "source": lexical,
+            "staged": lexical,
+            "source_sha256": source_sha256,
+            "staged_sha256": staged_sha256,
+            "source_bytes": source_identity.bytes,
+            "staged_bytes": staged_bytes_len,
+        }));
     }
     staged.sort_by(|a, b| a["staged"].as_str().cmp(&b["staged"].as_str()));
     Ok((staged, actions, unsupported))
@@ -1102,25 +1676,24 @@ fn run_hspice_internal(
                 overall_status = PreparationStatus::AutoConverted;
             }
         }
-        fs::write(directory.join("case.source.sp"), &case.case.text)
+        let safe_case_text = redact_deck_text(&case.case.text);
+        let safe_runtime_deck = redact_deck_text(&runtime_deck);
+        let safe_audit = redacted_audit(&case.audit);
+        fs::write(directory.join("case.source.sp"), &safe_case_text)
             .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
-        fs::write(directory.join("case.cir"), &runtime_deck)
+        fs::write(directory.join("case.cir"), &safe_runtime_deck)
             .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
         if admission.backend == Backend::XyceXdm {
-            fs::write(directory.join("case.sp"), &case.case.text)
+            fs::write(directory.join("case.sp"), &safe_case_text)
                 .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
         }
         let (staged_dependencies, dependency_actions, dependency_unsupported) =
-            if case_status == PreparationStatus::Blocked {
-                (Vec::new(), Vec::new(), Vec::new())
-            } else {
-                stage_case_dependencies(
-                    deck_path.parent().unwrap_or_else(|| Path::new(".")),
-                    &directory,
-                    &case.case.text,
-                    admission.backend,
-                )?
-            };
+            stage_case_dependencies(
+                deck_path.parent().unwrap_or_else(|| Path::new(".")),
+                &directory,
+                &case.case.text,
+                admission.backend,
+            )?;
         if !dependency_unsupported.is_empty() {
             case_status = PreparationStatus::Blocked;
             overall_status = PreparationStatus::Blocked;
@@ -1130,6 +1703,28 @@ fn run_hspice_internal(
                 overall_status = PreparationStatus::AutoConverted;
             }
         }
+        let safe_actions = case
+            .actions
+            .iter()
+            .chain(&sparam_actions)
+            .chain(&dependency_actions)
+            .map(|action| {
+                json!({
+                    "kind": action.kind,
+                    "source": redact_deck_line(&action.source),
+                    "target": redact_deck_line(&action.target),
+                })
+            })
+            .collect::<Vec<_>>();
+        let safe_unsupported = case
+            .audit
+            .unsupported_directives
+            .iter()
+            .map(|line| json!({"line": line, "reason": "unsupported_directive"}))
+            .chain(case.unsupported.iter().chain(&sparam_unsupported).chain(&dependency_unsupported).map(|issue| {
+                json!({"line": redact_deck_line(&issue.line), "reason": issue.reason})
+            }))
+            .collect::<Vec<_>>();
         fs::write(
             directory.join("dependencies.json"),
             serde_json::to_string_pretty(&staged_dependencies)
@@ -1146,10 +1741,10 @@ fn run_hspice_internal(
             "backend": admission.backend.name(),
             "status": case_status.as_str(),
             "deck": {"id": stem, "source": source_name, "sha256": source_hash, "case_source": "case.source.sp", "case_source_sha256": case_source_sha, "prepared": "case.cir", "prepared_sha256": prepared_sha},
-            "audit": {"directive_counts": case.audit.directive_counts, "includes": case.audit.includes, "libraries": case.audit.libraries.iter().map(|library| json!([library.path, library.section])).collect::<Vec<_>>(), "unsupported_directives": case.audit.unsupported_directives},
+            "audit": {"directive_counts": safe_audit.directive_counts, "includes": safe_audit.includes, "libraries": safe_audit.libraries.iter().map(|library| json!([library.path, library.section])).collect::<Vec<_>>(), "unsupported_directives": safe_audit.unsupported_directives},
             "outputs": {"probes": output_probes(&case.case.text), "measures": output_measures(&case.case.text)},
-            "actions": case.actions.iter().chain(&sparam_actions).chain(&dependency_actions).map(|action| json!({"kind": action.kind, "source": action.source, "target": action.target})).collect::<Vec<_>>(),
-            "unsupported": case.audit.unsupported_directives.iter().map(|line| json!({"line": line, "reason": "unsupported_directive"})).chain(case.unsupported.iter().chain(&sparam_unsupported).chain(&dependency_unsupported).map(|issue| json!({"line": issue.line, "reason": issue.reason}))).collect::<Vec<_>>(),
+            "actions": safe_actions,
+            "unsupported": safe_unsupported,
             "dependencies": staged_dependencies,
             "summary": {"status": case_status.as_str(), "rewrites": case.actions.len() + sparam_actions.len() + dependency_actions.len(), "drops": case.actions.iter().chain(&dependency_actions).filter(|action| action.kind == "drop_option").count(), "unsupported": case.unsupported.len() + sparam_unsupported.len() + dependency_unsupported.len() + case.audit.unsupported_directives.len()},
         });
@@ -1164,24 +1759,37 @@ fn run_hspice_internal(
         {
             let mut preflight = sparam_actions
                 .iter()
-                .map(|action| format!("{}: {} -> {}", action.kind, action.source, action.target))
+                .map(|action| {
+                    format!(
+                        "{}: {} -> {}",
+                        action.kind,
+                        redact_deck_line(&action.source),
+                        redact_deck_line(&action.target)
+                    )
+                })
                 .collect::<Vec<_>>();
             preflight.extend(dependency_actions.iter().map(|action| {
                 format!(
                     "dependency {}: {} -> {}",
-                    action.kind, action.source, action.target
+                    action.kind,
+                    redact_deck_line(&action.source),
+                    redact_deck_line(&action.target)
                 )
             }));
-            preflight.extend(
-                sparam_unsupported
-                    .iter()
-                    .map(|issue| format!("BLOCKED: {} ({})", issue.line, issue.reason)),
-            );
-            preflight.extend(
-                dependency_unsupported
-                    .iter()
-                    .map(|issue| format!("BLOCKED: dependency {} ({})", issue.line, issue.reason)),
-            );
+            preflight.extend(sparam_unsupported.iter().map(|issue| {
+                format!(
+                    "BLOCKED: {} ({})",
+                    redact_deck_line(&issue.line),
+                    issue.reason
+                )
+            }));
+            preflight.extend(dependency_unsupported.iter().map(|issue| {
+                format!(
+                    "BLOCKED: dependency {} ({})",
+                    redact_deck_line(&issue.line),
+                    issue.reason
+                )
+            }));
             fs::write(directory.join("preflight.log"), preflight.join("\n") + "\n")
                 .map_err(|error| DirectPortError::OutputIo(error.to_string()))?;
         }
@@ -3315,6 +3923,14 @@ mod tests {
                 .unwrap();
         assert_eq!(report["schema_version"], 2);
         assert!(report["deck"]["sha256"].as_str().is_some());
+        let dependencies = report["dependencies"].as_array().unwrap();
+        assert_eq!(dependencies.len(), 2);
+        for dependency in dependencies {
+            assert!(dependency["source"].as_str().is_some());
+            assert_eq!(dependency["source"], dependency["staged"]);
+            assert_eq!(dependency["source_bytes"], dependency["staged_bytes"]);
+            assert_eq!(dependency["source_sha256"], dependency["staged_sha256"]);
+        }
         let _ = fs::remove_dir_all(root);
     }
 
@@ -3347,6 +3963,295 @@ mod tests {
                 .unwrap()
                 .iter()
                 .any(|action| { action["source"] == ".probe tran v(out)" })
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn missing_and_outside_dependencies_are_reported_without_aborting_preparation() {
+        let root = std::env::temp_dir().join(format!(
+            "sipi-as05-dependency-blockers-{}",
+            std::process::id()
+        ));
+        let outside_root = std::env::temp_dir().join(format!(
+            "sipi-as05-dependency-blockers-outside-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        fs::create_dir_all(&outside_root).unwrap();
+        fs::write(outside_root.join("outside.inc"), ".param outside=1\n").unwrap();
+        let deck = root.join("deck.sp");
+        let outside_reference = format!(
+            "../{}/outside.inc",
+            outside_root.file_name().unwrap().to_string_lossy()
+        );
+        fs::write(
+            &deck,
+            format!(".include 'missing.inc'\n.include '{outside_reference}'\n.tran 1p 1n\n.end\n"),
+        )
+        .unwrap();
+        let request = RunHspiceRequest::new("native", root.join("out"), false).unwrap();
+        let result = run_hspice(&deck, request).unwrap();
+        assert_eq!(result.status, PreparationStatus::Blocked);
+        let report: serde_json::Value = serde_json::from_slice(
+            &fs::read(root.join("out/deck/deck__base/compat_report.json")).unwrap(),
+        )
+        .unwrap();
+        let unsupported = report["unsupported"].as_array().unwrap();
+        assert!(unsupported.iter().any(|item| {
+            item["line"] == "missing.inc" && item["reason"] == "include_not_found"
+        }));
+        assert!(unsupported.iter().any(|item| {
+            item["line"] == outside_reference
+                && item["reason"] == "include_outside_source_directory"
+        }));
+        assert!(report["dependencies"].as_array().unwrap().is_empty());
+        let _ = fs::remove_dir_all(root);
+        let _ = fs::remove_dir_all(outside_root);
+    }
+
+    #[test]
+    fn absolute_dependency_references_are_redacted_in_all_case_artifacts() {
+        let root = std::env::temp_dir().join(format!(
+            "sipi-as05-absolute-redaction-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let absolute_reference = root.join("private").join("secret.inc");
+        let deck = root.join("deck.sp");
+        let raw_reference = absolute_reference.to_string_lossy().into_owned();
+        fs::write(
+            &deck,
+            format!(".include '{raw_reference}'\n.lib '{raw_reference}' tt\n.tran 1p 1n\n.end\n"),
+        )
+        .unwrap();
+        let result = run_hspice(
+            &deck,
+            RunHspiceRequest::new("native", root.join("out"), false).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(result.status, PreparationStatus::Blocked);
+        let case_root = root.join("out/deck/deck__base");
+        for name in [
+            "case.source.sp",
+            "case.cir",
+            "dependencies.json",
+            "compat_report.json",
+            "preflight.log",
+        ] {
+            let path = case_root.join(name);
+            if path.is_file() {
+                let contents = fs::read_to_string(path).unwrap();
+                assert!(
+                    !contents.contains(&raw_reference),
+                    "absolute path leaked in {name}"
+                );
+                if name != "dependencies.json" {
+                    assert!(
+                        contents.contains("<absolute:secret.inc:"),
+                        "redaction missing in {name}"
+                    );
+                }
+            }
+        }
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn nested_dependency_paths_are_redacted_before_conversion_and_write() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-nested-redaction-{}", std::process::id()));
+        fs::create_dir_all(root.join("models")).unwrap();
+        let raw_reference = r"C:\private\nested-secret.inc";
+        fs::write(
+            root.join("models/top.inc"),
+            format!(".include '{raw_reference}'\n.probe tran v(out)\n"),
+        )
+        .unwrap();
+        let deck = root.join("deck.sp");
+        fs::write(&deck, ".include 'models/top.inc'\n.end\n").unwrap();
+        run_hspice(
+            &deck,
+            RunHspiceRequest::new("ngspice", root.join("out"), false).unwrap(),
+        )
+        .unwrap();
+        let case_root = root.join("out/deck/deck__base");
+        let staged = fs::read_to_string(case_root.join("models/top.inc")).unwrap();
+        assert!(!staged.contains(raw_reference));
+        assert!(staged.contains("<absolute:nested-secret.inc:"));
+        let report = fs::read_to_string(case_root.join("compat_report.json")).unwrap();
+        assert!(!report.contains(raw_reference));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn normalized_dependency_paths_reject_portable_windows_names_and_ads() {
+        assert!(dependency_reference_is_absolute("C:relative.inc"));
+        assert!(redacted_dependency_reference("C:relative.inc").starts_with("<absolute:"));
+        for value in [
+            "models:bad.inc",
+            "models/C:bad.inc",
+            "models/file.",
+            "models/file ",
+            "models/CON",
+            "models/com1.txt",
+            "",
+            ".",
+            "..",
+        ] {
+            assert!(
+                normalized_relative_path(Path::new(value)).is_err(),
+                "path should be rejected: {value:?}"
+            );
+        }
+        assert_eq!(
+            normalized_relative_path(Path::new("models/good.inc")).unwrap(),
+            PathBuf::from("models/good.inc")
+        );
+    }
+
+    #[test]
+    fn physical_dependency_receipt_reads_back_the_create_new_handle() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-physical-receipt-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let target = root.join("nested/model.inc");
+        let bytes = b".param physical=1\n";
+        let (length, sha256, identity) = write_dependency_create_new(&target, bytes).unwrap();
+        assert_eq!(length, bytes.len() as u64);
+        assert_eq!(sha256, format!("{:x}", Sha256::digest(bytes)));
+        assert_eq!(identity.bytes, length);
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn oversized_staged_output_is_rejected_before_create() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-oversized-staged-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let target = root.join("nested/model.inc");
+        let bytes = vec![b'x'; (MAX_STAGED_DEPENDENCY_FILE_BYTES + 1) as usize];
+        assert!(matches!(
+            write_dependency_create_new(&target, &bytes),
+            Err(DirectPortError::UnsupportedExecution(message))
+                if message.contains("staged dependency")
+        ));
+        assert!(!target.exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn cumulative_dependency_budget_cleans_prior_targets_and_preserves_owned_files() {
+        const FILE_BYTES: usize = 8 * 1024 * 1024;
+        let root = std::env::temp_dir().join(format!(
+            "sipi-as05-cumulative-dependency-budget-{}",
+            std::process::id()
+        ));
+        let source_root = root.join("source");
+        let run_root = root.join("run");
+        fs::create_dir_all(&source_root).unwrap();
+        fs::create_dir_all(&run_root).unwrap();
+        fs::write(run_root.join("case.cir"), "runner-owned\n").unwrap();
+        let mut deck = String::new();
+        for index in 0..5 {
+            let name = format!("dep{index}.inc");
+            let payload = format!(".param x={}\n", "x".repeat(FILE_BYTES - 12));
+            fs::write(source_root.join(&name), payload).unwrap();
+            deck.push_str(&format!(".include '{name}'\n"));
+        }
+        let error =
+            stage_case_dependencies(&source_root, &run_root, &deck, Backend::Native).unwrap_err();
+        assert!(error.to_string().contains("dependency byte budget"));
+        assert_eq!(
+            fs::read_to_string(run_root.join("case.cir")).unwrap(),
+            "runner-owned\n"
+        );
+        for index in 0..5 {
+            assert!(!run_root.join(format!("dep{index}.inc")).exists());
+        }
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn oversized_dependency_is_rejected_before_staging() {
+        let root = std::env::temp_dir().join(format!(
+            "sipi-as05-oversized-dependency-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("oversized.inc");
+        let file = fs::File::create(&source).unwrap();
+        file.set_len(MAX_DEPENDENCY_FILE_BYTES + 1).unwrap();
+        assert!(matches!(
+            read_dependency_once(&source),
+            Err(DirectPortError::UnsupportedExecution(message))
+                if message.contains("16 MiB")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dependency_cannot_overwrite_runner_owned_case_artifacts() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-owned-collision-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let deck = root.join("deck.sp");
+        fs::write(root.join("case.cir"), ".param protected=1\n").unwrap();
+        fs::write(&deck, ".include 'case.cir'\n.end\n").unwrap();
+        let result = run_hspice(
+            &deck,
+            RunHspiceRequest::new("native", root.join("out"), false).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(result.status, PreparationStatus::Blocked);
+        let case_root = root.join("out/deck/deck__base");
+        assert_eq!(
+            fs::read_to_string(case_root.join("case.cir")).unwrap(),
+            ".include 'case.cir'\n.end\n"
+        );
+        let report: serde_json::Value =
+            serde_json::from_slice(&fs::read(case_root.join("compat_report.json")).unwrap())
+                .unwrap();
+        assert!(
+            report["unsupported"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|item| { item["reason"] == "dependency_output_path_collision" })
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unix_symlink_dependency_alias_is_rejected_before_staging() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as05-symlink-alias-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("real.inc"), ".param real=1\n").unwrap();
+        let alias = root.join("alias.inc");
+        std::os::unix::fs::symlink(root.join("real.inc"), &alias).unwrap();
+        let deck = root.join("deck.sp");
+        fs::write(&deck, ".include 'alias.inc'\n.end\n").unwrap();
+        let result = run_hspice(
+            &deck,
+            RunHspiceRequest::new("native", root.join("out"), false).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(result.status, PreparationStatus::Blocked);
+        let report: serde_json::Value = serde_json::from_slice(
+            &fs::read(root.join("out/deck/deck__base/compat_report.json")).unwrap(),
+        )
+        .unwrap();
+        assert!(
+            report["unsupported"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|item| {
+                    item["reason"] == "dependency path contains a symlink or reparse component"
+                })
         );
         let _ = fs::remove_dir_all(root);
     }

@@ -1,0 +1,36 @@
+AS-05 deterministic staging slice attribution
+
+This additive notice records the pinned Agent-Spice branches used by the
+Rust run-hspice preparation path for .include/.lib dependency staging,
+.alter case expansion, output normalization, and backend dispatch. It does
+not claim solver correctness or numerical parity, and it does not implement
+Touchstone S-element fitting.
+
+Upstream project: agent-spice
+Commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+Tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+License: MIT
+License raw Git-object SHA-1: 55aac2e4f8c36a978d315efb02815972579b8293
+License byte count: 1067
+License SHA-256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+
+The Rust implementation is a direct port of the portable preparation and
+result-contract branches only. Dependency staging preserves lexical aliases
+while checking canonical containment, rejects symlink/reparse chains and
+runner-owned artifact collisions, and records bounded source/staged byte and
+hash receipts. Nested source is redacted before conversion and again before
+any staged artifact write. Portable path admission rejects ADS/colon,
+trailing-dot/space, traversal, and Windows device-name components; drive-
+relative references are treated as sensitive absolute references. Create-new
+staging flushes and reads back the same handle to produce the physical byte
+and hash receipt, and native file identity is required (including the
+volume/file identity supplied by same-file on Windows). The portable staging
+scope tracks only targets created in the current staging call and removes
+them in reverse order on a later staging error; cleanup failures are returned
+alongside the original error. It assumes trusted, non-concurrent source and
+output roots: pre/post
+identity checks are best-effort drift detection, not a hostile-writer or
+complete TOCTOU guarantee. Unix symlink rejection is covered by a real
+symlink test; Windows junction/reparse coverage is optional supplemental
+evidence. Native HSPICE, ngspice, Xyce, and xdm_bdl remain retained external
+runtimes with caller custody and fail-closed execution boundaries.
