@@ -203,7 +203,7 @@ fn native_request_reaches_adaptive_dfe_and_duobinary_receiver_branches() {
 }
 
 #[test]
-fn native_duobinary_jitter_uses_typed_dfe_decision_scaler() {
+fn native_duobinary_jitter_matches_pinned_native_crossings() {
     fn run_with_scaler(
         modulation: ModulationV1,
         scaler: f64,
@@ -211,6 +211,13 @@ fn native_duobinary_jitter_uses_typed_dfe_decision_scaler() {
         let mut input = base("branch-duobinary-jitter");
         input.modulation = modulation;
         input.timebase.nbits = 8_192;
+        input.channel = ChannelInputV1::ImpulseResponse(ChannelResponseV1 {
+            sample_interval: Seconds(1.0e-12),
+            impulse_response_volts_per_second: vec![1.0e12, 0.25e12],
+            source_impedance: Ohms(50.0),
+            load_impedance: Ohms(50.0),
+        });
+        input.tx.amplitude = Volts(0.5);
         input.analysis.include_jitter = true;
         input.analysis.jitter_eye_uis = Some(2_048);
         input.rx.dfe_taps = 1;
@@ -235,37 +242,11 @@ fn native_duobinary_jitter_uses_typed_dfe_decision_scaler() {
     assert_eq!(low.arrays["rx_input_v"], high.arrays["rx_input_v"]);
     assert_eq!(low_channel.len(), high_channel.len());
     assert_eq!(low_tx.len(), high_tx.len());
-    assert!(
-        low_channel
-            .iter()
-            .zip(high_channel)
-            .any(|(left, right)| (left - right).abs() > 1.0e-18)
-    );
-    assert!(
-        low_tx
-            .iter()
-            .zip(high_tx)
-            .any(|(left, right)| (left - right).abs() > 1.0e-18)
-    );
-    let channel_difference = low_channel
-        .iter()
-        .zip(high_channel)
-        .enumerate()
-        .find(|(_, (left, right))| (*left - *right).abs() > 1.0e-18)
-        .expect("decision scaler must change a channel crossing-derived sample");
-    let tx_difference = low_tx
-        .iter()
-        .zip(high_tx)
-        .enumerate()
-        .find(|(_, (left, right))| (*left - *right).abs() > 1.0e-18)
-        .expect("decision scaler must change a tx crossing-derived sample");
-    assert_eq!(channel_difference.0, 0);
-    assert_eq!(tx_difference.0, 0);
-    assert!((low_channel[0] - -5.644519883605953e-13).abs() < 1.0e-24);
-    assert!((high_channel[0] - -8.142095053346904e-13).abs() < 1.0e-24);
-    assert!((low_tx[0] - -5.644519883605953e-13).abs() < 1.0e-24);
-    assert!((high_tx[0] - -8.142095053346904e-13).abs() < 1.0e-24);
-    assert!((low_channel[0] - high_channel[0]).abs() > 2.0e-13);
+    assert_eq!(low_channel, high_channel);
+    assert_eq!(low_tx, high_tx);
+    assert_eq!(low_channel.len(), 2064);
+    assert_eq!(low.metrics["jitter_chnl_tie_count"], 2064.0);
+    assert!((low_channel[0] - 2.5000000000028025e-13).abs() < 1.0e-24);
     assert!(low.metrics.contains_key("jitter_dfe_random_s"));
     assert!(low.arrays.contains_key("jitter_dfe_tie_s"));
 

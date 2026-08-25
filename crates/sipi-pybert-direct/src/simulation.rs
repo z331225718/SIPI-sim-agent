@@ -761,23 +761,13 @@ pub fn simulate_native_v1_with_cancellation(
     }
     cancellation.check()?;
     if input.analysis.include_jitter || input.analysis.include_bathtub {
-        // PyBERT's legacy Duo-binary jitter path measures crossings against
-        // the duobinary pulse, not the held symbol stream.  Keep this ideal
-        // reference separate from the channel waveform so the Rust path
-        // reaches the same crossing branch instead of failing on a missing
-        // zero crossing.
-        let jitter_ideal_waveform = if matches!(input.modulation, ModulationV1::DuoBinary) {
-            let mut duobinary_impulse = vec![0.0; samples_per_ui.saturating_mul(2)];
-            duobinary_impulse[0] = 0.5;
-            duobinary_impulse[samples_per_ui] = 0.5;
-            causal_convolve_truncated(&linear.tx_waveform, &duobinary_impulse, sample_count)?
-        } else {
-            linear.tx_waveform.clone()
-        };
+        // The pinned native core measures the same held TX waveform for every
+        // modulation.  Do not re-convolve DuoBinary here: that changes the
+        // crossing sequence (and therefore the complete jitter payload).
         let jitter = calculate_native_jitter_metrics(
             input,
             prbs_order.ok_or(NativeSimulationError::UnsupportedPattern)?,
-            &jitter_ideal_waveform,
+            &linear.tx_waveform,
             [
                 ("chnl", channel_output.as_slice()),
                 ("tx", linear.rx_input.as_slice()),
@@ -970,7 +960,6 @@ struct NativeJitterStage {
 
 struct NativeJitterStageInput<'a> {
     input: &'a SimulationInputV1,
-    crossing_amplitude_v: f64,
     ideal_waveform: &'a [f64],
     waveform: &'a [f64],
     ideal_crossings: &'a [f64],
@@ -1003,24 +992,13 @@ fn calculate_native_jitter_metrics(
     });
     let eye_uis = requested_eye_uis.min(complete_uis);
     let window_start_s = (complete_uis - eye_uis) as f64 * ui_s;
-    // PyBERT expresses Duo-binary crossing thresholds relative to the DFE
-    // decision scaler, not the transmitter amplitude.  NRZ and PAM4 use a
-    // zero threshold, so this distinction only becomes visible for
-    // Duo-binary.  A request without a typed DFE has no scaler to consume;
-    // preserve the existing amplitude-based behavior for that explicit
-    // zero-stage path instead of constructing a hidden default DFE.
-    let crossing_amplitude_v = input
-        .rx
-        .dfe
-        .as_ref()
-        .map_or(input.tx.amplitude.0, |dfe| dfe.decision_scaler.0);
     let ideal_times_s = (0..ideal_waveform.len())
         .map(|index| index as f64 * sample_interval_s)
         .collect::<Vec<_>>();
     let ideal_crossings = find_crossings(
         &ideal_times_s,
         ideal_waveform,
-        crossing_amplitude_v,
+        input.tx.amplitude.0,
         0.0,
         true,
         0.1,
@@ -1036,7 +1014,6 @@ fn calculate_native_jitter_metrics(
     for (stage_name, waveform) in stages {
         let stage = calculate_native_jitter_stage(NativeJitterStageInput {
             input,
-            crossing_amplitude_v,
             ideal_waveform,
             waveform,
             ideal_crossings: &ideal_crossings,
@@ -1068,7 +1045,6 @@ fn calculate_native_jitter_stage(
 ) -> Result<NativeJitterStage, NativeSimulationError> {
     let NativeJitterStageInput {
         input,
-        crossing_amplitude_v,
         ideal_waveform,
         waveform,
         ideal_crossings,
@@ -1092,7 +1068,7 @@ fn calculate_native_jitter_stage(
     let actual_crossings = find_crossings(
         &times_s,
         waveform,
-        crossing_amplitude_v,
+        input.tx.amplitude.0,
         0.0,
         true,
         0.1,

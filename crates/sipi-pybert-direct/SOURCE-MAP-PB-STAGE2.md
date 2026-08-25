@@ -33,10 +33,26 @@ adapted-file hashes.
 
 | Local path | Change | Boundary |
 | --- | --- | --- |
-| `src/simulation.rs` | For a typed DFE, pass `DfeConfigV1.decision_scaler` to the existing `find_crossings` call.  NRZ/PAM4 remain zero-threshold; Duo-binary uses the two signed half-scaler thresholds already defined by the pinned jitter routine. | Reuses the existing native core; no default DFE, auto-tuning, or fallback is introduced. |
+| `src/simulation.rs` | Match the pinned native jitter path: use the held `linear.tx_waveform` as the ideal reference for every modulation, and pass `input.tx.amplitude.0` to both ideal and actual `find_crossings` calls.  The existing `find_crossings` routine still owns the modulation-specific threshold set (zero for NRZ/PAM4 and signed half-amplitude thresholds for DuoBinary). | Reuses the existing native core; no second DuoBinary convolution, DFE-derived threshold, default DFE, auto-tuning, or fallback is introduced.  `DfeConfigV1.decision_scaler` remains a DFE decision/output parameter, not a native jitter crossing threshold. |
 | `src/workflows.rs` | Compare `SimulationOutputV1.schema`, nested arrays/metrics, capabilities, ordered stage events (excluding run IDs), and artifact references in addition to the legacy projection, metadata, and diagnostics. | Nested arrays/metrics are canonical; any coexisting flat projection must exactly match before comparison. Artifact name, schema, path, MIME type, SHA-256, and byte length are strict fields. `run_id` remains provenance-only; incomplete external envelopes fail the comparison instead of being silently synthesized as equivalent. |
-| `tests/native_branch_matrix.rs` | Focused Duo-binary jitter test with an explicit typed DFE decision scaler. | Test-only coverage of an existing branch. |
+| `tests/native_branch_matrix.rs` | Focused Duo-binary jitter test over the pinned native crossing scenario, including the channel tie-array shape, first interpolated sample, channel count metric, and explicit DFE-scaler invariance for DuoBinary, NRZ, and PAM4. | Test-only coverage of an existing branch; no complete four-stage payload, external-oracle, or Python-runtime claim. |
 | `tests/workflows.rs` | Mutation coverage for capabilities and event payloads. | Test-only complete-envelope gate coverage. |
+
+### DuoBinary first-divergence record
+
+The diagnostic scenario is PRBS-7, 8,192 bits, four samples/UI, 250 Gbaud,
+TX amplitude 0.5 V, impulse response `[1e12, 0.25e12]`, one explicit DFE tap,
+and `jitter_eye_uis=2048`.  The prior local path applied a second
+`[0.5, 0, 0, 0, 0.5, 0, 0, 0]` convolution to the already held
+`linear.tx_waveform`; that changed the crossing sequence from 2,064 samples to
+1,030 and produced a 3 ps first tie.  The pinned native path passes the held
+waveform directly and uses TX amplitude for both crossing calls.  The corrected
+Rust result is 2,064 ties with first tie
+`2.5000000000028025e-13` seconds.  The pinned native source does not feed the
+typed DFE decision scaler into this jitter routine; changing that explicit DFE
+field therefore leaves the compared channel and TX jitter tie arrays unchanged.
+The focused test also checks scaler invariance for NRZ and PAM4; it does not
+claim a fixed external baseline for those two modulation branches.
 
 ## Explicitly retained external or fail-closed
 
