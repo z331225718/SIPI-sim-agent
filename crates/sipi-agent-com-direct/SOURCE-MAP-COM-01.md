@@ -39,3 +39,9 @@ them it bounds XLSX member and aggregate uncompressed sizes, workbook/rels,
 sharedStrings and target-sheet XML, explicit and rectangular sheet extents,
 and MAT zlib expansion, nesting, element count, dimension count, and every
 matrix dimension product. The shared readers remain the sole semantic decoders.
+
+The pinned registry classifies source-exact `Do_White_Noise` as
+unimplemented. The trusted workbook materializer retains that option only in
+its source consumption/diagnostic record, with scope limited to the
+Wiener-Hopf branch; that branch remains fail-closed. It is not projected into
+the generic COM DTO or numerical chain, and public JSON cannot inject it.

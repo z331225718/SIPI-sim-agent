@@ -8986,6 +8986,10 @@ mod tests {
             }
         }
         workbook_values.insert("SNDR".to_owned(), ResolvedDefaultV1::Vector(vec![33.0]));
+        workbook_values.insert(
+            "Do_White_Noise".to_owned(),
+            ResolvedDefaultV1::Boolean(false),
+        );
         workbook_values.insert("N_v".to_owned(), ResolvedDefaultV1::Scalar(6.0));
         workbook_values.insert(
             "force_pdf_bin_size".to_owned(),
@@ -9010,6 +9014,15 @@ mod tests {
         );
         let workbook_sidecar = workbook_controls_from_search_v1(&workbook_values, &sigma_zero, 0)
             .expect("typed workbook sidecar");
+        let registry: Value = serde_json::from_slice(include_bytes!(
+            "../quarantine/agent-com/consumption-registry.v1.json"
+        ))
+        .expect("consumption registry");
+        assert!(
+            registry["UNIMPLEMENTED_OPTIONS"]
+                .as_array()
+                .is_some_and(|options| options.iter().any(|option| option == "Do_White_Noise"))
+        );
         assert_eq!(
             workbook_sidecar.get("samples_per_ui"),
             Some(&ResolvedDefaultV1::Scalar(8.0))
@@ -9026,6 +9039,7 @@ mod tests {
             workbook_sidecar.get("floating_dfe"),
             Some(&ResolvedDefaultV1::Scalar(1.0))
         );
+        assert!(!workbook_sidecar.contains_key("do_white_noise"));
         let consumed_keys = workbook_sidecar.keys().cloned().collect::<Vec<_>>();
         let dto = merge_com_parameters_v1(&consumed_keys, &workbook_sidecar, &BTreeMap::new(), &[])
             .expect("trusted controls DTO");

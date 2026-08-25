@@ -204,6 +204,24 @@ mod tests {
     }
 
     #[test]
+    fn source_unimplemented_white_noise_stays_out_of_numeric_resolver() {
+        let baseline = resolve_com_parameter_controls_v1(&sample_dto()).expect("baseline");
+        for value in [false, true] {
+            let mut map = sample_dto().consumed().clone();
+            map.insert(
+                "do_white_noise".to_owned(),
+                ResolvedDefaultV1::Boolean(value),
+            );
+            let keys = map.keys().cloned().collect::<Vec<_>>();
+            let dto = merge_com_parameters_v1(&keys, &map, &BTreeMap::new(), &[])
+                .expect("diagnostic option remains representable");
+            let controls = resolve_com_parameter_controls_v1(&dto)
+                .expect("diagnostic option must not alter numeric controls");
+            assert_eq!(controls, baseline);
+        }
+    }
+
+    #[test]
     fn rejects_public_cursor_injection() {
         let dto = sample_dto();
         let mut map = dto.consumed().clone();
