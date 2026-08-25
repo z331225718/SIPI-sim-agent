@@ -20,13 +20,14 @@ use sipi_com::{
     CalibrationErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, ComRunResultEnvelopeV1,
     CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
-    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1, TdFrequencyFillinV1,
+    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithWinnerV2, TdFrequencyFillinV1,
     XtalkChannelV1, apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
     calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1,
-    execute_com_run_v1, execute_com_run_with_crosstalk_v1, merge_com_parameters_v1, r480_tdiln_v1,
-    raised_cosine_filter_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
-    sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1, search_mmse_candidates_v1,
-    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1, td_fd_fillin_v1, td_pulse_input_v1,
+    execute_com_run_v1, execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
+    merge_com_parameters_v1, r480_tdiln_v1, raised_cosine_filter_v1, rectangular_pulse_response_v1,
+    s21_to_impulse_dc_v1, sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1,
+    search_mmse_candidates_v1, search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2, td_fd_fillin_v1,
+    td_pulse_input_v1,
 };
 use sipi_touchstone::selected_four_port_v1::parse_selected_four_port_hz_s_ri_50_v2;
 use sipi_touchstone::{TouchstoneParseLimitsV1, parse_touchstone_hz_s_ri_50_two_port_v1};
@@ -261,6 +262,37 @@ struct PortableBranchResultV1 {
     search_available_signal_v: Option<f64>,
     search_sigma_n_v: Option<f64>,
     search_h_j: Option<Vec<f64>>,
+    search_winner: Option<SearchLoopResultWithWinnerV2>,
+}
+
+fn execution_chain_pulse_v1(
+    impulse: &ImpulseInputV1,
+    branches: &PortableBranchResultV1,
+    samples_per_ui: usize,
+) -> Result<Vec<f64>, DirectRunErrorV1> {
+    if let Some(winner) = branches.search_winner.as_ref() {
+        // The opaque winner owns the exact candidate SBR used by the search.
+        // Never rematerialize an earlier equalized/MMSE/RxFFE pulse here.
+        return Ok(winner.result().selected_pulse.clone());
+    }
+    let source_pulse = if impulse.already_pulse {
+        impulse.values.clone()
+    } else {
+        rectangular_pulse_response_v1(&impulse.values, samples_per_ui)
+            .map_err(|error| DirectRunErrorV1::Parameters(format!("channel pulse: {error:?}")))?
+    };
+    branches.effective_pulse.clone().map_or_else(
+        || {
+            if impulse.already_pulse {
+                Ok(impulse.values.clone())
+            } else {
+                rectangular_pulse_response_v1(&impulse.values, samples_per_ui).map_err(|error| {
+                    DirectRunErrorV1::Parameters(format!("channel pulse: {error:?}"))
+                })
+            }
+        },
+        |selected| Ok(materialize_selected_pulse_v1(&source_pulse, &selected)),
+    )
 }
 
 /// Execute the bounded COM-02 run route and publish deterministic artifacts.
@@ -1248,29 +1280,7 @@ fn run_with_workflow_token_origin(
     } else {
         input_impulse
     };
-    // Channel files are impulse responses; the COM PDF chain consumes the
-    // source's zero-state rectangular pulse response. Search/Apply_EQ may
-    // already provide the selected pulse, otherwise form it here exactly once.
-    let source_pulse = if impulse.already_pulse {
-        impulse.values.clone()
-    } else {
-        rectangular_pulse_response_v1(&impulse.values, samples_per_ui)
-            .map_err(|error| DirectRunErrorV1::Parameters(format!("channel pulse: {error:?}")))?
-    };
-    let chain_values = branches
-        .effective_pulse
-        .clone()
-        .map_or_else(
-            || {
-                if impulse.already_pulse {
-                    Ok(impulse.values.clone())
-                } else {
-                    rectangular_pulse_response_v1(&impulse.values, samples_per_ui)
-                }
-            },
-            |selected| Ok(materialize_selected_pulse_v1(&source_pulse, &selected)),
-        )
-        .map_err(|error| DirectRunErrorV1::Parameters(format!("channel pulse: {error:?}")))?;
+    let chain_values = execution_chain_pulse_v1(&impulse, &branches, samples_per_ui)?;
     let mut effective_controls = controls.clone();
     if let Some(sigma_ne_v) = branches.calibration_sigma_ne_v {
         effective_controls.insert("sigma_ne".to_owned(), ResolvedDefaultV1::Scalar(sigma_ne_v));
@@ -1318,6 +1328,15 @@ fn run_with_workflow_token_origin(
     let envelope = if let Some(metrics) = branches.erl_only_metrics.as_ref() {
         sipi_com::erl_only_envelope_v1(metrics)
             .map_err(|error| DirectRunErrorV1::Parameters(error.to_owned()))
+    } else if let Some(winner) = branches.search_winner.as_ref() {
+        execute_com_run_with_search_result_v2(
+            &request_bytes,
+            &fext_values,
+            &next_values,
+            &dto,
+            winner,
+        )
+        .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))
     } else if fext_values.is_empty() && next_values.is_empty() {
         execute_com_run_v1(&request_bytes, &chain_values, &dto)
             .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))
@@ -2730,6 +2749,7 @@ fn portable_branch_result_with_sigma_v1(
     let mut search_available_signal_v = None;
     let mut search_sigma_n_v = None;
     let mut search_h_j = None;
+    let mut search_winner = None;
     if root.contains_key("workbook") {
         diagnostics.insert(
             "workbook".to_owned(),
@@ -3730,31 +3750,33 @@ fn portable_branch_result_with_sigma_v1(
             controls,
             trusted_workbook,
         )?;
-        selected_fom_db = Some(result.fom_db);
-        search_available_signal_v = Some(result.available_signal_v);
-        search_sigma_n_v = Some(result.sigma_n_v);
-        search_h_j = Some(result.h_j.clone());
+        let result_view = result.result();
+        selected_fom_db = Some(result_view.fom_db);
+        search_available_signal_v = Some(result_view.available_signal_v);
+        search_sigma_n_v = Some(result_view.sigma_n_v);
+        search_h_j = Some(result_view.h_j.clone());
+        search_winner = Some(result.clone());
         if effective_pulse.is_none() {
-            effective_pulse = Some(result.selected_pulse.clone());
+            effective_pulse = Some(result_view.selected_pulse.clone());
         }
         diagnostics.insert(
             "search".to_owned(),
             json!({
                 "schema": "sipi.com.equalization.search-r480.v1",
                 "policy": sipi_com::SEARCH_LOOP_POLICY_V1,
-                "fom_db": result.fom_db,
-                "ctle_index": result.ctle_index,
-                "high_pass_index": result.high_pass_index,
-                "cursor_index": result.cursor_index,
-                "tx_grid_index": result.tx_grid_index,
-                "sigma_tx_v": result.sigma_tx_v,
+                "fom_db": result_view.fom_db,
+                "ctle_index": result_view.ctle_index,
+                "high_pass_index": result_view.high_pass_index,
+                "cursor_index": result_view.cursor_index,
+                "tx_grid_index": result_view.tx_grid_index,
+                "sigma_tx_v": result_view.sigma_tx_v,
                 "search_input_sha256": sha256_f64_v1(&search_input.values),
                 "search_input_sample_count": search_input.values.len(),
                 "search_input_source_kind": search_input.source_kind,
                 "calibration_sigma_ne_v": calibration_sigma_ne_override,
-                "selected_pulse_sha256": sha256_f64_v1(&result.selected_pulse),
-                "selected_pulse_sample_count": result.selected_pulse.len(),
-                "selected_tx_taps": result.selected_tx_taps,
+                "selected_pulse_sha256": sha256_f64_v1(&result_view.selected_pulse),
+                "selected_pulse_sample_count": result_view.selected_pulse.len(),
+                "selected_tx_taps": result_view.selected_tx_taps.clone(),
                 "td_input": search_input.td_fillin.as_ref().map(|fillin| json!({
                     "frequency_sha256": sha256_f64_v1(&fillin.frequency_hz),
                     "noise_frequency_sha256": sha256_f64_v1(&fillin.noise_frequency_hz),
@@ -3949,14 +3971,15 @@ fn portable_branch_result_with_sigma_v1(
         search_available_signal_v,
         search_sigma_n_v,
         search_h_j,
+        search_winner,
     })
 }
 
 /// Execute the already-portable R480 non-MMSE/no-RxFFE search loop from a
-/// bounded canonical JSON branch.  The upstream loop is deliberately given
+/// bounded canonical JSON branch. The upstream loop is deliberately given
 /// explicit frequency and receiver/equalizer controls here; we do not infer
 /// an S-parameter model from the impulse or silently fall back to a fixed
-/// status.  Validated TDMODE FEXT/NEXT channels use the existing
+/// status. Validated TDMODE FEXT/NEXT channels use the existing
 /// outer-product crosstalk consumer.
 fn portable_search_v1(
     search: &Map<String, Value>,
@@ -3966,7 +3989,7 @@ fn portable_search_v1(
     tdiln_f2_hz: Option<f64>,
     resolved_controls: Option<&BTreeMap<String, ResolvedDefaultV1>>,
     trusted_workbook: bool,
-) -> Result<SearchLoopResultWithMetricsV1, DirectRunErrorV1> {
+) -> Result<SearchLoopResultWithWinnerV2, DirectRunErrorV1> {
     let branch = "portable.search";
     let td_fillin = impulse.td_fillin.as_ref();
     let frequency_hz = if let Some(fillin) = td_fillin {
@@ -4421,7 +4444,7 @@ fn portable_search_v1(
             .to_owned(),
         },
     };
-    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1(
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
         &impulse.values,
         &frequency_hz,
         &noise_frequency_hz,
@@ -8769,6 +8792,18 @@ mod tests {
             .map(|index| index as f64 * 1.0e7)
             .collect::<Vec<_>>();
         values["portable"] = json!({
+            "equalization": {
+                "channel_types": ["THRU"],
+                "baud_hz": 26.5625e9,
+                "samples_per_ui": 10,
+                "ctle_type": "CL93",
+                "ctle_fz_hz": 0.5e9,
+                "ctle_fp1_hz": 1.0e9,
+                "ctle_fp2_hz": 2.0e9,
+                "ctle_gain_db": 0.0,
+                "tx_ffe_taps": [1.0],
+                "tx_precursor_count": 0
+            },
             "search": {
                 "frequency_hz": frequencies,
                 "samples_per_ui": 10,
@@ -8873,6 +8908,10 @@ mod tests {
         .unwrap();
         let report = run_com_v1(&DirectRunRequestV1::new(&config, &pulse, root.join("out")))
             .expect("portable search");
+        let equalization =
+            &report.result["cases"][0]["diagnostics"]["portable_branches"]["equalization"];
+        assert_eq!(equalization["impulse_count"], 1);
+        assert_eq!(equalization["pulse_count"], 1);
         let search = &report.result["cases"][0]["diagnostics"]["portable_branches"]["search"];
         assert!(search["fom_db"].as_f64().is_some_and(|value| value > 0.0));
         for key in ["available_signal_v", "sigma_n_v", "sigma_ne_v", "h_j"] {
@@ -8881,6 +8920,15 @@ mod tests {
         assert_eq!(
             report.result["cases"][0]["metrics"]["FOM"],
             search["fom_db"]
+        );
+        let channel_pulse = &report.result["cases"][0]["diagnostics"]["channel_pulse"];
+        assert_eq!(
+            channel_pulse["sample_count"], search["selected_pulse_sample_count"],
+            "published chain must use the winner sample count"
+        );
+        assert_eq!(
+            channel_pulse["sha256"], search["selected_pulse_sha256"],
+            "published chain must use the winner waveform"
         );
         let probe_request = DirectRunRequestV1::new(&config, &pulse, root.join("probe-out"));
         let probe_loaded = load_config_v1(&probe_request).expect("probe config");
@@ -9001,6 +9049,18 @@ mod tests {
             workbook_sidecar.get("h_J"),
             Some(ResolvedDefaultV1::Vector(values)) if values.iter().all(|value| value.is_finite())
         ));
+        let winner = sigma_zero
+            .search_winner
+            .as_ref()
+            .expect("search winner for final chain");
+        let selected_pulse = winner.result().selected_pulse.clone();
+        let mut stale_effective = sigma_zero.clone();
+        stale_effective.effective_pulse = Some(vec![123.0; selected_pulse.len()]);
+        let chain_pulse = execution_chain_pulse_v1(&probe_input, &stale_effective, 8)
+            .expect("winner pulse takes precedence over stale effective pulse");
+        assert_eq!(chain_pulse.len(), selected_pulse.len());
+        assert_eq!(sha256_f64_v1(&chain_pulse), sha256_f64_v1(&selected_pulse));
+        assert!(winner.result().fom_db.is_finite());
         assert_ne!(
             sigma_zero_search["fom_db"], sigma_high_search["fom_db"],
             "search FOM evaluator must consume the per-sigma noise"
@@ -9033,6 +9093,10 @@ mod tests {
             "nonzero ACCM transfer must change the downstream search FOM"
         );
         let mut td_values = values.clone();
+        td_values["portable"]
+            .as_object_mut()
+            .expect("portable object")
+            .remove("equalization");
         td_values["parameters"]["samples_per_ui"] = json!(10.0);
         td_values["options"] = json!({
             "TDMODE": true,

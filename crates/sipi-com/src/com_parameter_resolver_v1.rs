@@ -83,6 +83,14 @@ pub fn resolve_com_parameter_controls_v1(
     if map.is_empty() {
         return Err(ComParameterResolverErrorV1::EmptyDto);
     }
+    if map
+        .keys()
+        .any(|key| key.eq_ignore_ascii_case("cursor_index"))
+    {
+        return Err(ComParameterResolverErrorV1::InvalidType(
+            "cursor_index is not a public COM control".to_owned(),
+        ));
+    }
 
     let samples_per_ui = get_scalar(map, &["samples_per_ui", "SAMP_PER_UI", "N_v"])? as usize;
     let levels = get_scalar(map, &["LEVELS", "PAM_LEVELS", "levels"])? as u32;
@@ -151,7 +159,6 @@ pub fn resolve_com_parameter_controls_v1(
         t_o_s,
         None,
     )?;
-
     Ok(controls)
 }
 
@@ -194,6 +201,20 @@ mod tests {
         let dto = sample_dto();
         let controls = resolve_com_parameter_controls_v1(&dto).expect("controls");
         let _ = controls;
+    }
+
+    #[test]
+    fn rejects_public_cursor_injection() {
+        let dto = sample_dto();
+        let mut map = dto.consumed().clone();
+        map.insert("cursor_index".to_owned(), ResolvedDefaultV1::Scalar(30.0));
+        let keys = map.keys().cloned().collect::<Vec<_>>();
+        let dto = merge_com_parameters_v1(&keys, &map, &BTreeMap::new(), &[]).expect("dto");
+        assert!(matches!(
+            resolve_com_parameter_controls_v1(&dto),
+            Err(ComParameterResolverErrorV1::InvalidType(value))
+                if value.contains("cursor_index")
+        ));
     }
 
     #[test]

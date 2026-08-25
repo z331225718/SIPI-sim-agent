@@ -6,12 +6,16 @@
 //! Fail-closed: unadmitted requests or chain errors emit structured failure
 //! envelopes; invalid inputs fail closed cleanly.
 
-use crate::com_chain_v1::{ComChainErrorV1, run_com_chain_with_crosstalk_v1};
+use crate::com_chain_v1::{
+    ComChainErrorV1, ComWinnerContextV1, run_com_chain_with_crosstalk_v1,
+    run_com_chain_with_winner_v1,
+};
 use crate::com_parameter_resolver_v1::{
     ComParameterResolverErrorV1, resolve_com_parameter_controls_v1,
 };
 use crate::com_parameters_v1::ComParametersV1;
 use crate::com_run_admission_v1::{ComRunAdmissionErrorV1, com_run_admission_v1};
+use crate::search_loop_v1::SearchLoopResultWithWinnerV2;
 
 /// Scope policy of the COM run execution core.
 pub const COM_RUN_EXECUTION_POLICY_V1: &str =
@@ -187,6 +191,43 @@ pub fn execute_com_run_with_crosstalk_v1(
     next_pulses: &[&[f64]],
     dto: &ComParametersV1,
 ) -> Result<ComRunResultEnvelopeV1, ComRunExecutionErrorV1> {
+    execute_com_run_with_context_v1(
+        request_bytes,
+        pulse_response,
+        fext_pulses,
+        next_pulses,
+        dto,
+        None,
+    )
+}
+
+/// Execute an admitted request from the opaque V2 search winner.
+pub fn execute_com_run_with_search_result_v2(
+    request_bytes: &[u8],
+    fext_pulses: &[&[f64]],
+    next_pulses: &[&[f64]],
+    dto: &ComParametersV1,
+    winner: &SearchLoopResultWithWinnerV2,
+) -> Result<ComRunResultEnvelopeV1, ComRunExecutionErrorV1> {
+    let pulse_response = winner.result().selected_pulse.as_slice();
+    execute_com_run_with_context_v1(
+        request_bytes,
+        pulse_response,
+        fext_pulses,
+        next_pulses,
+        dto,
+        Some(winner.winner()),
+    )
+}
+
+fn execute_com_run_with_context_v1(
+    request_bytes: &[u8],
+    pulse_response: &[f64],
+    fext_pulses: &[&[f64]],
+    next_pulses: &[&[f64]],
+    dto: &ComParametersV1,
+    winner: Option<&ComWinnerContextV1>,
+) -> Result<ComRunResultEnvelopeV1, ComRunExecutionErrorV1> {
     let admission = match com_run_admission_v1(request_bytes) {
         Ok(adm) => adm,
         Err(err) => {
@@ -230,8 +271,11 @@ pub fn execute_com_run_with_crosstalk_v1(
     }
 
     let controls = resolve_com_parameter_controls_v1(dto)?;
-    let report =
-        run_com_chain_with_crosstalk_v1(pulse_response, fext_pulses, next_pulses, &controls)?;
+    let report = if let Some(winner) = winner {
+        run_com_chain_with_winner_v1(pulse_response, fext_pulses, next_pulses, &controls, winner)?
+    } else {
+        run_com_chain_with_crosstalk_v1(pulse_response, fext_pulses, next_pulses, &controls)?
+    };
 
     Ok(ComRunResultEnvelopeV1 {
         schema: COM_RUN_RESULT_SCHEMA_V1,
@@ -240,7 +284,10 @@ pub fn execute_com_run_with_crosstalk_v1(
         com_db: Some(report.metrics().com_db()),
         vec_db: Some(report.metrics().vec_db()),
         veo_mv: Some(report.metrics().veo_mv()),
-        sigma_n_v: Some(report.noise().sigma_gaussian_v()),
+        sigma_n_v: Some(winner.map_or_else(
+            || report.noise().sigma_gaussian_v(),
+            |winner| winner.sigma_n_v,
+        )),
         available_signal_v: Some(report.metrics().available_signal_v()),
         interference_noise_v: Some(report.metrics().interference_noise_v()),
         threshold_der: Some(report.metrics().threshold_der()),

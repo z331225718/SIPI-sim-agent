@@ -87,7 +87,51 @@ pub struct ComChainControlsV1 {
     eye_opening_v: Option<f64>,
 }
 
+/// Typed winner state passed from the search loop into the final PDF chain.
+/// This is an internal numerical handoff, not a public request control.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ComWinnerContextV1 {
+    pub(crate) cursor_index: usize,
+    pub(crate) dfe_taps: Vec<f64>,
+    pub(crate) dfe_max: Vec<f64>,
+    pub(crate) dfe_min: Vec<f64>,
+    pub(crate) dfe_step: f64,
+    pub(crate) floating_dfe: bool,
+    pub(crate) dfe_max_count: Option<i64>,
+    pub(crate) sigma_n_v: f64,
+}
+
 impl ComChainControlsV1 {
+    fn with_winner(mut self, winner: &ComWinnerContextV1) -> Result<Self, ComChainErrorV1> {
+        if winner.dfe_taps.len() != winner.dfe_max.len()
+            || winner.dfe_taps.len() != winner.dfe_min.len()
+            || winner
+                .dfe_taps
+                .iter()
+                .chain(winner.dfe_max.iter())
+                .chain(winner.dfe_min.iter())
+                .any(|value| !value.is_finite())
+            || !winner.dfe_step.is_finite()
+            || winner.dfe_step < 0.0
+            || !winner.sigma_n_v.is_finite()
+            || winner.sigma_n_v < 0.0
+            || winner.dfe_max_count.is_some_and(|count| count < 0)
+            || winner
+                .dfe_max_count
+                .is_some_and(|count| count as usize != winner.dfe_max.len())
+        {
+            return Err(ComChainErrorV1::InvalidControls);
+        }
+        self.dfe_tap_count = winner.dfe_taps.len() as i64;
+        self.dfe_max = winner.dfe_max.clone();
+        self.dfe_min = winner.dfe_min.clone();
+        self.dfe_step = winner.dfe_step;
+        self.floating_dfe = winner.floating_dfe;
+        self.dfe_max_count = winner.dfe_max_count;
+        self.sigma_n_v = winner.sigma_n_v;
+        Ok(self)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn try_new(
         samples_per_ui: usize,
@@ -245,6 +289,41 @@ pub fn run_com_chain_with_crosstalk_v1(
     next_pulses: &[&[f64]],
     controls: &ComChainControlsV1,
 ) -> Result<ComChainReportV1, ComChainErrorV1> {
+    run_com_chain_with_crosstalk_cursor_v1(pulse_response, fext_pulses, next_pulses, controls, None)
+}
+
+/// Execute the final chain from the already validated search winner.
+pub(crate) fn run_com_chain_with_winner_v1(
+    pulse_response: &[f64],
+    fext_pulses: &[&[f64]],
+    next_pulses: &[&[f64]],
+    controls: &ComChainControlsV1,
+    winner: &ComWinnerContextV1,
+) -> Result<ComChainReportV1, ComChainErrorV1> {
+    if winner.cursor_index < controls.samples_per_ui
+        || winner.cursor_index >= pulse_response.len()
+        || !pulse_response[winner.cursor_index].is_finite()
+        || pulse_response[winner.cursor_index] <= 0.0
+    {
+        return Err(ComChainErrorV1::Equalizer);
+    }
+    let resolved = controls.clone().with_winner(winner)?;
+    run_com_chain_with_crosstalk_cursor_v1(
+        pulse_response,
+        fext_pulses,
+        next_pulses,
+        &resolved,
+        Some(winner.cursor_index),
+    )
+}
+
+fn run_com_chain_with_crosstalk_cursor_v1(
+    pulse_response: &[f64],
+    fext_pulses: &[&[f64]],
+    next_pulses: &[&[f64]],
+    controls: &ComChainControlsV1,
+    forced_cursor_index: Option<usize>,
+) -> Result<ComChainReportV1, ComChainErrorV1> {
     if pulse_response.is_empty() {
         return Err(ComChainErrorV1::EmptyPulse);
     }
@@ -259,14 +338,21 @@ pub fn run_com_chain_with_crosstalk_v1(
             return Err(ComChainErrorV1::NonFinite);
         }
     }
-    let cursor = cursor_sample_index_v1(
-        pulse_response,
-        controls.samples_per_ui,
-        controls.dfe_first_max,
-        &controls.cdr,
-        controls.peak_start,
-        controls.peak_stop,
-    )?;
+    let cursor = if let Some(index) = forced_cursor_index {
+        if index >= pulse_response.len() {
+            return Err(ComChainErrorV1::Equalizer);
+        }
+        CursorSampleV1::with_cursor(index, index as i64, None)
+    } else {
+        cursor_sample_index_v1(
+            pulse_response,
+            controls.samples_per_ui,
+            controls.dfe_first_max,
+            &controls.cdr,
+            controls.peak_start,
+            controls.peak_stop,
+        )?
+    };
     let cursor_index = cursor.cursor_index().ok_or(ComChainErrorV1::Equalizer)? as usize;
     let residual = residual_channel_pdf_v1(
         pulse_response,
@@ -479,6 +565,53 @@ mod tests {
         assert!(
             with_crosstalk.metrics().com_db() != baseline.metrics().com_db()
                 || with_crosstalk.metrics().vec_db() != baseline.metrics().vec_db()
+        );
+    }
+
+    #[test]
+    fn winner_context_bypasses_cursor_recalculation_and_validates_dfe_state() {
+        let winner = ComWinnerContextV1 {
+            cursor_index: 30,
+            dfe_taps: vec![0.1, -0.02],
+            dfe_max: vec![0.4, 0.3],
+            dfe_min: vec![-0.2, -0.1],
+            dfe_step: 0.01,
+            floating_dfe: true,
+            dfe_max_count: Some(2),
+            sigma_n_v: 0.01,
+        };
+        let report = run_com_chain_with_winner_v1(&pulse64(), &[], &[], &controls(), &winner)
+            .expect("winner chain");
+        assert_eq!(report.cursor().cursor_index(), Some(30));
+        let invalid = ComWinnerContextV1 {
+            dfe_min: vec![-0.2],
+            ..winner.clone()
+        };
+        assert_eq!(
+            run_com_chain_with_winner_v1(&pulse64(), &[], &[], &controls(), &invalid),
+            Err(ComChainErrorV1::InvalidControls)
+        );
+        let zero_cursor = ComWinnerContextV1 {
+            cursor_index: 0,
+            ..winner.clone()
+        };
+        assert_eq!(
+            run_com_chain_with_winner_v1(&pulse64(), &[], &[], &controls(), &zero_cursor),
+            Err(ComChainErrorV1::Equalizer)
+        );
+        let before_window = ComWinnerContextV1 {
+            cursor_index: 7,
+            ..winner.clone()
+        };
+        assert_eq!(
+            run_com_chain_with_winner_v1(&pulse64(), &[], &[], &controls(), &before_window),
+            Err(ComChainErrorV1::Equalizer)
+        );
+        let mut nonpositive_pulse = pulse64();
+        nonpositive_pulse[30] = 0.0;
+        assert_eq!(
+            run_com_chain_with_winner_v1(&nonpositive_pulse, &[], &[], &controls(), &winner,),
+            Err(ComChainErrorV1::Equalizer)
         );
     }
 

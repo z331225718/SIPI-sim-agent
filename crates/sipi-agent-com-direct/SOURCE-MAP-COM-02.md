@@ -69,6 +69,18 @@ Its only public function raises `UnsupportedPathError` because r4.80 has no
 Wiener-Hopf implementation; the direct leaf rejects that request rather than
 inventing a solver.
 
+The final fixed-DFE PDF path now consumes an additive opaque V2 Rust winner
+handoff carrying the winning candidate's cursor, DFE taps/bounds, and
+selected noise value. Its winner fields are private and it is not a request
+or JSON wire surface. This matches `equalization/search.py::_peak_window` and
+`noise/discrete_pdf.py::residual_channel_pdf`: normalized DFE bounds are
+scaled by the selected cursor voltage before clipping. The final chain keeps
+the winning candidate's `cand.sbr` coordinates without a second centering or
+padding offset, and does not reselect the peak or accept a public
+`cursor_index` control. This is a focused
+runtime correction for the COM/sigma divergence; it does not alter the search
+FOM, add a public control, fit S-parameters, or create a second channel path.
+
 Package scope is deliberately split: the selector above is reachable by the
 existing SNDR search consumers. The direct S4P route admits the typed
 package-case outer loop one case at a time; each selected case carries its

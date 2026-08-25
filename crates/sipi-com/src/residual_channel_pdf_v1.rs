@@ -139,9 +139,9 @@ pub fn residual_channel_pdf_v1(
             }
         }
         let mut upper = vec![cursor];
-        upper.extend_from_slice(&maximum);
+        upper.extend(maximum.iter().map(|value| cursor * *value));
         let mut lower = vec![cursor];
-        lower.extend_from_slice(&minimum);
+        lower.extend(minimum.iter().map(|value| cursor * *value));
         for (value, (high, low)) in cancellation.iter_mut().zip(upper.iter().zip(lower.iter())) {
             *value = (*high).min((*low).max(*value));
         }
@@ -271,6 +271,33 @@ mod tests {
         .expect("result");
         assert_eq!(result.selected_phase(), 6);
         assert!(!result.residual_pulse().is_empty());
+    }
+
+    #[test]
+    fn dfe_bounds_are_normalized_by_cursor_before_clamping() {
+        let mut pulse = vec![0.0; 24];
+        pulse[4] = 2.0;
+        pulse[6] = 0.8;
+        let result = residual_channel_pdf_v1(
+            &pulse,
+            "THRU",
+            4,
+            2,
+            4,
+            0.01,
+            1,
+            Some(&[0.5]),
+            Some(&[0.2]),
+            0.0,
+            false,
+            None,
+            None,
+        )
+        .expect("result");
+        // The source multiplies normalized tap bounds by the 2 V cursor;
+        // the first post-cursor cancellation is therefore clamped to 0.8 V.
+        assert!((result.residual_pulse()[5] - (pulse[5] - 0.8)).abs() < 1e-12);
+        assert!((result.residual_pulse()[6] - (pulse[6] - 0.8)).abs() < 1e-12);
     }
 
     #[test]

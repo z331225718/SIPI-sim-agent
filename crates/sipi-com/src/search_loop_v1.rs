@@ -17,6 +17,7 @@ use crate::candidate_eval_v1::{
     evaluate_candidate_v1,
 };
 use crate::candidate_helpers_v1::CandidateErrorV1;
+use crate::com_chain_v1::ComWinnerContextV1;
 use crate::crosstalk_noise_v1::{XtalkChannelV1, XtalkErrorV1, XtalkParamsV1, crosstalk_noise_v1};
 use crate::dfe_v1::DfeErrorV1;
 use crate::discrete_pdf_v1::PdfErrorV1;
@@ -410,9 +411,8 @@ pub struct SearchLoopResultV1 {
     pub selected_tx_taps: Vec<f64>,
 }
 
-/// Additive result surface for the workbook-aware route.  The historical V1
-/// result remains source-compatible; these consumer metrics are carried only
-/// by the explicit new entrypoint used by the direct COM adapter.
+/// Additive result surface for the workbook-aware route. The historical V1
+/// result remains source-compatible.
 #[derive(Clone, Debug)]
 pub struct SearchLoopResultWithMetricsV1 {
     pub fom_db: f64,
@@ -430,7 +430,7 @@ pub struct SearchLoopResultWithMetricsV1 {
 }
 
 impl SearchLoopResultWithMetricsV1 {
-    fn legacy(self) -> SearchLoopResultV1 {
+    fn legacy(&self) -> SearchLoopResultV1 {
         SearchLoopResultV1 {
             fom_db: self.fom_db,
             ctle_index: self.ctle_index,
@@ -438,9 +438,31 @@ impl SearchLoopResultWithMetricsV1 {
             tx_grid_index: self.tx_grid_index,
             cursor_index: self.cursor_index,
             sigma_tx_v: self.sigma_tx_v,
-            selected_pulse: self.selected_pulse,
-            selected_tx_taps: self.selected_tx_taps,
+            selected_pulse: self.selected_pulse.clone(),
+            selected_tx_taps: self.selected_tx_taps.clone(),
         }
+    }
+}
+
+/// Opaque winner handoff for the additive COM consumer route.
+///
+/// The winner state cannot be constructed by request callers: it is created
+/// only by the V2 search entrypoint and consumed by the typed COM execution
+/// entrypoint. The historical V1 result remains a normal source-compatible
+/// struct.
+#[derive(Clone, Debug)]
+pub struct SearchLoopResultWithWinnerV2 {
+    result: SearchLoopResultWithMetricsV1,
+    winner: ComWinnerContextV1,
+}
+
+impl SearchLoopResultWithWinnerV2 {
+    pub fn result(&self) -> &SearchLoopResultWithMetricsV1 {
+        &self.result
+    }
+
+    pub(crate) fn winner(&self) -> &ComWinnerContextV1 {
+        &self.winner
     }
 }
 
@@ -475,7 +497,7 @@ pub fn search_r480_nonmmse_no_xtalk_v1(
         full,
         options,
     )
-    .map(SearchLoopResultWithMetricsV1::legacy)
+    .map(|result| result.legacy())
 }
 
 /// Search variant used by calibration orchestration.  When supplied, the
@@ -513,7 +535,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_v1(
         full,
         options,
     )
-    .map(SearchLoopResultWithMetricsV1::legacy)
+    .map(|result| result.legacy())
 }
 
 /// Workbook-aware search entrypoint with an explicit CTLE high-pass gain
@@ -535,6 +557,42 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1(
     full: &SearchFullParamsV1,
     options: &SearchFullOptionsV1,
 ) -> Result<SearchLoopResultWithMetricsV1, SearchLoopErrorV1> {
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
+        unequalized_impulse,
+        frequency_hz,
+        noise_frequency_hz,
+        crosstalk_frequency_hz,
+        crosstalk,
+        calibration_noise,
+        calibration_sigma_ne_v,
+        peak_window_pulse,
+        td_crosstalk_outer_product,
+        ac_common_mode_transfers,
+        package_case_index,
+        g_dc_hp_values,
+        full,
+        options,
+    )
+    .map(|result| result.result.clone())
+}
+
+/// Additive opaque winner entrypoint for the typed COM final chain.
+pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
+    unequalized_impulse: &[f64],
+    frequency_hz: &[f64],
+    noise_frequency_hz: &[f64],
+    crosstalk_frequency_hz: &[f64],
+    crosstalk: &[XtalkChannelV1],
+    calibration_noise: fn(usize, usize, f64) -> f64,
+    calibration_sigma_ne_v: Option<f64>,
+    peak_window_pulse: Option<&[f64]>,
+    td_crosstalk_outer_product: bool,
+    ac_common_mode_transfers: &[Vec<Complex64>],
+    package_case_index: usize,
+    g_dc_hp_values: &[f64],
+    full: &SearchFullParamsV1,
+    options: &SearchFullOptionsV1,
+) -> Result<SearchLoopResultWithWinnerV2, SearchLoopErrorV1> {
     if unequalized_impulse.is_empty() || frequency_hz.len() < 2 {
         return Err(SearchLoopErrorV1::Input);
     }
@@ -579,7 +637,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1(
     };
     let sweep = sweep_order(&sweep_params)?;
     let mut best_fom: Option<f64> = None;
-    let mut best_result: Option<SearchLoopResultWithMetricsV1> = None;
+    let mut best_result: Option<SearchLoopResultWithWinnerV2> = None;
     let mut best_indices: Option<Vec<i64>> = None;
     let mut best_high_pass: Option<i64> = None;
 
@@ -763,19 +821,34 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1(
                             best_fom = Some(cand.fom_db);
                             best_indices = Some(current.clone());
                             best_high_pass = Some(high_pass_index as i64);
-                            best_result = Some(SearchLoopResultWithMetricsV1 {
-                                fom_db: cand.fom_db,
-                                ctle_index: ctle_index as i64,
-                                high_pass_index: high_pass_index as i64,
-                                tx_grid_index: candidate_index as i64,
-                                cursor_index: cand.cursor_index,
-                                sigma_tx_v: cand.sigma_tx_v,
-                                selected_pulse: sbr.clone(),
-                                selected_tx_taps: taps.clone(),
-                                available_signal_v: cand.available_signal_v,
-                                sigma_n_v: cand.sigma_n_v,
-                                sigma_ne_v: cand.sigma_ne_v,
-                                h_j: cand.h_j.clone(),
+                            best_result = Some(SearchLoopResultWithWinnerV2 {
+                                result: SearchLoopResultWithMetricsV1 {
+                                    fom_db: cand.fom_db,
+                                    ctle_index: ctle_index as i64,
+                                    high_pass_index: high_pass_index as i64,
+                                    tx_grid_index: candidate_index as i64,
+                                    cursor_index: cand.cursor_index,
+                                    sigma_tx_v: cand.sigma_tx_v,
+                                    selected_pulse: cand.sbr.clone(),
+                                    selected_tx_taps: taps.clone(),
+                                    available_signal_v: cand.available_signal_v,
+                                    sigma_n_v: cand.sigma_n_v,
+                                    sigma_ne_v: cand.sigma_ne_v,
+                                    h_j: cand.h_j.clone(),
+                                },
+                                winner: ComWinnerContextV1 {
+                                    cursor_index: cand.cursor_index,
+                                    dfe_taps: cand.dfe_taps.clone(),
+                                    dfe_max: cand.dfe_max.clone(),
+                                    dfe_min: cand.dfe_min.clone(),
+                                    dfe_step: full.candidate.dfe_delta,
+                                    floating_dfe: full.candidate.floating_dfe,
+                                    dfe_max_count: full
+                                        .candidate
+                                        .floating_dfe
+                                        .then_some(cand.dfe_max.len() as i64),
+                                    sigma_n_v: cand.sigma_n_v,
+                                },
                             });
                         }
                     }

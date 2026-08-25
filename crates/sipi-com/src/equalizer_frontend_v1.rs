@@ -29,6 +29,19 @@ pub struct CursorSampleV1 {
 }
 
 impl CursorSampleV1 {
+    pub(crate) fn with_cursor(
+        cursor_index: usize,
+        peak_index: i64,
+        zero_crossing_index: Option<i64>,
+    ) -> Self {
+        Self {
+            cursor_index: Some(cursor_index as i64),
+            no_zero_crossing: false,
+            peak_index,
+            zero_crossing_index,
+        }
+    }
+
     pub fn cursor_index(&self) -> Option<i64> {
         self.cursor_index
     }

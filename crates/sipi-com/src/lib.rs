@@ -134,7 +134,7 @@ pub use com_run_artifact_provenance_v1::{
 pub use com_run_execution_v1::{
     COM_RUN_EXECUTION_POLICY_V1, COM_RUN_RESULT_SCHEMA_V1, ComRunExecutionErrorV1,
     ComRunResultEnvelopeV1, ErlOnlyMetricsV1, erl_only_envelope_v1, execute_com_run_v1,
-    execute_com_run_with_crosstalk_v1,
+    execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
 };
 pub use com_specified_artifact_execution_v1::{
     COM_RUN_ARTIFACT_SPECIFIED_POLICY_V1, COM_RUN_ARTIFACT_SPECIFIED_RESULT_SCHEMA_V1,
@@ -240,10 +240,11 @@ pub use sampled_signal_pdf_v1::{
 pub use search_loop_v1::{
     SEARCH_LOOP_POLICY_V1, SearchFullOptionsV1, SearchFullParamsV1, SearchLoopErrorV1,
     SearchLoopOptionsV1, SearchLoopParamsV1, SearchLoopResultV1, SearchLoopResultWithMetricsV1,
-    anchored_cursor, peak_window, r480_sample_offsets, rectangular_pulse_response_v1,
-    search_r480_nonmmse_no_xtalk_v1, search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1,
-    search_r480_nonmmse_no_xtalk_with_sigma_v1, shift_matrix, skip_high_pass_local_search,
-    skip_local_search, validate_supported_branch,
+    SearchLoopResultWithWinnerV2, anchored_cursor, peak_window, r480_sample_offsets,
+    rectangular_pulse_response_v1, search_r480_nonmmse_no_xtalk_v1,
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v1,
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2, search_r480_nonmmse_no_xtalk_with_sigma_v1,
+    shift_matrix, skip_high_pass_local_search, skip_local_search, validate_supported_branch,
 };
 pub use search_support_v1::{
     CtleParamsV1, SEARCH_SUPPORT_POLICY_V1, SearchErrorV1, apply_ctle_candidate_v1,
