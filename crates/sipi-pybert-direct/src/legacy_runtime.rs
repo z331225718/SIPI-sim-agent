@@ -14,9 +14,10 @@
 //! leaf; that predecessor still owns the full branch/default/error inventory.
 
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     fs::{self, File},
-    io::Read,
+    io::{Read, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
     time::{SystemTime, UNIX_EPOCH},
@@ -31,6 +32,7 @@ use serde_pickle::{
 };
 use serde_pickle::{SerOptions, to_vec};
 use serde_yaml::Value;
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 use yaml_rust2::parser::{Event, EventReceiver, Parser, Tag};
 
@@ -79,6 +81,12 @@ const MAX_TX_TUNERS: usize = 64;
 const MAX_TOTAL_SAMPLES: u64 = 50_000_000;
 const MAX_LEGACY_RESULT_BYTES: usize = 512 * 1024 * 1024;
 const LEGACY_RESULT_VECTOR_UPPER_BOUND: u64 = 16;
+const LEGACY_CLASS_PICKLE_PROTOCOL: u8 = 3;
+const LEGACY_CLASS_DATE_CREATED: &str = "not-recorded";
+const LEGACY_CLASS_VERSION: &str = "sipi-pybert-direct/0.1.0 class-pickle-v1 noncanonical";
+const LEGACY_CLASS_SAFE_LOG10_MIN: f64 = 1e-20;
+const LEGACY_F64_WRITE_CHUNK_VALUES: usize = 1024;
+const LEGACY_READBACK_BUFFER_BYTES: usize = 64 * 1024;
 const PYBERT_CONFIG_TAG: &str = "python/object:pybert.configuration.PyBertCfg";
 const PYTHON_TUPLE_TAG: &str = "python/tuple";
 const YAML_2002_TAG_HANDLE: &str = "tag:yaml.org,2002:";
@@ -201,6 +209,15 @@ const UNSUPPORTED_ENABLED_KEYS: &[&str] =
 
 static SEED_COUNTER: AtomicU64 = AtomicU64::new(1);
 
+/// Explicit result selection for the bounded legacy `sim` adapter.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LegacyResultCodecV1 {
+    /// Existing SIPI-owned data-only dictionary (the default CLI format).
+    SipiDictionary,
+    /// Pinned PyBERT class-load-compatible object graph.
+    ClassPickle,
+}
+
 #[derive(Debug, Error)]
 pub enum LegacyRuntimeError {
     #[error("PB-01 legacy configuration could not be read: {0}")]
@@ -219,6 +236,8 @@ pub enum LegacyRuntimeError {
     Native(#[from] crate::NativeSimulationError),
     #[error("PB-01 legacy result pickle failed: {0}")]
     Pickle(#[from] serde_pickle::Error),
+    #[error("PB-01 legacy result publication is indeterminate: {0}")]
+    PublishIndeterminate(String),
 }
 
 #[derive(Clone, Debug, Deserialize, Default)]
@@ -1068,6 +1087,17 @@ fn pickle_key_to_string(key: HashableValue) -> Result<String, LegacyRuntimeError
 pub fn run_legacy_sim_v1(
     request: &LegacySimRequestV1,
 ) -> Result<LegacySimReportV1, LegacyRuntimeError> {
+    run_legacy_sim_with_codec_v1(request, LegacyResultCodecV1::SipiDictionary)
+}
+
+/// Execute the migrated leaf with an explicit result codec.
+///
+/// Both codecs share the same `SimulationInputV1 -> simulate_native_v1`
+/// path; this dispatcher changes serialization only.
+pub fn run_legacy_sim_with_codec_v1(
+    request: &LegacySimRequestV1,
+    codec: LegacyResultCodecV1,
+) -> Result<LegacySimReportV1, LegacyRuntimeError> {
     crate::validate_legacy_sim_request(request).map_err(|error| match error {
         LegacySimError::ConfigIo(error) => LegacyRuntimeError::Io(error),
         other => LegacyRuntimeError::InvalidConfig(other.to_string()),
@@ -1095,7 +1125,10 @@ pub fn run_legacy_sim_v1(
     let result_path = request
         .resolved_results_path()
         .map_err(|error| LegacyRuntimeError::InvalidConfig(error.to_string()))?;
-    write_legacy_result_v1(&result_path, &output)?;
+    match codec {
+        LegacyResultCodecV1::SipiDictionary => write_legacy_result_v1(&result_path, &output)?,
+        LegacyResultCodecV1::ClassPickle => write_legacy_class_result_v1(&result_path, &output)?,
+    }
     Ok(LegacySimReportV1 {
         config,
         input,
@@ -1107,9 +1140,9 @@ pub fn run_legacy_sim_v1(
 /// Write a Python pickle dictionary under the legacy result suffix.
 ///
 /// The payload intentionally uses canonical PyBERT item names and f64 arrays,
-/// while identifying itself as `sipi.pybert_data.v1`.  A future slice can
-/// replace this dictionary with a class-compatible `PyBertData` pickle without
-/// changing the Rust simulation leaf or the CLI default path.
+/// while identifying itself as `sipi.pybert_data.v1`. The explicit class-load
+/// compatible codec is selected through [`run_legacy_sim_with_codec_v1`]; this
+/// established default remains data-only.
 pub fn write_legacy_result_v1(
     path: &Path,
     output: &SimulationOutputV1,
@@ -1140,6 +1173,334 @@ pub fn write_legacy_result_v1(
     Ok(())
 }
 
+fn write_legacy_class_result_v1(
+    path: &Path,
+    output: &SimulationOutputV1,
+) -> Result<(), LegacyRuntimeError> {
+    output
+        .validate()
+        .map_err(|error| LegacyRuntimeError::InvalidConfig(error.to_string()))?;
+    let layout = LegacyArrayLayout::from_output(output)?;
+    layout.validate_class_codec_peak()?;
+    publish_legacy_class_result(path, |file| {
+        let projection = LegacyArrayProjection::new(output)?;
+        let mut pickle = LegacyClassPickleWriter::new(file, MAX_LEGACY_RESULT_BYTES);
+        write_legacy_class_pickle(&mut pickle, &projection)?;
+        pickle.finish()
+    })
+}
+
+fn write_legacy_class_pickle<W: Write>(
+    pickle: &mut LegacyClassPickleWriter<W>,
+    arrays: &LegacyArrayProjection<'_>,
+) -> Result<(), LegacyRuntimeError> {
+    pickle.protocol(LEGACY_CLASS_PICKLE_PROTOCOL)?;
+    pickle.global("pybert.results", "PyBertData")?;
+    pickle.empty_tuple()?;
+    pickle.new_object()?;
+    pickle.empty_dict()?;
+    pickle.mark()?;
+    pickle.bin_unicode("the_data")?;
+    pickle.global("chaco.array_plot_data", "ArrayPlotData")?;
+    pickle.empty_tuple()?;
+    pickle.new_object()?;
+    pickle.empty_dict()?;
+    pickle.mark()?;
+    pickle.bin_unicode("arrays")?;
+    write_legacy_trait_dict(pickle, arrays)?;
+    pickle.bin_unicode("writable")?;
+    pickle.new_true()?;
+    pickle.bin_unicode("selectable")?;
+    pickle.new_true()?;
+    pickle.bin_unicode("__traits_version__")?;
+    pickle.bin_unicode("7.1.0")?;
+    pickle.set_items()?;
+    pickle.build()?;
+    pickle.bin_unicode("date_created")?;
+    pickle.bin_unicode(LEGACY_CLASS_DATE_CREATED)?;
+    pickle.bin_unicode("version")?;
+    pickle.bin_unicode(LEGACY_CLASS_VERSION)?;
+    pickle.set_items()?;
+    pickle.build()?;
+    pickle.stop()
+}
+
+fn write_legacy_trait_dict<W: Write>(
+    pickle: &mut LegacyClassPickleWriter<W>,
+    arrays: &LegacyArrayProjection<'_>,
+) -> Result<(), LegacyRuntimeError> {
+    pickle.global("traits.trait_dict_object", "TraitDictObject")?;
+    pickle.empty_tuple()?;
+    pickle.new_object()?;
+    let memo = pickle.memo()?;
+    arrays.visit(response_spectrum_db, |name, values| {
+        pickle.bin_unicode(name)?;
+        pickle.numpy_f64_array(values)?;
+        pickle.set_item()
+    })?;
+
+    // Traits stores these validators and bookkeeping fields in the state
+    // mapping.  Keeping the same state shape lets the pinned ArrayPlotData
+    // loader reconstruct a real TraitDictObject instead of a plain dict.
+    pickle.empty_dict()?;
+    pickle.mark()?;
+    pickle.bin_unicode("key_validator")?;
+    pickle.getattr(memo, "_key_validator")?;
+    pickle.bin_unicode("value_validator")?;
+    pickle.getattr(memo, "_value_validator")?;
+    pickle.bin_unicode("name")?;
+    pickle.bin_unicode("arrays")?;
+    pickle.bin_unicode("name_items")?;
+    pickle.bin_unicode("arrays_items")?;
+    pickle.set_items()?;
+    pickle.build()?;
+    Ok(())
+}
+
+struct LegacyClassPickleWriter<W> {
+    sink: W,
+    digest: Sha256,
+    byte_count: usize,
+    max_bytes: usize,
+    next_memo: u16,
+}
+
+impl<W: Write> LegacyClassPickleWriter<W> {
+    fn new(sink: W, max_bytes: usize) -> Self {
+        Self {
+            sink,
+            digest: Sha256::new(),
+            byte_count: 0,
+            max_bytes,
+            next_memo: 0,
+        }
+    }
+
+    fn append(&mut self, bytes: &[u8]) -> Result<(), LegacyRuntimeError> {
+        let next = self.byte_count.checked_add(bytes.len()).ok_or_else(|| {
+            LegacyRuntimeError::ResourceLimit("class pickle byte count overflow".into())
+        })?;
+        if next > self.max_bytes {
+            return Err(LegacyRuntimeError::ResourceLimit(
+                "class-compatible .pybert_data exceeds 512 MiB".into(),
+            ));
+        }
+        self.sink.write_all(bytes)?;
+        self.digest.update(bytes);
+        self.byte_count = next;
+        Ok(())
+    }
+
+    fn byte(&mut self, byte: u8) -> Result<(), LegacyRuntimeError> {
+        self.append(&[byte])
+    }
+
+    fn u8(&mut self, value: u8) -> Result<(), LegacyRuntimeError> {
+        self.byte(value)
+    }
+
+    fn u32(&mut self, value: u32) -> Result<(), LegacyRuntimeError> {
+        self.append(&value.to_le_bytes())
+    }
+
+    fn i32(&mut self, value: i32) -> Result<(), LegacyRuntimeError> {
+        self.append(&value.to_le_bytes())
+    }
+
+    fn protocol(&mut self, protocol: u8) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x80)?;
+        self.u8(protocol)
+    }
+
+    fn global(&mut self, module: &str, name: &str) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'c')?;
+        self.append(module.as_bytes())?;
+        self.byte(b'\n')?;
+        self.append(name.as_bytes())?;
+        self.byte(b'\n')
+    }
+
+    fn empty_tuple(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b')')
+    }
+
+    fn empty_dict(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'}')
+    }
+
+    fn mark(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'(')
+    }
+
+    fn bin_unicode(&mut self, value: &str) -> Result<(), LegacyRuntimeError> {
+        let bytes = value.as_bytes();
+        let length = u32::try_from(bytes.len()).map_err(|_| {
+            LegacyRuntimeError::ResourceLimit("class pickle string length overflow".into())
+        })?;
+        self.byte(b'X')?;
+        self.u32(length)?;
+        self.append(bytes)
+    }
+
+    fn short_bin_bytes(&mut self, bytes: &[u8]) -> Result<(), LegacyRuntimeError> {
+        let length = u8::try_from(bytes.len()).map_err(|_| {
+            LegacyRuntimeError::ResourceLimit("class pickle short bytes length overflow".into())
+        })?;
+        self.byte(b'C')?;
+        self.u8(length)?;
+        self.append(bytes)
+    }
+
+    fn bin_f64_values(&mut self, values: &[f64]) -> Result<(), LegacyRuntimeError> {
+        let length = values
+            .len()
+            .checked_mul(std::mem::size_of::<f64>())
+            .and_then(|length| u32::try_from(length).ok())
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("class pickle f64 byte length overflow".into())
+            })?;
+        self.byte(b'B')?;
+        self.u32(length)?;
+        let mut encoded = [0_u8; LEGACY_F64_WRITE_CHUNK_VALUES * std::mem::size_of::<f64>()];
+        for chunk in values.chunks(LEGACY_F64_WRITE_CHUNK_VALUES) {
+            for (index, value) in chunk.iter().enumerate() {
+                let start = index * std::mem::size_of::<f64>();
+                encoded[start..start + std::mem::size_of::<f64>()]
+                    .copy_from_slice(&value.to_le_bytes());
+            }
+            self.append(&encoded[..std::mem::size_of_val(chunk)])?;
+        }
+        Ok(())
+    }
+
+    fn new_object(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x81)
+    }
+
+    fn new_true(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x88)
+    }
+
+    fn memo(&mut self) -> Result<u8, LegacyRuntimeError> {
+        let memo = u8::try_from(self.next_memo).map_err(|_| {
+            LegacyRuntimeError::ResourceLimit("class pickle memo table overflow".into())
+        })?;
+        self.next_memo = self.next_memo.checked_add(1).ok_or_else(|| {
+            LegacyRuntimeError::ResourceLimit("class pickle memo table overflow".into())
+        })?;
+        self.byte(b'q')?;
+        self.u8(memo)?;
+        Ok(memo)
+    }
+
+    fn get_memo(&mut self, memo: u8) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'h')?;
+        self.u8(memo)
+    }
+
+    fn tuple2(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x86)
+    }
+
+    fn tuple3(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x87)
+    }
+
+    fn tuple1(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x85)
+    }
+
+    fn tuple(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b't')
+    }
+
+    fn reduce(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'R')
+    }
+
+    fn set_item(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b's')
+    }
+
+    fn set_items(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'u')
+    }
+
+    fn build(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'b')
+    }
+
+    fn stop(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'.')
+    }
+
+    fn getattr(&mut self, object_memo: u8, name: &str) -> Result<(), LegacyRuntimeError> {
+        self.global("builtins", "getattr")?;
+        self.get_memo(object_memo)?;
+        self.bin_unicode(name)?;
+        self.tuple2()?;
+        self.reduce()
+    }
+
+    fn pickle_int(&mut self, value: usize) -> Result<(), LegacyRuntimeError> {
+        if value <= u8::MAX as usize {
+            self.byte(b'K')?;
+            self.u8(value as u8)
+        } else if value <= u16::MAX as usize {
+            self.byte(b'M')?;
+            self.append(&(value as u16).to_le_bytes())
+        } else {
+            let value = i32::try_from(value).map_err(|_| {
+                LegacyRuntimeError::ResourceLimit("class pickle shape exceeds int32".into())
+            })?;
+            self.byte(b'J')?;
+            self.i32(value)
+        }
+    }
+
+    fn numpy_f64_array(&mut self, values: &[f64]) -> Result<(), LegacyRuntimeError> {
+        self.global("numpy._core.multiarray", "_reconstruct")?;
+        self.global("numpy", "ndarray")?;
+        self.byte(b'K')?;
+        self.u8(0)?;
+        self.tuple1()?;
+        self.short_bin_bytes(b"b")?;
+        self.tuple3()?;
+        self.reduce()?;
+        self.mark()?;
+        self.pickle_int(1)?;
+        self.pickle_int(values.len())?;
+        self.tuple1()?;
+        self.global("numpy", "dtype")?;
+        self.bin_unicode("f8")?;
+        self.byte(0x89)?;
+        self.new_true()?;
+        self.tuple3()?;
+        self.reduce()?;
+        self.mark()?;
+        self.pickle_int(3)?;
+        self.bin_unicode("<")?;
+        self.byte(b'N')?;
+        self.byte(b'N')?;
+        self.byte(b'N')?;
+        self.byte(b'J')?;
+        self.i32(-1)?;
+        self.byte(b'J')?;
+        self.i32(-1)?;
+        self.pickle_int(0)?;
+        self.tuple()?;
+        self.build()?;
+        self.byte(0x89)?;
+        self.bin_f64_values(values)?;
+        self.tuple()?;
+        self.build()
+    }
+
+    fn finish(self) -> Result<(W, usize, [u8; 32]), LegacyRuntimeError> {
+        Ok((self.sink, self.byte_count, self.digest.finalize().into()))
+    }
+}
+
 #[derive(Debug, Serialize)]
 struct LegacyPicklePayload {
     schema: &'static str,
@@ -1150,79 +1511,264 @@ struct LegacyPicklePayload {
     source: &'static str,
 }
 
+struct TemporaryResult {
+    path: PathBuf,
+}
+
+impl Drop for TemporaryResult {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.path);
+    }
+}
+
+fn publish_legacy_class_result(
+    path: &Path,
+    encode: impl FnOnce(File) -> Result<(File, usize, [u8; 32]), LegacyRuntimeError>,
+) -> Result<(), LegacyRuntimeError> {
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent)?;
+    match fs::symlink_metadata(path) {
+        Ok(_) => {
+            return Err(LegacyRuntimeError::InvalidConfig(
+                "class-pickle result target already exists".into(),
+            ));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
+
+    let mut created = None;
+    for _ in 0..16 {
+        let mut nonce = [0_u8; 16];
+        getrandom::getrandom(&mut nonce).map_err(|error| {
+            LegacyRuntimeError::InvalidConfig(format!(
+                "class-pickle temporary nonce generation failed: {error}"
+            ))
+        })?;
+        let nonce = nonce
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let candidate = parent.join(format!(
+            ".sipi-pb01-result-{}-{nonce}.tmp",
+            std::process::id()
+        ));
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&candidate)
+        {
+            Ok(file) => {
+                created = Some((TemporaryResult { path: candidate }, file));
+                break;
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.into()),
+        }
+    }
+    let (temporary, file) = created.ok_or_else(|| {
+        LegacyRuntimeError::Io(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "could not create a fresh class-pickle temporary file",
+        ))
+    })?;
+    let (mut file, expected_length, expected_sha256) = encode(file)?;
+    file.flush()?;
+    file.sync_all()?;
+    drop(file);
+
+    let mut readback = File::open(&temporary.path)?;
+    let mut buffer = vec![0_u8; LEGACY_READBACK_BUFFER_BYTES];
+    let mut digest = Sha256::new();
+    let mut actual_length = 0_usize;
+    loop {
+        let count = readback.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        actual_length = actual_length.checked_add(count).ok_or_else(|| {
+            LegacyRuntimeError::ResourceLimit("class-pickle readback length overflow".into())
+        })?;
+        if actual_length > MAX_LEGACY_RESULT_BYTES {
+            return Err(LegacyRuntimeError::ResourceLimit(
+                "class-compatible .pybert_data exceeds 512 MiB".into(),
+            ));
+        }
+        digest.update(&buffer[..count]);
+    }
+    let actual_sha256: [u8; 32] = digest.finalize().into();
+    if actual_length != expected_length || actual_sha256 != expected_sha256 {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "class-pickle readback identity mismatch".into(),
+        ));
+    }
+    fs::hard_link(&temporary.path, path).map_err(|error| {
+        LegacyRuntimeError::Io(std::io::Error::new(
+            error.kind(),
+            format!("class-pickle no-clobber publication failed: {error}"),
+        ))
+    })?;
+    fs::remove_file(&temporary.path).map_err(|error| {
+        LegacyRuntimeError::PublishIndeterminate(format!(
+            "class-pickle was published but temporary cleanup failed: {error}"
+        ))
+    })?;
+    std::mem::forget(temporary);
+    Ok(())
+}
+
+struct LegacyArrayProjection<'a> {
+    channel: &'a [f64],
+    tx_out_h: &'a [f64],
+    tx_h: &'a [f64],
+    ctle_h: Cow<'a, [f64]>,
+    ctle_out_h: Vec<f64>,
+    dfe_h: Vec<f64>,
+    dfe_out_h: Vec<f64>,
+    tx_out: &'a [f64],
+    samples_per_ui: usize,
+}
+
+impl<'a> LegacyArrayProjection<'a> {
+    fn new(output: &'a SimulationOutputV1) -> Result<Self, LegacyRuntimeError> {
+        let source = &output.arrays;
+        let required = |name: &str| {
+            source
+                .get(name)
+                .filter(|values| !values.is_empty())
+                .map(Vec::as_slice)
+                .ok_or_else(|| {
+                    LegacyRuntimeError::InvalidConfig(format!(
+                        "legacy result source array {name} is empty or missing"
+                    ))
+                })
+        };
+        let channel = required("channel_impulse_v_per_v")?;
+        let tx_out_h = required("tx_channel_impulse_v_per_v")?;
+        let tx_h = source
+            .get("tx_impulse_v_per_v")
+            .filter(|values| !values.is_empty())
+            .or_else(|| {
+                source
+                    .get("legacy_stage_tx_re")
+                    .filter(|values| !values.is_empty())
+            })
+            .map(Vec::as_slice)
+            .ok_or_else(|| {
+                LegacyRuntimeError::InvalidConfig(
+                    "legacy result TX impulse source is empty or missing".into(),
+                )
+            })?;
+        let ctle_h = source
+            .get("rx_filter_impulse_v_per_v")
+            .filter(|values| !values.is_empty())
+            .map_or_else(
+                || Cow::Owned(vec![1.0]),
+                |values| Cow::Borrowed(values.as_slice()),
+            );
+        let ctle_out_h = causal_convolve(tx_out_h, ctle_h.as_ref(), tx_out_h.len())?;
+        let ffe_out_h = match source
+            .get("rx_ffe_impulse_v_per_v")
+            .filter(|values| !values.is_empty())
+        {
+            Some(rx_ffe) => causal_convolve(&ctle_out_h, rx_ffe, tx_out_h.len())?,
+            None => ctle_out_h.clone(),
+        };
+        let samples_per_ui = inferred_samples_per_ui(source);
+        let final_taps = source
+            .get("dfe_tap_weights_v")
+            .map_or(&[][..], Vec::as_slice);
+        let dfe_h = dfe_impulse_from_history(final_taps, samples_per_ui);
+        let dfe_out_h = causal_convolve(&ffe_out_h, &dfe_h, tx_out_h.len())?;
+        let tx_out = required("tx_waveform_v")?;
+        Ok(Self {
+            channel,
+            tx_out_h,
+            tx_h,
+            ctle_h,
+            ctle_out_h,
+            dfe_h,
+            dfe_out_h,
+            tx_out,
+            samples_per_ui,
+        })
+    }
+
+    fn visit(
+        &self,
+        spectrum: fn(&[f64]) -> Result<Vec<f64>, LegacyRuntimeError>,
+        mut emit: impl FnMut(&str, &[f64]) -> Result<(), LegacyRuntimeError>,
+    ) -> Result<(), LegacyRuntimeError> {
+        emit("chnl_h", self.channel)?;
+        emit("tx_out_h", self.tx_out_h)?;
+        emit("ctle_out_h", &self.ctle_out_h)?;
+        emit("dfe_out_h", &self.dfe_out_h)?;
+        for (name, source) in [
+            ("chnl_s", self.channel),
+            ("tx_s", self.tx_h),
+            ("ctle_s", self.ctle_h.as_ref()),
+            ("dfe_s", self.dfe_h.as_slice()),
+            ("tx_out_s", self.tx_out_h),
+            ("ctle_out_s", self.ctle_out_h.as_slice()),
+            ("dfe_out_s", self.dfe_out_h.as_slice()),
+        ] {
+            let values = step_from(source);
+            emit(name, &values)?;
+        }
+        for (name, source) in [
+            ("chnl_p", self.channel),
+            ("tx_out_p", self.tx_out_h),
+            ("ctle_out_p", self.ctle_out_h.as_slice()),
+            ("dfe_out_p", self.dfe_out_h.as_slice()),
+        ] {
+            let values = pulse_from(source, self.samples_per_ui);
+            emit(name, &values)?;
+        }
+        for (name, source) in [
+            ("chnl_H", self.channel),
+            ("tx_H", self.tx_h),
+            ("ctle_H", self.ctle_h.as_ref()),
+            ("dfe_H", self.dfe_h.as_slice()),
+            ("tx_out_H", self.tx_out_h),
+            ("ctle_out_H", self.ctle_out_h.as_slice()),
+            ("dfe_out_H", self.dfe_out_h.as_slice()),
+        ] {
+            let values = spectrum(source)?;
+            emit(name, &values)?;
+        }
+        emit("tx_out", self.tx_out)
+    }
+}
+
 fn legacy_arrays(
     output: &SimulationOutputV1,
 ) -> Result<BTreeMap<String, Vec<f64>>, LegacyRuntimeError> {
-    let source = &output.arrays;
+    let projection = LegacyArrayProjection::new(output)?;
     let mut arrays = BTreeMap::new();
-    let get = |name: &str| source.get(name).cloned().unwrap_or_default();
-    let channel = get("channel_impulse_v_per_v");
-    let tx_out_h = get("tx_channel_impulse_v_per_v");
-    let tx_h = get("tx_impulse_v_per_v");
-    let tx_h = if tx_h.is_empty() {
-        get("legacy_stage_tx_re")
-    } else {
-        tx_h
-    };
-    let rx_ffe = get("rx_ffe_impulse_v_per_v");
-    let ctle_h = get("rx_filter_impulse_v_per_v");
-    let ctle_h = if ctle_h.is_empty() { vec![1.0] } else { ctle_h };
-    let ctle_out_h = causal_convolve(&tx_out_h, &ctle_h, tx_out_h.len())?;
-    let ffe_out_h = if rx_ffe.is_empty() {
-        ctle_out_h.clone()
-    } else {
-        causal_convolve(&ctle_out_h, &rx_ffe, tx_out_h.len())?
-    };
-    let final_taps = get("dfe_tap_weights_v");
-    let samples_per_ui = inferred_samples_per_ui(source);
-    let dfe_h = dfe_impulse_from_history(&final_taps, samples_per_ui);
-    let dfe_out_h = causal_convolve(&ffe_out_h, &dfe_h, tx_out_h.len())?;
-    let tx_out = get("tx_waveform_v");
-    let tx_h_spectrum = response_spectrum(&tx_h)?;
-    let tx_out_h_spectrum = response_spectrum(&tx_out_h)?;
-    let ctle_h_spectrum = response_spectrum(&ctle_h)?;
-    let ctle_out_h_spectrum = response_spectrum(&ctle_out_h)?;
-    let dfe_h_spectrum = response_spectrum(&dfe_h)?;
-    let dfe_out_h_spectrum = response_spectrum(&dfe_out_h)?;
-    for (name, values) in [
-        ("chnl_h", channel.clone()),
-        ("tx_out_h", tx_out_h.clone()),
-        ("ctle_out_h", ctle_out_h.clone()),
-        ("dfe_out_h", dfe_out_h.clone()),
-        ("chnl_s", step_from(&channel)),
-        ("tx_s", step_from(&tx_h)),
-        ("ctle_s", step_from(&ctle_h)),
-        ("dfe_s", step_from(&dfe_h)),
-        ("tx_out_s", step_from(&tx_out_h)),
-        ("ctle_out_s", step_from(&ctle_out_h)),
-        ("dfe_out_s", step_from(&dfe_out_h)),
-        (
-            "chnl_p",
-            pulse_from(&channel, inferred_samples_per_ui(source)),
-        ),
-        ("tx_out_p", pulse_from(&tx_out_h, samples_per_ui)),
-        ("ctle_out_p", pulse_from(&ctle_out_h, samples_per_ui)),
-        ("dfe_out_p", pulse_from(&dfe_out_h, samples_per_ui)),
-        ("chnl_H", response_spectrum(&channel)?),
-        ("tx_H", tx_h_spectrum),
-        ("ctle_H", ctle_h_spectrum),
-        ("dfe_H", dfe_h_spectrum),
-        ("tx_out_H", tx_out_h_spectrum),
-        ("ctle_out_H", ctle_out_h_spectrum),
-        ("dfe_out_H", dfe_out_h_spectrum),
-        ("tx_out", tx_out),
-    ] {
-        arrays.insert(name.into(), values);
-    }
-    for name in LEGACY_ITEM_NAMES {
-        let values = arrays.entry(name.into()).or_default();
-        if values.is_empty() {
-            return Err(LegacyRuntimeError::InvalidConfig(format!(
-                "legacy result array {name} is empty"
-            )));
-        }
-    }
+    projection.visit(response_spectrum_interleaved, |name, values| {
+        arrays.insert(name.into(), values.to_vec());
+        Ok(())
+    })?;
     Ok(arrays)
+}
+
+fn response_spectrum_interleaved(values: &[f64]) -> Result<Vec<f64>, LegacyRuntimeError> {
+    if values.is_empty() {
+        return Ok(vec![0.0, 0.0]);
+    }
+    let fft_len = values.len().next_power_of_two().max(2);
+    let mut padded = values.to_vec();
+    padded.resize(fft_len, 0.0);
+    let (real, imag) = forward_real_spectrum(&padded)
+        .map_err(|error| LegacyRuntimeError::InvalidConfig(format!("response FFT: {error}")))?;
+    let mut flattened = Vec::with_capacity(real.len() * 2);
+    for (real, imag) in real.into_iter().zip(imag) {
+        flattened.extend([real, imag]);
+    }
+    Ok(flattened)
 }
 
 fn dfe_impulse_from_history(history: &[f64], samples_per_ui: usize) -> Vec<f64> {
@@ -1246,20 +1792,29 @@ fn dfe_impulse_from_history(history: &[f64], samples_per_ui: usize) -> Vec<f64> 
     impulse
 }
 
-fn response_spectrum(values: &[f64]) -> Result<Vec<f64>, LegacyRuntimeError> {
+fn response_spectrum_db(values: &[f64]) -> Result<Vec<f64>, LegacyRuntimeError> {
     if values.is_empty() {
-        return Ok(vec![0.0, 0.0]);
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "legacy response spectrum source is empty".into(),
+        ));
     }
     let fft_len = values.len().next_power_of_two().max(2);
     let mut padded = values.to_vec();
     padded.resize(fft_len, 0.0);
-    let (real, imag) = forward_real_spectrum(&padded)
+    let (mut real, imag) = forward_real_spectrum(&padded)
         .map_err(|error| LegacyRuntimeError::InvalidConfig(format!("response FFT: {error}")))?;
-    let mut flattened = Vec::with_capacity(real.len() * 2);
-    for (real, imag) in real.into_iter().zip(imag) {
-        flattened.extend([real, imag]);
+    drop(padded);
+    if real.len() != imag.len() || real.len() < 2 {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "response FFT returned an invalid real-spectrum shape".into(),
+        ));
     }
-    Ok(flattened)
+    for index in 1..real.len() {
+        let magnitude = real[index].hypot(imag[index]);
+        real[index - 1] = 20.0 * magnitude.max(LEGACY_CLASS_SAFE_LOG10_MIN).log10();
+    }
+    real.truncate(real.len() - 1);
+    Ok(real)
 }
 
 fn step_from(values: &[f64]) -> Vec<f64> {
@@ -1444,6 +1999,168 @@ fn validate_projection_budgets(
         ));
     }
     Ok(())
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct LegacyArrayLayout {
+    total_values: usize,
+    construction_peak_values: usize,
+    retained_projection_values: usize,
+    transient_vector_peak_values: usize,
+    spectrum_work_peak_values: usize,
+}
+
+impl LegacyArrayLayout {
+    fn from_output(output: &SimulationOutputV1) -> Result<Self, LegacyRuntimeError> {
+        let source = &output.arrays;
+        let length = |name: &str| source.get(name).map_or(0, Vec::len);
+        let required = |name: &str| {
+            let value = length(name);
+            if value == 0 {
+                Err(LegacyRuntimeError::InvalidConfig(format!(
+                    "legacy result source array {name} is empty or missing"
+                )))
+            } else {
+                Ok(value)
+            }
+        };
+        let channel = required("channel_impulse_v_per_v")?;
+        let response = required("tx_channel_impulse_v_per_v")?;
+        let tx = match length("tx_impulse_v_per_v") {
+            0 => required("legacy_stage_tx_re")?,
+            value => value,
+        };
+        let ctle_source = length("rx_filter_impulse_v_per_v");
+        let ctle = ctle_source.max(1);
+        let owned_ctle_identity = usize::from(ctle_source == 0);
+        let tx_out = required("tx_waveform_v")?;
+        let samples_per_ui = inferred_samples_per_ui(source);
+        let dfe = length("dfe_tap_weights_v")
+            .checked_div(samples_per_ui)
+            .and_then(|taps| taps.checked_add(1))
+            .and_then(|taps| taps.checked_mul(samples_per_ui))
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("DFE result length overflow".into())
+            })?;
+        let spectrum = |value: usize| {
+            value
+                .checked_next_power_of_two()
+                .map(|fft_length| fft_length.max(2) / 2)
+                .ok_or_else(|| {
+                    LegacyRuntimeError::ResourceLimit("response spectrum length overflow".into())
+                })
+        };
+        let channel_spectrum = spectrum(channel)?;
+        let tx_spectrum = spectrum(tx)?;
+        let ctle_spectrum = spectrum(ctle)?;
+        let dfe_spectrum = spectrum(dfe)?;
+        let response_spectrum = spectrum(response)?;
+        let lengths = [
+            channel,
+            response,
+            response,
+            response,
+            channel,
+            tx,
+            ctle,
+            dfe,
+            response,
+            response,
+            response,
+            channel,
+            response,
+            response,
+            response,
+            channel_spectrum,
+            tx_spectrum,
+            ctle_spectrum,
+            dfe_spectrum,
+            response_spectrum,
+            response_spectrum,
+            response_spectrum,
+            tx_out,
+        ];
+        let total_values = lengths.into_iter().try_fold(0_usize, |total, value| {
+            total.checked_add(value).ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("legacy array value count overflow".into())
+            })
+        })?;
+        let retained_projection_values = response
+            .checked_mul(2)
+            .and_then(|value| value.checked_add(dfe))
+            .and_then(|value| value.checked_add(owned_ctle_identity))
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("legacy projection peak overflow".into())
+            })?;
+        let construction_peak_values = response
+            .checked_mul(3)
+            .and_then(|value| value.checked_add(dfe))
+            .and_then(|value| value.checked_add(owned_ctle_identity))
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("legacy projection peak overflow".into())
+            })?;
+        let transient_vector = [channel, tx, ctle, dfe, response]
+            .into_iter()
+            .max()
+            .unwrap_or(0);
+        let spectrum_scratch = [channel, tx, ctle, dfe, response]
+            .into_iter()
+            .map(|value| {
+                let fft = value.checked_next_power_of_two()?.max(2);
+                fft.checked_add((fft / 2 + 1).checked_mul(2)?)
+            })
+            .collect::<Option<Vec<_>>>()
+            .and_then(|values| values.into_iter().max())
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("response FFT scratch overflow".into())
+            })?;
+        Ok(Self {
+            total_values,
+            construction_peak_values,
+            retained_projection_values,
+            transient_vector_peak_values: transient_vector,
+            spectrum_work_peak_values: spectrum_scratch,
+        })
+    }
+
+    fn validate_class_codec_peak(self) -> Result<(), LegacyRuntimeError> {
+        let array_bytes = self
+            .total_values
+            .checked_mul(std::mem::size_of::<f64>())
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("legacy array byte count overflow".into())
+            })?;
+        let spectrum_peak = self
+            .retained_projection_values
+            .checked_add(self.spectrum_work_peak_values)
+            .and_then(|values| values.checked_mul(std::mem::size_of::<f64>()))
+            .ok_or_else(|| LegacyRuntimeError::ResourceLimit("class codec peak overflow".into()))?;
+        let serialization_peak = self
+            .retained_projection_values
+            .checked_add(self.transient_vector_peak_values)
+            .and_then(|values| values.checked_mul(std::mem::size_of::<f64>()))
+            .and_then(|bytes| {
+                bytes.checked_add(LEGACY_F64_WRITE_CHUNK_VALUES * std::mem::size_of::<f64>())
+            })
+            .ok_or_else(|| LegacyRuntimeError::ResourceLimit("class codec peak overflow".into()))?;
+        let construction_peak = self
+            .construction_peak_values
+            .checked_mul(std::mem::size_of::<f64>())
+            .ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("class codec peak byte count overflow".into())
+            })?;
+        let codec_peak = construction_peak
+            .max(spectrum_peak)
+            .max(serialization_peak)
+            .max(LEGACY_READBACK_BUFFER_BYTES);
+        if array_bytes > MAX_LEGACY_RESULT_BYTES || codec_peak > MAX_LEGACY_RESULT_BYTES {
+            return Err(LegacyRuntimeError::ResourceLimit(
+                "class-compatible .pybert_data exceeds 512 MiB logical payload or codec peak"
+                    .into(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 fn validate_legacy_result_budget(output: &SimulationOutputV1) -> Result<(), LegacyRuntimeError> {
@@ -1825,7 +2542,7 @@ dfe_tap_tuners:
     }
 
     #[test]
-    fn legacy_tx_out_p_uses_the_channelized_tx_impulse() {
+    fn default_dictionary_retains_interleaved_frequency_arrays_and_tx_out_p() {
         let tx_impulse = vec![1.0, 0.0, 0.0, 0.0];
         let tx_channel_impulse = vec![0.0, 1.0, 0.0, 0.0];
         let output = SimulationOutputV1 {
@@ -1852,10 +2569,66 @@ dfe_tap_tuners:
             artifacts: Vec::new(),
         };
 
+        let projection = LegacyArrayProjection::new(&output).unwrap();
         let arrays = legacy_arrays(&output).unwrap();
+        let mut class_arrays = BTreeMap::new();
+        projection
+            .visit(response_spectrum_db, |name, values| {
+                class_arrays.insert(name.to_owned(), values.to_vec());
+                Ok(())
+            })
+            .unwrap();
+        assert_eq!(
+            LegacyArrayLayout::from_output(&output).unwrap(),
+            LegacyArrayLayout {
+                total_values: 71,
+                construction_peak_values: 14,
+                retained_projection_values: 10,
+                transient_vector_peak_values: 4,
+                spectrum_work_peak_values: 10,
+            }
+        );
 
         assert_eq!(arrays["tx_out_p"], pulse_from(&tx_channel_impulse, 2));
         assert_ne!(arrays["tx_out_p"], pulse_from(&tx_impulse, 2));
+        for (name, source) in [
+            ("chnl_H", projection.channel),
+            ("tx_H", projection.tx_h),
+            ("ctle_H", projection.ctle_h.as_ref()),
+            ("dfe_H", projection.dfe_h.as_slice()),
+            ("tx_out_H", projection.tx_out_h),
+            ("ctle_out_H", projection.ctle_out_h.as_slice()),
+            ("dfe_out_H", projection.dfe_out_h.as_slice()),
+        ] {
+            assert_eq!(
+                arrays[name],
+                response_spectrum_interleaved(source).unwrap(),
+                "default dictionary {name}"
+            );
+            assert_eq!(
+                class_arrays[name],
+                response_spectrum_db(source).unwrap(),
+                "class codec {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_frequency_arrays_are_f64_db_values_without_dc() {
+        assert_eq!(response_spectrum_db(&[1.0, 0.0]).unwrap(), vec![0.0]);
+        assert_eq!(response_spectrum_db(&[1.0, 1.0]).unwrap(), vec![-400.0]);
+
+        let source = [1.0, -0.5, 0.25, 0.0];
+        let actual = response_spectrum_db(&source).unwrap();
+        let (real, imag) = forward_real_spectrum(&source).unwrap();
+        let expected = real
+            .iter()
+            .zip(&imag)
+            .skip(1)
+            .map(|(real, imag)| 20.0 * real.hypot(*imag).max(LEGACY_CLASS_SAFE_LOG10_MIN).log10())
+            .collect::<Vec<_>>();
+        assert_eq!(actual.len(), source.len() / 2);
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -2222,6 +2995,31 @@ dfe_tap_tuners:
         assert!(matches!(
             validate_legacy_result_lengths(usize::MAX, 0, 0),
             Err(LegacyRuntimeError::ResourceLimit(message)) if message.contains("channel result length")
+        ));
+
+        let boundary = LegacyArrayLayout {
+            total_values: MAX_LEGACY_RESULT_BYTES / std::mem::size_of::<f64>(),
+            construction_peak_values: 0,
+            retained_projection_values: 0,
+            transient_vector_peak_values: 0,
+            spectrum_work_peak_values: 0,
+        };
+        assert!(boundary.validate_class_codec_peak().is_ok());
+        assert!(matches!(
+            LegacyArrayLayout {
+                total_values: boundary.total_values + 1,
+                ..boundary
+            }
+            .validate_class_codec_peak(),
+            Err(LegacyRuntimeError::ResourceLimit(message)) if message.contains("logical payload")
+        ));
+        assert!(matches!(
+            LegacyArrayLayout {
+                construction_peak_values: usize::MAX,
+                ..boundary
+            }
+            .validate_class_codec_peak(),
+            Err(LegacyRuntimeError::ResourceLimit(message)) if message.contains("peak byte count")
         ));
     }
 }

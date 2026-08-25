@@ -1,8 +1,9 @@
 use std::{env, ffi::OsString, path::PathBuf, process::ExitCode};
 
 use sipi_pybert_direct::{
-    DirectRunError, LegacySimRequestV1, WorkflowError, run_legacy_sim_v1, run_sim_auto_file,
-    run_sim_compare_file, run_sim_native_file, run_sim_rust_file,
+    DirectRunError, LegacyResultCodecV1, LegacySimRequestV1, WorkflowError,
+    run_legacy_sim_with_codec_v1, run_sim_auto_file, run_sim_compare_file, run_sim_native_file,
+    run_sim_rust_file,
 };
 
 fn main() -> ExitCode {
@@ -181,34 +182,73 @@ fn native_arguments_from(
     Ok((input_file.into(), output_dir.into()))
 }
 
-fn run_legacy(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> ExitCode {
-    let Some(config_file) = arguments.next().map(PathBuf::from) else {
-        eprintln!("usage: sipi-pybert-direct sim CONFIG [--results RESULTS]");
-        return ExitCode::from(2);
-    };
-    let results = match arguments.next() {
-        None => None,
-        Some(flag) if flag == "--results" => {
-            let Some(path) = arguments.next() else {
-                eprintln!("usage: sipi-pybert-direct sim CONFIG [--results RESULTS]");
-                return ExitCode::from(2);
-            };
-            Some(PathBuf::from(path))
+const LEGACY_USAGE: &str =
+    "usage: sipi-pybert-direct sim CONFIG [--results RESULTS] [--result-format class-pickle]";
+
+fn legacy_arguments(
+    mut arguments: impl Iterator<Item = std::ffi::OsString>,
+) -> Result<(LegacySimRequestV1, LegacyResultCodecV1), String> {
+    let config_file = arguments
+        .next()
+        .map(PathBuf::from)
+        .ok_or_else(|| LEGACY_USAGE.to_owned())?;
+    let mut results = None;
+    let mut codec = LegacyResultCodecV1::SipiDictionary;
+    let mut result_format_seen = false;
+    while let Some(flag) = arguments.next() {
+        match flag.to_string_lossy().as_ref() {
+            "--results" => {
+                if results.is_some() {
+                    return Err("--results may be specified only once".into());
+                }
+                results = Some(PathBuf::from(
+                    arguments
+                        .next()
+                        .ok_or_else(|| "--results requires a path".to_owned())?,
+                ));
+            }
+            "--result-format" => {
+                if result_format_seen {
+                    return Err("--result-format may be specified only once".into());
+                }
+                result_format_seen = true;
+                let value = arguments
+                    .next()
+                    .ok_or_else(|| "--result-format requires class-pickle".to_owned())?;
+                if value != "class-pickle" {
+                    return Err(format!(
+                        "unknown legacy result format: {}",
+                        value.to_string_lossy()
+                    ));
+                }
+                codec = LegacyResultCodecV1::ClassPickle;
+            }
+            _ => {
+                return Err(format!(
+                    "unknown legacy sim option: {}",
+                    flag.to_string_lossy()
+                ));
+            }
         }
-        Some(_) => {
-            eprintln!("usage: sipi-pybert-direct sim CONFIG [--results RESULTS]");
+    }
+    Ok((
+        LegacySimRequestV1 {
+            config_file,
+            results,
+        },
+        codec,
+    ))
+}
+
+fn run_legacy(arguments: impl Iterator<Item = std::ffi::OsString>) -> ExitCode {
+    let (request, codec) = match legacy_arguments(arguments) {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("{error}\n{LEGACY_USAGE}");
             return ExitCode::from(2);
         }
     };
-    if arguments.next().is_some() {
-        eprintln!("usage: sipi-pybert-direct sim CONFIG [--results RESULTS]");
-        return ExitCode::from(2);
-    }
-    let request = LegacySimRequestV1 {
-        config_file,
-        results,
-    };
-    match run_legacy_sim_v1(&request) {
+    match run_legacy_sim_with_codec_v1(&request, codec) {
         Ok(report) => {
             println!("{}", report.result_path.display());
             ExitCode::SUCCESS
@@ -216,6 +256,48 @@ fn run_legacy(mut arguments: impl Iterator<Item = std::ffi::OsString>) -> ExitCo
         Err(error) => {
             eprintln!("{error}");
             ExitCode::from(1)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args<'a>(values: &'a [&'a str]) -> impl Iterator<Item = OsString> + 'a {
+        values.iter().map(OsString::from)
+    }
+
+    #[test]
+    fn legacy_result_format_is_explicit_and_fail_closed() {
+        let (request, codec) = legacy_arguments(args(&["case.yaml"])).unwrap();
+        assert_eq!(request.results, None);
+        assert_eq!(codec, LegacyResultCodecV1::SipiDictionary);
+
+        let (request, codec) = legacy_arguments(args(&[
+            "case.yaml",
+            "--result-format",
+            "class-pickle",
+            "--results",
+            "case.result",
+        ]))
+        .unwrap();
+        assert_eq!(request.results, Some(PathBuf::from("case.result")));
+        assert_eq!(codec, LegacyResultCodecV1::ClassPickle);
+
+        for invalid in [
+            vec!["case.yaml", "--result-format"],
+            vec!["case.yaml", "--result-format", "future"],
+            vec![
+                "case.yaml",
+                "--result-format",
+                "class-pickle",
+                "--result-format",
+                "class-pickle",
+            ],
+            vec!["case.yaml", "--results", "a", "--results", "b"],
+        ] {
+            assert!(legacy_arguments(args(&invalid)).is_err());
         }
     }
 }

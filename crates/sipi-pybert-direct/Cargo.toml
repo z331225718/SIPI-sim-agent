@@ -7,6 +7,9 @@ rust-version = "1.97"
 publish = false
 description = "Lane-local direct port of the pinned PyBERT native Rust core and sim-native artifact boundary."
 
+[features]
+pinned-python-tests = []
+
 [dependencies]
 flate2 = "1.1"
 getrandom = "0.2"

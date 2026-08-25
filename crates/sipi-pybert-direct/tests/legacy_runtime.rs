@@ -1,9 +1,10 @@
-use std::{collections::BTreeMap, fs, path::PathBuf};
+use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
 
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use sipi_pybert_direct::{
-    ChannelInputV1, LegacyRuntimeError, LegacySimRequestV1, ModulationV1, project_legacy_config_v1,
-    run_legacy_sim_v1, simulate_native_v1,
+    ChannelInputV1, LegacyResultCodecV1, LegacyRuntimeError, LegacySimRequestV1, ModulationV1,
+    project_legacy_config_v1, run_legacy_sim_v1, run_legacy_sim_with_codec_v1, simulate_native_v1,
 };
 
 const EXPECTED_ITEM_NAMES: [&str; 23] = [
@@ -120,6 +121,268 @@ fn pinned_legacy_fixture_runs_in_rust_and_writes_python_pickle_dict() {
     assert_ne!(
         payload.arrays["ctle_out_H"], payload.arrays["dfe_out_H"],
         "DFE frequency response must not alias CTLE frequency response"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn legacy_class_result_uses_pinned_pybert_object_graph() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join("pb-01-legacy-nrz.yaml");
+    let root = std::env::temp_dir().join(format!("sipi-pb01-class-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    let result = root.join("fixture.pybert_data");
+    let report = run_legacy_sim_with_codec_v1(
+        &LegacySimRequestV1 {
+            config_file: fixture,
+            results: Some(result.clone()),
+        },
+        LegacyResultCodecV1::ClassPickle,
+    )
+    .unwrap();
+    assert!(report.output.arrays.contains_key("tx_waveform_v"));
+    let bytes = fs::read(&result).unwrap();
+    assert_eq!(&bytes[..2], b"\x80\x03");
+    for marker in [
+        b"pybert.results\nPyBertData\n".as_slice(),
+        b"chaco.array_plot_data\nArrayPlotData\n".as_slice(),
+        b"traits.trait_dict_object\nTraitDictObject\n".as_slice(),
+        b"numpy._core.multiarray\n_reconstruct\n".as_slice(),
+        b"numpy\ndtype\n".as_slice(),
+    ] {
+        assert!(bytes.windows(marker.len()).any(|window| window == marker));
+    }
+    for name in EXPECTED_ITEM_NAMES {
+        let mut encoded_name = vec![b'X'];
+        encoded_name.extend_from_slice(&(name.len() as u32).to_le_bytes());
+        encoded_name.extend_from_slice(name.as_bytes());
+        assert_eq!(
+            bytes
+                .windows(encoded_name.len())
+                .filter(|window| *window == encoded_name.as_slice())
+                .count(),
+            1,
+            "class pickle must contain each canonical item exactly once: {name}"
+        );
+    }
+    assert!(
+        !bytes
+            .windows(b"sipi.pybert_data.v1".len())
+            .any(|window| { window == b"sipi.pybert_data.v1" })
+    );
+    let original_digest = Sha256::digest(&bytes);
+    assert_eq!(bytes.len(), 347_111);
+    assert_eq!(
+        original_digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "2d52902763bcfc7a282c516bd0cccde1c3fa6b289a3127a9ce54b65b09b79566"
+    );
+    let error = run_legacy_sim_with_codec_v1(
+        &LegacySimRequestV1 {
+            config_file: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("fixtures")
+                .join("pb-01-legacy-nrz.yaml"),
+            results: Some(result.clone()),
+        },
+        LegacyResultCodecV1::ClassPickle,
+    )
+    .unwrap_err();
+    assert!(
+        matches!(error, LegacyRuntimeError::InvalidConfig(message) if message.contains("already exists"))
+    );
+    assert_eq!(Sha256::digest(fs::read(&result).unwrap()), original_digest);
+    assert!(
+        fs::read_dir(&root)
+            .unwrap()
+            .filter_map(Result::ok)
+            .all(|entry| !entry
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".sipi-pb01-result-"))
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn legacy_cli_reaches_class_codec_and_rejects_format_drift() {
+    let binary = env!("CARGO_BIN_EXE_sipi-pybert-direct");
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join("pb-01-legacy-nrz.yaml");
+    let root = std::env::temp_dir().join(format!("sipi-pb01-cli-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    let result = root.join("class.pybert_data");
+    let status = Command::new(binary)
+        .arg("sim")
+        .arg(&fixture)
+        .arg("--result-format")
+        .arg("class-pickle")
+        .arg("--results")
+        .arg(&result)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(
+        fs::read(&result)
+            .unwrap()
+            .windows(b"pybert.results\nPyBertData\n".len())
+            .any(|window| window == b"pybert.results\nPyBertData\n")
+    );
+
+    for arguments in [
+        vec!["--result-format", "future"],
+        vec![
+            "--result-format",
+            "class-pickle",
+            "--result-format",
+            "class-pickle",
+        ],
+    ] {
+        let rejected = root.join(format!("rejected-{}.pybert_data", arguments.len()));
+        let status = Command::new(binary)
+            .arg("sim")
+            .arg(&fixture)
+            .args(arguments)
+            .arg("--results")
+            .arg(&rejected)
+            .status()
+            .unwrap();
+        assert_eq!(status.code(), Some(2));
+        assert!(!rejected.exists());
+    }
+    let _ = fs::remove_dir_all(root);
+}
+
+#[cfg(feature = "pinned-python-tests")]
+#[test]
+fn pinned_python_loads_exact_class_graph_and_all_logical_arrays() {
+    let python = std::env::var_os("SIPI_PYBERT_PINNED_PYTHON")
+        .expect("pinned-python-tests requires SIPI_PYBERT_PINNED_PYTHON");
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join("pb-01-legacy-nrz.yaml");
+    let root = std::env::temp_dir().join(format!("sipi-pb01-pinned-load-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    let class_pickle = root.join("class.pybert_data");
+    run_legacy_sim_with_codec_v1(
+        &LegacySimRequestV1 {
+            config_file: fixture,
+            results: Some(class_pickle.clone()),
+        },
+        LegacyResultCodecV1::ClassPickle,
+    )
+    .unwrap();
+
+    const PROBE: &str = r#"
+import hashlib, io, pickle, pickletools, sys
+from collections import Counter
+import numpy as np
+
+class_path = sys.argv[1]
+data = open(class_path, "rb").read()
+allowed = {
+    "pybert.results PyBertData",
+    "chaco.array_plot_data ArrayPlotData",
+    "traits.trait_dict_object TraitDictObject",
+    "numpy._core.multiarray _reconstruct",
+    "numpy ndarray",
+    "numpy dtype",
+    "builtins getattr",
+}
+globals_seen = [arg for op, arg, _ in pickletools.genops(data) if op.name == "GLOBAL"]
+expected_globals = Counter({
+    "pybert.results PyBertData": 1,
+    "chaco.array_plot_data ArrayPlotData": 1,
+    "traits.trait_dict_object TraitDictObject": 1,
+    "numpy._core.multiarray _reconstruct": 23,
+    "numpy ndarray": 23,
+    "numpy dtype": 23,
+    "builtins getattr": 2,
+})
+assert Counter(globals_seen) == expected_globals, (Counter(globals_seen), expected_globals)
+assert set(globals_seen) == allowed
+
+class BoundedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        identity = f"{module} {name}"
+        assert identity in allowed, identity
+        return super().find_class(module, name)
+
+root = BoundedUnpickler(io.BytesIO(data)).load()
+assert (type(root).__module__, type(root).__name__) == ("pybert.results", "PyBertData")
+assert (type(root.the_data).__module__, type(root.the_data).__name__) == (
+    "chaco.array_plot_data", "ArrayPlotData"
+)
+arrays = root.the_data.arrays
+assert (type(arrays).__module__, type(arrays).__name__) == (
+    "traits.trait_dict_object", "TraitDictObject"
+)
+expected_names = [
+    "chnl_h", "tx_out_h", "ctle_out_h", "dfe_out_h", "chnl_s", "tx_s",
+    "ctle_s", "dfe_s", "tx_out_s", "ctle_out_s", "dfe_out_s", "chnl_p",
+    "tx_out_p", "ctle_out_p", "dfe_out_p", "chnl_H", "tx_H", "ctle_H",
+    "dfe_H", "tx_out_H", "ctle_out_H", "dfe_out_H", "tx_out",
+]
+assert list(arrays.keys()) == expected_names
+expected = {
+    "chnl_h": (640, "d9786d1c2014dd5baea1f4879a9dcfc0e4b404fe9786c538b9ec1e86356db930"),
+    "tx_out_h": (640, "02f709a6632dbe1df72023cc41a2a4b0f1fb4164b5ee921e7cb62029f00159c9"),
+    "ctle_out_h": (640, "02f709a6632dbe1df72023cc41a2a4b0f1fb4164b5ee921e7cb62029f00159c9"),
+    "dfe_out_h": (640, "4a337ca621d43ac7a06c0d58ce9f2e8d22658da1f0d617026bc62d50c26d1591"),
+    "chnl_s": (640, "8184546a0842f8be5a696ee4f93649aa679c5543a95e00a8788990db003ce095"),
+    "tx_s": (640, "9f53ade3b540318594b3f3416bdedeaabfd180237c6b28437c425a2231d3524d"),
+    "ctle_s": (1, "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712"),
+    "dfe_s": (32, "acfc7c36fce590b14adfc8a479e0dcd297e910a7212694c976c8b4284d34c144"),
+    "tx_out_s": (640, "a98e7ab29b49071da6433c33df05263f4fa428049bab7a067d45393a47a5e50f"),
+    "ctle_out_s": (640, "a98e7ab29b49071da6433c33df05263f4fa428049bab7a067d45393a47a5e50f"),
+    "dfe_out_s": (640, "6d90a04bd26cd4fba9aec1fa4f575d34e26b3d41e92a067cd48a1a2fbfb86d04"),
+    "chnl_p": (640, "27a36801b4797ff508c32659866dd351e1042955262f039d8f64444f93f39a4e"),
+    "tx_out_p": (640, "5df2ad4bff0250ce1ce1ecd011b8b1a17dc3e40aeaf32067fc4d16c852254ba8"),
+    "ctle_out_p": (640, "5df2ad4bff0250ce1ce1ecd011b8b1a17dc3e40aeaf32067fc4d16c852254ba8"),
+    "dfe_out_p": (640, "d9b785f9648f83122f06f35795eef9cfb836d8e829e135bbbca8d9e9a12f9174"),
+    "chnl_H": (512, "033a8e8fa06c6ad017d07ce69a15360f79228a568d4dd25c949e75da7a2db5ed"),
+    "tx_H": (512, "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7"),
+    "ctle_H": (1, "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"),
+    "dfe_H": (16, "38723a2e5e8a17aa7950dc008209944e898f69a7bd10a23c839d341e935fd5ca"),
+    "tx_out_H": (512, "02e413e77d59db3413169457112b06f314c919bd2d4af623acd1e70ab4ff2fad"),
+    "ctle_out_H": (512, "02e413e77d59db3413169457112b06f314c919bd2d4af623acd1e70ab4ff2fad"),
+    "dfe_out_H": (512, "af1ee077fd6f18576fb924e0e79990e2eded7170ac726a6645b8386a7c962651"),
+    "tx_out": (32000, "6660c5415da21885e4d9a6c030b56dfeae8e2369e1320da398a9c876dfa56dd1"),
+}
+assert list(expected) == expected_names
+for name in expected_names:
+    actual = arrays[name]
+    expected_length, expected_digest = expected[name]
+    assert type(actual) is np.ndarray, (name, type(actual))
+    assert actual.dtype == np.dtype("<f8"), (name, actual.dtype)
+    assert actual.ndim == 1 and actual.shape == (expected_length,), (name, actual.shape)
+    assert actual.flags.c_contiguous, name
+    actual_digest = hashlib.sha256(actual.tobytes(order="C")).hexdigest()
+    assert actual_digest == expected_digest, name
+assert root.date_created == "not-recorded"
+assert root.version == "sipi-pybert-direct/0.1.0 class-pickle-v1 noncanonical"
+print("bounded-class-load-ok")
+"#;
+    let output = Command::new(python)
+        .args(["-c", PROBE])
+        .arg(&class_pickle)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout).trim(),
+        "bounded-class-load-ok"
     );
     let _ = fs::remove_dir_all(root);
 }

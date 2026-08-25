@@ -65,8 +65,9 @@ pub use jitter::{
     calculate_dual_dirac_jitter, calculate_spectral_jitter, find_crossing_times, find_crossings,
 };
 pub use legacy_runtime::{
-    LegacyConfigProjectionV1, LegacyRuntimeError, LegacySimReportV1, parse_legacy_config_v1,
-    project_legacy_config_v1, run_legacy_sim_v1, write_legacy_result_v1,
+    LegacyConfigProjectionV1, LegacyResultCodecV1, LegacyRuntimeError, LegacySimReportV1,
+    parse_legacy_config_v1, project_legacy_config_v1, run_legacy_sim_v1,
+    run_legacy_sim_with_codec_v1, write_legacy_result_v1,
 };
 pub use legacy_sim::{
     DEFAULT_RESULT_EXTENSION, LEGACY_CONFIG_EXTENSIONS, LegacySimCandidateStatus, LegacySimError,
