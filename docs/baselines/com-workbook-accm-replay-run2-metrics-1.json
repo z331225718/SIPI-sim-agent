@@ -1,0 +1,37 @@
+{
+  "cases": [
+    {
+      "ac_cm_rms": 0.0,
+      "case_id": "workbook-case-0",
+      "case_index": 0,
+      "metrics": {
+        "COM_dB": -16.496829435074012,
+        "FOM_dB": -5.772354425388745,
+        "sigma_N_V": 0.0005686897458606733
+      },
+      "package_case_index": 0
+    },
+    {
+      "ac_cm_rms": 0.001,
+      "case_id": "workbook-case-1",
+      "case_index": 1,
+      "metrics": {
+        "COM_dB": -16.920553507287572,
+        "FOM_dB": -5.924024023908052,
+        "sigma_N_V": 0.0005459801246444031
+      },
+      "package_case_index": 1
+    }
+  ],
+  "channel_policy": "single_fd_to_td_impulse",
+  "control_vector": [
+    0.0,
+    0.001
+  ],
+  "metric_fields": [
+    "FOM_dB",
+    "COM_dB",
+    "sigma_N_V"
+  ],
+  "schema": "sipi.com.workbook-accm-canonical-metrics.v1"
+}

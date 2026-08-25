@@ -1,0 +1,109 @@
+schema: sipi.com.workbook-accm-replay-evidence-manifest.v1
+mode: bounded_observation
+status: numeric_observation
+matched: false
+acceptance: false
+non_claims:
+  - no upstream numeric parity
+  - no global or product parity
+  - no release or promotion claim
+  - no S-parameter fit
+  - channel uses one final FD-to-TD impulse
+  - PDB is opaque environment-local debug custody and nonpublish
+prep:
+  commit: 6449a014e42ae8d449a330dd788bb134f4261691
+  tree: 31a7089d32364ed6e03542ecd1143b3536f9e047
+  archive:
+    command: git -c core.autocrlf=false archive --format=tar 6449a014e42ae8d449a330dd788bb134f4261691
+    bytes: 44677120
+    sha256: c419d20d245ed53344047230197fb561c8567bc74f83d4aa7ddadf5528269de4
+candidate:
+  commit: 2e18a6a27cf8abc0555e24e0346a54c4ea577baf
+  tree: bfdc3e0ddd9bc76737528011e6dddc94c728f059
+  archive_sha256: 67b071cf9302d932ed2b974db3c7d82cb1e70c4b7f0dac276d788b88f1a64993
+  archive_bytes: 44615680
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  runtime: not_executed_external_only
+  workbook:
+    path: matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx
+    blob: 22b633b6092b4b0de0ca89273515329b362eabae
+    bytes: 67087
+    sha256: e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925
+  s4p:
+    path: fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p
+    blob: a1fe8618043b31f63dfb24454ac1d296000010c0
+    bytes: 6457063
+    sha256: 3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec
+tools:
+  runner:
+    path: tools/run_com_workbook_accm_replay_v1.py
+    bytes: 64091
+    git_blob_sha1: 4b83820b5853826f16bbbef66bdfaa93d093cf1c
+    sha256: 1ae8899a14cb8490ac3ee75d2720abda67962b8cbc7baf81eab49f1711ded229
+  aggregate:
+    path: tools/aggregate_com_workbook_accm_replay_v1.py
+    bytes: 3924
+    git_blob_sha1: 78ae39ec972815102ca854ae5e7d69de40beae4f
+    sha256: a0252e4f780f5225b746ee103f81e0a4d423ce93319af21ef8b90fc704a424d4
+  verifier:
+    path: tools/verify_com_workbook_accm_replay_v1.py
+    bytes: 51832
+    git_blob_sha1: aff6280b29254df1b9472dc74fc8108235e0f177
+    sha256: dc16c6e7bc5cbef61ca001eef8f0d3ca65c7ee2d1a419468a158b8f75bc695d0
+  tests:
+    path: tools/test_verify_com_workbook_accm_replay_v1.py
+    bytes: 45520
+    git_blob_sha1: 0dc4b5c521e08e995757b8350279d8fd8c68dcb2
+    sha256: 299e72537bd84f5f450f943c4deebd371130fc8cd7336bd92835547e355d3dfe
+fixed_inputs:
+  cargo_home: {role: fixed_external_cargo_home, basename: sipi-cargo-home-v1, path_redacted: true}
+  cargo_inventory:
+    count: 7727
+    total_bytes: 234108979
+    sha256: d841c89ca7eef7018c6be0bf622cb55df079bd3cc39e7d15b9d802dd7f694c3f
+  controls:
+    vectors:
+      - [0.0, 0.0]
+      - [0.0, 0.001]
+    no_sparam_fit: true
+    channel_policy: single_fd_to_td_impulse
+  typed_pe:
+    canonical_sha256: d6b133d9ca509c19c7ee112634d534b7d8b1c6e9d579255ff22de0ee46c56e87
+    machine: 34404
+    optional_magic: 523
+    codeview_rva: 5893908
+    codeview_raw_pointer: 5888788
+    codeview_bytes: 48
+    debug_directory_raw_pointer: 5888732
+    normalization_map:
+      - {role: coff_timestamp, offset: 128, bytes: 4}
+      - {role: debug_timestamp, offset: 5888736, bytes: 4}
+      - {role: rsds_guid, offset: 5888792, bytes: 16}
+      - {role: debug_timestamp, offset: 5888764, bytes: 4}
+      - {role: pe_checksum, offset: 208, bytes: 4}
+runs:
+  - slot: run1
+    report: {path: docs/baselines/com-workbook-accm-replay-run1.json, bytes: 3076299, sha256: ce2c4545d8455718005d584874b655a544e36e086d8a33788561e3956f72e38f, run_id: c4a8b21f73d94d4a9f7e5c2a1b8d604e3f9a7c1d2e6b5f8093a4c7d1e2f6b8a0, nonce: 5ca58726f0e2a3ed5d0fe1d315d93dad0c1b6b7edaedd176bb74c4670e5a078e}
+    binary_sha256: e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9
+    pdb_sha256: 6ee7189245a279e1b826b727023295895b25fce61efdb593a48f4d03af76a741
+  - slot: run2
+    report: {path: docs/baselines/com-workbook-accm-replay-run2.json, bytes: 3076299, sha256: 09514f59f49ec4d03d02f0e4634bc989aa1034225e86e427de99fe3cfbd58af6, run_id: c4e4b8d48f54c5369ed959f19d85c76f9dd3dbfc466f686ab0fbe3fc52371d5f, nonce: 7eeb1a2de18fcf44c24fd8e761413eead44832ae11da1e7efd1e9e088748fd7f}
+    binary_sha256: 53ca2966947dd4cb8c8c1b6c7833562cce95af3e3bd4de8eb5e4b2c9e6781a71
+    pdb_sha256: 23af58de99abb83685b0a054b3b1c94c4dc1911f24b3bc2e6942300bea869c02
+aggregate:
+  path: docs/baselines/com-workbook-accm-replay-aggregate.json
+  bytes: 18889
+  sha256: 805ebf00656a24057cff4ae389369f23eb78faf2b571deb25f1df8ba9c9143a4
+  status: numeric_observation
+artifacts:
+  - {path: docs/baselines/com-workbook-accm-replay-run1-metrics-0.json, bytes: 787, sha256: 621057554ca63dd9211f89c19be5750f99008acc346a3219cf5389cd195dea65}
+  - {path: docs/baselines/com-workbook-accm-replay-run1-metrics-1.json, bytes: 791, sha256: 23b794400331a3f8fbc2f0207ea22a5176c1ff683362496946f66155d29fd089}
+  - {path: docs/baselines/com-workbook-accm-replay-run2-metrics-0.json, bytes: 787, sha256: 621057554ca63dd9211f89c19be5750f99008acc346a3219cf5389cd195dea65}
+  - {path: docs/baselines/com-workbook-accm-replay-run2-metrics-1.json, bytes: 791, sha256: 23b794400331a3f8fbc2f0207ea22a5176c1ff683362496946f66155d29fd089}
+audit: docs/baselines/com-workbook-accm-replay-v4.audit.yaml
+audit_sha256: 47163ec41a37209de7c2168c6f9baf7628cd59160582858f750bd08c8887ad2c
+formal_gate:
+  verifier: {path: tools/verify_com_workbook_accm_formal_evidence_v1.py, bytes: 25023, sha256: e2cb58ff3883b78a801d8f3a2ec4b3a385e976db3c0651091d30142acbdff15b}
+  tests: {path: tools/test_verify_com_workbook_accm_formal_evidence_v1.py, bytes: 4387, sha256: 0b5a27c9e65a0234031937a6356619506fb22dabd4adfc2bd3e65a5d09a90cd7}

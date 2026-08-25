@@ -1,0 +1,44 @@
+schema: sipi.com.workbook-accm-replay-audit.v1
+manifest:
+  path: docs/baselines/com-workbook-accm-replay-v4.manifest.yaml
+  schema: sipi.com.workbook-accm-replay-evidence-manifest.v1
+evidence:
+  reports:
+    - {slot: run1, path: docs/baselines/com-workbook-accm-replay-run1.json, sha256: ce2c4545d8455718005d584874b655a544e36e086d8a33788561e3956f72e38f}
+    - {slot: run2, path: docs/baselines/com-workbook-accm-replay-run2.json, sha256: 09514f59f49ec4d03d02f0e4634bc989aa1034225e86e427de99fe3cfbd58af6}
+  aggregate: {path: docs/baselines/com-workbook-accm-replay-aggregate.json, sha256: 805ebf00656a24057cff4ae389369f23eb78faf2b571deb25f1df8ba9c9143a4}
+  report_run_ids:
+    - c4a8b21f73d94d4a9f7e5c2a1b8d604e3f9a7c1d2e6b5f8093a4c7d1e2f6b8a0
+    - c4e4b8d48f54c5369ed959f19d85c76f9dd3dbfc466f686ab0fbe3fc52371d5f
+  report_nonces:
+    - 5ca58726f0e2a3ed5d0fe1d315d93dad0c1b6b7edaedd176bb74c4670e5a078e
+    - 7eeb1a2de18fcf44c24fd8e761413eead44832ae11da1e7efd1e9e088748fd7f
+result:
+  run_status: [matched, matched]
+  aggregate_status: numeric_observation
+  matched: false
+  acceptance: false
+  case1_change_observed: true
+  case1_zero: {FOM_dB: -5.923929842338543, COM_dB: -16.920553507287572, sigma_N_V: 0.0005459541505382412}
+  case1_nonzero: {FOM_dB: -5.924024023908052, COM_dB: -16.920553507287572, sigma_N_V: 0.0005459801246444031}
+provenance:
+  prep_commit: 6449a014e42ae8d449a330dd788bb134f4261691
+  candidate_commit: 2e18a6a27cf8abc0555e24e0346a54c4ea577baf
+  upstream_commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  cargo_inventory_sha256: d841c89ca7eef7018c6be0bf622cb55df079bd3cc39e7d15b9d802dd7f694c3f
+  pe_canonical_sha256: d6b133d9ca509c19c7ee112634d534b7d8b1c6e9d579255ff22de0ee46c56e87
+claims:
+  - bounded clean-archive candidate observation only
+  - pinned workbook and S4P bytes were materialized from upstream Git objects
+  - no S-parameter fit; final channel conversion is one FD-to-TD impulse
+non_claims:
+  - no upstream numeric parity
+  - no global or product parity
+  - no release or promotion
+  - PDB is opaque environment-local debug custody and nonpublish
+validation:
+  strict_verifier: passed_with_fixed_cargo_home
+  aggregate_verifier: passed_with_fixed_cargo_home
+  focused_tests: 60_pass
+  py_compile: passed
+  diff_check: passed

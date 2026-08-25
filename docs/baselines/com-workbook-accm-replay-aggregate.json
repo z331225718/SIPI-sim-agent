@@ -1,0 +1,554 @@
+{
+  "candidate": {
+    "archive": {
+      "bytes": 44615680,
+      "command": "git -c core.autocrlf=false archive --format=tar <candidate>",
+      "exit": 0,
+      "sha256": "67b071cf9302d932ed2b974db3c7d82cb1e70c4b7f0dac276d788b88f1a64993"
+    },
+    "binary": {
+      "basename": "sipi-com-direct-run.exe",
+      "bytes": 6358016,
+      "canonical_sha256": "d6b133d9ca509c19c7ee112634d534b7d8b1c6e9d579255ff22de0ee46c56e87",
+      "certificate_bytes": 0,
+      "characteristics": 34,
+      "codeview_bytes": 48,
+      "codeview_raw_pointer": 5888788,
+      "codeview_rva": 5893908,
+      "debug_directory_raw_pointer": 5888732,
+      "debug_entries": 2,
+      "exists": true,
+      "machine": 34404,
+      "normalization_map": [
+        {
+          "bytes": 4,
+          "offset": 128,
+          "role": "coff_timestamp"
+        },
+        {
+          "bytes": 4,
+          "offset": 5888736,
+          "role": "debug_timestamp"
+        },
+        {
+          "bytes": 16,
+          "offset": 5888792,
+          "role": "rsds_guid"
+        },
+        {
+          "bytes": 4,
+          "offset": 5888764,
+          "role": "debug_timestamp"
+        },
+        {
+          "bytes": 4,
+          "offset": 208,
+          "role": "pe_checksum"
+        }
+      ],
+      "optional_header_offset": 144,
+      "optional_magic": 523,
+      "overlay_bytes": 0,
+      "pdb_basename": "sipi_com_direct_run.pdb",
+      "pe_offset": 120,
+      "repro": true,
+      "repro_entries": 1,
+      "sections": [
+        {
+          "bytes": 5494784,
+          "name": ".text",
+          "raw_pointer": 1024,
+          "sha256": "fdcaa7c65641ae7e2caac3fd5647287ba2641ce6e4088b770da9de4c671cd168",
+          "virtual_address": 4096,
+          "virtual_bytes": 5494758
+        },
+        {
+          "bytes": 753152,
+          "name": ".rdata",
+          "raw_pointer": 5495808,
+          "sha256": "1262a88ab2dc9deaabbbd5e2f22520a255c90a8b6646bd6e14d6cca2d2ecc7e8",
+          "virtual_address": 5500928,
+          "virtual_bytes": 753084
+        },
+        {
+          "bytes": 4096,
+          "name": ".data",
+          "raw_pointer": 6248960,
+          "sha256": "3f6a86c03b5d0ee4e6bd30f58fea3f814474687abb1c57fd9ed7d6a612d055cd",
+          "virtual_address": 6254592,
+          "virtual_bytes": 5480
+        },
+        {
+          "bytes": 96256,
+          "name": ".pdata",
+          "raw_pointer": 6253056,
+          "sha256": "64237685feaaddc349e6e3c68e40af0a4b9789b2c0413f947a452b9de41e292f",
+          "virtual_address": 6262784,
+          "virtual_bytes": 95892
+        },
+        {
+          "bytes": 512,
+          "name": ".tls",
+          "raw_pointer": 6349312,
+          "sha256": "a275697e04a37760a430bde5579cbd65a4e68a08f7dc8424a87a9b54c5ac879a",
+          "virtual_address": 6361088,
+          "virtual_bytes": 113
+        },
+        {
+          "bytes": 8192,
+          "name": ".reloc",
+          "raw_pointer": 6349824,
+          "sha256": "ba8a2adfeb846038cf3b864653034a0cd212b360cf7a57b2b405fc9b801bada2",
+          "virtual_address": 6365184,
+          "virtual_bytes": 7876
+        }
+      ],
+      "sha256": "e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9"
+    },
+    "binary_custody": {
+      "id": "c4a8b21f73d94d4a9f7e5c2a1b8d604e3f9a7c1d2e6b5f8093a4c7d1e2f6b8a0",
+      "post": {
+        "exe": {
+          "basename": "sipi-com-direct-run.exe",
+          "bytes": 6358016,
+          "sha256": "e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9",
+          "source_bytes": 6358016,
+          "source_sha256": "e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9"
+        },
+        "pdb": {
+          "basename": "sipi_com_direct_run.pdb",
+          "bytes": 3014656,
+          "sha256": "6ee7189245a279e1b826b727023295895b25fce61efdb593a48f4d03af76a741",
+          "source_bytes": 3014656,
+          "source_sha256": "6ee7189245a279e1b826b727023295895b25fce61efdb593a48f4d03af76a741"
+        }
+      },
+      "pre": {
+        "exe": {
+          "basename": "sipi-com-direct-run.exe",
+          "bytes": 6358016,
+          "sha256": "e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9",
+          "source_bytes": 6358016,
+          "source_sha256": "e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9"
+        },
+        "pdb": {
+          "basename": "sipi_com_direct_run.pdb",
+          "bytes": 3014656,
+          "sha256": "6ee7189245a279e1b826b727023295895b25fce61efdb593a48f4d03af76a741",
+          "source_bytes": 3014656,
+          "source_sha256": "6ee7189245a279e1b826b727023295895b25fce61efdb593a48f4d03af76a741"
+        }
+      }
+    },
+    "binary_pre": {
+      "basename": "sipi-com-direct-run.exe",
+      "bytes": 6358016,
+      "canonical_sha256": "d6b133d9ca509c19c7ee112634d534b7d8b1c6e9d579255ff22de0ee46c56e87",
+      "certificate_bytes": 0,
+      "characteristics": 34,
+      "codeview_bytes": 48,
+      "codeview_raw_pointer": 5888788,
+      "codeview_rva": 5893908,
+      "debug_directory_raw_pointer": 5888732,
+      "debug_entries": 2,
+      "exists": true,
+      "machine": 34404,
+      "normalization_map": [
+        {
+          "bytes": 4,
+          "offset": 128,
+          "role": "coff_timestamp"
+        },
+        {
+          "bytes": 4,
+          "offset": 5888736,
+          "role": "debug_timestamp"
+        },
+        {
+          "bytes": 16,
+          "offset": 5888792,
+          "role": "rsds_guid"
+        },
+        {
+          "bytes": 4,
+          "offset": 5888764,
+          "role": "debug_timestamp"
+        },
+        {
+          "bytes": 4,
+          "offset": 208,
+          "role": "pe_checksum"
+        }
+      ],
+      "optional_header_offset": 144,
+      "optional_magic": 523,
+      "overlay_bytes": 0,
+      "pdb_basename": "sipi_com_direct_run.pdb",
+      "pe_offset": 120,
+      "repro": true,
+      "repro_entries": 1,
+      "sections": [
+        {
+          "bytes": 5494784,
+          "name": ".text",
+          "raw_pointer": 1024,
+          "sha256": "fdcaa7c65641ae7e2caac3fd5647287ba2641ce6e4088b770da9de4c671cd168",
+          "virtual_address": 4096,
+          "virtual_bytes": 5494758
+        },
+        {
+          "bytes": 753152,
+          "name": ".rdata",
+          "raw_pointer": 5495808,
+          "sha256": "1262a88ab2dc9deaabbbd5e2f22520a255c90a8b6646bd6e14d6cca2d2ecc7e8",
+          "virtual_address": 5500928,
+          "virtual_bytes": 753084
+        },
+        {
+          "bytes": 4096,
+          "name": ".data",
+          "raw_pointer": 6248960,
+          "sha256": "3f6a86c03b5d0ee4e6bd30f58fea3f814474687abb1c57fd9ed7d6a612d055cd",
+          "virtual_address": 6254592,
+          "virtual_bytes": 5480
+        },
+        {
+          "bytes": 96256,
+          "name": ".pdata",
+          "raw_pointer": 6253056,
+          "sha256": "64237685feaaddc349e6e3c68e40af0a4b9789b2c0413f947a452b9de41e292f",
+          "virtual_address": 6262784,
+          "virtual_bytes": 95892
+        },
+        {
+          "bytes": 512,
+          "name": ".tls",
+          "raw_pointer": 6349312,
+          "sha256": "a275697e04a37760a430bde5579cbd65a4e68a08f7dc8424a87a9b54c5ac879a",
+          "virtual_address": 6361088,
+          "virtual_bytes": 113
+        },
+        {
+          "bytes": 8192,
+          "name": ".reloc",
+          "raw_pointer": 6349824,
+          "sha256": "ba8a2adfeb846038cf3b864653034a0cd212b360cf7a57b2b405fc9b801bada2",
+          "virtual_address": 6365184,
+          "virtual_bytes": 7876
+        }
+      ],
+      "sha256": "e18fe30d784584d55cd6d9edff2380ada3953c526c0ff02c17dd8bc6e4bc44a9"
+    },
+    "commit": "2e18a6a27cf8abc0555e24e0346a54c4ea577baf",
+    "tree": "bfdc3e0ddd9bc76737528011e6dddc94c728f059"
+  },
+  "controls": {
+    "ac_cm_rms_vectors": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.001
+      ]
+    ],
+    "channel_policy": "single_fd_to_td_impulse",
+    "no_sparam_fit": true,
+    "source": "pinned workbook vector override"
+  },
+  "fixtures": {
+    "s4p": {
+      "basename": "kappa_asymmetric_reflective_10db_at_26p56ghz.s4p",
+      "bytes": 6457063,
+      "git_blob_sha1": "a1fe8618043b31f63dfb24454ac1d296000010c0",
+      "path": "fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p",
+      "post_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+      "pre_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+      "sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+      "source_commit": "5272ffe74702cd585054d975559b06f8afae7b6e"
+    },
+    "workbook": {
+      "basename": "config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx",
+      "bytes": 67087,
+      "git_blob_sha1": "22b633b6092b4b0de0ca89273515329b362eabae",
+      "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx",
+      "post_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+      "pre_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+      "sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+      "source_commit": "5272ffe74702cd585054d975559b06f8afae7b6e"
+    }
+  },
+  "fresh_runs": 2,
+  "non_claims": [
+    "no upstream numeric parity",
+    "no global/product/release claim",
+    "aggregate is preparation-only",
+    "PDB is opaque environment-local debug custody and nonpublish"
+  ],
+  "parity": {
+    "acceptance": false,
+    "matched": false,
+    "status": "numeric_observation"
+  },
+  "report_slots": [
+    {
+      "path": "com-workbook-accm-replay-run1.json",
+      "run_id": "c4a8b21f73d94d4a9f7e5c2a1b8d604e3f9a7c1d2e6b5f8093a4c7d1e2f6b8a0",
+      "sha256": "ce2c4545d8455718005d584874b655a544e36e086d8a33788561e3956f72e38f",
+      "slot": "run1"
+    },
+    {
+      "path": "com-workbook-accm-replay-run2.json",
+      "run_id": "c4e4b8d48f54c5369ed959f19d85c76f9dd3dbfc466f686ab0fbe3fc52371d5f",
+      "sha256": "09514f59f49ec4d03d02f0e4634bc989aa1034225e86e427de99fe3cfbd58af6",
+      "slot": "run2"
+    }
+  ],
+  "schema": "sipi.com.workbook-accm-replay-aggregate-prep.v4",
+  "toolchain": {
+    "native_post": {
+      "cl": {
+        "basename": "cl.exe",
+        "file_sha256": "88c8344236a27a6e727e0a8edc49aaa2690bdc7a9464b9d18cc7abe70a9f1c0d",
+        "path_redacted": true,
+        "role": "cl",
+        "timeout_s": 15,
+        "version_args": [
+          "/nologo",
+          "/?"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "99707d40105e8b213030d6782bc4ebcf08778865a443ae2c59fd5633ad249ca2"
+      },
+      "lib": {
+        "basename": "lib.exe",
+        "file_sha256": "3d694c782f93e998fec5db0c2df78153565da23a028ee4618561fa0c33408489",
+        "path_redacted": true,
+        "role": "lib",
+        "timeout_s": 15,
+        "version_args": [
+          "/Bv"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "1b6434eaaeae1cc1e385a83835e251e7cef6b46c7309413bac063b9e33a5c6a5"
+      },
+      "rc": {
+        "basename": "rc.exe",
+        "file_sha256": "43da1503c262c30894c851589bf0155f8365d77e63a5f7bc13982320e3a6b42d",
+        "path_redacted": true,
+        "role": "rc",
+        "timeout_s": 15,
+        "version_args": [
+          "/?"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "62d6d3b84fa03a4c2c4d7a7692081eb8aa0107711ecf0c1839b3f65c90ecc2e5"
+      }
+    },
+    "native_pre": {
+      "cl": {
+        "basename": "cl.exe",
+        "file_sha256": "88c8344236a27a6e727e0a8edc49aaa2690bdc7a9464b9d18cc7abe70a9f1c0d",
+        "path_redacted": true,
+        "role": "cl",
+        "timeout_s": 15,
+        "version_args": [
+          "/nologo",
+          "/?"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "99707d40105e8b213030d6782bc4ebcf08778865a443ae2c59fd5633ad249ca2"
+      },
+      "lib": {
+        "basename": "lib.exe",
+        "file_sha256": "3d694c782f93e998fec5db0c2df78153565da23a028ee4618561fa0c33408489",
+        "path_redacted": true,
+        "role": "lib",
+        "timeout_s": 15,
+        "version_args": [
+          "/Bv"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "1b6434eaaeae1cc1e385a83835e251e7cef6b46c7309413bac063b9e33a5c6a5"
+      },
+      "rc": {
+        "basename": "rc.exe",
+        "file_sha256": "43da1503c262c30894c851589bf0155f8365d77e63a5f7bc13982320e3a6b42d",
+        "path_redacted": true,
+        "role": "rc",
+        "timeout_s": 15,
+        "version_args": [
+          "/?"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "62d6d3b84fa03a4c2c4d7a7692081eb8aa0107711ecf0c1839b3f65c90ecc2e5"
+      }
+    },
+    "post": {
+      "cargo": {
+        "basename": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "timeout_s": 15,
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+      },
+      "cmd": {
+        "basename": "cmd.exe",
+        "file_sha256": "adc2a58c8a0965255653bf7188cba8f5988f39eed433d2b9d7e8fc4c4f304d1d",
+        "path_redacted": true,
+        "role": "cmd",
+        "timeout_s": 15,
+        "version_args": [
+          "/d",
+          "/c",
+          "ver"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "f35ce58e3de1cec3b40b39745b41654a2dfba91389f072e05cabd366da3e5e36"
+      },
+      "linker": {
+        "basename": "rust-lld.exe",
+        "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+        "path_redacted": true,
+        "role": "linker",
+        "timeout_s": 15,
+        "version_args": [
+          "-flavor",
+          "link",
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "70f19097e32603a9679ed8a0948f11ede633abb9902f7e287735f5cecfcf70e0"
+      },
+      "rustc": {
+        "basename": "rustc.exe",
+        "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "path_redacted": true,
+        "role": "rustc",
+        "timeout_s": 15,
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+      }
+    },
+    "pre": {
+      "cargo": {
+        "basename": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "timeout_s": 15,
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+      },
+      "cmd": {
+        "basename": "cmd.exe",
+        "file_sha256": "adc2a58c8a0965255653bf7188cba8f5988f39eed433d2b9d7e8fc4c4f304d1d",
+        "path_redacted": true,
+        "role": "cmd",
+        "timeout_s": 15,
+        "version_args": [
+          "/d",
+          "/c",
+          "ver"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "f35ce58e3de1cec3b40b39745b41654a2dfba91389f072e05cabd366da3e5e36"
+      },
+      "linker": {
+        "basename": "rust-lld.exe",
+        "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+        "path_redacted": true,
+        "role": "linker",
+        "timeout_s": 15,
+        "version_args": [
+          "-flavor",
+          "link",
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "70f19097e32603a9679ed8a0948f11ede633abb9902f7e287735f5cecfcf70e0"
+      },
+      "rustc": {
+        "basename": "rustc.exe",
+        "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "path_redacted": true,
+        "role": "rustc",
+        "timeout_s": 15,
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_output_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+      }
+    },
+    "vcvars64_post": {
+      "basename": "vcvars64.bat",
+      "bytes": 39,
+      "file_sha256": "6b516d8fcf543c14b2d861e1f45661e0029230fe0dc48e86ce78522801822209",
+      "path_redacted": true,
+      "role": "vcvars64"
+    },
+    "vcvars64_pre": {
+      "basename": "vcvars64.bat",
+      "bytes": 39,
+      "file_sha256": "6b516d8fcf543c14b2d861e1f45661e0029230fe0dc48e86ce78522801822209",
+      "path_redacted": true,
+      "role": "vcvars64"
+    }
+  },
+  "upstream": {
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "runtime": "not_executed_external_only",
+    "source_inventory": {
+      "src/agent_com/_orchestration.py": {
+        "bytes": 90877,
+        "git_blob_sha1": "5d260a0aab941f1a1955fe3abef36d85a56034c0",
+        "license": "MIT",
+        "sha256": "069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69"
+      },
+      "src/agent_com/api.py": {
+        "bytes": 21445,
+        "git_blob_sha1": "3e7808982a63123f2bac65a86f3abb627c287be1",
+        "license": "MIT",
+        "sha256": "b7527f60d55b6f73fb449bc2472f957a6bc2a9ecf1d7bc8808756bf7fba39570"
+      },
+      "src/agent_com/equalization/search.py": {
+        "bytes": 53859,
+        "git_blob_sha1": "58f6e5e3f8f36b94faddf0248f3df2ff11e1e3cd",
+        "license": "MIT",
+        "sha256": "924930c43332f169ce1d66048d3f70610c8bf459af2f0210d6995533c277003d"
+      },
+      "src/agent_com/network/package.py": {
+        "bytes": 22300,
+        "git_blob_sha1": "55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f",
+        "license": "MIT",
+        "sha256": "bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32"
+      },
+      "src/agent_com/network/two_port.py": {
+        "bytes": 9600,
+        "git_blob_sha1": "6b1484effc18a25fe8c28373b47f55b0b99b0f4b",
+        "license": "MIT",
+        "sha256": "8889d9695a56d83a59a771d938ba8084dbdfec6a24d79e14d88b83c678ddcd6a"
+      },
+      "src/agent_com/signal/fd_to_td.py": {
+        "bytes": 5831,
+        "git_blob_sha1": "6f3af024ea20df0011843ea19a090788f1aabbc9",
+        "license": "MIT",
+        "sha256": "703a360837cbaa18494ee03ba8df8d908dc6bf3c516d80d3dddf83af6637c687"
+      }
+    },
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}
