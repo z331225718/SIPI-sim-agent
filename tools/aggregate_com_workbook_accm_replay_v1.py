@@ -12,7 +12,7 @@ try:
 except ImportError:
     from verify_com_workbook_accm_replay_v1 import stable_candidate, verify_report
 
-SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v3"
+SCHEMA = "sipi.com.workbook-accm-replay-aggregate-prep.v4"
 
 
 def digest(path: Path) -> str:
@@ -26,12 +26,16 @@ def safe_report_name(path: Path) -> str:
     return name.as_posix()
 
 
-def aggregate(run1: Path, run2: Path, output: Path) -> dict[str, object]:
-    first = verify_report(run1)
-    second = verify_report(run2)
+def aggregate(run1: Path, run2: Path, output: Path, cargo_home: Path | None = None) -> dict[str, object]:
+    first = verify_report(run1, cargo_home)
+    second = verify_report(run2, cargo_home)
+    if any(report["toolchain"]["pre"]["linker"]["basename"].lower() != "rust-lld.exe" for report in (first, second)):
+        raise ValueError("aggregate linker identity must be rust-lld.exe")
+    if first["candidate"]["binary"]["canonical_sha256"] != second["candidate"]["binary"]["canonical_sha256"] or first["candidate"]["binary"]["normalization_map"] != second["candidate"]["binary"]["normalization_map"]:
+        raise ValueError("aggregate typed PE canonical identity drift")
     if first["run_id"] == second["run_id"] or first["nonce"] == second["nonce"]:
         raise ValueError("fresh run identities must be distinct")
-    build_identity = lambda report: {key: report["build"][key] for key in ("command", "exit", "timeout_s", "env_policy", "env_receipt")}
+    build_identity = lambda report: {key: report["build"][key] for key in ("command", "exit", "timeout_s", "env_policy", "env_receipt", "deterministic_flags")}
     if stable_candidate(first["candidate"]) != stable_candidate(second["candidate"]) or first["fixtures"] != second["fixtures"] or first["upstream"] != second["upstream"] or first["toolchain"] != second["toolchain"] or build_identity(first) != build_identity(second) or first["execution"] != second["execution"]:
         raise ValueError("candidate, fixture, source, toolchain, or build identity drift")
     aggregate_status = "numeric_observation" if first["parity"]["status"] == second["parity"]["status"] == "numeric_observation" else "blocked"
@@ -45,7 +49,7 @@ def aggregate(run1: Path, run2: Path, output: Path) -> dict[str, object]:
         "controls": first["controls"],
         "parity": {"status": aggregate_status, "matched": False, "acceptance": False},
         "fresh_runs": 2,
-        "non_claims": ["no upstream numeric parity", "no global/product/release claim", "aggregate is preparation-only"],
+        "non_claims": ["no upstream numeric parity", "no global/product/release claim", "aggregate is preparation-only", "PDB is opaque environment-local debug custody and nonpublish"],
     }
     if output.exists():
         raise FileExistsError("aggregate path already exists")
@@ -61,8 +65,9 @@ def main() -> int:
     parser.add_argument("--run1", type=Path, required=True)
     parser.add_argument("--run2", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--cargo-home", type=Path, required=True)
     args = parser.parse_args()
-    print(json.dumps(aggregate(args.run1, args.run2, args.output), sort_keys=True))
+    print(json.dumps(aggregate(args.run1, args.run2, args.output, args.cargo_home), sort_keys=True))
     return 0
 
 
