@@ -203,6 +203,87 @@ fn native_request_reaches_adaptive_dfe_and_duobinary_receiver_branches() {
 }
 
 #[test]
+fn native_duobinary_jitter_uses_typed_dfe_decision_scaler() {
+    fn run_with_scaler(
+        modulation: ModulationV1,
+        scaler: f64,
+    ) -> sipi_pybert_direct::SimulationOutputV1 {
+        let mut input = base("branch-duobinary-jitter");
+        input.modulation = modulation;
+        input.timebase.nbits = 8_192;
+        input.analysis.include_jitter = true;
+        input.analysis.jitter_eye_uis = Some(2_048);
+        input.rx.dfe_taps = 1;
+        input.rx.dfe = Some(DfeConfigV1 {
+            decision_scaler: Volts(scaler),
+            ..dfe()
+        });
+        run(&input)
+    }
+
+    let low = run_with_scaler(ModulationV1::DuoBinary, 0.2);
+    let high = run_with_scaler(ModulationV1::DuoBinary, 0.6);
+    let low_channel = &low.arrays["jitter_chnl_tie_s"];
+    let high_channel = &high.arrays["jitter_chnl_tie_s"];
+    let low_tx = &low.arrays["jitter_tx_tie_s"];
+    let high_tx = &high.arrays["jitter_tx_tie_s"];
+    assert_eq!(low.arrays["tx_waveform_v"], high.arrays["tx_waveform_v"]);
+    assert_eq!(
+        low.arrays["channel_output_v"],
+        high.arrays["channel_output_v"]
+    );
+    assert_eq!(low.arrays["rx_input_v"], high.arrays["rx_input_v"]);
+    assert_eq!(low_channel.len(), high_channel.len());
+    assert_eq!(low_tx.len(), high_tx.len());
+    assert!(
+        low_channel
+            .iter()
+            .zip(high_channel)
+            .any(|(left, right)| (left - right).abs() > 1.0e-18)
+    );
+    assert!(
+        low_tx
+            .iter()
+            .zip(high_tx)
+            .any(|(left, right)| (left - right).abs() > 1.0e-18)
+    );
+    let channel_difference = low_channel
+        .iter()
+        .zip(high_channel)
+        .enumerate()
+        .find(|(_, (left, right))| (*left - *right).abs() > 1.0e-18)
+        .expect("decision scaler must change a channel crossing-derived sample");
+    let tx_difference = low_tx
+        .iter()
+        .zip(high_tx)
+        .enumerate()
+        .find(|(_, (left, right))| (*left - *right).abs() > 1.0e-18)
+        .expect("decision scaler must change a tx crossing-derived sample");
+    assert_eq!(channel_difference.0, 0);
+    assert_eq!(tx_difference.0, 0);
+    assert!((low_channel[0] - -5.644519883605953e-13).abs() < 1.0e-24);
+    assert!((high_channel[0] - -8.142095053346904e-13).abs() < 1.0e-24);
+    assert!((low_tx[0] - -5.644519883605953e-13).abs() < 1.0e-24);
+    assert!((high_tx[0] - -8.142095053346904e-13).abs() < 1.0e-24);
+    assert!((low_channel[0] - high_channel[0]).abs() > 2.0e-13);
+    assert!(low.metrics.contains_key("jitter_dfe_random_s"));
+    assert!(low.arrays.contains_key("jitter_dfe_tie_s"));
+
+    for modulation in [ModulationV1::Nrz, ModulationV1::Pam4] {
+        let low = run_with_scaler(modulation.clone(), 0.2);
+        let high = run_with_scaler(modulation, 0.6);
+        assert_eq!(
+            low.arrays["jitter_chnl_tie_s"],
+            high.arrays["jitter_chnl_tie_s"]
+        );
+        assert_eq!(
+            low.arrays["jitter_tx_tie_s"],
+            high.arrays["jitter_tx_tie_s"]
+        );
+    }
+}
+
+#[test]
 fn native_request_reaches_additive_periodic_noise_branch() {
     let mut input = base("branch-noise");
     let sample_count = (input.timebase.nbits * u64::from(input.timebase.samples_per_ui)) as usize;

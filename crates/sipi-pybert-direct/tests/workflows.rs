@@ -177,6 +177,66 @@ fn compare_shadow_populates_full_result_adapter_payload() {
 }
 
 #[test]
+fn compare_consumes_nested_output_and_rejects_flat_projection_drift() {
+    let root = temp_root("workflow-nested-output-projection");
+    let output = run_sim_rust_file(&fixture(), &root.join("source"), None)
+        .unwrap()
+        .output;
+    let reference_json = root.join("reference.json");
+    let payload = serde_json::json!({
+        "output": output.clone(),
+        "metrics": output.metrics,
+        "arrays": output.arrays,
+        "metadata": {
+            "schema": output.schema,
+            "run_id": output.run_id,
+            "engine": {"backend": "rust", "native_simulation_v1": true},
+            "metrics": output.metrics,
+            "aborted": false,
+        },
+        "diagnostics": {
+            "pipeline": "typed_simulation_input_v1",
+            "capabilities": output.capabilities.stages,
+            "events": output.events,
+            "cancellation": "checked_before_and_after_the_bounded_native_call",
+        },
+        "performance": {},
+    });
+    fs::write(&reference_json, serde_json::to_vec(&payload).unwrap()).unwrap();
+    let report =
+        run_sim_compare_file(&fixture(), &root.join("valid"), None, Some(&reference_json)).unwrap();
+    assert_eq!(
+        report.metadata["diagnostics"]["comparison"]["nested_output_projection"]["passed"],
+        Value::Bool(true)
+    );
+
+    let mut metric_drift = payload.clone();
+    metric_drift["metrics"]["generated_bits"] = serde_json::json!(0.0);
+    fs::write(&reference_json, serde_json::to_vec(&metric_drift).unwrap()).unwrap();
+    let error = run_sim_compare_file(
+        &fixture(),
+        &root.join("metric-drift"),
+        None,
+        Some(&reference_json),
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("metrics drift"), "{error}");
+
+    let mut array_drift = payload;
+    array_drift["arrays"]["rx_output_v"][0] = serde_json::json!(123.0);
+    fs::write(&reference_json, serde_json::to_vec(&array_drift).unwrap()).unwrap();
+    let error = run_sim_compare_file(
+        &fixture(),
+        &root.join("array-drift"),
+        None,
+        Some(&reference_json),
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("arrays drift"), "{error}");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn compare_accepts_serialized_backend_run_result_shape() {
     let root = temp_root("workflow-result-adapter-flat");
     let reference = run_sim_rust_file(&fixture(), &root.join("reference"), None)
@@ -316,6 +376,89 @@ fn compare_output_schema_is_validated_before_use() {
             .as_bool()
             .unwrap()
     );
+}
+
+#[test]
+fn compare_gates_complete_output_capabilities_and_events() {
+    let output = output_for_complete_contract_test();
+    let same = compare_native_outputs(&output, &output);
+    assert_eq!(same["output"]["passed"], Value::Bool(true));
+
+    let mut capability_mutation = output.clone();
+    capability_mutation.capabilities.stages.pop();
+    let capability_report = compare_native_outputs(&output, &capability_mutation);
+    assert_eq!(capability_report["passed"], Value::Bool(false));
+    assert_eq!(
+        capability_report["output"]["capabilities"]["passed"],
+        Value::Bool(false)
+    );
+
+    let mut event_mutation = output;
+    event_mutation.events[1].total_progress = 0.9;
+    let event_report =
+        compare_native_outputs(&output_for_complete_contract_test(), &event_mutation);
+    assert_eq!(event_report["passed"], Value::Bool(false));
+    assert_eq!(
+        event_report["output"]["events"]["passed"],
+        Value::Bool(false)
+    );
+
+    let mut schema_mutation = output_for_complete_contract_test();
+    schema_mutation.schema = "pybert.simulation.mutated.v1".into();
+    let schema_report =
+        compare_native_outputs(&output_for_complete_contract_test(), &schema_mutation);
+    assert_eq!(
+        schema_report["output"]["schema"]["passed"],
+        Value::Bool(false)
+    );
+
+    let mut artifact_mutation = output_for_complete_contract_test();
+    artifact_mutation.artifacts[0].sha256 = "f".repeat(64);
+    let artifact_report =
+        compare_native_outputs(&output_for_complete_contract_test(), &artifact_mutation);
+    assert_eq!(
+        artifact_report["output"]["artifacts"]["passed"],
+        Value::Bool(false)
+    );
+
+    let mut byte_length_mutation = output_for_complete_contract_test();
+    byte_length_mutation.artifacts[0].byte_length += 1;
+    let byte_length_report =
+        compare_native_outputs(&output_for_complete_contract_test(), &byte_length_mutation);
+    assert_eq!(
+        byte_length_report["output"]["artifacts"]["comparison"],
+        "exact"
+    );
+    assert_eq!(
+        byte_length_report["output"]["artifacts"]["passed"],
+        Value::Bool(false)
+    );
+
+    let mut path_mutation = output_for_complete_contract_test();
+    path_mutation.artifacts[0].relative_path = "other.bin".into();
+    let path_report = compare_native_outputs(&output_for_complete_contract_test(), &path_mutation);
+    assert_eq!(
+        path_report["output"]["artifacts"]["passed"],
+        Value::Bool(false)
+    );
+}
+
+fn output_for_complete_contract_test() -> SimulationOutputV1 {
+    serde_json::from_str(
+        r#"{
+          "schema":"pybert.simulation.v1",
+          "runId":"r",
+          "capabilities":{"stages":["validate","result_assembly"],"externalModels":[]},
+          "metrics":{"m":1.0},
+          "events":[
+            {"runId":"r","sequence":0,"stage":"validate","stageProgress":1.0,"totalProgress":0.111111,"message":null},
+            {"runId":"r","sequence":1,"stage":"result_assembly","stageProgress":1.0,"totalProgress":1.0,"message":null}
+          ],
+          "arrays":{"a":[1.0]},
+          "artifacts":[{"name":"result","schema":"pybert.result.v1","relativePath":"result.bin","mimeType":"application/octet-stream","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","byteLength":1}]
+        }"#,
+    )
+    .unwrap()
 }
 
 #[test]

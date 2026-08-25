@@ -17,9 +17,9 @@ use thiserror::Error;
 
 use crate::runner::{ArrayDTypeV1, TypedArrayV1, UPSTREAM_COMMIT, UPSTREAM_TREE};
 use crate::{
-    DirectRunError, DirectRunReport, LegacyRuntimeError, SimulationInputV1, SimulationOutputV1,
-    StatisticalEyeConfigV1, Volts, project_legacy_config_v1, simulate_native_v1,
-    write_simulation_artifacts,
+    ArtifactRefV1, DirectRunError, DirectRunReport, LegacyRuntimeError, SimulationInputV1,
+    SimulationOutputV1, StatisticalEyeConfigV1, Volts, project_legacy_config_v1,
+    simulate_native_v1, write_simulation_artifacts,
     write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_arrays,
 };
 
@@ -55,6 +55,11 @@ pub enum CompareReference {
 struct ComparePayload {
     output: SimulationOutputV1,
     arrays: BTreeMap<String, ArrayPayload>,
+    /// A reference payload may expose the typed output plus a legacy flat
+    /// projection.  The projection is validated at ingestion and retained as
+    /// an explicit gate instead of allowing the flat fields to shadow the
+    /// nested `SimulationOutputV1` values.
+    projection: Value,
     metadata: Value,
     diagnostics: Value,
     performance: Value,
@@ -94,6 +99,11 @@ impl ComparePayload {
                 })
                 .collect(),
             output,
+            projection: json!({
+                "present": false,
+                "passed": true,
+                "source": "typed_simulation_output",
+            }),
             metadata: json!({
                 "schema": schema,
                 "run_id": run_id,
@@ -517,16 +527,30 @@ fn read_reference_payload(path: &Path) -> Result<ComparePayload, WorkflowError> 
     output.validate().map_err(|error| {
         WorkflowError::ReferenceUnavailable(format!("reference output is invalid: {error}"))
     })?;
-    let empty_arrays = json!({});
-    let arrays_value = value
-        .get("arrays")
-        .or_else(|| value.get("output").and_then(|output| output.get("arrays")))
-        .unwrap_or(&empty_arrays);
     let dtype_hints = array_dtype_hints(&value)?;
-    let arrays = parse_array_payloads(arrays_value, &dtype_hints)?;
+    let projection = nested_output_projection(&value, &output, &dtype_hints)?;
+    let arrays = if nested_output_value(&value).is_some() {
+        // The typed nested envelope is canonical.  A valid flat projection is
+        // used only to preserve its declared NumPy dtype; values and shape
+        // have already been checked against `output.arrays` above.
+        let mut arrays = typed_output_array_payloads(&output)?;
+        if let Some(projected) = projection.arrays.as_ref() {
+            for (name, array) in projected {
+                if let Some(canonical) = arrays.get_mut(name) {
+                    canonical.dtype = array.dtype;
+                }
+            }
+        }
+        arrays
+    } else {
+        let empty_arrays = json!({});
+        let arrays_value = value.get("arrays").unwrap_or(&empty_arrays);
+        parse_array_payloads(arrays_value, &dtype_hints)?
+    };
     Ok(ComparePayload {
         arrays,
         output,
+        projection: projection.report,
         metadata: value.get("metadata").cloned().unwrap_or_else(|| json!({})),
         diagnostics: value
             .get("diagnostics")
@@ -536,6 +560,243 @@ fn read_reference_payload(path: &Path) -> Result<ComparePayload, WorkflowError> 
             .get("performance")
             .cloned()
             .unwrap_or_else(|| json!({})),
+    })
+}
+
+struct NestedProjection {
+    report: Value,
+    arrays: Option<BTreeMap<String, ArrayPayload>>,
+}
+
+fn nested_output_value(value: &Value) -> Option<&Value> {
+    value
+        .get("output")
+        .or_else(|| value.get("simulation_output"))
+}
+
+/// Validate legacy flat projections without allowing them to replace the
+/// nested typed output.  The nested envelope is parsed first and remains the
+/// source of metrics/array values; a flat projection is only accepted when it
+/// is an exact shape/value match.
+fn nested_output_projection(
+    root: &Value,
+    output: &SimulationOutputV1,
+    dtype_hints: &BTreeMap<String, ArrayDTypeV1>,
+) -> Result<NestedProjection, WorkflowError> {
+    if nested_output_value(root).is_none() {
+        return Ok(NestedProjection {
+            report: json!({
+                "present": false,
+                "passed": true,
+                "source": "flat_backend_run_result",
+            }),
+            arrays: None,
+        });
+    }
+
+    let mut metric_reports = Vec::new();
+    for (source, metrics) in [
+        ("top_level", root.get("metrics")),
+        (
+            "metadata",
+            root.get("metadata")
+                .and_then(|metadata| metadata.get("metrics")),
+        ),
+    ] {
+        let Some(metrics) = metrics else {
+            continue;
+        };
+        let projected = parse_metric_projection(metrics, &format!("{source}.metrics"))?;
+        let report = compare_nested_metrics(&output.metrics, &projected, source);
+        if !report
+            .get("passed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            return Err(WorkflowError::ReferenceUnavailable(format!(
+                "nested output metrics drift from {source} projection"
+            )));
+        }
+        metric_reports.push(report);
+    }
+
+    let projected_arrays = root
+        .get("arrays")
+        .map(|arrays| parse_array_payloads(arrays, dtype_hints))
+        .transpose()?;
+    let array_report = if let Some(projected) = &projected_arrays {
+        let canonical = typed_output_array_payloads(output)?;
+        let report = compare_nested_arrays(&canonical, projected);
+        if !report
+            .get("passed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            return Err(WorkflowError::ReferenceUnavailable(
+                "nested output arrays drift from top-level projection".into(),
+            ));
+        }
+        json!({
+            "present": true,
+            "passed": true,
+            "projection_names": projected.keys().collect::<Vec<_>>(),
+            "comparison": report,
+        })
+    } else {
+        json!({
+            "present": false,
+            "passed": true,
+            "reason": "no_top_level_arrays_projection",
+        })
+    };
+
+    Ok(NestedProjection {
+        report: json!({
+            "present": true,
+            "passed": true,
+            "source": "nested_simulation_output",
+            "metrics": metric_reports,
+            "arrays": array_report,
+        }),
+        arrays: projected_arrays,
+    })
+}
+
+fn typed_output_array_payloads(
+    output: &SimulationOutputV1,
+) -> Result<BTreeMap<String, ArrayPayload>, WorkflowError> {
+    let arrays = serde_json::to_value(&output.arrays).map_err(|error| {
+        WorkflowError::ReferenceUnavailable(format!(
+            "nested output arrays cannot be serialized: {error}"
+        ))
+    })?;
+    parse_array_payloads(&arrays, &BTreeMap::new())
+}
+
+fn parse_metric_projection(
+    value: &Value,
+    path: &str,
+) -> Result<BTreeMap<String, f64>, WorkflowError> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| WorkflowError::ReferenceUnavailable(format!("{path} must be an object")))?;
+    object
+        .iter()
+        .map(|(name, value)| {
+            let number = value
+                .as_f64()
+                .filter(|value| value.is_finite())
+                .ok_or_else(|| {
+                    WorkflowError::ReferenceUnavailable(format!(
+                        "{path}.{name} must be a finite number"
+                    ))
+                })?;
+            Ok((name.clone(), number))
+        })
+        .collect()
+}
+
+fn compare_nested_metrics(
+    canonical: &BTreeMap<String, f64>,
+    projected: &BTreeMap<String, f64>,
+    source: &str,
+) -> Value {
+    let names = canonical
+        .keys()
+        .chain(projected.keys())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut differences = Vec::new();
+    for name in names {
+        match (canonical.get(&name), projected.get(&name)) {
+            (Some(left), Some(right)) if left == right => {}
+            (Some(left), Some(right)) => differences.push(json!({
+                "path": format!("{source}.metrics.{name}"),
+                "reason": "exact_value",
+                "nested": left,
+                "projection": right,
+            })),
+            (Some(_), None) => differences.push(json!({
+                "path": format!("{source}.metrics.{name}"),
+                "reason": "missing_from_projection",
+            })),
+            (None, Some(_)) => differences.push(json!({
+                "path": format!("{source}.metrics.{name}"),
+                "reason": "extra_in_projection",
+            })),
+            (None, None) => unreachable!("metric union contains a missing key"),
+        }
+    }
+    json!({
+        "source": source,
+        "passed": differences.is_empty(),
+        "differences": differences,
+    })
+}
+
+fn compare_nested_arrays(
+    canonical: &BTreeMap<String, ArrayPayload>,
+    projected: &BTreeMap<String, ArrayPayload>,
+) -> Value {
+    let names = canonical
+        .keys()
+        .chain(projected.keys())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut differences = Vec::new();
+    for name in names {
+        match (canonical.get(&name), projected.get(&name)) {
+            (Some(left), Some(right)) => {
+                if left.shape != right.shape {
+                    differences.push(json!({
+                        "path": format!("output.arrays.{name}"),
+                        "reason": "shape",
+                        "nested": left.shape,
+                        "projection": right.shape,
+                    }));
+                }
+                if left.values.len() != right.values.len() {
+                    differences.push(json!({
+                        "path": format!("output.arrays.{name}"),
+                        "reason": "length",
+                        "nested": left.values.len(),
+                        "projection": right.values.len(),
+                    }));
+                } else {
+                    for (index, (nested, projection)) in
+                        left.values.iter().zip(&right.values).enumerate()
+                    {
+                        if nested != projection {
+                            differences.push(json!({
+                                "path": format!("output.arrays.{name}[{index}]"),
+                                "reason": "exact_value",
+                                "nested": nested,
+                                "projection": projection,
+                            }));
+                            if differences.len() >= 128 {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            (Some(_), None) => differences.push(json!({
+                "path": format!("output.arrays.{name}"),
+                "reason": "missing_from_projection",
+            })),
+            (None, Some(_)) => differences.push(json!({
+                "path": format!("output.arrays.{name}"),
+                "reason": "extra_in_projection",
+            })),
+            (None, None) => unreachable!("array union contains a missing key"),
+        }
+        if differences.len() >= 128 {
+            break;
+        }
+    }
+    json!({
+        "passed": differences.is_empty(),
+        "differences": differences,
     })
 }
 
@@ -924,6 +1185,8 @@ fn array_scalar_to_f64(
 fn compare_payloads(reference: &ComparePayload, candidate: &ComparePayload) -> Value {
     let array_report = compare_maps(&reference.arrays, &candidate.arrays);
     let metric_report = compare_scalars(&reference.output.metrics, &candidate.output.metrics);
+    let output_report = compare_output_contract(&reference.output, &candidate.output);
+    let projection_report = reference.projection.clone();
     let metadata_report = compare_values(&reference.metadata, &candidate.metadata, "metadata");
     let diagnostics_report = compare_values(
         &reference.diagnostics,
@@ -934,6 +1197,8 @@ fn compare_payloads(reference: &ComparePayload, candidate: &ComparePayload) -> V
     let passed = [
         &array_report,
         &metric_report,
+        &output_report,
+        &projection_report,
         &metadata_report,
         &diagnostics_report,
     ]
@@ -952,10 +1217,145 @@ fn compare_payloads(reference: &ComparePayload, candidate: &ComparePayload) -> V
         "tolerance": {"rtol": COMPARE_RTOL, "atol": COMPARE_ATOL},
         "arrays": array_report,
         "metrics": metric_report,
+        "output": output_report,
+        "nested_output_projection": projection_report,
         "metadata": metadata_report,
         "diagnostics": diagnostics_report,
         "performance": performance,
         "status_only_comparison": false
+    })
+}
+
+/// Compare the complete typed `SimulationOutputV1` envelope in addition to
+/// its numeric payload.  The existing result-adapter comparison intentionally
+/// keeps host run IDs out of the gate; stage capabilities, ordered events, and
+/// artifact references are semantic output and must not disappear merely
+/// because all waveform arrays still match.
+fn compare_output_contract(
+    reference: &SimulationOutputV1,
+    candidate: &SimulationOutputV1,
+) -> Value {
+    let schema = compare_values(
+        &Value::String(reference.schema.clone()),
+        &Value::String(candidate.schema.clone()),
+        "output.schema",
+    );
+    let capabilities = compare_values(
+        &serde_json::to_value(&reference.capabilities).expect("capabilities serialize"),
+        &serde_json::to_value(&candidate.capabilities).expect("capabilities serialize"),
+        "output.capabilities",
+    );
+    let metrics = compare_values(
+        &serde_json::to_value(&reference.metrics).expect("metrics serialize"),
+        &serde_json::to_value(&candidate.metrics).expect("metrics serialize"),
+        "output.metrics",
+    );
+    let arrays = compare_values(
+        &serde_json::to_value(&reference.arrays).expect("arrays serialize"),
+        &serde_json::to_value(&candidate.arrays).expect("arrays serialize"),
+        "output.arrays",
+    );
+    let events = compare_values(
+        &event_payload_without_run_ids(&reference.events),
+        &event_payload_without_run_ids(&candidate.events),
+        "output.events",
+    );
+    let artifacts = compare_artifacts_strict(&reference.artifacts, &candidate.artifacts);
+    let passed = [
+        &schema,
+        &capabilities,
+        &metrics,
+        &arrays,
+        &events,
+        &artifacts,
+    ]
+    .into_iter()
+    .all(|report| {
+        report
+            .get("passed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+    });
+    json!({
+        "passed": passed,
+        "reference_run_id": reference.run_id,
+        "candidate_run_id": candidate.run_id,
+        "run_id_is_provenance_only": true,
+        "schema": schema,
+        "capabilities": capabilities,
+        "metrics": metrics,
+        "arrays": arrays,
+        "events": events,
+        "artifacts": artifacts,
+    })
+}
+
+fn event_payload_without_run_ids(events: &[crate::RunEventV1]) -> Value {
+    Value::Array(
+        events
+            .iter()
+            .map(|event| {
+                json!({
+                    "sequence": event.sequence,
+                    "stage": event.stage,
+                    "stageProgress": event.stage_progress,
+                    "totalProgress": event.total_progress,
+                    "message": event.message,
+                })
+            })
+            .collect(),
+    )
+}
+
+fn compare_artifacts_strict(reference: &[ArtifactRefV1], candidate: &[ArtifactRefV1]) -> Value {
+    let mut differences = Vec::new();
+    if reference.len() != candidate.len() {
+        differences.push(json!({
+            "path": "output.artifacts",
+            "reason": "length",
+            "reference": reference.len(),
+            "candidate": candidate.len(),
+        }));
+    }
+    for (index, (left, right)) in reference.iter().zip(candidate).enumerate() {
+        let fields = [
+            ("name", left.name.as_str(), right.name.as_str()),
+            ("schema", left.schema.as_str(), right.schema.as_str()),
+            (
+                "relativePath",
+                left.relative_path.as_str(),
+                right.relative_path.as_str(),
+            ),
+            (
+                "mimeType",
+                left.mime_type.as_str(),
+                right.mime_type.as_str(),
+            ),
+            ("sha256", left.sha256.as_str(), right.sha256.as_str()),
+        ];
+        for (field, reference, candidate) in fields {
+            if reference != candidate {
+                differences.push(json!({
+                    "path": format!("output.artifacts[{index}].{field}"),
+                    "reason": "exact_value",
+                    "reference": reference,
+                    "candidate": candidate,
+                }));
+            }
+        }
+        if left.byte_length != right.byte_length {
+            differences.push(json!({
+                "path": format!("output.artifacts[{index}].byteLength"),
+                "reason": "exact_value",
+                "reference": left.byte_length,
+                "candidate": right.byte_length,
+            }));
+        }
+    }
+    json!({
+        "passed": differences.is_empty(),
+        "comparison": "exact",
+        "differences": differences,
     })
 }
 

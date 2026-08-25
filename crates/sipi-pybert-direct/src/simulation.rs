@@ -970,6 +970,7 @@ struct NativeJitterStage {
 
 struct NativeJitterStageInput<'a> {
     input: &'a SimulationInputV1,
+    crossing_amplitude_v: f64,
     ideal_waveform: &'a [f64],
     waveform: &'a [f64],
     ideal_crossings: &'a [f64],
@@ -1002,13 +1003,24 @@ fn calculate_native_jitter_metrics(
     });
     let eye_uis = requested_eye_uis.min(complete_uis);
     let window_start_s = (complete_uis - eye_uis) as f64 * ui_s;
+    // PyBERT expresses Duo-binary crossing thresholds relative to the DFE
+    // decision scaler, not the transmitter amplitude.  NRZ and PAM4 use a
+    // zero threshold, so this distinction only becomes visible for
+    // Duo-binary.  A request without a typed DFE has no scaler to consume;
+    // preserve the existing amplitude-based behavior for that explicit
+    // zero-stage path instead of constructing a hidden default DFE.
+    let crossing_amplitude_v = input
+        .rx
+        .dfe
+        .as_ref()
+        .map_or(input.tx.amplitude.0, |dfe| dfe.decision_scaler.0);
     let ideal_times_s = (0..ideal_waveform.len())
         .map(|index| index as f64 * sample_interval_s)
         .collect::<Vec<_>>();
     let ideal_crossings = find_crossings(
         &ideal_times_s,
         ideal_waveform,
-        input.tx.amplitude.0,
+        crossing_amplitude_v,
         0.0,
         true,
         0.1,
@@ -1024,6 +1036,7 @@ fn calculate_native_jitter_metrics(
     for (stage_name, waveform) in stages {
         let stage = calculate_native_jitter_stage(NativeJitterStageInput {
             input,
+            crossing_amplitude_v,
             ideal_waveform,
             waveform,
             ideal_crossings: &ideal_crossings,
@@ -1055,6 +1068,7 @@ fn calculate_native_jitter_stage(
 ) -> Result<NativeJitterStage, NativeSimulationError> {
     let NativeJitterStageInput {
         input,
+        crossing_amplitude_v,
         ideal_waveform,
         waveform,
         ideal_crossings,
@@ -1078,7 +1092,7 @@ fn calculate_native_jitter_stage(
     let actual_crossings = find_crossings(
         &times_s,
         waveform,
-        input.tx.amplitude.0,
+        crossing_amplitude_v,
         0.0,
         true,
         0.1,
