@@ -1,0 +1,90 @@
+schema: sipi.as-06-run-rfm-source-map.v3
+status: additive_native_custody_successor
+supersedes: docs/baselines/as-06-run-rfm-source-map.v2.yaml
+upstream:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_git_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_bytes: 1067
+  license_sha256: d0807e4df7340fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - upstream: src/agent_spice/backend/native.py
+    upstream_git_blob_sha1: 4e2f327a9a10b8de876e83df1fb31c359ba063f4
+    upstream_bytes: 4146
+    upstream_sha256: 79b20cb1d172fe778be9fab260a9989f186159fd191b767bce8d9337466ddabc
+    role: retained external native run-rfm dispatch and runtime boundary
+    rust:
+      - crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+      - crates/sipi-agent-spice-direct/src/lib.rs
+    source_port: true
+  - upstream: src/agent_spice/backend/ngspice.py
+    upstream_git_blob_sha1: e9d1952bf1b43ad9a89bae95f1724b893e8db6b8
+    upstream_bytes: 2123
+    upstream_sha256: eca6a855df25f44169d13f576f2c169596cfc6de29ef45c4829150d20b740672
+    role: existing ngspice dispatch retained by the v2 source map
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+  - upstream: src/agent_spice/sparam/rfm.py
+    upstream_git_blob_sha1: 508e7ae8594fd25d5c2dc152b225c0cf84f61413
+    upstream_sha256: af2e2e3ab1ed7e9ac458dc73f15aedfd9cd8292dc9e5a2430cd095bc21415df4
+    role: RFM parser canonical model and response evaluation
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+  - upstream: src/agent_spice/sparam/artifacts.py
+    upstream_git_blob_sha1: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+    upstream_sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+    role: RFM artifact and wrapper contract support
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+  - upstream: src/agent_spice/sparam/native_vf.py
+    upstream_git_blob_sha1: 971a98924d52b9fb57738a6a729501dfda934968
+    upstream_sha256: 90db63aadeeb0be5c0a29b750d617079d598f0afe7c441a0398a8648daad31a6
+    role: expanded NativeVectorFitting SPICE topology
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+  - upstream: native/AgentSpice.Engine/Program.cs
+    upstream_git_blob_sha1: ca7c89a48a7f812227f09c673c69ecafa67490e4
+    upstream_bytes: 4195
+    upstream_sha256: 22f1908f78a0a379e1373f5cb122594fa1a4d3e599333525d4d66a24ae322887
+    role: pinned native engine command-line dispatch and JSON execution summary
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: false
+  - upstream: native/AgentSpice.Engine/WaveformWriter.cs
+    upstream_git_blob_sha1: 2153477801f86bbcc86a555284b67a4925122ba8
+    upstream_bytes: 1950
+    upstream_sha256: 76369f3ba255e82c94b3bb1ba300bd436191cabe1ae8ec211ac396ef2c5966fd
+    role: pinned native time/frequency/sweep CSV writer contract
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: false
+  - upstream: native/agent-spice-sim/src/main.rs
+    upstream_git_blob_sha1: a333857287fc093f2f1fa515b135fe31a2bc9eb1
+    upstream_bytes: 21371
+    upstream_sha256: 3c04cafa75cfa9ffee60da09331ac007d82a0fd44a451775b6e193375d55f427
+    role: pinned Rust native CLI JSON summary and output dispatch contract
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: false
+  - upstream: native/agent-spice-sim/src/output.rs
+    upstream_git_blob_sha1: c4df009459c34a24eafbc45183fa228076ff5d40
+    upstream_bytes: 9143
+    upstream_sha256: b2ab10ddf8e6f349c660e28108115617a56f70e25b0b112fbe29db541b025771
+    role: pinned Rust native JSON result and waveform output contract
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: false
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  shared_process_helper: crates/sipi-agent-spice-direct/src/lib.rs
+  native_custody_entry: run_rfm_with_native_custody
+  runtime: retained_external_runtime
+  identity_policy: absolute_regular_executable_sha256_pre_post
+  artifact_policy: bounded_regular_receipt_checked_json_and_waveform
+  environment_policy: fresh_user_init_and_native_dotnet_loader_injection_cleared
+  grammar_adaptation_inherited_from: docs/baselines/as-06-run-rfm-source-map.v2.yaml
+  non_claims:
+    - external_solver_correctness_not_verified
+    - numeric_parity_not_claimed
+    - no_si_s_parameter_fit
+    - no_release_promotion

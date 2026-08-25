@@ -825,7 +825,7 @@ pub(crate) fn run_external_process(
     arguments: &[PathBuf],
     current_dir: &Path,
 ) -> Result<ExternalProcessResult, DirectPortError> {
-    run_external_process_inner(program, arguments, current_dir, None)
+    run_external_process_inner(program, arguments, current_dir, None, false)
 }
 
 /// Run an external solver with one caller-staged SPICE_SCRIPTS directory.
@@ -837,7 +837,19 @@ pub(crate) fn run_external_process_with_spice_scripts(
     current_dir: &Path,
     spice_scripts: &Path,
 ) -> Result<ExternalProcessResult, DirectPortError> {
-    run_external_process_inner(program, arguments, current_dir, Some(spice_scripts))
+    run_external_process_inner(program, arguments, current_dir, Some(spice_scripts), false)
+}
+
+/// Run the AS-06 native engine with the native-loader allowlist boundary.
+/// The ordinary external-process helper deliberately keeps its historical
+/// environment behavior; only this native entry removes managed profiler and
+/// dynamic-loader injection variables.
+pub(crate) fn run_native_external_process(
+    program: &Path,
+    arguments: &[PathBuf],
+    current_dir: &Path,
+) -> Result<ExternalProcessResult, DirectPortError> {
+    run_external_process_inner(program, arguments, current_dir, None, true)
 }
 
 fn fresh_external_user_init_root(current_dir: &Path) -> Result<PathBuf, DirectPortError> {
@@ -889,6 +901,7 @@ fn run_external_process_inner(
     arguments: &[PathBuf],
     current_dir: &Path,
     spice_scripts: Option<&Path>,
+    native_environment: bool,
 ) -> Result<ExternalProcessResult, DirectPortError> {
     if spice_scripts.is_some_and(|path| !path.is_absolute() || !path.is_dir()) {
         return Err(DirectPortError::UnsupportedExecution(
@@ -926,6 +939,21 @@ fn run_external_process_inner(
         .stderr(Stdio::piped());
     if let Some(path) = spice_scripts {
         command.env("SPICE_SCRIPTS", path);
+    }
+    if native_environment {
+        command
+            .env_remove("DOTNET_STARTUP_HOOKS")
+            .env_remove("DOTNET_ADDITIONAL_DEPS")
+            .env_remove("DOTNET_SHARED_STORE")
+            .env_remove("COREHOST_TRACEFILE")
+            .env_remove("COREHOST_TRACE")
+            .env_remove("CORECLR_ENABLE_PROFILING")
+            .env_remove("CORECLR_PROFILER")
+            .env_remove("CORECLR_PROFILER_PATH")
+            .env_remove("LD_PRELOAD")
+            .env_remove("LD_LIBRARY_PATH")
+            .env_remove("DYLD_INSERT_LIBRARIES")
+            .env_remove("DYLD_LIBRARY_PATH");
     }
     let mut child = command
         .spawn()

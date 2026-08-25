@@ -8,12 +8,14 @@
 
 use std::fmt::{Display, Formatter};
 use std::fs;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use faer::Mat;
 use num_complex::Complex64 as Complex;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 
 use crate::as03_fit_yparam::read_multiport_touchstone;
 use crate::as06_run_rfm::{RfmModel, parse_cadence_rfm, write_cadence_rfm};
@@ -376,11 +378,183 @@ fn measure(path: &Path, name: &str) -> Result<f64, TuneError> {
     Ok(value * scale)
 }
 
+#[derive(Clone, Debug, PartialEq)]
+struct ArtifactReceipt {
+    bytes: usize,
+    sha256: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct FrozenArtifactReceipt {
+    source: ArtifactReceipt,
+    target: ArtifactReceipt,
+}
+
+fn bounded_artifact(path: &Path) -> Result<(Vec<u8>, ArtifactReceipt), TuneError> {
+    let mut file = fs::File::open(path).map_err(|error| TuneError::Output(error.to_string()))?;
+    let mut bytes = Vec::new();
+    Read::by_ref(&mut file)
+        .take((MAX_ARTIFACT_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| TuneError::Output(error.to_string()))?;
+    if bytes.len() > MAX_ARTIFACT_BYTES {
+        return Err(TuneError::Output(
+            "RFM artifact exceeds the bounded byte budget".to_owned(),
+        ));
+    }
+    let byte_len = bytes.len();
+    let sha256 = format!("{:x}", Sha256::digest(&bytes));
+    Ok((
+        bytes,
+        ArtifactReceipt {
+            bytes: byte_len,
+            sha256,
+        },
+    ))
+}
+
+fn freeze_best_rfm(path: &Path, source_path: &Path) -> Result<FrozenArtifactReceipt, TuneError> {
+    let (bytes, source) = bounded_artifact(source_path)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|error| TuneError::Output(error.to_string()))?;
+    }
+    let mut target = fs::OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(path)
+        .map_err(|error| TuneError::Output(error.to_string()))?;
+    target
+        .write_all(&bytes)
+        .and_then(|_| target.flush())
+        .and_then(|_| target.sync_all())
+        .map_err(|error| TuneError::Output(error.to_string()))?;
+    drop(target);
+    let (_, target_receipt) = bounded_artifact(path)?;
+    if target_receipt != source {
+        return Err(TuneError::Output(
+            "frozen best RFM receipt differs from scored trial".to_owned(),
+        ));
+    }
+    Ok(FrozenArtifactReceipt {
+        source,
+        target: target_receipt,
+    })
+}
+
+fn publish_frozen_best(best_path: &Path, output_path: &Path) -> Result<ArtifactReceipt, TuneError> {
+    let (bytes, source_receipt) = bounded_artifact(best_path)?;
+    if output_path.exists() {
+        return Err(TuneError::Output(
+            "refusing to replace an existing output RFM".to_owned(),
+        ));
+    }
+    let parent = output_path.parent().unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).map_err(|error| TuneError::Output(error.to_string()))?;
+    let name = output_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or_else(|| TuneError::Output("output RFM filename is invalid".to_owned()))?;
+    let temporary = parent.join(format!(".{name}.sipi-new"));
+    let mut file = fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&temporary)
+        .map_err(|error| TuneError::Output(error.to_string()))?;
+    let write_result = file
+        .write_all(&bytes)
+        .and_then(|_| file.flush())
+        .and_then(|_| file.sync_all());
+    drop(file);
+    if let Err(error) = write_result {
+        let _ = fs::remove_file(&temporary);
+        return Err(TuneError::Output(error.to_string()));
+    }
+    if let Err(error) = fs::rename(&temporary, output_path) {
+        let _ = fs::remove_file(&temporary);
+        return Err(TuneError::Output(error.to_string()));
+    }
+    let (_, target_receipt) = bounded_artifact(output_path)?;
+    if target_receipt != source_receipt {
+        let _ = fs::remove_file(output_path);
+        return Err(TuneError::Output(
+            "published output RFM receipt differs from frozen best".to_owned(),
+        ));
+    }
+    Ok(target_receipt)
+}
+
+fn validate_artifact_paths(
+    request: &TuneYparamTranRequest,
+) -> Result<(PathBuf, PathBuf), TuneError> {
+    let requested_work_dir = if request.work_dir.as_os_str().is_empty() {
+        let stem = request
+            .output_rfm
+            .file_stem()
+            .and_then(|value| value.to_str())
+            .filter(|value| !value.is_empty())
+            .unwrap_or("tuned");
+        request
+            .output_rfm
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(format!("{stem}_tran_tune"))
+    } else {
+        request.work_dir.clone()
+    };
+    let report = request
+        .report
+        .clone()
+        .unwrap_or_else(|| request.output_rfm.with_extension("json"));
+    let planned_best = requested_work_dir.join("best.rfm");
+    let planned_paths = [
+        ("input RFM", request.input_rfm.as_path()),
+        ("output RFM", request.output_rfm.as_path()),
+        ("best RFM", planned_best.as_path()),
+        ("report", report.as_path()),
+    ];
+    for (left_name, left) in planned_paths {
+        for (right_name, right) in planned_paths {
+            if left_name >= right_name {
+                continue;
+            }
+            let left =
+                crate::absolute_path(left).map_err(|error| TuneError::Output(error.to_string()))?;
+            let right = crate::absolute_path(right)
+                .map_err(|error| TuneError::Output(error.to_string()))?;
+            if left == right {
+                return Err(TuneError::Output(format!(
+                    "{left_name} and {right_name} must not alias"
+                )));
+            }
+        }
+    }
+    if fs::symlink_metadata(&request.output_rfm).is_ok() || fs::symlink_metadata(&report).is_ok() {
+        return Err(TuneError::Output(
+            "output and report must be fresh create-new paths".to_owned(),
+        ));
+    }
+    if let Ok(metadata) = fs::symlink_metadata(&requested_work_dir) {
+        if metadata.file_type().is_symlink() || !metadata.is_dir() {
+            return Err(TuneError::Output(
+                "work directory must be a regular non-symlink directory".to_owned(),
+            ));
+        }
+        if fs::symlink_metadata(&planned_best).is_ok() {
+            return Err(TuneError::Output(
+                "best RFM path must be a fresh create-new artifact".to_owned(),
+            ));
+        }
+    }
+    Ok((requested_work_dir, report))
+}
+
 /// Execute the bounded external HSPICE residual search.
 pub fn tune_yparam_tran(
     request: &TuneYparamTranRequest,
 ) -> Result<TuneYparamTranResult, TuneError> {
     validate_request(request)?;
+    let (requested_work_dir, report) = validate_artifact_paths(request)?;
     // Preparation and Nelder-Mead orchestration are portable, but this leaf
     // never launches an unbound PATH HSPICE process. A higher-level adapter
     // must provide executable custody before enabling the external runtime.
@@ -426,21 +600,6 @@ pub fn tune_yparam_tran(
     let deck_source =
         fs::read_to_string(&deck_path).map_err(|error| TuneError::Input(error.to_string()))?;
     let deck_dir = deck_path.parent().unwrap_or_else(|| Path::new("."));
-    let requested_work_dir = if request.work_dir.as_os_str().is_empty() {
-        let stem = request
-            .output_rfm
-            .file_stem()
-            .and_then(|value| value.to_str())
-            .filter(|value| !value.is_empty())
-            .unwrap_or("tuned");
-        request
-            .output_rfm
-            .parent()
-            .unwrap_or_else(|| Path::new("."))
-            .join(format!("{stem}_tran_tune"))
-    } else {
-        request.work_dir.clone()
-    };
     fs::create_dir_all(&requested_work_dir)
         .map_err(|error| TuneError::Output(error.to_string()))?;
     let work_dir = fs::canonicalize(&requested_work_dir)
@@ -452,6 +611,8 @@ pub fn tune_yparam_tran(
     }
     let mut history = Vec::new();
     let mut best: Option<(RfmModel, f64, usize, Option<f64>)> = None;
+    let mut best_receipt: Option<FrozenArtifactReceipt> = None;
+    let best_path = work_dir.join("best.rfm");
     let parameter_count = groups.len() * band_poles.len().max(1);
     // Keep the upstream Nelder-Mead branch, but make every evaluation finite,
     // bounded by max_evaluations, and observable in the result history.  The
@@ -519,6 +680,7 @@ pub fn tune_yparam_tran(
             .as_ref()
             .is_none_or(|(_, current, _, _)| tran_rms < *current)
         {
+            best_receipt = Some(freeze_best_rfm(&best_path, &trial_rfm)?);
             best = Some((trial, tran_rms, ordinal, tran_peak));
         }
         history.push(record);
@@ -637,14 +799,18 @@ pub fn tune_yparam_tran(
     if evaluation_count >= request.max_evaluations && !optimizer_success {
         optimizer_message = "maximum evaluations reached".to_owned();
     }
-    let (best_model, best_rms, best_ordinal, best_peak) = best.ok_or_else(|| {
+    let (_best_model, best_rms, best_ordinal, best_peak) = best.ok_or_else(|| {
         TuneError::External("no candidate completed HSPICE transient scoring".to_owned())
     })?;
-    write_cadence_rfm(&request.output_rfm, &best_model)?;
-    let report = request
-        .report
-        .clone()
-        .unwrap_or_else(|| request.output_rfm.with_extension("json"));
+    let frozen_receipt = best_receipt
+        .ok_or_else(|| TuneError::Output("best RFM receipt was not recorded".to_owned()))?;
+    let published_receipt = publish_frozen_best(&best_path, &request.output_rfm)?;
+    if published_receipt != frozen_receipt.target {
+        let _ = fs::remove_file(&request.output_rfm);
+        return Err(TuneError::Output(
+            "published output receipt differs from frozen best target".to_owned(),
+        ));
+    }
     let payload = json!({
         "schema": "sipi.agent-spice-as-04-tune-yparam-tran-result.v1",
         "workflow": WORKFLOW_NAME,
@@ -661,10 +827,15 @@ pub fn tune_yparam_tran(
         "band_boundaries_rad_per_s": request.band_boundaries,
         "baseline": {"s_rms": baseline_rms, "max_sigma": baseline_sigma},
         "best": {"ordinal": best_ordinal, "tran_rms": best_rms, "tran_peak": best_peak},
+        "best_artifact": {
+            "frozen_source": {"bytes": frozen_receipt.source.bytes, "sha256": frozen_receipt.source.sha256},
+            "frozen_target": {"bytes": frozen_receipt.target.bytes, "sha256": frozen_receipt.target.sha256},
+            "published_output": {"bytes": published_receipt.bytes, "sha256": published_receipt.sha256}
+        },
         "evaluations": history.len(),
         "optimizer": {"method": "Nelder-Mead", "xatol": 4.0e-4, "fatol": 1.0e-7, "success": optimizer_success, "message": optimizer_message},
         "history": history,
-        "portable_branches": ["response-grouping", "static-gates", "exact-token-replacement", "bounded-trial-artifacts", "Nelder-Mead", "measure-parsing"],
+        "portable_branches": ["response-grouping", "static-gates", "exact-token-replacement", "bounded-trial-artifacts", "best-rfm-freeze-and-final-copy", "Nelder-Mead", "measure-parsing"],
         "external_runtime_boundary": ["commercial HSPICE result without caller executable"],
     });
     let text = serde_json::to_string_pretty(&payload)
@@ -676,7 +847,27 @@ pub fn tune_yparam_tran(
     if let Some(parent) = report.parent() {
         fs::create_dir_all(parent).map_err(|error| TuneError::Output(error.to_string()))?;
     }
-    fs::write(&report, text).map_err(|error| TuneError::Output(error.to_string()))?;
+    let mut report_file = match fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&report)
+    {
+        Ok(file) => file,
+        Err(error) => {
+            let _ = fs::remove_file(&request.output_rfm);
+            return Err(TuneError::Output(error.to_string()));
+        }
+    };
+    if let Err(error) = report_file
+        .write_all(text.as_bytes())
+        .and_then(|_| report_file.flush())
+        .and_then(|_| report_file.sync_all())
+    {
+        drop(report_file);
+        let _ = fs::remove_file(&report);
+        let _ = fs::remove_file(&request.output_rfm);
+        return Err(TuneError::Output(error.to_string()));
+    }
     Ok(TuneYparamTranResult {
         report,
         output_rfm: request.output_rfm.clone(),
@@ -722,6 +913,97 @@ mod tests {
         assert!(measure(&path, "foo").is_err());
         fs::write(&path, "foo = 2.5m\n").unwrap();
         assert!((measure(&path, "foo").unwrap() - 2.5e-3).abs() < 1e-15);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn accepted_model_is_frozen_before_final_publish() {
+        let root = std::env::temp_dir().join(format!("sipi-as04-freeze-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let model = RfmModel {
+            version: 200600,
+            nports: 1,
+            matrix_type: "S".to_owned(),
+            z0: 50.0,
+            poles: vec![Complex::new(-1.0, 0.0)],
+            residues: vec![vec![Complex::new(0.5, 0.0)]],
+            constant: vec![Complex::new(0.0, 0.0)],
+        };
+        let frozen = root.join("work").join("best.rfm");
+        let output = root.join("published").join("best.rfm");
+        let trial = root.join("work").join("trial.rfm");
+        write_cadence_rfm(&trial, &model).unwrap();
+        let receipt = freeze_best_rfm(&frozen, &trial).unwrap();
+        let published = publish_frozen_best(&frozen, &output).unwrap();
+        assert_eq!(receipt.source, receipt.target);
+        assert_eq!(receipt.target, published);
+        assert_eq!(fs::read(&frozen).unwrap(), fs::read(&output).unwrap());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn final_publish_rejects_existing_output_and_cleans_temp() {
+        let root = std::env::temp_dir().join(format!("sipi-as04-publish-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let frozen = root.join("best.rfm");
+        fs::write(&frozen, b"candidate").unwrap();
+        let output = root.join("out.rfm");
+        fs::write(&output, b"old").unwrap();
+        assert!(matches!(
+            publish_frozen_best(&frozen, &output),
+            Err(TuneError::Output(message)) if message.contains("existing")
+        ));
+        assert_eq!(fs::read(&output).unwrap(), b"old");
+        assert!(!root.join(".out.rfm.sipi-new").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn artifact_aliases_are_rejected_before_external_execution() {
+        let root = std::env::temp_dir().join(format!("sipi-as04-alias-{}", std::process::id()));
+        let request = TuneYparamTranRequest::new(
+            root.join("input.s2p"),
+            root.join("input.rfm"),
+            root.join("deck.sp"),
+            root.join("input.rfm"),
+            root.join("work"),
+            "model.rfm",
+            "rms",
+            vec![1.0, 2.0],
+            vec![1.5],
+        )
+        .unwrap();
+        assert!(matches!(
+            tune_yparam_tran(&request),
+            Err(TuneError::Output(message)) if message.contains("alias")
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn hardlink_output_is_rejected_as_existing_alias() {
+        let root = std::env::temp_dir().join(format!("sipi-as04-hardlink-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let input = root.join("input.rfm");
+        let output = root.join("output.rfm");
+        fs::write(&input, b"input").unwrap();
+        fs::hard_link(&input, &output).unwrap();
+        let request = TuneYparamTranRequest::new(
+            root.join("input.s2p"),
+            &input,
+            root.join("deck.sp"),
+            &output,
+            root.join("work"),
+            "model.rfm",
+            "rms",
+            vec![1.0, 2.0],
+            vec![1.5],
+        )
+        .unwrap();
+        assert!(matches!(
+            tune_yparam_tran(&request),
+            Err(TuneError::Output(message)) if message.contains("fresh")
+        ));
         let _ = fs::remove_dir_all(root);
     }
 

@@ -1,0 +1,23 @@
+schema: sipi.as-04-tune-yparam-tran-source-map.v2
+status: additive_best_artifact_successor
+supersedes: docs/baselines/as-04-tune-yparam-tran-source-map.v1.yaml
+upstream:
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_blob: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_bytes: 1067
+  license_sha256: d0807e4df7340fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+source_bindings_inherited_from: docs/baselines/as-04-tune-yparam-tran-source-map.v1.yaml
+implementation:
+  rust: crates/sipi-agent-spice-direct/src/as04_tune_yparam_tran.rs
+  scored_trial_to_best: bounded_direct_copy_with_source_target_receipts
+  final_publish: same_directory_create_new_temp_atomic_rename
+  alias_policy: input_output_best_report_aliases_rejected
+  staging_residual: trusted_non_concurrent_caller_roots_no_hostile_writer_claim
+non_claims:
+  - hspice_solver_correctness_not_verified
+  - numeric_parity_not_claimed
+  - no_si_s_parameter_fit
+  - no_release_promotion

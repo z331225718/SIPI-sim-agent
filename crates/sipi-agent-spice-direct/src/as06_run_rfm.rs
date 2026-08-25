@@ -8,7 +8,6 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use num_complex::Complex64 as Complex;
 use serde_json::json;
@@ -145,6 +144,29 @@ pub struct RunRfmRequest {
 pub struct RfmNgspiceCustody {
     pub executable: crate::NgspiceCustody,
     pub code_model_sha256: String,
+}
+
+/// Explicit caller custody for the existing native-engine branch. A DLL
+/// engine additionally requires custody of the dotnet host; a native binary
+/// does not use that field.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RfmNativeCustody {
+    pub engine: crate::NgspiceCustody,
+    pub dotnet: Option<crate::NgspiceCustody>,
+}
+
+impl RfmNativeCustody {
+    pub fn new(engine: crate::NgspiceCustody) -> Self {
+        Self {
+            engine,
+            dotnet: None,
+        }
+    }
+
+    pub fn with_dotnet(mut self, dotnet: crate::NgspiceCustody) -> Self {
+        self.dotnet = Some(dotnet);
+        self
+    }
 }
 
 impl RfmNgspiceCustody {
@@ -1261,6 +1283,189 @@ fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
     measurements
 }
 
+#[derive(Clone, Debug, PartialEq)]
+struct ExternalArtifactReceipt {
+    bytes: usize,
+    sha256: String,
+}
+
+fn read_bounded_external_artifact(
+    path: &Path,
+    role: &str,
+) -> Result<(Vec<u8>, ExternalArtifactReceipt), RfmError> {
+    let metadata = fs::symlink_metadata(path)
+        .map_err(|error| RfmError::Execution(format!("{role} artifact is unavailable: {error}")))?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(RfmError::Execution(format!(
+            "{role} artifact must be a regular non-symlink file"
+        )));
+    }
+    if metadata.len() > MAX_ARTIFACT_BYTES as u64 {
+        return Err(RfmError::Execution(format!(
+            "{role} artifact exceeds the bounded byte budget"
+        )));
+    }
+    let mut file = fs::File::open(path).map_err(|error| {
+        RfmError::Execution(format!("{role} artifact cannot be opened: {error}"))
+    })?;
+    let mut bytes = Vec::new();
+    Read::by_ref(&mut file)
+        .take((MAX_ARTIFACT_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| RfmError::Execution(format!("{role} artifact cannot be read: {error}")))?;
+    if bytes.len() > MAX_ARTIFACT_BYTES {
+        return Err(RfmError::Execution(format!(
+            "{role} artifact exceeds the bounded byte budget"
+        )));
+    }
+    let bytes_len = bytes.len();
+    let sha256 = format!("{:x}", Sha256::digest(&bytes));
+    Ok((
+        bytes,
+        ExternalArtifactReceipt {
+            bytes: bytes_len,
+            sha256,
+        },
+    ))
+}
+
+fn inspect_native_waveform(text: &str) -> Result<(usize, String, f64), RfmError> {
+    let mut lines = text.lines().filter(|line| !line.trim().is_empty());
+    let header = lines
+        .next()
+        .ok_or_else(|| RfmError::Execution("native waveform header is missing".to_owned()))?;
+    let columns = header.split(',').map(str::trim).collect::<Vec<_>>();
+    if columns.len() < 2
+        || !matches!(
+            columns[0].to_ascii_lowercase().as_str(),
+            "time" | "frequency" | "sweep"
+        )
+    {
+        return Err(RfmError::Execution(
+            "native waveform axis must be time, frequency, or sweep".to_owned(),
+        ));
+    }
+    let probe_indices = columns[1..]
+        .iter()
+        .enumerate()
+        .filter(|(_, name)| name.eq_ignore_ascii_case("v(out)"))
+        .map(|(index, _)| index + 1)
+        .collect::<Vec<_>>();
+    if probe_indices.len() != 1 {
+        return Err(RfmError::Execution(
+            "native waveform must contain exactly one case-insensitive v(out) column".to_owned(),
+        ));
+    }
+    let probe_index = probe_indices[0];
+    let mut rows = 0usize;
+    let mut probe_max_abs = 0.0_f64;
+    for line in lines {
+        let fields = line.split(',').map(str::trim).collect::<Vec<_>>();
+        if fields.len() != columns.len() {
+            return Err(RfmError::Execution(
+                "native waveform row width differs from its header".to_owned(),
+            ));
+        }
+        let values = fields
+            .iter()
+            .map(|field| field.parse::<f64>())
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| {
+                RfmError::Execution(format!("native waveform value is invalid: {error}"))
+            })?;
+        if values.iter().any(|value| !value.is_finite()) {
+            return Err(RfmError::Execution(
+                "native waveform values must be finite".to_owned(),
+            ));
+        }
+        probe_max_abs = probe_max_abs.max(values[probe_index].abs());
+        rows += 1;
+    }
+    Ok((rows, columns[probe_index].to_owned(), probe_max_abs))
+}
+
+fn parse_native_execution_summary(stdout: &[u8]) -> Result<(bool, u64), RfmError> {
+    let text = String::from_utf8(stdout.to_vec())
+        .map_err(|error| RfmError::Execution(format!("native stdout is not UTF-8: {error}")))?;
+    let lines = text
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .collect::<Vec<_>>();
+    if lines.len() != 1 {
+        return Err(RfmError::Execution(
+            "native stdout must contain exactly one JSON execution summary".to_owned(),
+        ));
+    }
+    let value: serde_json::Value = serde_json::from_str(lines[0]).map_err(|error| {
+        RfmError::Execution(format!("native stdout summary is not JSON: {error}"))
+    })?;
+    let object = value.as_object().ok_or_else(|| {
+        RfmError::Execution("native stdout summary must be a JSON object".to_owned())
+    })?;
+    if object.len() != 2 || !object.contains_key("ok") || !object.contains_key("waveformRows") {
+        return Err(RfmError::Execution(
+            "native stdout summary must have exactly ok and waveformRows".to_owned(),
+        ));
+    }
+    let ok = object
+        .get("ok")
+        .and_then(serde_json::Value::as_bool)
+        .ok_or_else(|| RfmError::Execution("native stdout ok must be boolean".to_owned()))?;
+    let rows = object
+        .get("waveformRows")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| {
+            RfmError::Execution("native stdout waveformRows must be integer".to_owned())
+        })?;
+    Ok((ok, rows))
+}
+
+fn validate_native_simulation_result(value: &serde_json::Value) -> Result<(), RfmError> {
+    let object = value.as_object().ok_or_else(|| {
+        RfmError::Execution("native result must be a SimulationResult object".to_owned())
+    })?;
+    if !object.get("nodes").is_some_and(serde_json::Value::is_array)
+        || !object
+            .get("points")
+            .is_some_and(serde_json::Value::is_array)
+        || !object
+            .get("statistics")
+            .is_some_and(serde_json::Value::is_object)
+    {
+        return Err(RfmError::Execution(
+            "native result must contain nodes, points, and statistics".to_owned(),
+        ));
+    }
+    if let Some(measurements) = object.get("measurements")
+        && !measurements.is_array()
+    {
+        return Err(RfmError::Execution(
+            "native result measurements must be an array".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn native_arguments(
+    prepared_deck: &Path,
+    subckt_name: &str,
+    staged_rfm: &Path,
+    native_json: &Path,
+    waveform: &Path,
+) -> Vec<PathBuf> {
+    vec![
+        prepared_deck.to_path_buf(),
+        PathBuf::from("--rfm-subckt"),
+        PathBuf::from(subckt_name),
+        PathBuf::from("--rfm"),
+        staged_rfm.to_path_buf(),
+        PathBuf::from("--output-json"),
+        native_json.to_path_buf(),
+        PathBuf::from("--waveform-csv"),
+        waveform.to_path_buf(),
+    ]
+}
+
 fn write_ngspice_waveform_csv(text: &str, path: &Path) -> Result<(usize, String, f64), RfmError> {
     let mut columns: Option<Vec<&str>> = None;
     let mut rows = Vec::<Vec<f64>>::new();
@@ -1521,7 +1726,7 @@ fn inject_wrapper(text: &str, wrapper_name: &str) -> String {
 
 /// Prepare an RFM run and optionally invoke the explicitly selected simulator.
 pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
-    run_rfm_internal(request, None)
+    run_rfm_internal(request, None, None)
 }
 
 /// Execute the pinned ngspice/XSPICE branch with explicit caller custody.
@@ -1531,30 +1736,114 @@ pub fn run_rfm_with_ngspice_custody(
     request: &RunRfmRequest,
     custody: &RfmNgspiceCustody,
 ) -> Result<RunRfmResult, RfmError> {
-    run_rfm_internal(request, Some(custody))
+    run_rfm_internal(request, Some(custody), None)
+}
+
+/// Execute the pinned native-engine branch with explicit caller custody.
+/// `run_rfm` remains preparation-only when native execution is requested
+/// without this additive custody object.
+pub fn run_rfm_with_native_custody(
+    request: &RunRfmRequest,
+    custody: &RfmNativeCustody,
+) -> Result<RunRfmResult, RfmError> {
+    run_rfm_internal(request, None, Some(custody))
 }
 
 fn run_rfm_internal(
     request: &RunRfmRequest,
     ngspice_custody: Option<&RfmNgspiceCustody>,
+    native_custody: Option<&RfmNativeCustody>,
 ) -> Result<RunRfmResult, RfmError> {
-    if request.execute && (request.backend != RfmBackend::Ngspice || ngspice_custody.is_none()) {
+    if request.execute
+        && ((request.backend == RfmBackend::Ngspice && ngspice_custody.is_none())
+            || (request.backend == RfmBackend::Native && native_custody.is_none()))
+    {
         return Err(RfmError::Execution(
-            "external simulator execution is fail-closed: explicit ngspice and code-model custody is required".to_owned(),
+            "external simulator execution is fail-closed: explicit backend custody is required"
+                .to_owned(),
         ));
     }
     if request.execute {
-        let custody = ngspice_custody.expect("execute custody admission was checked above");
-        let requested_solver = crate::absolute_path(Path::new(&request.ngspice))
-            .map_err(|error| RfmError::Execution(error.to_string()))?;
-        let custody_solver = crate::absolute_path(&custody.executable.executable)
-            .map_err(|error| RfmError::Execution(error.to_string()))?;
-        if requested_solver != custody_solver {
-            return Err(RfmError::Execution(
-                "request.ngspice and custody executable must resolve to the same path".to_owned(),
-            ));
+        match request.backend {
+            RfmBackend::Ngspice => {
+                let custody = ngspice_custody.expect("ngspice custody admission was checked above");
+                let requested_solver = crate::absolute_path(Path::new(&request.ngspice))
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                let custody_solver = crate::absolute_path(&custody.executable.executable)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                if requested_solver != custody_solver {
+                    return Err(RfmError::Execution(
+                        "request.ngspice and custody executable must resolve to the same path"
+                            .to_owned(),
+                    ));
+                }
+            }
+            RfmBackend::Native => {
+                let custody = native_custody.expect("native custody admission was checked above");
+                let requested_engine = request.native_engine.as_ref().ok_or_else(|| {
+                    RfmError::Execution(
+                        "native backend requires --native-engine; no fallback is attempted"
+                            .to_owned(),
+                    )
+                })?;
+                let requested_engine = crate::absolute_path(requested_engine)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                let custody_engine = crate::absolute_path(&custody.engine.executable)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                if requested_engine != custody_engine {
+                    return Err(RfmError::Execution(
+                        "request.native_engine and custody engine must resolve to the same path"
+                            .to_owned(),
+                    ));
+                }
+                let is_dll = requested_engine
+                    .extension()
+                    .is_some_and(|value| value.eq_ignore_ascii_case("dll"));
+                if is_dll != custody.dotnet.is_some() {
+                    return Err(RfmError::Execution(
+                        "native DLL execution requires exactly one attested dotnet custody"
+                            .to_owned(),
+                    ));
+                }
+                if let Some(dotnet) = &custody.dotnet {
+                    let requested_dotnet = crate::absolute_path(Path::new(&request.dotnet))
+                        .map_err(|error| RfmError::Execution(error.to_string()))?;
+                    let custody_dotnet = crate::absolute_path(&dotnet.executable)
+                        .map_err(|error| RfmError::Execution(error.to_string()))?;
+                    if requested_dotnet != custody_dotnet {
+                        return Err(RfmError::Execution(
+                            "request.dotnet and custody dotnet must resolve to the same path"
+                                .to_owned(),
+                        ));
+                    }
+                }
+            }
         }
     }
+    let native_identity = if request.execute && request.backend == RfmBackend::Native {
+        let custody = native_custody.expect("native custody admission was checked above");
+        let engine = crate::attest_external_executable(
+            &custody.engine.executable,
+            Some(&custody.engine.sha256),
+            "native engine",
+        )
+        .map_err(|error| RfmError::Execution(error.to_string()))?;
+        let dotnet = custody
+            .dotnet
+            .as_ref()
+            .map(|value| {
+                crate::attest_external_executable(
+                    &value.executable,
+                    Some(&value.sha256),
+                    "dotnet host",
+                )
+                .map_err(|error| RfmError::Execution(error.to_string()))
+            })
+            .transpose()?;
+        Some((engine, dotnet))
+    } else {
+        None
+    };
     let deck =
         crate::absolute_path(&request.deck).map_err(|error| RfmError::Input(error.to_string()))?;
     let rfm =
@@ -1727,38 +2016,39 @@ fn run_rfm_internal(
         let mut ngspice_post_sha = None;
         let mut ngspice_identity = None;
         let mut native_engine_path = None;
+        let mut native_engine_sha = None;
+        let mut native_engine_post_sha = None;
+        let mut native_dotnet_identity = None;
+        let mut native_dotnet_post_sha = None;
         let (program, arguments) = match request.backend {
             RfmBackend::Native => {
-                let executable = request
-                    .native_engine
-                    .as_ref()
-                    .map(|path| crate::absolute_path(path))
-                    .transpose()
-                    .map_err(|error| RfmError::Execution(error.to_string()))?
-                    .ok_or_else(|| {
-                        RfmError::Execution(
-                            "native backend requires --native-engine; no fallback is attempted"
-                                .to_owned(),
-                        )
-                    })?;
+                let (engine, dotnet) = native_identity.clone().ok_or_else(|| {
+                    RfmError::Execution("native engine custody was not recorded".to_owned())
+                })?;
+                let executable = engine.0;
                 native_engine_path = Some(executable.clone());
+                native_engine_sha = Some(engine.1);
+                native_dotnet_identity = dotnet.clone();
                 let (program, mut native_args) = if executable
                     .extension()
                     .is_some_and(|value| value.eq_ignore_ascii_case("dll"))
                 {
-                    (PathBuf::from(&request.dotnet), vec![executable.clone()])
+                    let dotnet = dotnet.ok_or_else(|| {
+                        RfmError::Execution(
+                            "native DLL execution requires attested dotnet custody".to_owned(),
+                        )
+                    })?;
+                    (dotnet.0, vec![executable.clone()])
                 } else {
                     (executable.clone(), Vec::new())
                 };
-                native_args.extend([
-                    prepared_deck.clone(),
-                    PathBuf::from("--rfm"),
-                    staged_rfm.clone(),
-                    PathBuf::from("--output-json"),
-                    native_json.clone(),
-                    PathBuf::from("--waveform-csv"),
-                    waveform.clone(),
-                ]);
+                native_args.extend(native_arguments(
+                    &prepared_deck,
+                    &request.subckt_name,
+                    &staged_rfm,
+                    &native_json,
+                    &waveform,
+                ));
                 (program, native_args)
             }
             RfmBackend::Ngspice => {
@@ -1873,15 +2163,6 @@ fn run_rfm_internal(
                 )
             }
         };
-        let mut command = Command::new(&program);
-        command
-            .args(arguments.iter().map(|value| value.as_os_str()))
-            .current_dir(&output_root);
-        if request.backend != RfmBackend::Ngspice
-            && let Some(scripts) = ngspice_scripts.as_ref()
-        {
-            command.env("SPICE_SCRIPTS", scripts);
-        }
         let result = if request.backend == RfmBackend::Ngspice {
             let scripts = ngspice_scripts.as_deref().ok_or_else(|| {
                 RfmError::Execution("ngspice SPICE_SCRIPTS staging is missing".to_owned())
@@ -1925,14 +2206,29 @@ fn run_rfm_internal(
             }
             output
         } else {
-            let output = command
-                .output()
+            let output = crate::run_native_external_process(&program, &arguments, &output_root)
                 .map_err(|error| RfmError::Execution(error.to_string()))?;
-            crate::ExternalProcessResult {
-                status: output.status,
-                stdout: output.stdout,
-                stderr: output.stderr,
+            if let Some((path, before_sha)) = native_identity.as_ref().map(|value| &value.0) {
+                let after_sha = crate::file_sha256(path)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                if &after_sha != before_sha {
+                    return Err(RfmError::Execution(
+                        "native engine changed during execution".to_owned(),
+                    ));
+                }
+                native_engine_post_sha = Some(after_sha);
             }
+            if let Some((path, before_sha)) = &native_dotnet_identity {
+                let after_sha = crate::file_sha256(path)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                if &after_sha != before_sha {
+                    return Err(RfmError::Execution(
+                        "dotnet host changed during execution".to_owned(),
+                    ));
+                }
+                native_dotnet_post_sha = Some(after_sha);
+            }
+            output
         };
         write_text(
             &output_root.join("stdout.log"),
@@ -1947,16 +2243,32 @@ fn run_rfm_internal(
                 || ngspice_model_error(&String::from_utf8_lossy(&result.stderr)));
         let mut backend_ok = result.status.success() && !ngspice_model_failed;
         let mut native_waveform_rows = 0u64;
+        let mut native_waveform_probe = String::new();
+        let mut native_waveform_max_abs = 0.0;
+        let mut native_result_receipt = None;
+        let mut native_waveform_receipt = None;
         let mut native_result_error = None;
+        let mut native_summary_rows = None;
         if request.backend == RfmBackend::Native && backend_ok {
-            match fs::read(&native_json) {
-                Err(_) => {
+            match parse_native_execution_summary(&result.stdout) {
+                Err(error) => {
                     backend_ok = false;
-                    native_result_error = Some(
-                        "native engine returned success without native_result.json".to_owned(),
-                    );
+                    native_result_error = Some(error.to_string());
                 }
-                Ok(bytes) => match serde_json::from_slice::<serde_json::Value>(&bytes) {
+                Ok((ok, rows)) if !ok => {
+                    backend_ok = false;
+                    native_result_error =
+                        Some("native stdout execution summary reported ok=false".to_owned());
+                    native_summary_rows = Some(rows);
+                }
+                Ok((_ok, rows)) => native_summary_rows = Some(rows),
+            }
+            match read_bounded_external_artifact(&native_json, "native result") {
+                Err(error) => {
+                    backend_ok = false;
+                    native_result_error = Some(error.to_string());
+                }
+                Ok((bytes, receipt)) => match serde_json::from_slice::<serde_json::Value>(&bytes) {
                     Err(error) => {
                         backend_ok = false;
                         native_result_error = Some(format!("native result is not JSON: {error}"));
@@ -1967,10 +2279,53 @@ fn run_rfm_internal(
                             Some("native result must be a JSON object".to_owned());
                     }
                     Ok(value) => {
-                        native_waveform_rows = value
-                            .get("waveformRows")
-                            .and_then(serde_json::Value::as_u64)
-                            .unwrap_or(0);
+                        if let Err(error) = validate_native_simulation_result(&value) {
+                            backend_ok = false;
+                            native_result_error = Some(error.to_string());
+                        } else if let Some(rows) = native_summary_rows {
+                            native_result_receipt = Some(receipt);
+                            match read_bounded_external_artifact(&waveform, "native waveform") {
+                                Err(error) => {
+                                    backend_ok = false;
+                                    native_result_error = Some(error.to_string());
+                                }
+                                Ok((waveform_bytes, waveform_receipt)) => {
+                                    let waveform_text =
+                                        String::from_utf8(waveform_bytes).map_err(|error| {
+                                            RfmError::Execution(format!(
+                                                "native waveform is not UTF-8: {error}"
+                                            ))
+                                        })?;
+                                    match inspect_native_waveform(&waveform_text) {
+                                        Err(error) => {
+                                            backend_ok = false;
+                                            native_result_error = Some(error.to_string());
+                                        }
+                                        Ok((parsed_rows, probe, probe_max_abs)) => {
+                                            native_waveform_rows = parsed_rows as u64;
+                                            if parsed_rows as u64 != rows
+                                                || !probe_max_abs.is_finite()
+                                                || probe_max_abs <= 0.0
+                                            {
+                                                backend_ok = false;
+                                                native_result_error = Some(
+                                                    "native waveform rows/probe receipt mismatch"
+                                                        .to_owned(),
+                                                );
+                                            } else {
+                                                native_waveform_probe = probe;
+                                                native_waveform_max_abs = probe_max_abs;
+                                                native_waveform_receipt = Some(waveform_receipt);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            backend_ok = false;
+                            native_result_error =
+                                Some("native stdout summary rows were unavailable".to_owned());
+                        }
                     }
                 },
             }
@@ -1984,8 +2339,41 @@ fn run_rfm_internal(
                 "sha256_after": ngspice_post_sha,
             });
         }
+        if request.backend == RfmBackend::Native {
+            execution["solver_identity"] = json!({
+                "path": "caller-attested-engine",
+                "path_redacted": true,
+                "sha256_before": native_engine_sha.clone(),
+                "sha256_after": native_engine_post_sha.clone(),
+            });
+            if let Some((_, before_sha)) = &native_dotnet_identity {
+                execution["dotnet_identity"] = json!({
+                    "path": "caller-attested-dotnet",
+                    "path_redacted": true,
+                    "sha256_before": before_sha,
+                    "sha256_after": native_dotnet_post_sha.clone(),
+                });
+            }
+        }
         if let Some(error) = native_result_error {
             execution["result_error"] = json!(error);
+        }
+        if let Some(receipt) = &native_result_receipt {
+            execution["native_result"] = json!({
+                "path": "native_result.json",
+                "bytes": receipt.bytes,
+                "sha256": receipt.sha256,
+            });
+        }
+        if let Some(receipt) = &native_waveform_receipt {
+            execution["waveform"] = json!({
+                "path": "waveform.csv",
+                "bytes": receipt.bytes,
+                "sha256": receipt.sha256,
+                "rows": native_waveform_rows,
+                "probe": native_waveform_probe,
+                "probe_max_abs": native_waveform_max_abs,
+            });
         }
         if let Some((_source, _staged)) = ngspice_code_model {
             let staged_sha = code_model_staged_post_sha.clone().ok_or_else(|| {
@@ -2044,25 +2432,37 @@ fn run_rfm_internal(
             )?;
         }
         if request.backend == RfmBackend::Native {
-            let engine = native_engine_path.ok_or_else(|| {
+            let _engine = native_engine_path.ok_or_else(|| {
                 RfmError::Execution("native engine path was not recorded".to_owned())
             })?;
-            let engine_sha = if engine.is_file() {
-                Some(sha256_file(&engine)?)
-            } else {
-                None
-            };
-            let summary = json!({
+            let mut summary = json!({
                 "schema_version": 1,
                 "backend": "agent-spice-native-rfm",
                 "ok": backend_ok,
                 "returncode": result.status.code(),
-                "engine": {"path": engine, "sha256": engine_sha},
+                "engine": {
+                    "path": "caller-attested-engine",
+                    "path_redacted": true,
+                "sha256_before": native_engine_sha.clone(),
+                "sha256_after": native_engine_post_sha.clone(),
+                },
                 "logs": {"stdout": "stdout.log", "stderr": "stderr.log"},
                 "result": if backend_ok && native_json.is_file() { serde_json::Value::String("native_result.json".to_owned()) } else { serde_json::Value::Null },
                 "waveform": if native_waveform_rows > 0 && waveform.is_file() { serde_json::Value::String("waveform.csv".to_owned()) } else { serde_json::Value::Null },
                 "waveform_rows": native_waveform_rows,
+                "artifacts": {
+                    "native_result": execution.get("native_result").cloned().unwrap_or(serde_json::Value::Null),
+                    "waveform": execution.get("waveform").cloned().unwrap_or(serde_json::Value::Null),
+                },
             });
+            if let Some((_, before_sha)) = &native_dotnet_identity {
+                summary["dotnet"] = json!({
+                    "path": "caller-attested-dotnet",
+                    "path_redacted": true,
+                    "sha256_before": before_sha,
+                    "sha256_after": native_dotnet_post_sha.clone(),
+                });
+            }
             write_text(
                 &output_root.join("run_summary.json"),
                 &(serde_json::to_string_pretty(&summary)
@@ -2394,6 +2794,48 @@ mod tests {
     }
 
     #[test]
+    fn native_execution_requires_explicit_custody() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-native-custody-{}", std::process::id()));
+        let request = RunRfmRequest::new(
+            root.join("deck.sp"),
+            root.join("model.rfm"),
+            "native",
+            root.join("out"),
+        )
+        .unwrap()
+        .with_native_engine(std::env::current_exe().unwrap())
+        .execute(true);
+        assert!(matches!(
+            run_rfm(&request),
+            Err(RfmError::Execution(message)) if message.contains("custody")
+        ));
+        assert!(!root.join("out").exists());
+    }
+
+    #[test]
+    fn native_custody_attests_engine_before_input_consumption() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-native-attest-{}", std::process::id()));
+        let engine = std::env::current_exe().unwrap();
+        let request = RunRfmRequest::new(
+            root.join("deck.sp"),
+            root.join("model.rfm"),
+            "native",
+            root.join("out"),
+        )
+        .unwrap()
+        .with_native_engine(engine.clone())
+        .execute(true);
+        let custody = RfmNativeCustody::new(crate::NgspiceCustody::new(engine, "0".repeat(64)));
+        assert!(matches!(
+            run_rfm_with_native_custody(&request, &custody),
+            Err(RfmError::Execution(message)) if message.contains("SHA-256")
+        ));
+        assert!(!root.join("out").exists());
+    }
+
+    #[test]
     fn explicit_ngspice_custody_rejects_wrong_solver_or_model_digest() {
         let root =
             std::env::temp_dir().join(format!("sipi-as06-explicit-custody-{}", std::process::id()));
@@ -2504,6 +2946,90 @@ mod tests {
     }
 
     #[test]
+    fn native_arguments_bind_subcircuit_and_all_result_artifacts() {
+        let args = native_arguments(
+            Path::new("case.cir"),
+            "rfm_direct",
+            Path::new("model.rfm"),
+            Path::new("native_result.json"),
+            Path::new("waveform.csv"),
+        );
+        assert_eq!(
+            args,
+            vec![
+                PathBuf::from("case.cir"),
+                PathBuf::from("--rfm-subckt"),
+                PathBuf::from("rfm_direct"),
+                PathBuf::from("--rfm"),
+                PathBuf::from("model.rfm"),
+                PathBuf::from("--output-json"),
+                PathBuf::from("native_result.json"),
+                PathBuf::from("--waveform-csv"),
+                PathBuf::from("waveform.csv"),
+            ]
+        );
+        assert_eq!(
+            parse_native_execution_summary(br#"{"ok":true,"waveformRows":2}"#).unwrap(),
+            (true, 2)
+        );
+        assert!(
+            validate_native_simulation_result(&serde_json::json!({
+                "nodes": [],
+                "points": [],
+                "statistics": {}
+            }))
+            .is_ok()
+        );
+        assert!(
+            validate_native_simulation_result(&serde_json::json!({
+                "waveformRows": 2
+            }))
+            .is_err()
+        );
+        assert!(
+            parse_native_execution_summary(br#"{"ok":true,"waveformRows":2,"extra":false}"#)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn native_waveform_receipt_requires_nonzero_vout_and_matching_rows() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-native-waveform-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let (rows, probe, max_abs) =
+            inspect_native_waveform("time,V(OUT)\n0,0.25\n1,-0.5\n").unwrap();
+        assert_eq!(rows, 2);
+        assert_eq!(probe, "V(OUT)");
+        assert_eq!(max_abs, 0.5);
+        assert!(matches!(
+            inspect_native_waveform("time,v(p1)\n0,1\n"),
+            Err(RfmError::Execution(message)) if message.contains("exactly one")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn native_artifact_receipt_is_bounded_and_non_symlink() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-native-artifact-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let result = root.join("native_result.json");
+        fs::write(&result, b"{\"waveformRows\":1}").unwrap();
+        let (bytes, receipt) = read_bounded_external_artifact(&result, "native result").unwrap();
+        assert_eq!(bytes.len(), receipt.bytes);
+        assert_eq!(receipt.sha256, format!("{:x}", Sha256::digest(&bytes)));
+        let oversized = root.join("oversized.json");
+        let file = fs::File::create(&oversized).unwrap();
+        file.set_len((MAX_ARTIFACT_BYTES + 1) as u64).unwrap();
+        assert!(matches!(
+            read_bounded_external_artifact(&oversized, "native result"),
+            Err(RfmError::Execution(message)) if message.contains("bounded")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     #[cfg(windows)]
     fn ngspice_process_gets_fresh_user_init_root_and_only_explicit_scripts() {
         let root =
@@ -2521,8 +3047,35 @@ mod tests {
         assert!(result.status.success());
         let stdout = String::from_utf8_lossy(&result.stdout).to_ascii_lowercase();
         assert!(stdout.contains(".sipi-spice-user-init"));
+        assert!(!stdout.contains("dotnet_startup_hooks="));
+        assert!(!stdout.contains("dotnet_additional_deps="));
+        assert!(!stdout.contains("dotnet_shared_store="));
+        assert!(!stdout.contains("corehost_tracefile="));
         assert!(!root.join(".sipi-spice-user-init/.spiceinit").exists());
         assert!(root.join(".sipi-spice-user-init").is_dir());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn native_process_gets_loader_injection_boundary() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-native-env-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let comspec = std::env::var_os("COMSPEC").unwrap();
+        let program = crate::absolute_path(Path::new(&comspec)).unwrap();
+        let result = crate::run_native_external_process(
+            &program,
+            &[PathBuf::from("/C"), PathBuf::from("set")],
+            &root,
+        )
+        .unwrap();
+        assert!(result.status.success());
+        let stdout = String::from_utf8_lossy(&result.stdout).to_ascii_lowercase();
+        assert!(!stdout.contains("coreclr_enable_profiling="));
+        assert!(!stdout.contains("coreclr_profiler="));
+        assert!(!stdout.contains("coreclr_profiler_path="));
+        assert!(!stdout.contains("ld_preload="));
         let _ = fs::remove_dir_all(root);
     }
 

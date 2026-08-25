@@ -4,7 +4,8 @@ use std::process::ExitCode;
 use serde_json::json;
 use sipi_agent_spice_direct::NgspiceCustody;
 use sipi_agent_spice_direct::as06_run_rfm::{
-    RfmNgspiceCustody, RunRfmRequest, run_rfm, run_rfm_with_ngspice_custody,
+    RfmNativeCustody, RfmNgspiceCustody, RunRfmRequest, run_rfm, run_rfm_with_native_custody,
+    run_rfm_with_ngspice_custody,
 };
 
 fn take(args: &[String], index: &mut usize, option: &str) -> Result<String, String> {
@@ -18,7 +19,7 @@ fn main() -> ExitCode {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.iter().any(|value| value == "--help" || value == "-h") {
         println!(
-            "usage: sipi-agent-spice-run-rfm DECK --rfm FILE --backend native|ngspice --output-root DIR [--execute] [--native-engine PATH] [--ngspice PATH --ngspice-sha256 SHA256 --code-model PATH --code-model-sha256 SHA256] [--dotnet PATH]"
+            "usage: sipi-agent-spice-run-rfm DECK --rfm FILE --backend native|ngspice --output-root DIR [--execute] [--native-engine PATH --native-engine-sha256 SHA256 [--dotnet PATH --dotnet-sha256 SHA256]] [--ngspice PATH --ngspice-sha256 SHA256 --code-model PATH --code-model-sha256 SHA256]"
         );
         return ExitCode::SUCCESS;
     }
@@ -37,8 +38,10 @@ fn main() -> ExitCode {
     let mut ngspice_sha256 = None;
     let mut code_model_sha256 = None;
     let mut native_engine = None;
+    let mut native_engine_sha256 = None;
     let mut ngspice = "ngspice".to_owned();
     let mut dotnet = "dotnet".to_owned();
+    let mut dotnet_sha256 = None;
     let mut execute = false;
     let mut index = 1;
     while index < args.len() {
@@ -56,6 +59,9 @@ fn main() -> ExitCode {
             }
             "--native-engine" => take(&args, &mut index, option)
                 .map(|value| native_engine = Some(PathBuf::from(value))),
+            "--native-engine-sha256" => {
+                take(&args, &mut index, option).map(|value| native_engine_sha256 = Some(value))
+            }
             "--ngspice" => take(&args, &mut index, option).map(|value| ngspice = value),
             "--ngspice-sha256" => {
                 take(&args, &mut index, option).map(|value| ngspice_sha256 = Some(value))
@@ -64,6 +70,9 @@ fn main() -> ExitCode {
                 take(&args, &mut index, option).map(|value| code_model_sha256 = Some(value))
             }
             "--dotnet" => take(&args, &mut index, option).map(|value| dotnet = value),
+            "--dotnet-sha256" => {
+                take(&args, &mut index, option).map(|value| dotnet_sha256 = Some(value))
+            }
             "--execute" => {
                 execute = true;
                 Ok(())
@@ -96,20 +105,46 @@ fn main() -> ExitCode {
     request.ngspice = ngspice;
     request.dotnet = dotnet;
     request.execute = execute;
-    let result = match (
-        execute,
-        ngspice_sha256,
-        code_model_sha256,
-        request.code_model.as_ref(),
-    ) {
-        (true, Some(solver_sha), Some(model_sha), Some(_)) => run_rfm_with_ngspice_custody(
-            &request,
-            &RfmNgspiceCustody::new(
-                NgspiceCustody::new(request.ngspice.clone(), solver_sha),
-                model_sha,
+    let result = if execute && backend == "native" {
+        match (native_engine_sha256, request.native_engine.as_ref()) {
+            (Some(engine_sha), Some(engine)) => {
+                let mut custody = RfmNativeCustody::new(NgspiceCustody::new(engine, engine_sha));
+                if engine
+                    .extension()
+                    .is_some_and(|value| value.eq_ignore_ascii_case("dll"))
+                {
+                    match dotnet_sha256 {
+                        Some(sha) => {
+                            custody = custody
+                                .with_dotnet(NgspiceCustody::new(request.dotnet.clone(), sha));
+                            run_rfm_with_native_custody(&request, &custody)
+                        }
+                        None => Err(sipi_agent_spice_direct::as06_run_rfm::RfmError::Execution(
+                            "native DLL execution requires --dotnet-sha256".to_owned(),
+                        )),
+                    }
+                } else {
+                    run_rfm_with_native_custody(&request, &custody)
+                }
+            }
+            _ => run_rfm(&request),
+        }
+    } else {
+        match (
+            execute,
+            ngspice_sha256,
+            code_model_sha256,
+            request.code_model.as_ref(),
+        ) {
+            (true, Some(solver_sha), Some(model_sha), Some(_)) => run_rfm_with_ngspice_custody(
+                &request,
+                &RfmNgspiceCustody::new(
+                    NgspiceCustody::new(request.ngspice.clone(), solver_sha),
+                    model_sha,
+                ),
             ),
-        ),
-        _ => run_rfm(&request),
+            _ => run_rfm(&request),
+        }
     };
     match result {
         Ok(result) => {
