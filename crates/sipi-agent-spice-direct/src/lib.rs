@@ -206,12 +206,52 @@ pub(crate) fn absolute_path(path: &Path) -> Result<PathBuf, std::io::Error> {
     }
 }
 
-fn file_sha256(path: &Path) -> Result<String, DirectPortError> {
-    let bytes = fs::read(path).map_err(|e| DirectPortError::InputIo(e.to_string()))?;
-    Ok(format!("{:x}", Sha256::digest(bytes)))
+pub(crate) fn file_sha256(path: &Path) -> Result<String, DirectPortError> {
+    let metadata =
+        fs::symlink_metadata(path).map_err(|error| DirectPortError::InputIo(error.to_string()))?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(DirectPortError::InputIo(
+            "hashed file must be a regular non-symlink file".to_owned(),
+        ));
+    }
+    if metadata.len() > MAX_EXECUTABLE_BYTES {
+        return Err(DirectPortError::InputIo(
+            "hashed file exceeds the bounded 256 MiB budget".to_owned(),
+        ));
+    }
+    let mut file =
+        fs::File::open(path).map_err(|error| DirectPortError::InputIo(error.to_string()))?;
+    let mut digest = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    let mut total = 0_u64;
+    loop {
+        let count = file
+            .read(&mut buffer)
+            .map_err(|error| DirectPortError::InputIo(error.to_string()))?;
+        if count == 0 {
+            break;
+        }
+        total = total
+            .checked_add(count as u64)
+            .ok_or_else(|| DirectPortError::InputIo("hashed file size overflow".to_owned()))?;
+        if total > MAX_EXECUTABLE_BYTES {
+            return Err(DirectPortError::InputIo(
+                "hashed file exceeds the bounded 256 MiB budget".to_owned(),
+            ));
+        }
+        digest.update(&buffer[..count]);
+    }
+    let after =
+        fs::symlink_metadata(path).map_err(|error| DirectPortError::InputIo(error.to_string()))?;
+    if after.file_type().is_symlink() || !after.is_file() || after.len() != metadata.len() {
+        return Err(DirectPortError::InputIo(
+            "hashed file changed during bounded read".to_owned(),
+        ));
+    }
+    Ok(format!("{:x}", digest.finalize()))
 }
 
-fn attest_external_executable(
+pub(crate) fn attest_external_executable(
     path: &Path,
     expected_sha256: Option<&str>,
     label: &str,
@@ -254,10 +294,10 @@ fn attest_external_executable(
     Ok((path, actual))
 }
 
-struct ExternalProcessResult {
-    status: ExitStatus,
-    stdout: Vec<u8>,
-    stderr: Vec<u8>,
+pub(crate) struct ExternalProcessResult {
+    pub(crate) status: ExitStatus,
+    pub(crate) stdout: Vec<u8>,
+    pub(crate) stderr: Vec<u8>,
 }
 
 fn external_file_stamp(path: &Path) -> Option<(u64, SystemTime)> {
@@ -336,12 +376,84 @@ fn read_external_output<R: Read>(
     Ok(output)
 }
 
-fn run_external_process(
+pub(crate) fn run_external_process(
     program: &Path,
     arguments: &[PathBuf],
     current_dir: &Path,
 ) -> Result<ExternalProcessResult, DirectPortError> {
-    let mut child = Command::new(program)
+    run_external_process_inner(program, arguments, current_dir, None)
+}
+
+/// Run an external solver with one caller-staged SPICE_SCRIPTS directory.
+/// Ambient initialization variables remain cleared; only this explicit,
+/// already-created directory is admitted.
+pub(crate) fn run_external_process_with_spice_scripts(
+    program: &Path,
+    arguments: &[PathBuf],
+    current_dir: &Path,
+    spice_scripts: &Path,
+) -> Result<ExternalProcessResult, DirectPortError> {
+    run_external_process_inner(program, arguments, current_dir, Some(spice_scripts))
+}
+
+fn fresh_external_user_init_root(current_dir: &Path) -> Result<PathBuf, DirectPortError> {
+    let current = absolute_path(current_dir).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "external process working-directory resolution failed: {error}"
+        ))
+    })?;
+    let metadata = fs::symlink_metadata(&current).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "external process working directory is unavailable: {error}"
+        ))
+    })?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(DirectPortError::UnsupportedExecution(
+            "external process working directory must be a regular directory".to_owned(),
+        ));
+    }
+    let user_root = current.join(".sipi-spice-user-init");
+    fs::create_dir(&user_root).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "external user-init root must be fresh and create-new: {error}"
+        ))
+    })?;
+    let user_metadata = fs::symlink_metadata(&user_root).map_err(|error| {
+        DirectPortError::UnsupportedExecution(format!(
+            "external user-init root could not be rechecked: {error}"
+        ))
+    })?;
+    if user_metadata.file_type().is_symlink() || !user_metadata.is_dir() {
+        return Err(DirectPortError::UnsupportedExecution(
+            "external user-init root must be a regular directory".to_owned(),
+        ));
+    }
+    if fs::read_dir(&user_root)
+        .map_err(|error| DirectPortError::UnsupportedExecution(error.to_string()))?
+        .next()
+        .is_some()
+    {
+        return Err(DirectPortError::UnsupportedExecution(
+            "external user-init root is not empty".to_owned(),
+        ));
+    }
+    Ok(user_root)
+}
+
+fn run_external_process_inner(
+    program: &Path,
+    arguments: &[PathBuf],
+    current_dir: &Path,
+    spice_scripts: Option<&Path>,
+) -> Result<ExternalProcessResult, DirectPortError> {
+    if spice_scripts.is_some_and(|path| !path.is_absolute() || !path.is_dir()) {
+        return Err(DirectPortError::UnsupportedExecution(
+            "explicit SPICE_SCRIPTS directory must be absolute and existing".to_owned(),
+        ));
+    }
+    let user_init_root = fresh_external_user_init_root(current_dir)?;
+    let mut command = Command::new(program);
+    command
         .args(arguments.iter().map(|value| value.as_os_str()))
         .current_dir(current_dir)
         .env_remove("SPICE_SCRIPTS")
@@ -351,8 +463,27 @@ fn run_external_process(
         .env_remove("NGSPICE_INPUT_DIR")
         .env_remove("NGSPICE_INPUT_PATH")
         .env_remove("NGSPICE_SCRIPTS")
+        .env_remove("NGSPICE_USERINIT")
+        .env_remove("NGSPICE_USERINIT_DIR")
+        .env_remove("SPICE_USERINIT")
+        .env_remove("HOME")
+        .env_remove("USERPROFILE")
+        .env_remove("HOMEDRIVE")
+        .env_remove("HOMEPATH")
+        .env_remove("APPDATA")
+        .env_remove("LOCALAPPDATA")
+        .env_remove("XDG_CONFIG_HOME")
+        .env_remove("XDG_CONFIG_DIRS")
+        .env_remove("XDG_DATA_HOME")
+        .env("HOME", &user_init_root)
+        .env("USERPROFILE", &user_init_root)
+        .env("XDG_CONFIG_HOME", &user_init_root)
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+    if let Some(path) = spice_scripts {
+        command.env("SPICE_SCRIPTS", path);
+    }
+    let mut child = command
         .spawn()
         .map_err(|error| DirectPortError::UnsupportedExecution(error.to_string()))?;
     let overflow = Arc::new(AtomicBool::new(false));

@@ -6,6 +6,7 @@
 
 use std::fmt::{Display, Formatter};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -135,6 +136,24 @@ pub struct RunRfmRequest {
     pub native_engine: Option<PathBuf>,
     pub dotnet: String,
     pub execute: bool,
+}
+
+/// Explicit caller custody for the existing upstream ngspice/XSPICE branch.
+/// The code model is an external asset as well as the solver executable, so
+/// both identities are required before the process is started.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RfmNgspiceCustody {
+    pub executable: crate::NgspiceCustody,
+    pub code_model_sha256: String,
+}
+
+impl RfmNgspiceCustody {
+    pub fn new(executable: crate::NgspiceCustody, code_model_sha256: impl Into<String>) -> Self {
+        Self {
+            executable,
+            code_model_sha256: code_model_sha256.into(),
+        }
+    }
 }
 
 impl RunRfmRequest {
@@ -574,17 +593,20 @@ pub fn write_cadence_rfm(path: impl AsRef<Path>, model: &RfmModel) -> Result<(),
         }
     }
     let mut text = format!(
-        "VERSION {}\nNPORT {}\nMATRIX_TYPE {}\nZ0 {:.17e}\n",
-        model.version, model.nports, model.matrix_type, model.z0
+        "VERSION {}\nNPORT {}\nMATRIX_TYPE {}\nZ0 {}\n",
+        model.version,
+        model.nports,
+        model.matrix_type,
+        rfm_float(model.z0)
     );
     for row in 0..model.nports {
         for column in 0..model.nports {
             let response = row * model.nports + column;
             text.push_str(&format!(
-                "BEGIN {} {}\nCONST {:.17e}\nC 0\nDELAY 0\n",
+                "BEGIN {} {}\nConst {}\n",
                 row + 1,
                 column + 1,
-                model.constant[response].re
+                rfm_float(model.constant[response].re)
             ));
             let real = model
                 .poles
@@ -595,8 +617,9 @@ pub fn write_cadence_rfm(path: impl AsRef<Path>, model: &RfmModel) -> Result<(),
             text.push_str(&format!("BEGIN_REAL {}\n", real.len()));
             for (index, pole) in real {
                 text.push_str(&format!(
-                    "{:.17e} {:.17e}\n",
-                    -pole.re, model.residues[response][index].re
+                    "  {}  {}\n",
+                    rfm_float(-pole.re),
+                    rfm_float(model.residues[response][index].re)
                 ));
             }
             let complex = model
@@ -609,8 +632,11 @@ pub fn write_cadence_rfm(path: impl AsRef<Path>, model: &RfmModel) -> Result<(),
             for (index, pole) in complex {
                 let residue = model.residues[response][index];
                 text.push_str(&format!(
-                    "{:.17e} {:.17e} {:.17e} {:.17e}\n",
-                    -pole.re, -pole.im, residue.re, residue.im
+                    "  {}  {}  {}  {}\n",
+                    rfm_float(-pole.re),
+                    rfm_float(-pole.im),
+                    rfm_float(residue.re),
+                    rfm_float(residue.im)
                 ));
             }
             text.push_str("END\n");
@@ -1090,6 +1116,67 @@ fn write_text(path: &Path, text: &str) -> Result<(), RfmError> {
     fs::write(path, text).map_err(|error| RfmError::Output(error.to_string()))
 }
 
+fn create_fresh_output_dir(path: &Path) -> Result<(), RfmError> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| RfmError::Output("run-rfm output has no parent directory".to_owned()))?;
+    reject_reparse_ancestors(parent)?;
+    fs::create_dir_all(parent).map_err(|error| RfmError::Output(error.to_string()))?;
+    reject_reparse_ancestors(parent)?;
+    let parent_metadata =
+        fs::symlink_metadata(parent).map_err(|error| RfmError::Output(error.to_string()))?;
+    if parent_metadata.file_type().is_symlink() || !parent_metadata.is_dir() {
+        return Err(RfmError::Output(
+            "run-rfm output parent must be a regular directory".to_owned(),
+        ));
+    }
+    fs::create_dir(path).map_err(|error| {
+        RfmError::Output(format!(
+            "run-rfm output directory must be fresh and create-new: {error}"
+        ))
+    })?;
+    let metadata =
+        fs::symlink_metadata(path).map_err(|error| RfmError::Output(error.to_string()))?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(RfmError::Output(
+            "run-rfm output directory must be a regular directory".to_owned(),
+        ));
+    }
+    reject_reparse_ancestors(path)?;
+    let parent_resolved = parent
+        .canonicalize()
+        .map_err(|error| RfmError::Output(error.to_string()))?;
+    let output_resolved = path
+        .canonicalize()
+        .map_err(|error| RfmError::Output(error.to_string()))?;
+    if !output_resolved.starts_with(&parent_resolved) {
+        return Err(RfmError::Output(
+            "run-rfm output directory escaped its validated parent".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn reject_reparse_ancestors(path: &Path) -> Result<(), RfmError> {
+    let mut cursor = Some(path);
+    while let Some(current) = cursor {
+        match fs::symlink_metadata(current) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                return Err(RfmError::Output(
+                    "run-rfm output path contains a symlink/reparse component".to_owned(),
+                ));
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                return Err(RfmError::Output(error.to_string()));
+            }
+            Err(_) => {}
+        }
+        cursor = current.parent();
+    }
+    Ok(())
+}
+
 // Each emitted SPICE line is bounded by the fixed token and f64 formatting
 // widths below. Check the worst-case topology before allocating the artifact.
 fn estimate_spice_subcircuit_bytes(
@@ -1113,6 +1200,23 @@ fn estimate_spice_subcircuit_bytes(
     line_count
         .checked_mul(LINE_BUDGET)?
         .checked_add(header_budget)
+}
+
+fn rfm_float(value: f64) -> String {
+    let mut text = format!("{value:.12e}");
+    if let Some(exponent) = text.find('e') {
+        let suffix_len = text.len().saturating_sub(exponent + 1);
+        let signed = matches!(text.as_bytes().get(exponent + 1), Some(b'+' | b'-'));
+        if !signed {
+            text.insert(exponent + 1, '+');
+            if suffix_len == 1 {
+                text.insert(exponent + 2, '0');
+            }
+        } else if suffix_len == 2 {
+            text.insert(exponent + 2, '0');
+        }
+    }
+    text
 }
 
 fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
@@ -1157,7 +1261,7 @@ fn parse_ngspice_measurements(text: &str) -> Vec<serde_json::Value> {
     measurements
 }
 
-fn write_ngspice_waveform_csv(text: &str, path: &Path) -> Result<usize, RfmError> {
+fn write_ngspice_waveform_csv(text: &str, path: &Path) -> Result<(usize, String, f64), RfmError> {
     let mut columns: Option<Vec<&str>> = None;
     let mut rows = Vec::<Vec<f64>>::new();
     for line in text.lines() {
@@ -1187,14 +1291,36 @@ fn write_ngspice_waveform_csv(text: &str, path: &Path) -> Result<usize, RfmError
         else {
             continue;
         };
+        if values.iter().any(|value| !value.is_finite()) {
+            continue;
+        }
         rows.push(values);
     }
     let Some(columns) = columns else {
-        return Ok(0);
+        return Ok((0, String::new(), 0.0));
     };
     if rows.is_empty() {
-        return Ok(0);
+        return Ok((0, String::new(), 0.0));
     }
+    let probe_indices = columns
+        .iter()
+        .enumerate()
+        .filter(|(_, name)| name.trim().eq_ignore_ascii_case("v(out)"))
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    if probe_indices.len() != 1 {
+        return Err(RfmError::Execution(
+            "ngspice waveform must contain exactly one case-insensitive v(out) probe column"
+                .to_owned(),
+        ));
+    }
+    let probe_index = probe_indices[0];
+    let probe_name = columns[probe_index].trim();
+    let probe_max_abs = rows
+        .iter()
+        .map(|row| row[probe_index].abs())
+        .fold(0.0, f64::max);
+    let probe_name = probe_name.to_owned();
     let mut csv = columns.join(",");
     csv.push('\n');
     for row in &rows {
@@ -1207,12 +1333,58 @@ fn write_ngspice_waveform_csv(text: &str, path: &Path) -> Result<usize, RfmError
         csv.push('\n');
     }
     write_text(path, &csv)?;
-    Ok(rows.len())
+    Ok((rows.len(), probe_name, probe_max_abs))
+}
+
+fn ngspice_model_error(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    lower.contains("nport_rfm")
+        && ["error", "invalid", "failed", "failure"]
+            .iter()
+            .any(|needle| lower.contains(needle))
 }
 
 fn sha256_file(path: &Path) -> Result<String, RfmError> {
-    let bytes = fs::read(path).map_err(|e| RfmError::Input(e.to_string()))?;
-    Ok(format!("{:x}", Sha256::digest(bytes)))
+    let metadata =
+        fs::symlink_metadata(path).map_err(|error| RfmError::Input(error.to_string()))?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(RfmError::Input(
+            "hashed artifact must be a regular non-symlink file".to_owned(),
+        ));
+    }
+    if metadata.len() > MAX_ARTIFACT_BYTES as u64 {
+        return Err(RfmError::Input(
+            "hashed artifact exceeds the bounded 8 MiB budget".to_owned(),
+        ));
+    }
+    let mut file = fs::File::open(path).map_err(|error| RfmError::Input(error.to_string()))?;
+    let mut digest = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    let mut total = 0_u64;
+    loop {
+        let count = file
+            .read(&mut buffer)
+            .map_err(|error| RfmError::Input(error.to_string()))?;
+        if count == 0 {
+            break;
+        }
+        total = total
+            .checked_add(count as u64)
+            .ok_or_else(|| RfmError::Input("hashed artifact size overflow".to_owned()))?;
+        if total > MAX_ARTIFACT_BYTES as u64 {
+            return Err(RfmError::Input(
+                "hashed artifact exceeds the bounded 8 MiB budget".to_owned(),
+            ));
+        }
+        digest.update(&buffer[..count]);
+    }
+    let after = fs::symlink_metadata(path).map_err(|error| RfmError::Input(error.to_string()))?;
+    if after.file_type().is_symlink() || !after.is_file() || after.len() != metadata.len() {
+        return Err(RfmError::Input(
+            "hashed artifact changed during bounded read".to_owned(),
+        ));
+    }
+    Ok(format!("{:x}", digest.finalize()))
 }
 
 fn dependency_references(text: &str) -> Vec<String> {
@@ -1349,11 +1521,39 @@ fn inject_wrapper(text: &str, wrapper_name: &str) -> String {
 
 /// Prepare an RFM run and optionally invoke the explicitly selected simulator.
 pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
-    if request.execute && !external_execution_available() {
+    run_rfm_internal(request, None)
+}
+
+/// Execute the pinned ngspice/XSPICE branch with explicit caller custody.
+/// `run_rfm` remains preparation-only when execution is requested without
+/// this additive custody object.
+pub fn run_rfm_with_ngspice_custody(
+    request: &RunRfmRequest,
+    custody: &RfmNgspiceCustody,
+) -> Result<RunRfmResult, RfmError> {
+    run_rfm_internal(request, Some(custody))
+}
+
+fn run_rfm_internal(
+    request: &RunRfmRequest,
+    ngspice_custody: Option<&RfmNgspiceCustody>,
+) -> Result<RunRfmResult, RfmError> {
+    if request.execute && (request.backend != RfmBackend::Ngspice || ngspice_custody.is_none()) {
         return Err(RfmError::Execution(
-            "external simulator execution is fail-closed: executable custody is required"
-                .to_owned(),
+            "external simulator execution is fail-closed: explicit ngspice and code-model custody is required".to_owned(),
         ));
+    }
+    if request.execute {
+        let custody = ngspice_custody.expect("execute custody admission was checked above");
+        let requested_solver = crate::absolute_path(Path::new(&request.ngspice))
+            .map_err(|error| RfmError::Execution(error.to_string()))?;
+        let custody_solver = crate::absolute_path(&custody.executable.executable)
+            .map_err(|error| RfmError::Execution(error.to_string()))?;
+        if requested_solver != custody_solver {
+            return Err(RfmError::Execution(
+                "request.ngspice and custody executable must resolve to the same path".to_owned(),
+            ));
+        }
     }
     let deck =
         crate::absolute_path(&request.deck).map_err(|error| RfmError::Input(error.to_string()))?;
@@ -1392,7 +1592,7 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
     // Keep the same project/case layout as upstream prepare_rfm_run: callers
     // provide the run root, while this leaf owns <deck>/rfm_direct.
     let output_root = requested_output_root.join(deck_stem).join("rfm_direct");
-    fs::create_dir_all(&output_root).map_err(|error| RfmError::Output(error.to_string()))?;
+    create_fresh_output_dir(&output_root)?;
     // Match prepare_rfm_run's stable runtime filename.  The input copy is
     // retained separately so replay manifests distinguish source and runtime.
     let staged_rfm = output_root.join("model.runtime.rfm");
@@ -1404,6 +1604,7 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
     fs::copy(&rfm, &source_rfm).map_err(|error| RfmError::Output(error.to_string()))?;
     let normalized = parse_cadence_rfm(&staged_rfm)?;
     let response_max_error = reconstruction_max_error(&model, &normalized);
+    let mut delivered_response_max = max_response_abs(&model);
     if !response_max_error.is_finite() || response_max_error > 1e-11 {
         return Err(RfmError::Parse(format!(
             "RFM normalization changed the response (max error {response_max_error:.3e})"
@@ -1519,6 +1720,12 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
     if request.execute && !conversion_blocked {
         let mut ngspice_scripts = None;
         let mut ngspice_code_model = None;
+        let mut code_model_source_identity = None;
+        let mut code_model_staged_identity = None;
+        let mut code_model_staged_post_sha = None;
+        let mut code_model_source_post_sha = None;
+        let mut ngspice_post_sha = None;
+        let mut ngspice_identity = None;
         let mut native_engine_path = None;
         let (program, arguments) = match request.backend {
             RfmBackend::Native => {
@@ -1562,11 +1769,39 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
                 })?;
                 let code_model = crate::absolute_path(source_model)
                     .map_err(|error| RfmError::Execution(error.to_string()))?;
-                if !code_model.is_file() {
+                let code_model_metadata = fs::symlink_metadata(&code_model).map_err(|error| {
+                    RfmError::Execution(format!("ngspice code-model is unavailable: {error}"))
+                })?;
+                if code_model_metadata.file_type().is_symlink() || !code_model_metadata.is_file() {
                     return Err(RfmError::Execution(
-                        "ngspice backend requires an explicit --code-model".to_owned(),
+                        "ngspice code-model must be a regular non-symlink file".to_owned(),
                     ));
                 }
+                if code_model_metadata.len() > MAX_ARTIFACT_BYTES as u64 {
+                    return Err(RfmError::Execution(
+                        "ngspice code-model exceeds the 8 MiB byte budget".to_owned(),
+                    ));
+                }
+                let custody = ngspice_custody.ok_or_else(|| {
+                    RfmError::Execution(
+                        "ngspice backend requires explicit caller custody".to_owned(),
+                    )
+                })?;
+                let code_model_sha = crate::file_sha256(&code_model)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                if code_model_sha != custody.code_model_sha256.to_ascii_lowercase() {
+                    return Err(RfmError::Execution(
+                        "ngspice code-model SHA-256 does not match caller custody".to_owned(),
+                    ));
+                }
+                code_model_source_identity = Some((code_model.clone(), code_model_sha));
+                let (ngspice_path, ngspice_sha) = crate::attest_external_executable(
+                    &custody.executable.executable,
+                    Some(&custody.executable.sha256),
+                    "ngspice",
+                )
+                .map_err(|error| RfmError::Execution(error.to_string()))?;
+                ngspice_identity = Some((ngspice_path.clone(), ngspice_sha));
                 let scripts = output_root.join(".ngspice-scripts");
                 let staged_models = output_root.join(".ngspice-code-models");
                 fs::create_dir_all(&scripts).map_err(|error| {
@@ -1594,9 +1829,35 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
                 fs::copy(&code_model, &staged_model).map_err(|error| {
                     RfmError::Execution(format!("cannot stage ngspice code model: {error}"))
                 })?;
-                let staged_model_path = staged_model
-                    .canonicalize()
+                let staged_metadata = fs::symlink_metadata(&staged_model).map_err(|error| {
+                    RfmError::Execution(format!(
+                        "staged ngspice code model is unavailable: {error}"
+                    ))
+                })?;
+                if staged_metadata.file_type().is_symlink() || !staged_metadata.is_file() {
+                    return Err(RfmError::Execution(
+                        "staged ngspice code model must be a regular non-symlink file".to_owned(),
+                    ));
+                }
+                if staged_metadata.len() > MAX_ARTIFACT_BYTES as u64 {
+                    return Err(RfmError::Execution(
+                        "staged ngspice code model exceeds the 8 MiB byte budget".to_owned(),
+                    ));
+                }
+                let staged_sha = sha256_file(&staged_model)
                     .map_err(|error| RfmError::Execution(error.to_string()))?;
+                let source_sha = custody.code_model_sha256.to_ascii_lowercase();
+                if staged_sha != source_sha {
+                    return Err(RfmError::Execution(
+                        "staged ngspice code-model SHA-256 does not match caller custody"
+                            .to_owned(),
+                    ));
+                }
+                code_model_staged_identity = Some((staged_model.clone(), staged_sha));
+                // Windows `canonicalize` can return an extended `\\?\\` path
+                // which ngspice does not accept in `spinit`; the output root
+                // is already absolute and freshly created, so retain it.
+                let staged_model_path = staged_model.clone();
                 let spinit = format!(
                     "* Generated by SIPI; isolated ngspice code-model search path.\nalias exit quit\nset filetype=ascii\nset num_threads=1\nunset osdi_enabled\nif $?xspice_enabled\n codemodel {}\nend\n",
                     staged_model_path.to_string_lossy().replace('\\', "/")
@@ -1607,7 +1868,7 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
                 ngspice_scripts = Some(scripts);
                 ngspice_code_model = Some((code_model, staged_model));
                 (
-                    PathBuf::from(&request.ngspice),
+                    ngspice_path,
                     vec![PathBuf::from("-b"), prepared_deck.clone()],
                 )
             }
@@ -1616,12 +1877,63 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
         command
             .args(arguments.iter().map(|value| value.as_os_str()))
             .current_dir(&output_root);
-        if let Some(scripts) = ngspice_scripts {
+        if request.backend != RfmBackend::Ngspice
+            && let Some(scripts) = ngspice_scripts.as_ref()
+        {
             command.env("SPICE_SCRIPTS", scripts);
         }
-        let result = command
-            .output()
+        let result = if request.backend == RfmBackend::Ngspice {
+            let scripts = ngspice_scripts.as_deref().ok_or_else(|| {
+                RfmError::Execution("ngspice SPICE_SCRIPTS staging is missing".to_owned())
+            })?;
+            let output = crate::run_external_process_with_spice_scripts(
+                &program,
+                &arguments,
+                &output_root,
+                scripts,
+            )
             .map_err(|error| RfmError::Execution(error.to_string()))?;
+            if let Some((path, before_sha)) = &ngspice_identity {
+                let after_sha = crate::file_sha256(path)
+                    .map_err(|error| RfmError::Execution(error.to_string()))?;
+                if &after_sha != before_sha {
+                    return Err(RfmError::Execution(
+                        "ngspice executable changed during execution".to_owned(),
+                    ));
+                }
+                ngspice_post_sha = Some(after_sha);
+            }
+            if let Some((path, before_sha)) = &code_model_source_identity {
+                let after_sha =
+                    sha256_file(path).map_err(|error| RfmError::Execution(error.to_string()))?;
+                if &after_sha != before_sha {
+                    return Err(RfmError::Execution(
+                        "ngspice code-model changed during execution".to_owned(),
+                    ));
+                }
+                code_model_source_post_sha = Some(after_sha);
+            }
+            if let Some((path, before_sha)) = &code_model_staged_identity {
+                let after_sha =
+                    sha256_file(path).map_err(|error| RfmError::Execution(error.to_string()))?;
+                if &after_sha != before_sha {
+                    return Err(RfmError::Execution(
+                        "staged ngspice code-model changed during execution".to_owned(),
+                    ));
+                }
+                code_model_staged_post_sha = Some(after_sha);
+            }
+            output
+        } else {
+            let output = command
+                .output()
+                .map_err(|error| RfmError::Execution(error.to_string()))?;
+            crate::ExternalProcessResult {
+                status: output.status,
+                stdout: output.stdout,
+                stderr: output.stderr,
+            }
+        };
         write_text(
             &output_root.join("stdout.log"),
             &String::from_utf8_lossy(&result.stdout),
@@ -1630,10 +1942,10 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
             &output_root.join("stderr.log"),
             &String::from_utf8_lossy(&result.stderr),
         )?;
-        let ngspice_model_error = request.backend == RfmBackend::Ngspice
-            && (String::from_utf8_lossy(&result.stdout).contains("nport_rfm ERROR:")
-                || String::from_utf8_lossy(&result.stderr).contains("nport_rfm ERROR:"));
-        let mut backend_ok = result.status.success() && !ngspice_model_error;
+        let ngspice_model_failed = request.backend == RfmBackend::Ngspice
+            && (ngspice_model_error(&String::from_utf8_lossy(&result.stdout))
+                || ngspice_model_error(&String::from_utf8_lossy(&result.stderr)));
+        let mut backend_ok = result.status.success() && !ngspice_model_failed;
         let mut native_waveform_rows = 0u64;
         let mut native_result_error = None;
         if request.backend == RfmBackend::Native && backend_ok {
@@ -1664,27 +1976,55 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
             }
         }
         execution = json!({"requested": true, "backend": request.backend.as_str(), "status": if backend_ok { "EXECUTED" } else { "FAIL" }, "returncode": result.status.code(), "stdout_bytes": result.stdout.len(), "stderr_bytes": result.stderr.len(), "logs": {"stdout": "stdout.log", "stderr": "stderr.log"}});
+        if let Some((_, before_sha)) = &ngspice_identity {
+            execution["solver_identity"] = json!({
+                "path": "caller-attested-executable",
+                "path_redacted": true,
+                "sha256_before": before_sha,
+                "sha256_after": ngspice_post_sha,
+            });
+        }
         if let Some(error) = native_result_error {
             execution["result_error"] = json!(error);
         }
-        if let Some((source, staged)) = ngspice_code_model {
+        if let Some((_source, _staged)) = ngspice_code_model {
+            let staged_sha = code_model_staged_post_sha.clone().ok_or_else(|| {
+                RfmError::Execution(
+                    "staged ngspice code-model identity was not finalized".to_owned(),
+                )
+            })?;
             execution["code_model"] = json!({
-                "source": source,
-                "staged": staged,
-                "sha256": sha256_file(&staged)?,
+                "source": "caller-code-model",
+                "staged": "staged/.ngspice-code-models/000-code-model",
+                "path_redacted": true,
+                "source_sha256_before": code_model_source_identity.as_ref().map(|(_, sha)| sha),
+                "source_sha256_after": code_model_source_post_sha,
+                "staged_sha256_before": code_model_staged_identity.as_ref().map(|(_, sha)| sha),
+                "staged_sha256_after": staged_sha,
             });
         }
         if request.backend == RfmBackend::Ngspice {
             let stdout = String::from_utf8_lossy(&result.stdout);
-            let waveform_rows =
+            let (waveform_rows, waveform_probe, waveform_probe_max_abs) =
                 write_ngspice_waveform_csv(&stdout, &output_root.join("waveform.csv"))?;
+            let measurements = parse_ngspice_measurements(&stdout);
+            if waveform_rows == 0
+                || waveform_probe.is_empty()
+                || !waveform_probe_max_abs.is_finite()
+                || waveform_probe_max_abs <= 0.0
+            {
+                backend_ok = false;
+            }
+            delivered_response_max = waveform_probe_max_abs;
             execution["waveform"] = json!({
                 "path": "waveform.csv",
                 "format": "csv",
                 "rows": waveform_rows,
+                "probe": waveform_probe,
+                "probe_max_abs": waveform_probe_max_abs,
                 "exists": output_root.join("waveform.csv").is_file(),
             });
-            execution["measurements"] = json!(parse_ngspice_measurements(&stdout));
+            execution["measurements"] = json!(measurements);
             let summary = json!({
                 "schema_version": 1,
                 "backend": "ngspice-xspice-rfm",
@@ -1763,7 +2103,7 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
         "rfm": rfm,
         "nports": model.nports,
         "response_samples": verification_samples,
-        "response_max_abs": max_response_abs(&model),
+        "response_max_abs": delivered_response_max,
         "response_reconstruction_max": response_max_error,
         "execution": execution,
         "conversion": conversion,
@@ -1801,10 +2141,6 @@ pub fn run_rfm(request: &RunRfmRequest) -> Result<RunRfmResult, RfmError> {
     })
 }
 
-fn external_execution_available() -> bool {
-    false
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1820,6 +2156,13 @@ mod tests {
         assert_eq!(model.effective_order(), 1);
         assert_eq!(model.proportional_coeff(), vec![0.0]);
         assert!(model.evaluate_s(1.0)[0].re.is_finite());
+        let written = root.join("written.rfm");
+        write_cadence_rfm(&written, &model).unwrap();
+        let written_text = fs::read_to_string(&written).unwrap();
+        assert!(written_text.contains("Const 0.000000000000e+00"));
+        assert!(!written_text.contains("CONST"));
+        assert!(!written_text.contains("C 0"));
+        assert!(parse_cadence_rfm(&written).is_ok());
         assert_eq!(
             model.evaluate_s_many(&[0.0, 1.0]).unwrap(),
             vec![model.evaluate_s(0.0), model.evaluate_s(1.0)]
@@ -2025,10 +2368,12 @@ mod tests {
         let report: serde_json::Value =
             serde_json::from_slice(&fs::read(run_root.join("run_report.json")).unwrap()).unwrap();
         assert_eq!(report["conversion"]["backend"], "ngspice");
-        assert!(!report["conversion"]["actions"]
-            .as_array()
-            .unwrap()
-            .is_empty());
+        assert!(
+            !report["conversion"]["actions"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
         let _ = fs::remove_dir_all(root);
     }
 
@@ -2046,6 +2391,250 @@ mod tests {
         let result = run_rfm(&request);
         assert!(matches!(result, Err(RfmError::Execution(message)) if message.contains("custody")));
         assert!(!root.join("out").exists());
+    }
+
+    #[test]
+    fn explicit_ngspice_custody_rejects_wrong_solver_or_model_digest() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-explicit-custody-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let deck = root.join("deck.sp");
+        let rfm = root.join("model.rfm");
+        let code_model = root.join("rfm.cm");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        fs::write(
+            &rfm,
+            "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 0\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n",
+        )
+        .unwrap();
+        fs::write(&code_model, b"caller-owned code model").unwrap();
+        let mut request = RunRfmRequest::new(&deck, &rfm, "ngspice", root.join("out"))
+            .unwrap()
+            .with_code_model(&code_model)
+            .execute(true);
+        request.ngspice = std::env::current_exe()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        let custody = RfmNgspiceCustody::new(
+            crate::NgspiceCustody::new(std::env::current_exe().unwrap(), "0".repeat(64)),
+            "0".repeat(64),
+        );
+        let result = run_rfm_with_ngspice_custody(&request, &custody);
+        assert!(matches!(result, Err(RfmError::Execution(message)) if message.contains("SHA-256")));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn ngspice_model_diagnostics_are_case_insensitive_and_fail_closed() {
+        assert!(ngspice_model_error("nport_rfm: invalid Const"));
+        assert!(ngspice_model_error("NPORT_RFM ERROR: failed to load model"));
+        assert!(ngspice_model_error("nPoRt_RfM: FAILURE"));
+        assert!(!ngspice_model_error("nport_rfm: model loaded"));
+    }
+
+    #[test]
+    fn ngspice_request_and_custody_path_mismatch_is_rejected() {
+        let root = std::env::temp_dir().join(format!(
+            "sipi-as06-solver-path-mismatch-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let deck = root.join("deck.sp");
+        let rfm = root.join("model.rfm");
+        let code_model = root.join("rfm.cm");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        fs::write(
+            &rfm,
+            "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n",
+        )
+        .unwrap();
+        fs::write(&code_model, b"caller-owned code model").unwrap();
+        let request = RunRfmRequest::new(&deck, &rfm, "ngspice", root.join("out"))
+            .unwrap()
+            .with_code_model(&code_model)
+            .execute(true);
+        let custody = RfmNgspiceCustody::new(
+            crate::NgspiceCustody::new(std::env::current_exe().unwrap(), "0".repeat(64)),
+            "0".repeat(64),
+        );
+        assert!(matches!(
+            run_rfm_with_ngspice_custody(&request, &custody),
+            Err(RfmError::Execution(message)) if message.contains("same path")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn zero_rfm_waveform_does_not_admit_source_or_time_as_output() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-zero-waveform-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let (rows, probe, probe_max_abs) = write_ngspice_waveform_csv(
+            "Index time v(src) v(out)\n0 0 1 0\n1 1 2 0\n",
+            &root.join("waveform.csv"),
+        )
+        .unwrap();
+        assert_eq!(rows, 2);
+        assert_eq!(probe.to_ascii_lowercase(), "v(out)");
+        assert_eq!(probe_max_abs, 0.0);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn waveform_without_exact_vout_probe_is_rejected() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-only-p1-waveform-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        assert!(matches!(
+            write_ngspice_waveform_csv(
+                "Index time v(src) v(p1)\n0 0 1 0.2\n1 1 2 0.3\n",
+                &root.join("waveform.csv"),
+            ),
+            Err(RfmError::Execution(message)) if message.contains("exactly one")
+        ));
+        assert!(matches!(
+            write_ngspice_waveform_csv(
+                "Index time v(out) V(OUT)\n0 0 1 0.2\n1 1 2 0.3\n",
+                &root.join("duplicate.csv"),
+            ),
+            Err(RfmError::Execution(message)) if message.contains("exactly one")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn ngspice_process_gets_fresh_user_init_root_and_only_explicit_scripts() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-env-isolation-{}", std::process::id()));
+        fs::create_dir_all(root.join("scripts")).unwrap();
+        let comspec = std::env::var_os("COMSPEC").unwrap();
+        let program = crate::absolute_path(Path::new(&comspec)).unwrap();
+        let result = crate::run_external_process_with_spice_scripts(
+            &program,
+            &[PathBuf::from("/C"), PathBuf::from("set")],
+            &root,
+            &root.join("scripts"),
+        )
+        .unwrap();
+        assert!(result.status.success());
+        let stdout = String::from_utf8_lossy(&result.stdout).to_ascii_lowercase();
+        assert!(stdout.contains(".sipi-spice-user-init"));
+        assert!(!root.join(".sipi-spice-user-init/.spiceinit").exists());
+        assert!(root.join(".sipi-spice-user-init").is_dir());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn explicit_ngspice_custody_rejects_oversized_code_model() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-oversized-model-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let deck = root.join("deck.sp");
+        let rfm = root.join("model.rfm");
+        let code_model = root.join("rfm.cm");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        fs::write(
+            &rfm,
+            "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 0\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n",
+        )
+        .unwrap();
+        let file = fs::File::create(&code_model).unwrap();
+        file.set_len((MAX_ARTIFACT_BYTES + 1) as u64).unwrap();
+        let mut request = RunRfmRequest::new(&deck, &rfm, "ngspice", root.join("out"))
+            .unwrap()
+            .with_code_model(&code_model)
+            .execute(true);
+        request.ngspice = std::env::current_exe()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        let custody = RfmNgspiceCustody::new(
+            crate::NgspiceCustody::new(std::env::current_exe().unwrap(), "0".repeat(64)),
+            "0".repeat(64),
+        );
+        let result = run_rfm_with_ngspice_custody(&request, &custody);
+        assert!(matches!(result, Err(RfmError::Execution(message)) if message.contains("budget")));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn explicit_ngspice_custody_rejects_symlink_code_model() {
+        use std::os::unix::fs::symlink;
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-symlink-model-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let target = root.join("target.cm");
+        let code_model = root.join("rfm.cm");
+        fs::write(&target, b"code model").unwrap();
+        symlink(&target, &code_model).unwrap();
+        let deck = root.join("deck.sp");
+        let rfm = root.join("model.rfm");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        fs::write(
+            &rfm,
+            "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 0\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n",
+        )
+        .unwrap();
+        let request = RunRfmRequest::new(&deck, &rfm, "ngspice", root.join("out"))
+            .unwrap()
+            .with_code_model(&code_model)
+            .execute(true);
+        let custody = RfmNgspiceCustody::new(
+            crate::NgspiceCustody::new(std::env::current_exe().unwrap(), "0".repeat(64)),
+            "0".repeat(64),
+        );
+        let result = run_rfm_with_ngspice_custody(&request, &custody);
+        assert!(
+            matches!(result, Err(RfmError::Execution(message)) if message.contains("regular non-symlink"))
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn prepared_rfm_run_rejects_stale_output_directory() {
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-stale-output-{}", std::process::id()));
+        fs::create_dir_all(root.join("out/deck/rfm_direct")).unwrap();
+        let deck = root.join("deck.sp");
+        let rfm = root.join("model.rfm");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        fs::write(
+            &rfm,
+            "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 0\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n",
+        )
+        .unwrap();
+        let request = RunRfmRequest::new(&deck, &rfm, "ngspice", root.join("out")).unwrap();
+        assert!(
+            matches!(run_rfm(&request), Err(RfmError::Output(message)) if message.contains("fresh"))
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn prepared_rfm_run_rejects_reparse_output_parent() {
+        use std::os::unix::fs::symlink;
+        let root =
+            std::env::temp_dir().join(format!("sipi-as06-reparse-output-{}", std::process::id()));
+        fs::create_dir_all(root.join("real")).unwrap();
+        symlink(root.join("real"), root.join("alias")).unwrap();
+        let deck = root.join("deck.sp");
+        let rfm = root.join("model.rfm");
+        fs::write(&deck, ".tran 1p 1n\n.end\n").unwrap();
+        fs::write(
+            &rfm,
+            "VERSION 200600\nNPORT 1\nMATRIX_TYPE S\nZ0 50\nBEGIN 1 1\nCONST 0\nC 0\nDELAY 0\nBEGIN_REAL 0\nBEGIN_COMPLEX 0\nEND\n",
+        )
+        .unwrap();
+        let request = RunRfmRequest::new(&deck, &rfm, "ngspice", root.join("alias")).unwrap();
+        assert!(matches!(
+            run_rfm(&request),
+            Err(RfmError::Output(message)) if message.contains("symlink/reparse")
+        ));
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

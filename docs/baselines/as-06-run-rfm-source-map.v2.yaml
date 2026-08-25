@@ -1,0 +1,56 @@
+schema: sipi.as-06-run-rfm-source-map.v2
+status: additive_direct_port_inventory_successor
+supersedes: docs/baselines/as-06-run-rfm-source-map.v1.yaml
+upstream:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_git_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_bytes: 1067
+  license_sha256: d0807e4df7340fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - upstream: src/agent_spice/backend/ngspice.py
+    upstream_git_blob_sha1: e9d1952bf1b43ad9a89bae95f1724b893e8db6b8
+    upstream_bytes: 2123
+    upstream_sha256: eca6a855df25f44169d13f576f2c169596cfc6de29ef45c4829150d20b740672
+    role: existing ngspice backend dispatch and caller-owned code-model staging
+    rust:
+      - crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+      - crates/sipi-agent-spice-direct/src/lib.rs
+    source_port: true
+  - upstream: src/agent_spice/sparam/rfm.py
+    upstream_git_blob_sha1: 508e7ae8594fd25d5c2dc152b225c0cf84f61413
+    upstream_sha256: af2e2e3ab1ed7e9ac458dc73f15aedfd9cd8292dc9e5a2430cd095bc21415df4
+    role: RFM parser canonical model and response evaluation
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+  - upstream: src/agent_spice/sparam/artifacts.py
+    upstream_git_blob_sha1: ba7011f89c7fe0f6bf73fad13bce9248b96de9e5
+    upstream_sha256: f3131cc5117c41ab13674aaf1dfba68ed7ebed332a8154994cd9907b31299948
+    role: RFM artifact and wrapper contract support
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+  - upstream: src/agent_spice/sparam/native_vf.py
+    upstream_git_blob_sha1: 971a98924d52b9fb57738a6a729501dfda934968
+    upstream_sha256: 90db63aadeeb0be5c0a29b750d617079d598f0afe7c441a0398a8648daad31a6
+    role: expanded NativeVectorFitting SPICE topology
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  shared_process_helper: crates/sipi-agent-spice-direct/src/lib.rs
+  binary: sipi-agent-spice-run-rfm
+  external_runtime: retained_external_runtime
+  grammar_adaptation:
+    pinned_writer_tokens: [CONST, C, DELAY]
+    actual_rfm_cm_tokens: [Const]
+    rationale: pinned source writer emits CONST/C/DELAY, while the caller-attested ngspice code model accepts the existing Const-only runtime grammar; this is an explicit candidate-local adaptation, not byte-exact source parity
+    byte_exact_source_parity: false
+  non_claims:
+    - external_solver_correctness_not_verified
+    - numeric_parity_not_claimed
+    - no_si_s_parameter_fit
+    - no_release_promotion

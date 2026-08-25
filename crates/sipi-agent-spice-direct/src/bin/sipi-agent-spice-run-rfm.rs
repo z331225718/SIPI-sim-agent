@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use sipi_agent_spice_direct::as06_run_rfm::{RunRfmRequest, run_rfm};
+use serde_json::json;
+use sipi_agent_spice_direct::NgspiceCustody;
+use sipi_agent_spice_direct::as06_run_rfm::{
+    RfmNgspiceCustody, RunRfmRequest, run_rfm, run_rfm_with_ngspice_custody,
+};
 
 fn take(args: &[String], index: &mut usize, option: &str) -> Result<String, String> {
     *index += 1;
@@ -14,7 +18,7 @@ fn main() -> ExitCode {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.iter().any(|value| value == "--help" || value == "-h") {
         println!(
-            "usage: sipi-agent-spice-run-rfm DECK --rfm FILE --backend native|ngspice --output-root DIR [--execute] [--native-engine PATH] [--ngspice PATH] [--code-model PATH] [--dotnet PATH]"
+            "usage: sipi-agent-spice-run-rfm DECK --rfm FILE --backend native|ngspice --output-root DIR [--execute] [--native-engine PATH] [--ngspice PATH --ngspice-sha256 SHA256 --code-model PATH --code-model-sha256 SHA256] [--dotnet PATH]"
         );
         return ExitCode::SUCCESS;
     }
@@ -30,6 +34,8 @@ fn main() -> ExitCode {
     let mut output_root = None;
     let mut subckt = "rfm_direct".to_owned();
     let mut code_model = None;
+    let mut ngspice_sha256 = None;
+    let mut code_model_sha256 = None;
     let mut native_engine = None;
     let mut ngspice = "ngspice".to_owned();
     let mut dotnet = "dotnet".to_owned();
@@ -51,6 +57,12 @@ fn main() -> ExitCode {
             "--native-engine" => take(&args, &mut index, option)
                 .map(|value| native_engine = Some(PathBuf::from(value))),
             "--ngspice" => take(&args, &mut index, option).map(|value| ngspice = value),
+            "--ngspice-sha256" => {
+                take(&args, &mut index, option).map(|value| ngspice_sha256 = Some(value))
+            }
+            "--code-model-sha256" => {
+                take(&args, &mut index, option).map(|value| code_model_sha256 = Some(value))
+            }
             "--dotnet" => take(&args, &mut index, option).map(|value| dotnet = value),
             "--execute" => {
                 execute = true;
@@ -84,14 +96,35 @@ fn main() -> ExitCode {
     request.ngspice = ngspice;
     request.dotnet = dotnet;
     request.execute = execute;
-    match run_rfm(&request) {
+    let result = match (
+        execute,
+        ngspice_sha256,
+        code_model_sha256,
+        request.code_model.as_ref(),
+    ) {
+        (true, Some(solver_sha), Some(model_sha), Some(_)) => run_rfm_with_ngspice_custody(
+            &request,
+            &RfmNgspiceCustody::new(
+                NgspiceCustody::new(request.ngspice.clone(), solver_sha),
+                model_sha,
+            ),
+        ),
+        _ => run_rfm(&request),
+    };
+    match result {
         Ok(result) => {
-            println!(
-                "{{\"status\":\"{}\",\"response_samples\":{},\"report\":\"{}\"}}",
-                result.status,
-                result.response_samples,
-                result.report.display()
-            );
+            let payload = json!({
+                "status": result.status,
+                "response_samples": result.response_samples,
+                "report": result.report,
+            });
+            match serde_json::to_string(&payload) {
+                Ok(text) => println!("{text}"),
+                Err(error) => {
+                    eprintln!("run-rfm result serialization failed: {error}");
+                    return ExitCode::from(2);
+                }
+            }
             if result.status == "BLOCKED" {
                 ExitCode::from(1)
             } else {
