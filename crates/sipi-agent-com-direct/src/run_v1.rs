@@ -8,7 +8,8 @@
 //! rather than reducing those source branches to status-only diagnostics.
 
 use crate::package_vtf_v1::{
-    s4p_package_dc_vtf_v1, s4p_package_vtf_v1, validate_s4p_package_controls_v1,
+    reorder_s4p_samples_v1, s4p_package_dc_vtf_v1, s4p_package_vtf_v1,
+    validate_s4p_package_controls_v1,
 };
 use crate::{
     ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1, config_validate_v1,
@@ -6224,6 +6225,7 @@ fn load_s4p_package_impulse_v1(
             Ok(matrix)
         })
         .collect::<Result<Vec<_>, DirectRunErrorV1>>()?;
+    let samples = reorder_s4p_samples_v1(&samples, values, trusted_workbook)?;
     let ac_cm_rms = selected_ac_cm_rms_v1(values, package_case_index)?;
     if !ac_cm_rms.is_finite() || ac_cm_rms < 0.0 {
         return Err(DirectRunErrorV1::Parameters(

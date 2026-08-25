@@ -358,6 +358,76 @@ fn validate_s4p_axis_v1(
     Ok(())
 }
 
+/// Apply the workbook's `snpPortsOrder` before the mixed-mode transform.
+///
+/// The pinned reader reorders the single-ended matrix before both the DD and
+/// SDC paths.  The direct parser owns raw file order, so skipping this step
+/// silently produces a plausible but different VTF.  The legacy JSON route is
+/// left unchanged when no typed workbook order is present.
+pub(crate) fn reorder_s4p_samples_v1(
+    samples: &[FourPortSMatrixV1],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    trusted_workbook: bool,
+) -> Result<Vec<FourPortSMatrixV1>, DirectRunErrorV1> {
+    let folded_keys = values
+        .keys()
+        .filter(|key| key.eq_ignore_ascii_case("snpPortsOrder"))
+        .collect::<Vec<_>>();
+    if folded_keys.len() > 1 {
+        return Err(DirectRunErrorV1::Parameters(
+            "snpPortsOrder case-insensitive aliases must be unique".to_owned(),
+        ));
+    }
+    if !trusted_workbook {
+        if !folded_keys.is_empty() {
+            return Err(DirectRunErrorV1::Unsupported(
+                "snpPortsOrder is a trusted workbook-only control".to_owned(),
+            ));
+        }
+        return Ok(samples.to_vec());
+    }
+    let Some(value) = values.get("snpPortsOrder") else {
+        return Err(DirectRunErrorV1::Parameters(
+            "trusted workbook requires source-exact snpPortsOrder".to_owned(),
+        ));
+    };
+    let order = match value {
+        ResolvedDefaultV1::Vector(order) => order.clone(),
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(
+                "snpPortsOrder must be a numeric vector".to_owned(),
+            ));
+        }
+    };
+    if order.len() != 4
+        || order
+            .iter()
+            .any(|value| !value.is_finite() || value.fract() != 0.0)
+        || {
+            let mut sorted = order.clone();
+            sorted.sort_by(|left, right| left.total_cmp(right));
+            sorted != [1.0, 2.0, 3.0, 4.0]
+        }
+    {
+        return Err(DirectRunErrorV1::Parameters(
+            "snpPortsOrder must be a one-based four-port permutation".to_owned(),
+        ));
+    }
+    samples
+        .iter()
+        .map(|sample| {
+            let mut reordered = *sample;
+            for row in 0..4 {
+                for column in 0..4 {
+                    reordered[row][column] =
+                        sample[order[row] as usize - 1][order[column] as usize - 1];
+                }
+            }
+            Ok(reordered)
+        })
+        .collect()
+}
+
 #[allow(clippy::too_many_arguments)]
 fn package_vtf_v1(
     channel: TwoPort,
@@ -1532,6 +1602,71 @@ mod tests {
     }
 
     #[test]
+    fn workbook_snp_port_order_is_applied_before_mixed_mode() {
+        let mut sample = [[c(0.0, 0.0); 4]; 4];
+        sample[2][1] = c(3.0, 0.0);
+        sample[1][2] = c(4.0, 0.0);
+        let mut config = values();
+        config.insert(
+            "snpPortsOrder".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 3.0, 2.0, 4.0]),
+        );
+        let reordered = reorder_s4p_samples_v1(&[sample], &config, true).unwrap();
+        assert_eq!(reordered[0][1][2].real(), 3.0);
+        assert_eq!(reordered[0][2][1].real(), 4.0);
+    }
+
+    #[test]
+    fn snp_port_order_is_source_exact_and_trusted_only() {
+        let samples = vec![[[c(0.0, 0.0); 4]; 4]; 1];
+        let no_order = values();
+        assert!(reorder_s4p_samples_v1(&samples, &no_order, true).is_err());
+        assert!(reorder_s4p_samples_v1(&samples, &no_order, false).is_ok());
+        let mut identity = values();
+        identity.insert(
+            "snpPortsOrder".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 2.0, 3.0, 4.0]),
+        );
+        assert!(reorder_s4p_samples_v1(&samples, &identity, true).is_ok());
+        assert!(reorder_s4p_samples_v1(&samples, &identity, false).is_err());
+
+        let mut folded = values();
+        folded.insert(
+            "SNPPORTSORDER".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 2.0, 3.0, 4.0]),
+        );
+        assert!(reorder_s4p_samples_v1(&samples, &folded, true).is_err());
+        assert!(reorder_s4p_samples_v1(&samples, &folded, false).is_err());
+
+        let mut duplicate = identity.clone();
+        duplicate.insert(
+            "SNPPOrtsOrder".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 2.0, 3.0, 4.0]),
+        );
+        assert!(reorder_s4p_samples_v1(&samples, &duplicate, true).is_err());
+    }
+
+    #[test]
+    fn snp_port_order_rejects_invalid_typed_values() {
+        let samples = vec![[[c(0.0, 0.0); 4]; 4]; 1];
+        for order in [
+            vec![1.0, 2.0, 3.0],
+            vec![1.0, 1.0, 2.0, 3.0],
+            vec![0.0, 1.0, 2.0, 3.0],
+            vec![1.0, 2.0, 3.0, 5.0],
+            vec![1.0, 2.0, 3.5, 4.0],
+            vec![1.0, 2.0, f64::NAN, 4.0],
+        ] {
+            let mut config = values();
+            config.insert("snpPortsOrder".to_owned(), ResolvedDefaultV1::Vector(order));
+            assert!(reorder_s4p_samples_v1(&samples, &config, true).is_err());
+        }
+        let mut wrong_type = values();
+        wrong_type.insert("snpPortsOrder".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        assert!(reorder_s4p_samples_v1(&samples, &wrong_type, true).is_err());
+    }
+
+    #[test]
     fn package_aliases_require_typed_consistency() {
         let mut config = values();
         config.insert("inc_package".to_owned(), ResolvedDefaultV1::Boolean(true));
@@ -1591,6 +1726,26 @@ mod tests {
         assert!(result.iter().all(|value| {
             (value.real() - 0.5).abs() < 1.0e-12 && value.imaginary().abs() < 1.0e-12
         }));
+    }
+
+    #[test]
+    fn snp_port_order_is_shared_by_thru_fext_next_dd_and_sdc_routes() {
+        let frequency = vec![0.0, 1.0e9];
+        let mut samples = vec![[[c(0.0, 0.0); 4]; 4]; 2];
+        for sample in &mut samples {
+            sample[2][0] = c(1.0, 0.0);
+            sample[3][1] = c(0.25, 0.0);
+        }
+        let mut config = values();
+        config.insert(
+            "snpPortsOrder".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 3.0, 2.0, 4.0]),
+        );
+        let reordered = reorder_s4p_samples_v1(&samples, &config, true).unwrap();
+        for role in ["THRU", "FEXT", "NEXT"] {
+            assert!(s4p_package_vtf_v1(&frequency, &reordered, &config, role, 0).is_ok());
+            assert!(s4p_package_dc_vtf_v1(&frequency, &reordered, &config, role, 0).is_ok());
+        }
     }
 
     #[test]

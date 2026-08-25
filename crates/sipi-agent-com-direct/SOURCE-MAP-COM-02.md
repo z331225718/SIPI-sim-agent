@@ -31,6 +31,7 @@ engine, and proprietary golden data remain external blockers.
 | `src/agent_com/network/package.py::assemble_r480_dc_vtf` | pinned DC common-to-differential package VTF; requires full S4P plus DC-mode TX/RX package transforms and `AC_CM_RMS` | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
 | `src/agent_com/network/two_port.py` | crate-private checked TwoPort cascade, board insertion, package VTF denominator, exact-zero singular handling | `6b1484effc18a25fe8c28373b47f55b0b99b0f4b` | 9600 | `8889d9695a56d83a59a771d938ba8084dbdfec6a24d79e14d88b83c678ddcd6a` | MIT |
 | `src/agent_com/_orchestration.py::_load_s4p_channel,_channel_amplitude` | typed role ordering and package amplitude selection: WC_PORTZ uses `Tx_rd_sel`, otherwise one-based `pkg_len_select`; final DD impulse is the only channel boundary | `5d260a0aab941f1a1955fe3abef36d85a56034c0` | 90877 | `069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69` | MIT |
+| `src/agent_com/io/touchstone_r480.py::apply_r480_snp_port_order` | typed workbook S4P file-to-internal port permutation before both DD and SDC mixed-mode transforms | `99300e220c937f9ff73c8e97db47581be2a68241` | 7476 | `f0e037392656a7c70de9a5a2619411f76ae9c940afb4ed3ec44448dc4595fddd` | MIT |
 | `src/agent_com/equalization/mmse.py` | MMSE KKT solve and strict-best search branch | `61c54806da030dac1cb889261f344564c02f38f6` | 33933 | `d0542c3a091b5c79a1ba69270878387326dcb09c6ed2d385667709f541d9f4c9` | MIT |
 | `src/agent_com/equalization/fvlms_rxffe.py` | FV-LMS fixed/floating RxFFE candidate search | `525361878ad4802bf9d4968678ebd512b7c7a527` | 19769 | `16943815872c49de3d3f73639a340adbfb635450c5a3b6f9adb3a7009cc4cb59` | MIT |
 | `src/agent_com/equalization/tx_ffe.py` | search TX-FFE grid construction | `94c3e72471bfe531d1b2b9a1fd1c45c516ed903c` | 6611 | `17a9b2691fcf0281c2b065eca1fe49897866f743ca5e6bdefabb70270e532e84` | MIT |
@@ -147,6 +148,12 @@ receiver, candidate, CTLE, package selector, and ACCM control must be present
 in the materialized workbook map, finite, and alias-consistent. The S4P axis
 is read once from the staged input bytes and copied into the search frequency,
 noise, and crosstalk axes; a changed file or an axis mismatch fails closed.
+For a trusted materialized workbook, the source-exact (case-sensitive)
+`snpPortsOrder` key is required and its one-based permutation is applied to
+the parsed single-ended matrix before the mixed-mode package VTF and SDC
+paths. Any case-fold duplicate is rejected. Public/legacy JSON cannot opt
+into this workbook-only control: an injected key is rejected and JSON without
+it retains its existing internal-order contract.
 The dynamic TX grid preserves the pinned workbook's `cm1/cm2/cm3/cp1` value
 arrays, while `tx_ffe_c0_min` remains the source cursor admission scalar and is
 not invented as a separate grid. `dfe_first_max` is the first source `bmax`
