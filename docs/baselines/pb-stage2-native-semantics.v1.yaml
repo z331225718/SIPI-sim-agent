@@ -1,0 +1,103 @@
+schema: sipi.pb-stage2-native-semantics.v1
+version: 1
+row: PB-02/PB-03
+status: pending_immutable_external_replay
+purpose: >-
+  Additive evidence for the next native PyBERT migration slice.  It binds the
+  existing typed input-to-native-engine-to-typed-output path, the modulation
+  and explicit equalizer branch tests, the Duo-binary decision-scaler
+  correction, and the complete SimulationOutputV1 comparison gate.  It does
+  not claim Python payload parity or close an external-model boundary.
+source:
+  upstream_repository: Py-bert-agent
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  candidate_basis: working_tree_content_addressed
+  preparation_commit: null
+  source_map: crates/sipi-pybert-direct/SOURCE-MAP-PB-STAGE2.md
+  source_files:
+    crates/sipi-pybert-direct/src/simulation.rs: 50b22e87b74d8991dda3cbc81f3dd87dcd2c9cef18d476323d43c9b6020c0ba6
+    crates/sipi-pybert-direct/src/workflows.rs: a9a867d0df04d20afdeed8492dcc59ec16fd3ef3ce9e59a42556ac86791fef3e
+    crates/sipi-pybert-direct/tests/native_branch_matrix.rs: f05f949e992e13a524692fe411f1c80d3501590ac0ce704395eca811f3bb6a0e
+    crates/sipi-pybert-direct/tests/workflows.rs: 75b83c9f9fa8fdd39b8a34ad99ad47b6864a7005d7cc1fec5d094a22e66b8f65
+    crates/sipi-pybert-direct/SOURCE-MAP-PB-STAGE2.md: b990f276b13b02bc12f4d3e1744496468001b3a8a3eab8ece102a905bef6f265
+scope:
+  input_contract: crates/sipi-pybert-direct/src/input.rs::SimulationInputV1
+  engine: crates/sipi-pybert-direct/src/simulation.rs::simulate_native_v1
+  output_contract: crates/sipi-pybert-direct/src/output.rs::SimulationOutputV1
+  comparison: crates/sipi-pybert-direct/src/workflows.rs::compare_native_outputs
+  no_second_simulation_core: true
+branches:
+  - id: modulation.nrz
+    status: covered
+    test: native_branch_matrix::native_request_reaches_all_modulation_branches
+  - id: modulation.pam4
+    status: covered
+    test: native_branch_matrix::native_request_reaches_all_modulation_branches
+  - id: modulation.duo_binary
+    status: covered
+    test: native_branch_matrix::native_request_reaches_all_modulation_branches
+  - id: modulation.duo_binary.jitter_decision_scaler
+    status: covered
+    test: native_branch_matrix::native_duobinary_jitter_uses_typed_dfe_decision_scaler
+  - id: tx.rx.explicit_ffe_ctle_dfe_selection
+    status: covered
+    test: native_branch_matrix::native_request_reaches_impulse_tx_rx_ffe_dfe_ber_branches
+  - id: tx.rx.explicit_bypass
+    status: covered
+    test: native_branch_matrix::native_request_reaches_explicit_bits_and_disabled_equalizers
+  - id: output.schema_capabilities_events_artifacts
+    status: covered
+    test: workflows::compare_gates_complete_output_capabilities_and_events
+  - id: output.numeric_arrays_and_metrics
+    status: covered
+    test: workflows::compare_checks_payload_and_rejects_waveform_mutation
+external_blockers:
+  - id: two_fresh_complete_output_replay
+    status: pending
+    reason: >-
+      No immutable candidate preparation commit and two fresh runs have been
+      bound for this additive stage; do not infer parity from unit tests.
+  - id: analytic_metallic_and_s2p_oracle_parity
+    status: retained_external_or_fail_closed
+    reason: >-
+      Existing source and license boundary does not authorize a new oracle or
+      fallback implementation in this stage.
+  - id: ami_ibis_dll_and_python_class_pickle
+    status: retained_external_or_fail_closed
+    reason: host-owned runtime/model or exact Python class compatibility.
+verification:
+  focused_commands:
+    - cargo fmt --manifest-path crates/sipi-pybert-direct/Cargo.toml -- --check
+    - cargo test --manifest-path crates/sipi-pybert-direct/Cargo.toml --locked --test native_branch_matrix
+    - cargo test --manifest-path crates/sipi-pybert-direct/Cargo.toml --locked --test workflows
+    - cargo clippy --manifest-path crates/sipi-pybert-direct/Cargo.toml --locked --all-targets -- -D warnings
+  external_compare: not_run
+  verifier: tools/verify_pb_stage2_native_semantics.py
+  mutation_tests: tools/test_verify_pb_stage2_native_semantics.py
+harness:
+  verifier:
+    path: tools/verify_pb_stage2_native_semantics.py
+    sha256: 70acd48a4c114c1b2db8d7f5ecec6a853265a52202c74f0caa8e7468323b467c
+  mutation_tests:
+    path: tools/test_verify_pb_stage2_native_semantics.py
+    sha256: e76852c70e0eca185c4c27e70bee3934ec6ad97c8b6c6772eafb12d3f536ea06
+audit:
+  path: docs/baselines/audits/2026-08-25-pb-stage2-native-semantics.md
+  sha256: e3331a8c6a648eb97ff2febec41c787081e80065530e1d5fa7ad4a238a5f4d9b
+claims:
+  native_engine_reused: true
+  supported_modulation_and_explicit_stage_coverage: true
+  complete_typed_output_gate: true
+  two_fresh_external_payload_parity: false
+  global_row_closed: false
+  release_approval: false
+  license_decision: false
+non_claims:
+  - two_fresh_external_payload_parity
+  - global_row_closed
+  - release_approval
+  - license_decision
+  - s2p_analytic_metallic_parity
+  - ami_ibis_dll_behavior
+  - pybert_data_class_pickle_compatibility
