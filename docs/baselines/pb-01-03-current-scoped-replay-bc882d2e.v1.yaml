@@ -1,0 +1,224 @@
+schema: sipi.pb-01-03-current-scoped-replay-bound.v1
+status: accepted_current_scoped_replay_open
+date: "2026-08-26"
+scope:
+  candidate_commit: bc882d2e5a19c2a844bacc485ede5b874e8f9c37
+  candidate_tree: d87cfecea77ccd670073a6c069658e6b4e8c3137
+  candidate_archive_sha256: 1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0
+  upstream_commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  upstream_tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  upstream_archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  source_mode: git_archive_at_immutable_commit
+  candidate_archive_is_clean_commit_archive: true
+  upstream_archive_is_pinned_commit_archive: true
+anchors:
+  algorithm: json-canonical-sha256-v1
+  normalized_sha256: bfd472d138fde41cdf2c1c061a2bc02f46152451ac768a68d4d0f7c694b09d6b
+  harness:
+    algorithm: sha256-source-with-dynamic-assignment-lines-removed-v1
+    verifier:
+      path: tools/verify_pb_01_03_current_scoped_replay.py
+      normalized_sha256: 69eca360a9e7a8acdd55a32b36ec4fb129a37370bc3d4092b64bb6bb22d56c79
+    mutation_tests:
+      path: tools/test_verify_pb_01_03_current_scoped_replay.py
+      normalized_sha256: 7c992c9d4fe4fd5ef260e48b4cc22146d3b4d546e907b550f05ca57feecbc5e2
+rows:
+  - id: PB-01
+    command: sim
+    source:
+      candidate:
+        commit: bc882d2e5a19c2a844bacc485ede5b874e8f9c37
+        tree: d87cfecea77ccd670073a6c069658e6b4e8c3137
+        archive_sha256: 1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0
+        inventory_sha256: a037cb5c972b258a059b2e9501f07eb27f51c1fd3feb0947ea846121564ab0b6
+      upstream:
+        commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+        tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+        archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+        inventory_sha256: 60550ce1cbb83fdf481e6cd2534b7063c684df3c6094838d2f4b6c1714776ed1
+    toolchain:
+      timeout_seconds: 1200
+      cargo: {role: cargo, executable: cargo.exe, path_redacted: true, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_exit_code: 0, version_output_sha256: 4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a}
+      rustc: {role: rustc, executable: rustc.exe, path_redacted: true, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_exit_code: 0, version_output_sha256: d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db}
+      uv: {role: uv, executable: uv.exe, path_redacted: true, file_sha256: 5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68, version_exit_code: 0, version_output_sha256: ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d}
+    fixture:
+      path: crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml
+      bytes: 1171
+      sha256: d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48
+    artifact:
+      default_dictionary_schema: sipi.pybert_data.v1
+      default_dictionary_item_count: 23
+      selected_array_count: 12
+      comparison_status: passed
+      exact_class_pickle_claim: false
+    reports:
+      - path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e-pb01-run-01.v1.json
+        sha256: de1307394a1435af1c7162558662101791b081f741b3a4776d2e40284c6c7528
+        run_id: pb01-current-a-20260825180204
+        fresh_run_nonce: 16a1b2e41a8f239fa63342dfb5e39d1372e55b3cce7439771de5c71daba593fa
+      - path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e-pb01-run-02.v1.json
+        sha256: 1d779f9e46679fbc62a09333283b5e80691c50073693cb0fe9b078e342faa528
+        run_id: pb01-current-b-20260825180352
+        fresh_run_nonce: d05bae15bcaed48e034667aaeaa1dc2281057a31de7f09f3ef19c45ee537c7f7
+  - id: PB-02
+    command: sim-native
+    source:
+      candidate:
+        commit: bc882d2e5a19c2a844bacc485ede5b874e8f9c37
+        tree: d87cfecea77ccd670073a6c069658e6b4e8c3137
+        archive_sha256: 1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0
+        inventory_sha256: a037cb5c972b258a059b2e9501f07eb27f51c1fd3feb0947ea846121564ab0b6
+      upstream:
+        commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+        tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+        archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+        inventory_sha256: 26ccbee692b9c4984c6cee0cff6c3987fc013e914905a66019937f940a5abfb9
+    toolchain:
+      timeout_seconds: 1200
+      cargo: {role: cargo, executable: cargo.exe, path_redacted: true, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_exit_code: 0, version_output_sha256: 4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a}
+      rustc: {role: rustc, executable: rustc.exe, path_redacted: true, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_exit_code: 0, version_output_sha256: d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db}
+      uv: {role: uv, executable: uv.exe, path_redacted: true, file_sha256: 5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68, version_exit_code: 0, version_output_sha256: ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d}
+    fixture:
+      path: crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+      bytes: 1245
+      sha256: 5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13
+    artifact:
+      exact_npz_member_count: 11
+      logical_sha256: 5090a1478ea6e985342d8500c6220cdde5c7fa2c416abbdeb595dcdc380c275a
+      comparison_status: passed
+    reports:
+      - path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e-pb02-run-01.v1.json
+        sha256: 38c1f00b30282911a3dea84058a242a35f604142a8c86f7c72ff7e20d6b9c8ca
+        run_id: pb02-current-a-20260825175748
+        fresh_run_nonce: e9d337f2e5fb9ee8fb2b157971ca70f8924473228d81babfbd609ca2550ea306
+      - path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e-pb02-run-02.v1.json
+        sha256: 722b71d85c503fe1e3047dbce21767158784b6f098738330a2634ee19845bfd0
+        run_id: pb02-current-b-20260825180014
+        fresh_run_nonce: b67e2d490e814fd8ae512d6c0a69af48ddd9a3d040e6018c68084bc98e884da9
+  - id: PB-03
+    command: sim-rust
+    source:
+      candidate:
+        commit: bc882d2e5a19c2a844bacc485ede5b874e8f9c37
+        tree: d87cfecea77ccd670073a6c069658e6b4e8c3137
+        archive_sha256: 1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0
+        inventory_sha256: null
+      upstream:
+        commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+        tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+        archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+        inventory_sha256: null
+    toolchain:
+      timeout_seconds: 1200
+      cargo: {role: cargo, executable: cargo.EXE, path_redacted: true, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_exit_code: 0, version_output_sha256: 4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a}
+      rustc: {role: rustc, executable: rustc.EXE, path_redacted: true, file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7, version_exit_code: 0, version_output_sha256: d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db}
+      uv: {role: uv, executable: uv.EXE, path_redacted: true, file_sha256: 5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68, version_exit_code: 0, version_output_sha256: ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d}
+      python: {role: python, executable: python.EXE, path_redacted: true, file_sha256: ee3131591ecdc30ebc9221769239e9d89df47380ed01e1b25ba2c68f6e808417, version_exit_code: 0, version_output_sha256: 92f6867409cdf8c3f751b9944dd73439d19ddc74b01315c6cafb474011d2fa1e}
+    fixture:
+      path: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+      bytes: 1170
+      sha256: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+    artifact:
+      stable_subset_member_count: 44
+      candidate_total_member_count: 113
+      oracle_total_member_count: 150
+      stable_subset_logical_sha256: 67e0fb568f1d0461e1b60c2b5cd3e52c5ade90bb689067740bff7d82d0fe02e7
+      whole_payload_parity: false
+      comparison_status: passed_scoped_subset_only
+    stable_subset:
+      - ber_auto_correlation.npy
+      - ber_error_indices.npy
+      - ber_observed_bits.npy
+      - ber_reference_bits.npy
+      - channel_impulse_v_per_v.npy
+      - channel_output_v.npy
+      - ctle_output_v.npy
+      - dfe_bits.npy
+      - dfe_clock_times_s.npy
+      - dfe_clocks.npy
+      - dfe_decision_scalers_v.npy
+      - dfe_decisions.npy
+      - dfe_locked.npy
+      - dfe_output_v.npy
+      - dfe_signal_samples_v.npy
+      - dfe_tap_weights_v.npy
+      - dfe_ui_estimates_s.npy
+      - legacy_channel_frequency_hz.npy
+      - legacy_channel_raw_im.npy
+      - legacy_channel_raw_re.npy
+      - legacy_channel_terminated_im.npy
+      - legacy_channel_terminated_re.npy
+      - legacy_channel_trimmed_im.npy
+      - legacy_channel_trimmed_re.npy
+      - legacy_stage_ctle_im.npy
+      - legacy_stage_ctle_out_im.npy
+      - legacy_stage_ctle_out_re.npy
+      - legacy_stage_ctle_re.npy
+      - legacy_stage_dfe_im.npy
+      - legacy_stage_dfe_out_im.npy
+      - legacy_stage_dfe_out_re.npy
+      - legacy_stage_dfe_re.npy
+      - legacy_stage_tx_im.npy
+      - legacy_stage_tx_out_im.npy
+      - legacy_stage_tx_out_re.npy
+      - legacy_stage_tx_re.npy
+      - rx_ffe_impulse_v_per_v.npy
+      - rx_filter_impulse_v_per_v.npy
+      - rx_input_v.npy
+      - rx_output_v.npy
+      - symbols_v.npy
+      - time_s.npy
+      - tx_channel_impulse_v_per_v.npy
+      - tx_waveform_v.npy
+    reports:
+      - path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e-pb03-run-01.v1.json
+        sha256: a27a26ac06d81894ec3190de212b7be963e57a876d1f900dac3e4ffd9e61d556
+        run_id: pb03-current-a-20260825180534
+        fresh_run_nonce: f2118d3ff6904227969ad80b6d985d23
+      - path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e-pb03-run-02.v1.json
+        sha256: 0f069b8a659255f2a30d9220dc3ae0e0a6a340cc090bc1a10ba32355b3762d3b
+        run_id: pb03-current-b-20260825180814
+        fresh_run_nonce: cbcee92db8984a0cb62c116f401537a4
+claims:
+  nested_output_parity: false
+  global_row_closed: false
+  branch_complete: false
+  release_approval: false
+  product_capability_admission: false
+  independent_implementation: false
+  license_decision: false
+  whole_payload_parity: false
+  candidate_clean_archive_replay: true
+  pinned_upstream_archive_replay: true
+toolchain_gate:
+  required_roles_by_row:
+    PB-01: [cargo, rustc, uv]
+    PB-02: [cargo, rustc, uv]
+    PB-03: [cargo, rustc, uv, python]
+  pair_identity_exact: true
+  path_free_identity: true
+  fresh_nonce_min_hex_chars: 32
+non_claims:
+  - The six reports cover one fixed fixture per PB row, not global branch parity.
+  - PB-01 is the default Python-readable 23-key dictionary leaf; exact PyBertData class-pickle compatibility is not claimed here.
+  - PB-02 binds exactly eleven logical NPZ members; wrapper behavior is not upstream native-core parity.
+  - PB-03 binds only the listed stable subset; candidate and oracle totals remain 113 and 150, so whole-payload parity is false.
+  - These replays are not a license decision, product capability admission, or release approval.
+evidence:
+  audit: docs/baselines/audits/2026-08-26-pb-01-03-current-scoped-replay-bc882d2e.md
+  audit_sha256: ae0a25f90f5dd310af8fb62f8624d7979a7ea2b33636b18dccbe8af068283cce
+  replay_runners:
+    - path: tools/run_pb_01_legacy_leaf_replay.py
+      sha256: 4632a402962b24bdc1cd2c2869c728d58f1dc9afe6e9372e6b4499203033bd87
+    - path: tools/run_pb_02_direct_replay.py
+      sha256: c7839a7d67425fda0df675c35925a87f7e3527996fa3b659e2ee7c036408d863
+    - path: tools/run_pb_03_direct_replay.py
+      sha256: c54f238c9bc4a21c62107b939625c75f967558d33098366c017ab928b5709d51
+    - path: tools/pb_03_replay_common.py
+      sha256: bd10f6bbc63bde8fe3b7f1fb2083ac568ca41d2c42d21faedf127f8b6540d5c9
+  verifier:
+    path: tools/verify_pb_01_03_current_scoped_replay.py
+    sha256: cd213b4521dbdb1903e8919cb27ea1fcb5c6d74b9880b27eef70f3ccf585726f
+  mutation_tests:
+    path: tools/test_verify_pb_01_03_current_scoped_replay.py
+    sha256: 7c992c9d4fe4fd5ef260e48b4cc22146d3b4d546e907b550f05ca57feecbc5e2

@@ -1,0 +1,871 @@
+{
+  "candidate": {
+    "archive_sha256": "1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0",
+    "cargo_lock_sha256": "b5edc5d3222383490ed0ca274fed1c8d009ca43188227531e54887d1bd682403",
+    "commit": "bc882d2e5a19c2a844bacc485ede5b874e8f9c37",
+    "inventory": {
+      "entries": [
+        {
+          "bytes": 20121,
+          "path": "crates/sipi-pybert-direct/Cargo.lock",
+          "sha256": "b5edc5d3222383490ed0ca274fed1c8d009ca43188227531e54887d1bd682403"
+        },
+        {
+          "bytes": 1220,
+          "path": "crates/sipi-pybert-direct/Cargo.toml",
+          "sha256": "02f3f8ed28bdd937060344bdaabc4a0e1af65216371fb046eb294354c5a4c24f"
+        },
+        {
+          "bytes": 1905,
+          "path": "crates/sipi-pybert-direct/NOTICE-PYAMI-LICENSE-BOUNDARY.md",
+          "sha256": "319865189948b21164849b6be38ba369d5d4c427dcb63baaa018597a15b8f505"
+        },
+        {
+          "bytes": 2842,
+          "path": "crates/sipi-pybert-direct/NOTICE-PYBERT-LICENSE-BOUNDARY.md",
+          "sha256": "77c20eb0cc8411b7826666e6673b7c388ce508fd80029e0d302a116fa5d237e6"
+        },
+        {
+          "bytes": 1816,
+          "path": "crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-CLASS-PICKLE.md",
+          "sha256": "ea8949dc9267b18ef01a255120bd73d214a7f559dff883c57abb068d7d0d733b"
+        },
+        {
+          "bytes": 1751,
+          "path": "crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-DIRECT-PORT.md",
+          "sha256": "dc5f0d7fc13296e0609ae7b2f32014532997759243da9ef24b63bcd6c01cc9aa"
+        },
+        {
+          "bytes": 3320,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB-AMI-MATERIALIZER.md",
+          "sha256": "29e846a7655ed1144a8771074d4bc313ecdc350b51a89a0d9e95a3434201007a"
+        },
+        {
+          "bytes": 3768,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB-EXTERNAL-HOST.md",
+          "sha256": "3f5cd91d1f4c44d9103744667f6eada513740dc40bcdc77192fa614d5dcdf894"
+        },
+        {
+          "bytes": 5555,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB-STAGE2-RUNNER.md",
+          "sha256": "a30e23e85f5dd0e6d3986ff812cdfa70e4286384968264a5c19af9a53ded837e"
+        },
+        {
+          "bytes": 5946,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB-STAGE2.md",
+          "sha256": "acc3ac30126dbd98aa4c474eda27bd27e05a39c42490b40c0fff0414810e9bba"
+        },
+        {
+          "bytes": 4054,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB01-CLASS-PICKLE.md",
+          "sha256": "a0b8a1bf39bce5d9e78e2646bafe9c8d0f94ad7efd9f74e305113e15450647c9"
+        },
+        {
+          "bytes": 2093,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP-PB01.md",
+          "sha256": "251ed57342908225f8fc71ef2c3e3a22ad04c50d8a6ee8488d7df70a5dcaa8a5"
+        },
+        {
+          "bytes": 1512,
+          "path": "crates/sipi-pybert-direct/SOURCE-MAP.md",
+          "sha256": "77a539c3b089740719fe9152e43f4faf5e4359248df87d647e3685ab5d6699ed"
+        },
+        {
+          "bytes": 1171,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+          "sha256": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48"
+        },
+        {
+          "bytes": 1245,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json",
+          "sha256": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13"
+        },
+        {
+          "bytes": 1170,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+          "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f"
+        },
+        {
+          "bytes": 3407,
+          "path": "crates/sipi-pybert-direct/src/analysis.rs",
+          "sha256": "a1e2f15ca445bab1ac5cc95262b929ebf8caa90bf02d9f3e780d367db6aa066a"
+        },
+        {
+          "bytes": 5474,
+          "path": "crates/sipi-pybert-direct/src/bathtub.rs",
+          "sha256": "919f6d21c1fbc30a20258aa9d41319e3dde0ce7d013c392e4cba79d56d66f6b5"
+        },
+        {
+          "bytes": 10653,
+          "path": "crates/sipi-pybert-direct/src/bin/sipi-pybert-direct.rs",
+          "sha256": "9a78a5c3200ab990b0da8fbfca72e2cae0fe1d8a759283a2fb1fb645403cdd22"
+        },
+        {
+          "bytes": 1202,
+          "path": "crates/sipi-pybert-direct/src/capabilities.rs",
+          "sha256": "b09364910dfadf8c13efe5818c1b17cc9853b4055f29a7ac1c388cb28121f0b6"
+        },
+        {
+          "bytes": 8424,
+          "path": "crates/sipi-pybert-direct/src/channel.rs",
+          "sha256": "91961d25a6d4d604c78e6eedd42c5dbed0eba3e6bee85f624f901168ffa327ca"
+        },
+        {
+          "bytes": 12845,
+          "path": "crates/sipi-pybert-direct/src/decoder.rs",
+          "sha256": "81da93d719ca69542046a9ffef071d3876aad62830dfbb161ad76fb0121567f0"
+        },
+        {
+          "bytes": 4833,
+          "path": "crates/sipi-pybert-direct/src/equalization.rs",
+          "sha256": "fa286b527fc023f70edeb60777006ef431252527890098f63672b054fc11b295"
+        },
+        {
+          "bytes": 2911,
+          "path": "crates/sipi-pybert-direct/src/error.rs",
+          "sha256": "2392b0e657fcb20881976d8c7d9540f32dc2ad139006de6890e29acae9cbb247"
+        },
+        {
+          "bytes": 856,
+          "path": "crates/sipi-pybert-direct/src/event.rs",
+          "sha256": "b95d3b26a96529e9723681c6b123f702ec2decef49e429f59f554bbee8dd60f5"
+        },
+        {
+          "bytes": 73512,
+          "path": "crates/sipi-pybert-direct/src/external_host.rs",
+          "sha256": "4d7d87e59d714c2cc13cf9285e1bada68ce5006c052e0496ce46a40c5f4bf572"
+        },
+        {
+          "bytes": 24536,
+          "path": "crates/sipi-pybert-direct/src/input.rs",
+          "sha256": "25a0af0d0442f9d96e1488518404254ea058468b48b8294e13afcc878a3f1947"
+        },
+        {
+          "bytes": 24270,
+          "path": "crates/sipi-pybert-direct/src/jitter.rs",
+          "sha256": "0f1fcc46d026b43edf13da64262833d2ac004a06369e584f5094f801296288c8"
+        },
+        {
+          "bytes": 112052,
+          "path": "crates/sipi-pybert-direct/src/legacy_runtime.rs",
+          "sha256": "c2b8908769a61e343439514cc68e3fa1cbb0e224b48ff79922e963ac0a073c15"
+        },
+        {
+          "bytes": 8996,
+          "path": "crates/sipi-pybert-direct/src/legacy_sim.rs",
+          "sha256": "c190daba96a71ebb9b8d60af1c3deb56e76b812a95d73d9c6fa3219ecb7e9eba"
+        },
+        {
+          "bytes": 4942,
+          "path": "crates/sipi-pybert-direct/src/lib.rs",
+          "sha256": "7e69486bfd75bcaf02ed8435829e752c1aa77b1f8a627da68a34fe7e4190b4f8"
+        },
+        {
+          "bytes": 26039,
+          "path": "crates/sipi-pybert-direct/src/numpy_normal.rs",
+          "sha256": "e5f9baff2d0a808ff77e01835023f42f6bfe6a990b62173254f128cffda2e4ca"
+        },
+        {
+          "bytes": 4359,
+          "path": "crates/sipi-pybert-direct/src/output.rs",
+          "sha256": "74a54504c38424532f19fa0f6a9b22942b07694ef771d4d3ab37dda1e7b3b1ac"
+        },
+        {
+          "bytes": 3707,
+          "path": "crates/sipi-pybert-direct/src/pattern.rs",
+          "sha256": "1c414cb04a54b9c46d09651d6909baaee925670d6a431a264ce9d45eced99274"
+        },
+        {
+          "bytes": 6332,
+          "path": "crates/sipi-pybert-direct/src/pipeline.rs",
+          "sha256": "10cd44ebb38ae35d7eec5324eabe9c3b9b1b33353c1315069ae1fcb85f82695f"
+        },
+        {
+          "bytes": 22895,
+          "path": "crates/sipi-pybert-direct/src/receiver.rs",
+          "sha256": "1794615295afc3e9aebdcb76dc140106f12a93c6ce781bc0828c450392e4ec43"
+        },
+        {
+          "bytes": 65527,
+          "path": "crates/sipi-pybert-direct/src/reference_runtime.rs",
+          "sha256": "9438a4444ce85e8153eca4e2217d5d4ee16a0abe1b5115908aa82692d9cdb004"
+        },
+        {
+          "bytes": 3246,
+          "path": "crates/sipi-pybert-direct/src/response.rs",
+          "sha256": "9812483ad36a306103a0ea7830c49c4e1a0a71aae383d2a05fcbbc7f711902bd"
+        },
+        {
+          "bytes": 55148,
+          "path": "crates/sipi-pybert-direct/src/runner.rs",
+          "sha256": "3cb76504bac8fcf6a7fb70acb978448d61b72ef69f5c3e1df4256b848b0e7da3"
+        },
+        {
+          "bytes": 8362,
+          "path": "crates/sipi-pybert-direct/src/signal.rs",
+          "sha256": "d9ddaa2941dff69722c78823e55d223222aff25f8b38c493c956771d567b6557"
+        },
+        {
+          "bytes": 92734,
+          "path": "crates/sipi-pybert-direct/src/simulation.rs",
+          "sha256": "efeaabe92d20c0eb8bba0a841451d911755b38b633f72f2d9c4dd29cfc8c922e"
+        },
+        {
+          "bytes": 43953,
+          "path": "crates/sipi-pybert-direct/src/statistical_eye.rs",
+          "sha256": "d7b98d3fb6efee9f5589877140882bd8f7843edf63d6534fc69ad86eef73fc3e"
+        },
+        {
+          "bytes": 46228,
+          "path": "crates/sipi-pybert-direct/src/touchstone.rs",
+          "sha256": "1b73125550cad83e177d17d5e2731f94c914479b9b8b8ea44dd5de5861c39f31"
+        },
+        {
+          "bytes": 452,
+          "path": "crates/sipi-pybert-direct/src/units.rs",
+          "sha256": "df775c9a0157cd9e52391cf6a6623db3bb316108d0dbe525ad7a053375d1cd03"
+        },
+        {
+          "bytes": 64804,
+          "path": "crates/sipi-pybert-direct/src/workflows.rs",
+          "sha256": "a9a867d0df04d20afdeed8492dcc59ec16fd3ef3ce9e59a42556ac86791fef3e"
+        },
+        {
+          "bytes": 22667,
+          "path": "crates/sipi-pybert-direct/tests/direct.rs",
+          "sha256": "c3918c02c1ded06a798ed2b84b51246c91fe59ba0184f920ae05eaddcd8c9cc7"
+        },
+        {
+          "bytes": 16273,
+          "path": "crates/sipi-pybert-direct/tests/external_host.rs",
+          "sha256": "9c12a7f0d92f51333314fc49137cec83201ca1c26cbfe17f6bae9efee5ded203"
+        },
+        {
+          "bytes": 3373,
+          "path": "crates/sipi-pybert-direct/tests/fixtures/example_rx.ami",
+          "sha256": "5c0c971be411a9af2a9e1cfdf2222086bf9d0c82946ed740c91b364f1d43113d"
+        },
+        {
+          "bytes": 23771,
+          "path": "crates/sipi-pybert-direct/tests/legacy_runtime.rs",
+          "sha256": "67363fb360f0c49f7211f74eafac17cc98bc262714b0eab5f556733daf40a75d"
+        },
+        {
+          "bytes": 22896,
+          "path": "crates/sipi-pybert-direct/tests/native_branch_matrix.rs",
+          "sha256": "68a17428230af7a036854da1ff7c0edc72d8dfa0547780051fe3f8372ad77619"
+        },
+        {
+          "bytes": 22231,
+          "path": "crates/sipi-pybert-direct/tests/workflows.rs",
+          "sha256": "4f2a3fbaf8ab34bf8ec09b25bfea809cc6e1468de2b95f630a6975227b4efcbb"
+        }
+      ],
+      "sha256": "a037cb5c972b258a059b2e9501f07eb27f51c1fd3feb0947ea846121564ab0b6"
+    },
+    "rust_toolchain_sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90",
+    "tree": "d87cfecea77ccd670073a6c069658e6b4e8c3137"
+  },
+  "custody": {
+    "materialized_archives_created_new": true,
+    "run_root_created_new": true,
+    "run_root_path_redacted": true,
+    "work_root_empty_before_run": true,
+    "work_root_outside_candidate_repo": true,
+    "work_root_outside_upstream_repo": true,
+    "work_root_path_redacted": true
+  },
+  "fixture": {
+    "archive_present": true,
+    "bytes": 1245,
+    "path": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json",
+    "sha256": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13"
+  },
+  "fresh_run_nonce": "b67e2d490e814fd8ae512d6c0a69af48ddd9a3d040e6018c68084bc98e884da9",
+  "non_claims": [
+    "This report does not prove parity for uncovered SimulationInputV1 branches.",
+    "SIPI strict JSON, artifact, NPZ compression, and symlink policies are wrapper behavior, not upstream sim-native semantics.",
+    "The report is not a license decision, release approval, or product capability admission."
+  ],
+  "replay": {
+    "build": {
+      "binary_bytes": 3631616,
+      "binary_sha256": "2f554b9bf6de1c8ed12ee72a4498619a063a3ae3644ce7af2a0aafc27b80c639",
+      "exit_code": 0,
+      "stderr_sha256": "ed749f1ad0a7a6f5b2ee235dea7d1f16dae4b3f548a9c10106a7a3ff9b3658d7",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "candidate": {
+      "artifacts": {
+        "arrays": {
+          "bytes": 2722,
+          "logical_members": {
+            "channel_impulse_v_per_v.npy": {
+              "count": 2,
+              "dtype": "<f8",
+              "f64_sha256": "82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36",
+              "fortran_order": false,
+              "shape": [
+                2
+              ]
+            },
+            "channel_output_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "ctle_output_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "rx_ffe_impulse_v_per_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "8034367eec76495180b08e634d0bf4236b83a30d9ce7be3fd843fe8860f4de41",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "rx_filter_impulse_v_per_v.npy": {
+              "count": 1,
+              "dtype": "<f8",
+              "f64_sha256": "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712",
+              "fortran_order": false,
+              "shape": [
+                1
+              ]
+            },
+            "rx_input_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "rx_output_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "symbols_v.npy": {
+              "count": 16,
+              "dtype": "<f8",
+              "f64_sha256": "6884fb21aa1699022a9207c5cfeecc8d67d10e93d698ad6e7e2ee75e5c47c365",
+              "fortran_order": false,
+              "shape": [
+                16
+              ]
+            },
+            "time_s.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "58bbee68c5a97e80d59296425c4726ebeabe38d848dc055134fb4a65f6d2b6b2",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "tx_channel_impulse_v_per_v.npy": {
+              "count": 2,
+              "dtype": "<f8",
+              "f64_sha256": "82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36",
+              "fortran_order": false,
+              "shape": [
+                2
+              ]
+            },
+            "tx_waveform_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "40b756e3bbe3ed90ade86b60c2f4d51764cd4033b577629835076308de2c1a35",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            }
+          },
+          "logical_sha256": "5090a1478ea6e985342d8500c6220cdde5c7fa2c416abbdeb595dcdc380c275a",
+          "member_bytes": {
+            "channel_impulse_v_per_v.npy": 96,
+            "channel_output_v.npy": 336,
+            "ctle_output_v.npy": 336,
+            "rx_ffe_impulse_v_per_v.npy": 336,
+            "rx_filter_impulse_v_per_v.npy": 88,
+            "rx_input_v.npy": 336,
+            "rx_output_v.npy": 336,
+            "symbols_v.npy": 208,
+            "time_s.npy": 336,
+            "tx_channel_impulse_v_per_v.npy": 96,
+            "tx_waveform_v.npy": 336
+          },
+          "member_sha256": {
+            "channel_impulse_v_per_v.npy": "ca7946d0bcfd81d31cbc4d9b86515d99436da73547bf5fbb256e9303a2a20b1e",
+            "channel_output_v.npy": "f84e786fba651be5372edb9baea80c20b5d30c96c13df1325a35f7aa492e0990",
+            "ctle_output_v.npy": "f84e786fba651be5372edb9baea80c20b5d30c96c13df1325a35f7aa492e0990",
+            "rx_ffe_impulse_v_per_v.npy": "cfff1b77a00aad4ddcc0d16b6ae77c9bf02795ae55f6e8d7a95ff80eb3a6a783",
+            "rx_filter_impulse_v_per_v.npy": "113d144d87f369173e1b8004575068b465bf4eac06ee21c1d7ba951641876fd2",
+            "rx_input_v.npy": "f84e786fba651be5372edb9baea80c20b5d30c96c13df1325a35f7aa492e0990",
+            "rx_output_v.npy": "f84e786fba651be5372edb9baea80c20b5d30c96c13df1325a35f7aa492e0990",
+            "symbols_v.npy": "942620bad3b75b431f79ec9167f3323f1dfe8a3bf613a199a1f2c6e451cb83fb",
+            "time_s.npy": "19bd517e39754f6dd53889b837e5773412f3a4fd3b638e336d00be3c2f1202d1",
+            "tx_channel_impulse_v_per_v.npy": "ca7946d0bcfd81d31cbc4d9b86515d99436da73547bf5fbb256e9303a2a20b1e",
+            "tx_waveform_v.npy": "46b58aeeadcaf323c7b26662959b24e8069f9da833a15f0e578b7577a5804c9b"
+          },
+          "sha256": "0f999cec9960c3fde69473e68cc7898dd6b703d6477c9081ca8ab5e9e600d843"
+        },
+        "arrays_present": true,
+        "meta_json_valid": true,
+        "meta_normalized_sha256": "6335eaf85322e74486196303892df9c977c0f5254176f83d711e5d5fbec38011",
+        "meta_present": true,
+        "meta_schema": "pybert.native-cli-result.v1",
+        "meta_sha256": "d9a07d521d423777fb253607e0cc0bc94d12369c22b8141089027ce76d7e704d"
+      },
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5aa05dc780ebb1207d541082ceb7561e684e3f69a8004429c13b6e97e49fb1b2"
+    },
+    "oracle": {
+      "artifacts": {
+        "arrays": {
+          "bytes": 2655,
+          "logical_members": {
+            "channel_impulse_v_per_v.npy": {
+              "count": 2,
+              "dtype": "<f8",
+              "f64_sha256": "82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36",
+              "fortran_order": false,
+              "shape": [
+                2
+              ]
+            },
+            "channel_output_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "ctle_output_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "rx_ffe_impulse_v_per_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "8034367eec76495180b08e634d0bf4236b83a30d9ce7be3fd843fe8860f4de41",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "rx_filter_impulse_v_per_v.npy": {
+              "count": 1,
+              "dtype": "<f8",
+              "f64_sha256": "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712",
+              "fortran_order": false,
+              "shape": [
+                1
+              ]
+            },
+            "rx_input_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "rx_output_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "bbe26fb833fd898ba1033701957b0cace8d7387a22d0518f9404630406013309",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "symbols_v.npy": {
+              "count": 16,
+              "dtype": "<f8",
+              "f64_sha256": "6884fb21aa1699022a9207c5cfeecc8d67d10e93d698ad6e7e2ee75e5c47c365",
+              "fortran_order": false,
+              "shape": [
+                16
+              ]
+            },
+            "time_s.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "58bbee68c5a97e80d59296425c4726ebeabe38d848dc055134fb4a65f6d2b6b2",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            },
+            "tx_channel_impulse_v_per_v.npy": {
+              "count": 2,
+              "dtype": "<f8",
+              "f64_sha256": "82d5182c90ecefa00f9e9d91f02ad8be6d9d082f377bd1f96c00f010bc053e36",
+              "fortran_order": false,
+              "shape": [
+                2
+              ]
+            },
+            "tx_waveform_v.npy": {
+              "count": 32,
+              "dtype": "<f8",
+              "f64_sha256": "40b756e3bbe3ed90ade86b60c2f4d51764cd4033b577629835076308de2c1a35",
+              "fortran_order": false,
+              "shape": [
+                32
+              ]
+            }
+          },
+          "logical_sha256": "5090a1478ea6e985342d8500c6220cdde5c7fa2c416abbdeb595dcdc380c275a",
+          "member_bytes": {
+            "channel_impulse_v_per_v.npy": 144,
+            "channel_output_v.npy": 384,
+            "ctle_output_v.npy": 384,
+            "rx_ffe_impulse_v_per_v.npy": 384,
+            "rx_filter_impulse_v_per_v.npy": 136,
+            "rx_input_v.npy": 384,
+            "rx_output_v.npy": 384,
+            "symbols_v.npy": 256,
+            "time_s.npy": 384,
+            "tx_channel_impulse_v_per_v.npy": 144,
+            "tx_waveform_v.npy": 384
+          },
+          "member_sha256": {
+            "channel_impulse_v_per_v.npy": "6aae83aef74a6cadfa37a11fbcb0d3f9e375bebf6a4a5471cd309d7927b133e7",
+            "channel_output_v.npy": "57a33412ce302be5283d41b12f166cb6c87a9237c93baf128cd10cb499e14cde",
+            "ctle_output_v.npy": "57a33412ce302be5283d41b12f166cb6c87a9237c93baf128cd10cb499e14cde",
+            "rx_ffe_impulse_v_per_v.npy": "628a32cd6504f33b53272b55b60e9d01e7ae57087853093a9596068fc2059cdb",
+            "rx_filter_impulse_v_per_v.npy": "23dd9625d24644656662ca7303243396e67b51e057569add945ffb4505059573",
+            "rx_input_v.npy": "57a33412ce302be5283d41b12f166cb6c87a9237c93baf128cd10cb499e14cde",
+            "rx_output_v.npy": "57a33412ce302be5283d41b12f166cb6c87a9237c93baf128cd10cb499e14cde",
+            "symbols_v.npy": "96bd7940bdfad7d7ac1d110d6f78be934f169c22235d1a5658d0c16f99588679",
+            "time_s.npy": "47f8ec18b2815bbda75cc5a6b1b60372f1de21804a5072b58d767dc293217e82",
+            "tx_channel_impulse_v_per_v.npy": "6aae83aef74a6cadfa37a11fbcb0d3f9e375bebf6a4a5471cd309d7927b133e7",
+            "tx_waveform_v.npy": "fc654d56da7d42d257e712673815d786f7411581ca9aa7878ae98b41bdfef482"
+          },
+          "sha256": "b828d84eaa5c297e558e215fb65d05a58111071a344f824293bade4d9f346f8b"
+        },
+        "arrays_present": true,
+        "meta_json_valid": true,
+        "meta_normalized_sha256": "10706718ad23d8bd687c65ae32dc68d3667b9523dc8e739fe3b60d448e8a8d50",
+        "meta_present": true,
+        "meta_schema": "pybert.native-cli-result.v1",
+        "meta_sha256": "e0d5cffe5eede4867bcd3f5dca28bcbe3ccc1624a54997d7044d0ff9adba30ca"
+      },
+      "exit_code": 0,
+      "stderr_sha256": "adaef085c970df070751512844e3bfa269c1b6610cd10771dfb03df46a731a3e",
+      "stdout_sha256": "823565492be72d41047555ded20065db57c355cdebfc2c1599b5f9e6b365981c"
+    },
+    "parity": {
+      "array_member_names": [
+        "channel_impulse_v_per_v.npy",
+        "channel_output_v.npy",
+        "ctle_output_v.npy",
+        "rx_ffe_impulse_v_per_v.npy",
+        "rx_filter_impulse_v_per_v.npy",
+        "rx_input_v.npy",
+        "rx_output_v.npy",
+        "symbols_v.npy",
+        "time_s.npy",
+        "tx_channel_impulse_v_per_v.npy",
+        "tx_waveform_v.npy"
+      ],
+      "candidate_array_members_equal_oracle": true,
+      "candidate_exit_zero": true,
+      "oracle_exit_zero": true
+    }
+  },
+  "run_id": "pb02-current-b-20260825180014",
+  "schema": "sipi.pb-02-direct-replay.v1",
+  "source_mode": "git_archive_at_immutable_commit",
+  "status": "passed",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit_code": 0,
+      "version_output_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit_code": 0,
+      "version_output_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.exe",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit_code": 0,
+      "version_output_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "inventory": {
+      "entries": [
+        {
+          "bytes": 1466,
+          "path": "LICENSE",
+          "sha256": "4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1"
+        },
+        {
+          "bytes": 21,
+          "path": "native/pybert-core/.gitignore",
+          "sha256": "07d64eb09a56c853b7853a47276799b38d7d6d25a4314b0c1abc10432c214e17"
+        },
+        {
+          "bytes": 344,
+          "path": "native/pybert-core/Cargo.toml",
+          "sha256": "3c4065fbab3426421c43af0d2f04bbd09fe36c18d2544321d21d3cc2c4bb952c"
+        },
+        {
+          "bytes": 3407,
+          "path": "native/pybert-core/src/analysis.rs",
+          "sha256": "a1e2f15ca445bab1ac5cc95262b929ebf8caa90bf02d9f3e780d367db6aa066a"
+        },
+        {
+          "bytes": 5474,
+          "path": "native/pybert-core/src/bathtub.rs",
+          "sha256": "919f6d21c1fbc30a20258aa9d41319e3dde0ce7d013c392e4cba79d56d66f6b5"
+        },
+        {
+          "bytes": 1202,
+          "path": "native/pybert-core/src/capabilities.rs",
+          "sha256": "b09364910dfadf8c13efe5818c1b17cc9853b4055f29a7ac1c388cb28121f0b6"
+        },
+        {
+          "bytes": 8424,
+          "path": "native/pybert-core/src/channel.rs",
+          "sha256": "91961d25a6d4d604c78e6eedd42c5dbed0eba3e6bee85f624f901168ffa327ca"
+        },
+        {
+          "bytes": 12845,
+          "path": "native/pybert-core/src/decoder.rs",
+          "sha256": "81da93d719ca69542046a9ffef071d3876aad62830dfbb161ad76fb0121567f0"
+        },
+        {
+          "bytes": 4833,
+          "path": "native/pybert-core/src/equalization.rs",
+          "sha256": "fa286b527fc023f70edeb60777006ef431252527890098f63672b054fc11b295"
+        },
+        {
+          "bytes": 2790,
+          "path": "native/pybert-core/src/error.rs",
+          "sha256": "64a082b795379ee3e0265c5c9e103bbaa3f17421a05f2cc7c6fd6ee78cd8b891"
+        },
+        {
+          "bytes": 856,
+          "path": "native/pybert-core/src/event.rs",
+          "sha256": "b95d3b26a96529e9723681c6b123f702ec2decef49e429f59f554bbee8dd60f5"
+        },
+        {
+          "bytes": 22693,
+          "path": "native/pybert-core/src/input.rs",
+          "sha256": "3de56d604e0eac89cea31ae0c99bb8a7607f15a99c6cfef4cd818386a2003134"
+        },
+        {
+          "bytes": 24270,
+          "path": "native/pybert-core/src/jitter.rs",
+          "sha256": "0f1fcc46d026b43edf13da64262833d2ac004a06369e584f5094f801296288c8"
+        },
+        {
+          "bytes": 3165,
+          "path": "native/pybert-core/src/lib.rs",
+          "sha256": "94db66853fa4117e90db395a75dc41e1a103e652cfef5831d773193b66d3b457"
+        },
+        {
+          "bytes": 4359,
+          "path": "native/pybert-core/src/output.rs",
+          "sha256": "74a54504c38424532f19fa0f6a9b22942b07694ef771d4d3ab37dda1e7b3b1ac"
+        },
+        {
+          "bytes": 3707,
+          "path": "native/pybert-core/src/pattern.rs",
+          "sha256": "1c414cb04a54b9c46d09651d6909baaee925670d6a431a264ce9d45eced99274"
+        },
+        {
+          "bytes": 6332,
+          "path": "native/pybert-core/src/pipeline.rs",
+          "sha256": "10cd44ebb38ae35d7eec5324eabe9c3b9b1b33353c1315069ae1fcb85f82695f"
+        },
+        {
+          "bytes": 22895,
+          "path": "native/pybert-core/src/receiver.rs",
+          "sha256": "1794615295afc3e9aebdcb76dc140106f12a93c6ce781bc0828c450392e4ec43"
+        },
+        {
+          "bytes": 3246,
+          "path": "native/pybert-core/src/response.rs",
+          "sha256": "9812483ad36a306103a0ea7830c49c4e1a0a71aae383d2a05fcbbc7f711902bd"
+        },
+        {
+          "bytes": 8362,
+          "path": "native/pybert-core/src/signal.rs",
+          "sha256": "d9ddaa2941dff69722c78823e55d223222aff25f8b38c493c956771d567b6557"
+        },
+        {
+          "bytes": 85056,
+          "path": "native/pybert-core/src/simulation.rs",
+          "sha256": "99425e94e6336dd39330ce6c1db4bbd0c43699ed7abc9e8a1fe8f56acde239fd"
+        },
+        {
+          "bytes": 43953,
+          "path": "native/pybert-core/src/statistical_eye.rs",
+          "sha256": "d7b98d3fb6efee9f5589877140882bd8f7843edf63d6534fc69ad86eef73fc3e"
+        },
+        {
+          "bytes": 452,
+          "path": "native/pybert-core/src/units.rs",
+          "sha256": "df775c9a0157cd9e52391cf6a6623db3bb316108d0dbe525ad7a053375d1cd03"
+        },
+        {
+          "bytes": 1789,
+          "path": "native/pybert-core/tests/analysis.rs",
+          "sha256": "d18b9d09c2ce38a42f8e680ad43b95698b3651a9036be0f68b19b3b963afc623"
+        },
+        {
+          "bytes": 1181,
+          "path": "native/pybert-core/tests/cdr.rs",
+          "sha256": "735fa40345240308b4812a579e09a130ad8416a21e296f283c2ea85cee2af702"
+        },
+        {
+          "bytes": 2384,
+          "path": "native/pybert-core/tests/channel.rs",
+          "sha256": "91bcb79237a9dd9b606930c63d3ecd8e0021c7c29eb10f791e1fe6298c9aa3b1"
+        },
+        {
+          "bytes": 7798,
+          "path": "native/pybert-core/tests/contract_v1.rs",
+          "sha256": "de8799f17548aa8a8723ff15398df0a59c43e555c65615bdb7ec2418c4028d07"
+        },
+        {
+          "bytes": 1493,
+          "path": "native/pybert-core/tests/decoder.rs",
+          "sha256": "97adcd29f13c78e44add345bdd215dd45d76553858f7c8e5a860890145526a8b"
+        },
+        {
+          "bytes": 5973,
+          "path": "native/pybert-core/tests/dfe.rs",
+          "sha256": "4d62526c3425c8e8419948547cd4fe94b4088800e69614520130ea15b813a481"
+        },
+        {
+          "bytes": 3177,
+          "path": "native/pybert-core/tests/jitter.rs",
+          "sha256": "e2f0d898577e67dafa5c0abf0feab7caa6bc70d6a7340c7bb7b3824a874b7c17"
+        },
+        {
+          "bytes": 1214,
+          "path": "native/pybert-core/tests/pattern.rs",
+          "sha256": "3704ffca997aa237fcd19e0ad857182db2bbe747745a2aa39c27b6cfc7a6cda4"
+        },
+        {
+          "bytes": 1064,
+          "path": "native/pybert-core/tests/response.rs",
+          "sha256": "124034be65e0b69165a871729cb97f598039da6e5f38111e0594ce241cefc529"
+        },
+        {
+          "bytes": 5807,
+          "path": "native/pybert-core/tests/signal.rs",
+          "sha256": "0d1c3f7dba1852a57287fbc0a4c819da7f07dc9d7ce994b91c825ca0624b1afd"
+        },
+        {
+          "bytes": 16154,
+          "path": "native/pybert-core/tests/simulation.rs",
+          "sha256": "54ecb9603296f8dbc2b549829fd21fe9668693700dfd49c6e3856c6058762f87"
+        },
+        {
+          "bytes": 6405,
+          "path": "native/pybert-core/tests/statistical_eye.rs",
+          "sha256": "ed57cf6cb566e1585aea77e2b6ec8c3b52a8c552560a8544c0ff46297c239864"
+        },
+        {
+          "bytes": 37,
+          "path": "native/pybert-python/.gitignore",
+          "sha256": "b13fb3c58bac9bec0b01f82f3badc0c4e0b5c31c69335684cf752750ee0e90f1"
+        },
+        {
+          "bytes": 14458,
+          "path": "native/pybert-python/Cargo.lock",
+          "sha256": "d5efac4c178498b652de2ee9cb068b61bff0e164e742eee44510f2fe80cfdc85"
+        },
+        {
+          "bytes": 410,
+          "path": "native/pybert-python/Cargo.toml",
+          "sha256": "d2743d8c13dfda84f92c9c9c808acee0f76e77ad3683cd30a80b265f33a87f3e"
+        },
+        {
+          "bytes": 356,
+          "path": "native/pybert-python/pyproject.toml",
+          "sha256": "bb804c6e00b04e90a95f729c09520fa41b9faa59596c3bdf5627c733742ab113"
+        },
+        {
+          "bytes": 2409,
+          "path": "native/pybert-python/python/pybert_native/__init__.py",
+          "sha256": "78ed85f9fac421cea41bbf0dc39b9a2b576ebfeda2f930532173d7abb3fd647f"
+        },
+        {
+          "bytes": 63916,
+          "path": "native/pybert-python/src/lib.rs",
+          "sha256": "d6cdd06c3fb6a86efe8af0616fc6ef9e1e896fcac9262a339e5cf30877f6ed13"
+        },
+        {
+          "bytes": 12806,
+          "path": "src/pybert/cli.py",
+          "sha256": "3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9"
+        },
+        {
+          "bytes": 30509,
+          "path": "src/pybert/engine/rust_backend.py",
+          "sha256": "a63eeae3066d4cb1cbb05dd9edca05f90bda389d3f145b3be9464cac95ef3ce2"
+        },
+        {
+          "bytes": 626829,
+          "path": "uv.lock",
+          "sha256": "624b62d7a84fbc48579de17e2ae171f5e4190d6ad7e5231e67ddafb9d3fa0d86"
+        }
+      ],
+      "sha256": "26ccbee692b9c4984c6cee0cff6c3987fc013e914905a66019937f940a5abfb9"
+    },
+    "license_sha256": "4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1",
+    "native_core_cargo_lock_sha256": null,
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24",
+    "uv_lock_sha256": "624b62d7a84fbc48579de17e2ae171f5e4190d6ad7e5231e67ddafb9d3fa0d86"
+  }
+}
