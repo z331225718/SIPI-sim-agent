@@ -929,6 +929,35 @@ inventory -> specified -> runnable -> compared -> accepted
 
 后续 Agent 的固定完成门：`cargo fmt --all -- --check`、workspace all-target/all-feature clippy `-D warnings`、workspace tests、相关 Python mutation tests、session health、P0 boundary/register/source-map/license、`git diff --check`。`harness=false`/`test=false` external runner 必须由具名 observer 显式调用；无参进程退出 0 永远不计为证据执行。
 
+## 20. 2026-08-27 v12 upstream-first successor
+
+本段只记录当前证据边界，不关闭任何迁移行。`upstream-integration-ledger.v12.yaml`
+以 v11 为 immutable predecessor，当前候选为 `a6db3daf`，共 15/15 rows，
+`release-ready=0`。本次不增加新领域功能；S 参数不 fit，Channel 只做一次最终
+FD-to-TD impulse。
+
+- AS-05 保留既有 `run-hspice` staging 与 Rust control 实现，不回退；用户明确
+  Xyce/XDM extension 不需要，记录 `owner_excluded_not_required` /
+  `no_xyce_xdm_extension`，不得宣称 Xyce/XDM 能力。
+- PB-01/02/03 绑定 current scoped replay manifest/audit：PB-01 为 12 selected
+  arrays 与 23-key `sipi.pybert_data.v1` dictionary；PB-02 为 11 logical NPZ
+  members；PB-03 为 44 stable members、candidate 113 对 upstream 150，且
+  `whole_payload_parity=false`。三者均为 scoped/non-release evidence。
+- COM-02/04 绑定 v5 formal manifest/audit/gate：两次 fresh replay 的状态为
+  `scoped_mismatch_observed`，唯一 blocker 是 `candidate_dfe_taps_not_published`；
+  port order 为 `not_observed`，DFE 为 `candidate_not_published`，没有
+  numeric/global/release parity claim，且保持 one-final FD-to-TD impulse/no-fit。
+- COM-01/03 及其他未更新行保持既有历史语义。v12 是 evidence/currentness
+  successor，不是 row close、product promotion 或 release approval。
+  This is not row close, product promotion, or release approval.
+
+### 20.1 v12 verification marker
+
+`2026-08-27 v12 upstream-first successor` 是 v12 verifier 的 PLAN marker；
+verifier、mutation tests、audit 与物理 evidence SHA 必须同步绑定。只要
+predecessor、candidate archive、scope counts、COM blocker 或 release gate 漂移，
+验证必须 fail closed。
+
 ## 19. 完成定义
 
 本计划完成时：
