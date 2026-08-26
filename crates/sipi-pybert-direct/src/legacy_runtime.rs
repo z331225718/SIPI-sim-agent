@@ -42,7 +42,8 @@ use crate::{
     DfeConfigV1, FfeConfigV1, Hertz, LegacySimError, LegacySimRequestV1, MetallicLineChannelV1,
     ModulationV1, Ohms, PatternV1, PeriodicNoiseV1, ResourceLimitsV1, RxConfigV1,
     SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, SimulationOutputV1, TimebaseV1, TxConfigV1,
-    ViterbiConfigV1, Volts, forward_real_spectrum, simulate_native_v1,
+    ViterbiConfigV1, Volts, forward_real_spectrum, pulse_response, simulate_native_v1,
+    step_response,
 };
 
 const DEFAULT_NBITS: u64 = 15_000;
@@ -1755,6 +1756,423 @@ fn legacy_arrays(
     Ok(arrays)
 }
 
+/// Add the result-adapter fields that the pinned `sim-rust` Web path publishes
+/// from the already materialized native output.
+///
+/// This is deliberately a serializer projection, not another simulation
+/// stage: aliases copy typed arrays, response fields take magnitudes of the
+/// typed complex telemetry, and the bathtub fields apply the pinned adapter's
+/// log presentation.  The legacy frequency/stage telemetry is optional for an
+/// impulse-response channel; in that case the upstream adapter publishes its
+/// channel FFT fields and empty stage-response fields.
+pub(crate) fn augment_sim_rust_result_arrays_v1(
+    input: &SimulationInputV1,
+    output: &mut SimulationOutputV1,
+) -> Result<(), LegacyRuntimeError> {
+    let source = &output.arrays;
+    let channel = source.get("channel_impulse_v_per_v").ok_or_else(|| {
+        LegacyRuntimeError::InvalidConfig(
+            "PB-03 sim-rust payload projection requires channel_impulse_v_per_v".into(),
+        )
+    })?;
+    if channel.is_empty() {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "PB-03 sim-rust payload projection requires a non-empty channel impulse".into(),
+        ));
+    }
+    let sample_interval = input.timebase.sample_interval.0;
+    let samples_per_ui = usize::try_from(input.timebase.samples_per_ui).map_err(|_| {
+        LegacyRuntimeError::InvalidConfig(
+            "PB-03 sim-rust payload projection samples_per_ui overflows usize".into(),
+        )
+    })?;
+    if !sample_interval.is_finite() || sample_interval <= 0.0 || samples_per_ui == 0 {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "PB-03 sim-rust payload projection has an invalid timebase".into(),
+        ));
+    }
+
+    let legacy_frequency = match &input.channel {
+        ChannelInputV1::MetallicLine(channel_input) => {
+            Some(validate_pb03_legacy_frequency_v1(source, channel_input)?)
+        }
+        ChannelInputV1::ImpulseResponse(_) | ChannelInputV1::ExternalModel(_) => None,
+    };
+    validate_pb03_projection_budget_v1(input, source, channel.len(), legacy_frequency)?;
+
+    let mut projected = BTreeMap::new();
+    let channel_step = step_response(channel).map_err(|error| {
+        LegacyRuntimeError::InvalidConfig(format!(
+            "PB-03 sim-rust channel step projection failed: {error}"
+        ))
+    })?;
+    let channel_pulse = pulse_response(&channel_step, samples_per_ui).map_err(|error| {
+        LegacyRuntimeError::InvalidConfig(format!(
+            "PB-03 sim-rust channel pulse projection failed: {error}"
+        ))
+    })?;
+    let peak_index = first_abs_argmax(channel).ok_or_else(|| {
+        LegacyRuntimeError::InvalidConfig(
+            "PB-03 sim-rust payload projection could not locate channel peak".into(),
+        )
+    })?;
+    let channel_time_ns = (0..channel.len())
+        .map(|index| (index as f64 - peak_index as f64) * sample_interval * 1.0e9)
+        .collect::<Vec<_>>();
+    add_projected_array(source, &mut projected, "t_ns_chnl", channel_time_ns)?;
+    add_projected_array(source, &mut projected, "chnl_h", channel.clone())?;
+    add_projected_array(source, &mut projected, "chnl_s", channel_step)?;
+    add_projected_array(source, &mut projected, "chnl_p", channel_pulse)?;
+
+    if let Some(frequency_len) = legacy_frequency {
+        let frequency = &source["legacy_channel_frequency_hz"];
+        debug_assert_eq!(frequency.len(), frequency_len);
+        add_projected_array(
+            source,
+            &mut projected,
+            "f_GHz",
+            frequency.iter().map(|value| *value / 1.0e9).collect(),
+        )?;
+        for (alias, stage) in [
+            (
+                "chnl_H_raw",
+                ("legacy_channel_raw_re", "legacy_channel_raw_im"),
+            ),
+            (
+                "chnl_H",
+                (
+                    "legacy_channel_terminated_re",
+                    "legacy_channel_terminated_im",
+                ),
+            ),
+            (
+                "chnl_trimmed_H",
+                ("legacy_channel_trimmed_re", "legacy_channel_trimmed_im"),
+            ),
+        ] {
+            add_projected_array(
+                source,
+                &mut projected,
+                alias,
+                source[stage.0]
+                    .iter()
+                    .zip(&source[stage.1])
+                    .map(|(real, imag)| real.hypot(*imag))
+                    .collect(),
+            )?;
+        }
+
+        for (alias, stage) in [
+            ("tx_H", "tx"),
+            ("tx_out_H", "tx_out"),
+            ("ctle_H", "ctle"),
+            ("ctle_out_H", "ctle_out"),
+            ("dfe_H", "dfe"),
+            ("dfe_out_H", "dfe_out"),
+        ] {
+            let real_name = format!("legacy_stage_{stage}_re");
+            let imag_name = format!("legacy_stage_{stage}_im");
+            let (Some(real), Some(imag)) = (source.get(&real_name), source.get(&imag_name)) else {
+                return Err(LegacyRuntimeError::InvalidConfig(format!(
+                    "PB-03 sim-rust payload projection is missing {real_name}/{imag_name}"
+                )));
+            };
+            if real.len() != frequency.len() || imag.len() != frequency.len() {
+                return Err(LegacyRuntimeError::InvalidConfig(format!(
+                    "PB-03 sim-rust payload projection length mismatch for {stage} response"
+                )));
+            }
+            add_projected_array(
+                source,
+                &mut projected,
+                alias,
+                real.iter()
+                    .zip(imag)
+                    .map(|(real, imag)| real.hypot(*imag))
+                    .collect(),
+            )?;
+        }
+        let rx_out_h = projected.get("dfe_out_H").cloned().ok_or_else(|| {
+            LegacyRuntimeError::InvalidConfig(
+                "PB-03 sim-rust payload projection did not produce dfe_out_H".into(),
+            )
+        })?;
+        add_projected_array(source, &mut projected, "rx_out_H", rx_out_h)?;
+    } else {
+        // The pinned adapter uses an rFFT fallback when legacy RLGC frequency
+        // telemetry is unavailable.  Reuse the crate's existing real-spectrum
+        // helper rather than introducing a second transform implementation.
+        let (real, imag) = forward_real_spectrum(channel).map_err(|error| {
+            LegacyRuntimeError::InvalidConfig(format!(
+                "PB-03 sim-rust fallback channel spectrum failed: {error}"
+            ))
+        })?;
+        let frequency_step_hz = 1.0 / (channel.len() as f64 * sample_interval);
+        add_projected_array(
+            source,
+            &mut projected,
+            "f_GHz",
+            (0..real.len())
+                .map(|index| index as f64 * frequency_step_hz / 1.0e9)
+                .collect(),
+        )?;
+        let transfer = real
+            .iter()
+            .zip(&imag)
+            .map(|(real, imag)| real.hypot(*imag))
+            .collect::<Vec<_>>();
+        for name in ["chnl_H_raw", "chnl_H", "chnl_trimmed_H"] {
+            add_projected_array(source, &mut projected, name, transfer.clone())?;
+        }
+        for name in [
+            "tx_H",
+            "tx_out_H",
+            "ctle_H",
+            "ctle_out_H",
+            "dfe_H",
+            "dfe_out_H",
+            "rx_out_H",
+        ] {
+            add_projected_array(source, &mut projected, name, Vec::new())?;
+        }
+    }
+
+    for (alias, source_name) in [
+        ("parity_channel_impulse_v_per_v", "channel_impulse_v_per_v"),
+        ("parity_ctle_output_v", "ctle_output_v"),
+        ("parity_rx_output_v", "rx_output_v"),
+        ("parity_dfe_output_v", "dfe_output_v"),
+        ("parity_dfe_decisions", "dfe_decisions"),
+        ("parity_dfe_clock_times_s", "dfe_clock_times_s"),
+    ] {
+        if let Some(values) = source.get(source_name) {
+            add_projected_array(source, &mut projected, alias, values.clone())?;
+        }
+    }
+    add_projected_array(
+        source,
+        &mut projected,
+        "jitter_bins",
+        source
+            .get("jitter_bin_centers_s")
+            .cloned()
+            .unwrap_or_default(),
+    )?;
+    for (alias, source_name) in [
+        ("bathtub_chnl", "bathtub_chnl_ber"),
+        ("bathtub_tx", "bathtub_tx_ber"),
+        ("bathtub_ctle", "bathtub_ctle_ber"),
+        ("bathtub_dfe", "bathtub_dfe_ber"),
+    ] {
+        let values = source.get(source_name);
+        add_projected_array(
+            source,
+            &mut projected,
+            alias,
+            values
+                .into_iter()
+                .flatten()
+                .map(|value| value.max(1.0e-13).log10())
+                .collect(),
+        )?;
+    }
+    let bathtub_rx = projected["bathtub_dfe"].clone();
+    add_projected_array(source, &mut projected, "bathtub_rx", bathtub_rx)?;
+    output.arrays.extend(projected);
+    Ok(())
+}
+
+fn first_abs_argmax(values: &[f64]) -> Option<usize> {
+    let mut peak_index = 0;
+    let mut peak_magnitude = values.first()?.abs();
+    for (index, value) in values.iter().enumerate().skip(1) {
+        let magnitude = value.abs();
+        if magnitude > peak_magnitude {
+            peak_index = index;
+            peak_magnitude = magnitude;
+        }
+    }
+    Some(peak_index)
+}
+
+fn validate_pb03_legacy_frequency_v1(
+    source: &BTreeMap<String, Vec<f64>>,
+    channel: &MetallicLineChannelV1,
+) -> Result<usize, LegacyRuntimeError> {
+    let frequency_names = [
+        "legacy_channel_frequency_hz",
+        "legacy_channel_raw_re",
+        "legacy_channel_raw_im",
+        "legacy_channel_terminated_re",
+        "legacy_channel_terminated_im",
+        "legacy_channel_trimmed_re",
+        "legacy_channel_trimmed_im",
+    ];
+    for name in frequency_names {
+        if !source.contains_key(name) {
+            return Err(LegacyRuntimeError::InvalidConfig(format!(
+                "PB-03 native_typed_rlgc requires {name}"
+            )));
+        }
+    }
+    let step = channel.frequency_step_hz.as_ref().map(|value| value.0);
+    let maximum = channel.frequency_max_hz.as_ref().map(|value| value.0);
+    let (Some(step), Some(maximum)) = (step, maximum) else {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "PB-03 native_typed_rlgc requires an explicit legacy frequency grid".into(),
+        ));
+    };
+    let ratio = maximum / step;
+    if !step.is_finite()
+        || step <= 0.0
+        || !maximum.is_finite()
+        || maximum < 0.0
+        || !ratio.is_finite()
+        || ratio.round() > (usize::MAX - 1) as f64
+    {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "PB-03 native_typed_rlgc has an invalid expected frequency grid".into(),
+        ));
+    }
+    let expected = (ratio.round() as usize).checked_add(1).ok_or_else(|| {
+        LegacyRuntimeError::ResourceLimit("PB-03 frequency count overflow".into())
+    })?;
+    let frequency = &source["legacy_channel_frequency_hz"];
+    if frequency.len() != expected
+        || frequency.iter().any(|value| !value.is_finite())
+        || frequency.first().is_none_or(|value| value.abs() > 1.0e-8)
+        || frequency.windows(2).any(|pair| {
+            let delta = pair[1] - pair[0];
+            (delta - step).abs() > 1.0e-6 + 1.0e-12 * step.abs()
+        })
+    {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "PB-03 native_typed_rlgc emitted an invalid legacy frequency grid".into(),
+        ));
+    }
+    for name in frequency_names.into_iter().skip(1) {
+        let values = &source[name];
+        if values.len() != expected || values.iter().any(|value| !value.is_finite()) {
+            return Err(LegacyRuntimeError::InvalidConfig(format!(
+                "PB-03 native_typed_rlgc emitted invalid {name}"
+            )));
+        }
+    }
+    for stage in ["tx", "tx_out", "ctle", "ctle_out", "dfe", "dfe_out"] {
+        for component in ["re", "im"] {
+            let name = format!("legacy_stage_{stage}_{component}");
+            let Some(values) = source.get(&name) else {
+                return Err(LegacyRuntimeError::InvalidConfig(format!(
+                    "PB-03 native_typed_rlgc requires {name}"
+                )));
+            };
+            if values.len() != expected || values.iter().any(|value| !value.is_finite()) {
+                return Err(LegacyRuntimeError::InvalidConfig(format!(
+                    "PB-03 native_typed_rlgc emitted invalid {name}"
+                )));
+            }
+        }
+    }
+    Ok(expected)
+}
+
+fn validate_pb03_projection_budget_v1(
+    input: &SimulationInputV1,
+    source: &BTreeMap<String, Vec<f64>>,
+    channel_len: usize,
+    legacy_frequency_len: Option<usize>,
+) -> Result<(), LegacyRuntimeError> {
+    let add = |left: usize, right: usize| {
+        left.checked_add(right).ok_or_else(|| {
+            LegacyRuntimeError::ResourceLimit("PB-03 projection count overflow".into())
+        })
+    };
+    let multiply = |left: usize, right: usize| {
+        left.checked_mul(right).ok_or_else(|| {
+            LegacyRuntimeError::ResourceLimit("PB-03 projection count overflow".into())
+        })
+    };
+    let existing = source
+        .values()
+        .try_fold(0_usize, |total, values| add(total, values.len()))?;
+    let mut retained = multiply(channel_len, 4)?;
+    let fallback_bins = channel_len / 2 + 1;
+    retained = add(
+        retained,
+        multiply(
+            legacy_frequency_len.unwrap_or(fallback_bins),
+            if legacy_frequency_len.is_some() {
+                11
+            } else {
+                4
+            },
+        )?,
+    )?;
+    for name in [
+        "channel_impulse_v_per_v",
+        "ctle_output_v",
+        "rx_output_v",
+        "dfe_output_v",
+        "dfe_decisions",
+        "dfe_clock_times_s",
+        "jitter_bin_centers_s",
+        "bathtub_chnl_ber",
+        "bathtub_tx_ber",
+        "bathtub_ctle_ber",
+        "bathtub_dfe_ber",
+        "bathtub_dfe_ber",
+    ] {
+        retained = add(retained, source.get(name).map_or(0, Vec::len))?;
+    }
+    let fallback_allocation = if legacy_frequency_len.is_none() {
+        add(multiply(channel_len, 2)?, multiply(fallback_bins, 3)?)?
+    } else {
+        0
+    };
+    let transient_peak = if legacy_frequency_len.is_none() {
+        add(multiply(channel_len, 2)?, multiply(fallback_bins, 2)?)?
+            .max(multiply(fallback_bins, 3)?)
+    } else {
+        0
+    };
+    let allocated = add(retained, fallback_allocation)?;
+    let peak = add(add(existing, retained)?, transient_peak)?;
+    let allocated_bytes = multiply(allocated, std::mem::size_of::<f64>())?;
+    let peak_bytes = multiply(peak, std::mem::size_of::<f64>())?;
+    let limit = usize::try_from(input.limits.max_memory_bytes).unwrap_or(usize::MAX);
+    if allocated_bytes > limit || peak_bytes > limit {
+        return Err(LegacyRuntimeError::ResourceLimit(format!(
+            "PB-03 projection requires {allocated} allocated f64 values ({allocated_bytes} bytes) and a {peak}-value peak ({peak_bytes} bytes), limit is {} bytes",
+            input.limits.max_memory_bytes
+        )));
+    }
+    Ok(())
+}
+
+fn add_projected_array(
+    source: &BTreeMap<String, Vec<f64>>,
+    projected: &mut BTreeMap<String, Vec<f64>>,
+    name: &str,
+    values: Vec<f64>,
+) -> Result<(), LegacyRuntimeError> {
+    if let Some(existing) = source.get(name)
+        && existing != &values
+    {
+        return Err(LegacyRuntimeError::InvalidConfig(format!(
+            "PB-03 sim-rust payload projection would overwrite {name}"
+        )));
+    }
+    if let Some(existing) = projected.get(name)
+        && existing != &values
+    {
+        return Err(LegacyRuntimeError::InvalidConfig(format!(
+            "PB-03 sim-rust payload projection produced conflicting {name}"
+        )));
+    }
+    projected.entry(name.into()).or_insert(values);
+    Ok(())
+}
+
 fn response_spectrum_interleaved(values: &[f64]) -> Result<Vec<f64>, LegacyRuntimeError> {
     if values.is_empty() {
         return Ok(vec![0.0, 0.0]);
@@ -2523,6 +2941,15 @@ fn contiguous_dfe_count(tuners: &[(bool, f64, f64)]) -> Result<usize, LegacyRunt
 mod tests {
     use super::*;
 
+    fn pb03_input_output() -> (SimulationInputV1, SimulationOutputV1) {
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("fixtures")
+            .join("pb-03-legacy-nrz.yaml");
+        let (_, input) = project_legacy_config_v1(&fixture, "pb03-unit").unwrap();
+        let output = simulate_native_v1(&input).unwrap();
+        (input, output)
+    }
+
     fn tagged_config() -> String {
         r#"!!python/object:pybert.configuration.PyBertCfg
 bit_rate: 10.0
@@ -2539,6 +2966,98 @@ dfe_tap_tuners:
 - !!python/tuple [false, -0.2, 0.4]
 "#
         .into()
+    }
+
+    #[test]
+    fn pb03_argmax_keeps_the_first_equal_absolute_peak_and_signed_zero() {
+        assert_eq!(first_abs_argmax(&[0.25, -1.0, 1.0, 0.5]), Some(1));
+        assert_eq!(first_abs_argmax(&[0.0, -0.0]), Some(0));
+        assert_eq!(first_abs_argmax(&[]), None);
+    }
+
+    #[test]
+    fn pb03_rlgc_requires_complete_finite_uniform_frequency_telemetry() {
+        let (input, output) = pb03_input_output();
+        let mut missing = output.clone();
+        missing.arrays.remove("legacy_channel_frequency_hz");
+        assert!(matches!(
+            augment_sim_rust_result_arrays_v1(&input, &mut missing),
+            Err(LegacyRuntimeError::InvalidConfig(message))
+                if message.contains("native_typed_rlgc requires legacy_channel_frequency_hz")
+        ));
+
+        let mut non_dc = output.clone();
+        non_dc
+            .arrays
+            .get_mut("legacy_channel_frequency_hz")
+            .unwrap()[0] = 1.0;
+        assert!(matches!(
+            augment_sim_rust_result_arrays_v1(&input, &mut non_dc),
+            Err(LegacyRuntimeError::InvalidConfig(message))
+                if message.contains("invalid legacy frequency grid")
+        ));
+
+        let mut non_uniform = output;
+        non_uniform
+            .arrays
+            .get_mut("legacy_channel_frequency_hz")
+            .unwrap()[2] += 1.0;
+        assert!(matches!(
+            augment_sim_rust_result_arrays_v1(&input, &mut non_uniform),
+            Err(LegacyRuntimeError::InvalidConfig(message))
+                if message.contains("invalid legacy frequency grid")
+        ));
+    }
+
+    #[test]
+    fn pb03_channel_intent_controls_frequency_projection_and_empty_presentations() {
+        let (mut input, mut output) = pb03_input_output();
+        let channel = output.arrays["channel_impulse_v_per_v"].clone();
+        input.channel = ChannelInputV1::ImpulseResponse(ChannelResponseV1 {
+            sample_interval: input.timebase.sample_interval,
+            impulse_response_volts_per_second: channel
+                .iter()
+                .map(|value| value / input.timebase.sample_interval.0)
+                .collect(),
+            source_impedance: Ohms(100.0),
+            load_impedance: Ohms(100.0),
+        });
+        for name in [
+            "jitter_bin_centers_s",
+            "bathtub_chnl_ber",
+            "bathtub_tx_ber",
+            "bathtub_ctle_ber",
+            "bathtub_dfe_ber",
+        ] {
+            output.arrays.remove(name);
+        }
+        augment_sim_rust_result_arrays_v1(&input, &mut output).unwrap();
+        assert_eq!(output.arrays["f_GHz"].len(), channel.len() / 2 + 1);
+        for name in [
+            "jitter_bins",
+            "bathtub_chnl",
+            "bathtub_tx",
+            "bathtub_ctle",
+            "bathtub_dfe",
+            "bathtub_rx",
+        ] {
+            assert!(
+                output.arrays[name].is_empty(),
+                "{name} must be published empty"
+            );
+        }
+    }
+
+    #[test]
+    fn pb03_projection_budget_fails_before_publishing_any_alias() {
+        let (mut input, mut output) = pb03_input_output();
+        input.limits.max_memory_bytes = 1;
+        assert!(matches!(
+            augment_sim_rust_result_arrays_v1(&input, &mut output),
+            Err(LegacyRuntimeError::ResourceLimit(message))
+                if message.contains("PB-03 projection requires")
+        ));
+        assert!(!output.arrays.contains_key("t_ns_chnl"));
     }
 
     #[test]

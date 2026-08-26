@@ -463,8 +463,9 @@ fn run_projected_input(
     input_file: &Path,
     output_dir: &Path,
 ) -> Result<DirectRunReport, WorkflowError> {
-    let output = simulate_native_v1(&input)
+    let mut output = simulate_native_v1(&input)
         .map_err(|error| WorkflowError::Artifact(format!("native simulation failed: {error}")))?;
+    crate::legacy_runtime::augment_sim_rust_result_arrays_v1(&input, &mut output)?;
     write_simulation_artifacts(input, input_file, output_dir, output, None)
         .map_err(WorkflowError::from)
 }
