@@ -53,7 +53,7 @@ class ComWorkbookAccmV5FormalVerifierTests(unittest.TestCase):
         root = parent / "checkout"
         self.addCleanup(shutil.rmtree, parent, ignore_errors=True)
         completed = subprocess.run(
-            ["git", "clone", "--no-hardlinks", "--quiet", str(verifier.ROOT), str(root)],
+            ["git", "-c", "core.autocrlf=false", "clone", "--no-hardlinks", "--quiet", str(verifier.ROOT), str(root)],
             capture_output=True,
             text=True,
             check=False,
@@ -81,6 +81,14 @@ class ComWorkbookAccmV5FormalVerifierTests(unittest.TestCase):
             if not target.is_file():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(verifier.ROOT / relative, target)
+
+        # The source checkout is Commit 1 while formal evidence belongs to
+        # Commit 2.  Record the copied five-file bundle in this disposable
+        # checkout so HEAD is a real descendant of the gate before validating.
+        self.git(root, "config", "user.name", "COM v5 test")
+        self.git(root, "config", "user.email", "com-v5-test@example.invalid")
+        self.git(root, "add", *formal_paths)
+        self.git(root, "commit", "--quiet", "--allow-empty", "-m", "temporary formal evidence record")
 
         path = root / verifier.MANIFEST_RELATIVE
         baseline = validate(path, repo_root=root)
@@ -177,6 +185,8 @@ class ComWorkbookAccmV5FormalVerifierTests(unittest.TestCase):
         gate = self.document.get("verification_gate")
         if not isinstance(gate, dict) or gate.get("commit") == "0" * 40:
             self.skipTest("formal baseline is intentionally deferred until Commit 2 installs the Commit 1 gate")
+        if self.git(verifier.ROOT, "rev-parse", "HEAD") == gate.get("commit"):
+            self.skipTest("formal manifest is present but Commit 2 has not yet advanced HEAD")
         result = validate()
         self.assertEqual(result["formal_replays"], 2)
         self.assertEqual(result["status"], "scoped_mismatch_observed")
