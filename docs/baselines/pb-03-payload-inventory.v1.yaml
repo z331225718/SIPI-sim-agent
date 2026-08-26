@@ -1,0 +1,241 @@
+schema: sipi.pb-03-payload-inventory.v1
+version: 1
+row: PB-03
+status: implemented_scoped_serializer_projection
+scope:
+  source_mode: caller_recorded_integrity_only_member_observation
+  whole_payload_parity: false
+  description: Static Git archive recomputation plus caller-recorded NPZ/member receipts;
+    no execution provenance claim.
+source:
+  candidate:
+    commit: 7859a72e00a7a2f4c7699f935e1cee98a3f0c1e6
+    tree: 356cc526062817d28a8edd22f5c4325ce0a75ee0
+    archive_static_recomputed: true
+  upstream:
+    commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+fixture:
+  path: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+  blob: 7f5186d2767c0c24415d35c02660f85586810724
+  bytes: 1170
+  sha256: 2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f
+production_files:
+- path: crates/sipi-pybert-direct/NOTICE-PYBERT-PB03-PAYLOAD.md
+  blob: 41fa6122a2bed6c2eb8cead8ec6ba0e54b8a0abd
+  bytes: 934
+  sha256: cc193bce808949987fa5764bbb5e3539f304816e2f9bbb425bf712c558ea6938
+- path: crates/sipi-pybert-direct/SOURCE-MAP-PB03-PAYLOAD.md
+  blob: 6b53226c3214c25b678d858c9c076e53d2e0c866
+  bytes: 3826
+  sha256: 19b2546170d8a771d6b5b06c8115fbae3094f34a27e9284017a360d171596c88
+- path: crates/sipi-pybert-direct/src/legacy_runtime.rs
+  blob: e216e50cc7f847c08816d1777265dea2c5e92a23
+  bytes: 131649
+  sha256: e3fe8bc7b8626d26e78109a9a6c981e2cba30fa613889e2e317372694ebc539e
+- path: crates/sipi-pybert-direct/src/workflows.rs
+  blob: 110d4fe01b6994b3d4fe58a7495167350b57154c
+  bytes: 64892
+  sha256: 5dff2527ae8cf3df3d0e75feb7b748714996246e37d6ceefeb4c489938894a96
+- path: crates/sipi-pybert-direct/tests/pb03_payload.rs
+  blob: a9ed8ced91769e91e8a38b81cccff0644b771d0a
+  bytes: 2140
+  sha256: 4a80e4e0a49e65daba19c44b4bd40b19c2e52163f2451a5dfc19c6b912a1c362
+upstream_files:
+- path: src/pybert_web/engine_adapter.py
+  blob: 8cdb9fb612635b58cf2e071a9e90d07d272faa61
+  bytes: 50326
+  sha256: c86a84a9787c542b81247784eb14a1a4c7aa266c36a2e33e73a7e74f7c2452b5
+  license: BSD-3-Clause
+- path: src/pybert_web/simulation.py
+  blob: cdc065bd692ca4836a7c62eb5a71492ff34620c1
+  bytes: 45813
+  sha256: e5e0c0ba1e3cdc4356f027a8ea79a1e459d11377657a1ba231be5b7cbdf98c3c
+  license: BSD-3-Clause
+- path: LICENSE
+  blob: 64d198ba43675ede5fbdef1ec918a63954951640
+  bytes: 1466
+  sha256: 4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1
+  license: BSD-3-Clause
+bindings:
+  member_map:
+    path: docs/baselines/pb-03-payload-member-map.v1.json
+    sha256: 017e6066445c97151d2fe62c6d3e5255bba071c75837754fed84e81e79eae038
+  audit:
+    path: docs/baselines/audits/2026-08-27-pb-03-payload-inventory.md
+    sha256: bea66a85fc33e4807d33b638370e6abb0eb9ed8336d8746087e59249dbf5dc42
+  verifier:
+    path: tools/verify_pb_03_payload_inventory.py
+    sha256: 9b193af27d525d9d8f4315a1a2a9b522f8d9b5bca97a510a2906f07bc1584681
+  mutation_test:
+    path: tools/test_verify_pb_03_payload_inventory.py
+    sha256: 6bd84738e1757c047e64a7baeb2ab3c7fec8ce04c7997ee7ccd4a446424d823c
+inventory_before_projection:
+  candidate_count: 113
+  oracle_count: 150
+  exact_count: 107
+  shared_drift_count: 4
+  candidate_only_count: 2
+  oracle_only_count: 39
+inventory:
+  candidate_count: 140
+  oracle_count: 150
+  exact_count: 127
+  shared_drift_count: 11
+  candidate_only_count: 2
+  oracle_only_count: 12
+  whole_payload_parity: false
+projections:
+- id: channel_time_and_pulse
+  members:
+  - t_ns_chnl.npy
+  - chnl_h.npy
+  - chnl_s.npy
+  - chnl_p.npy
+  source_arrays:
+  - channel_impulse_v_per_v.npy
+  - timebase.sample_interval
+  - timebase.samples_per_ui
+  upstream_paths:
+  - src/pybert_web/engine_adapter.py:635-655
+  - src/pybert_web/simulation.py:787-811
+- id: frequency_and_stage_response
+  members:
+  - f_GHz.npy
+  - chnl_H_raw.npy
+  - chnl_H.npy
+  - chnl_trimmed_H.npy
+  - tx_H.npy
+  - tx_out_H.npy
+  - ctle_H.npy
+  - ctle_out_H.npy
+  - dfe_H.npy
+  - dfe_out_H.npy
+  - rx_out_H.npy
+  source_arrays:
+  - legacy_channel_frequency_hz.npy
+  - legacy_channel_complex_telemetry
+  - legacy_stage_complex_telemetry
+  upstream_paths:
+  - src/pybert_web/engine_adapter.py:570-649
+  - src/pybert_web/simulation.py:823-847
+- id: parity_aliases
+  members:
+  - parity_channel_impulse_v_per_v.npy
+  - parity_ctle_output_v.npy
+  - parity_rx_output_v.npy
+  - parity_dfe_output_v.npy
+  - parity_dfe_decisions.npy
+  - parity_dfe_clock_times_s.npy
+  source_arrays:
+  - channel_impulse_v_per_v.npy
+  - ctle_output_v.npy
+  - rx_output_v.npy
+  - dfe_output_v.npy
+  - dfe_decisions.npy
+  - dfe_clock_times_s.npy
+  upstream_paths:
+  - src/pybert_web/engine_adapter.py:440-444
+  - src/pybert_web/simulation.py:772-811
+- id: jitter_bins
+  members:
+  - jitter_bins.npy
+  source_arrays:
+  - jitter_bin_centers_s.npy
+  upstream_paths:
+  - src/pybert_web/engine_adapter.py:681-685
+  - src/pybert_web/simulation.py:771
+- id: bathtub_presentations
+  members:
+  - bathtub_chnl.npy
+  - bathtub_tx.npy
+  - bathtub_ctle.npy
+  - bathtub_dfe.npy
+  - bathtub_rx.npy
+  source_arrays:
+  - bathtub_chnl_ber.npy
+  - bathtub_tx_ber.npy
+  - bathtub_ctle_ber.npy
+  - bathtub_dfe_ber.npy
+  upstream_paths:
+  - src/pybert_web/engine_adapter.py:687-692
+  - src/pybert_web/simulation.py:624-770
+remaining_blockers:
+- id: eye_display_payload
+  members:
+  - eye_chnl.npy
+  - eye_tx.npy
+  - eye_ctle.npy
+  - eye_dfe.npy
+  - eye_rx.npy
+  reason: no existing typed two-dimensional eye source
+  disposition: blocked_do_not_add_algorithm
+- id: native_eye_payload
+  members:
+  - native_eye_chnl.npy
+  - native_eye_tx.npy
+  - native_eye_ctle.npy
+  - native_eye_dfe.npy
+  - native_eye_rx.npy
+  reason: no existing typed native eye source
+  disposition: blocked_do_not_add_algorithm
+- id: contour_coordinates
+  members:
+  - eye_contour_2_x_ui.npy
+  - eye_contour_2_y_v.npy
+  reason: candidate has two contours while the oracle has three
+  disposition: blocked_do_not_add_algorithm
+- id: response_hash_drift
+  members:
+  - chnl_H.npy
+  - chnl_trimmed_H.npy
+  - ctle_out_H.npy
+  - dfe_out_H.npy
+  - rx_out_H.npy
+  - tx_H.npy
+  - tx_out_H.npy
+  reason: candidate and oracle logical f64 hashes differ; no ULP claim is made
+  disposition: recorded_shared_drift
+- id: contour_cardinality
+  members:
+  - eye_contour_ber.npy
+  - eye_contour_height_v.npy
+  - eye_contour_point_count.npy
+  - eye_contour_width_ps.npy
+  reason: candidate has two contour summaries while the oracle has three
+  disposition: recorded_shared_drift
+claims:
+  serializer_projection: true
+  scoped_member_reduction: true
+  execution_provenance: false
+  replay_custody: false
+  whole_payload_parity: false
+  exact_whole_payload_parity: false
+  global_row_closed: false
+  product_capability: false
+  release_approval: false
+non_claims:
+- NPZ and member receipts are caller-recorded integrity observations, not execution
+  provenance.
+- The 140-member candidate inventory is not whole-payload parity.
+- Twelve eye and contour-coordinate oracle members remain absent.
+- Four contour summaries remain cardinality drifted.
+- Seven response magnitude fields remain non-exact hashes.
+- Two candidate-only internal arrays remain intentionally present.
+- AMI, IBIS, DLL, GetWave, vendor noise, and class pickle remain blocked.
+- No product, global closure, or release claim is made.
+git_gate:
+  candidate_ancestor: 7859a72e00a7a2f4c7699f935e1cee98a3f0c1e6
+  commit: 1ed972449d588125e2155ebef950dc58ab1fd890
+  tree: 5d443a82cb6a7165d5af39b110197545480195b2
+  files:
+    verifier:
+      path: tools/verify_pb_03_payload_inventory.py
+      blob: 1b1fefafa967c208648a5c9ce5fec89e1a530aeb
+      bytes: 40953
+      sha256: 9b193af27d525d9d8f4315a1a2a9b522f8d9b5bca97a510a2906f07bc1584681
+    mutation_test:
+      path: tools/test_verify_pb_03_payload_inventory.py
+      blob: 613920a06d1e7f7610a0f1ec546fe7f90b8a0c41
+      bytes: 17530
+      sha256: 6bd84738e1757c047e64a7baeb2ab3c7fec8ce04c7997ee7ccd4a446424d823c
