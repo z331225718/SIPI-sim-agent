@@ -30,6 +30,9 @@ class WorkbookAccmV5Tests(unittest.TestCase):
             "sha256": "b" * 64,
             "root_contained": False,
             "path_redacted": True,
+            "regular_file": True,
+            "reparse_checked": True,
+            "identity": runner.REGULAR_NONREPARSE_IDENTITY,
         }
         return {
             "environment": {
@@ -37,6 +40,14 @@ class WorkbookAccmV5Tests(unittest.TestCase):
                 "pythonpath_mode": "materialized_archive_src",
                 "pythonno_user_site": True,
                 "uv_no_config": True,
+                "uv_virtual_env": {
+                    "present": False,
+                    "relative_path": None,
+                    "basename": None,
+                    "root_contained": False,
+                    "path_redacted": True,
+                    "identity": runner.UV_VENV_ABSENT_IDENTITY,
+                },
             },
             "agent_com": {
                 "module": "agent_com",
@@ -123,6 +134,72 @@ class WorkbookAccmV5Tests(unittest.TestCase):
                 result = runner.run_upstream_probe(root, Path("python.exe"), [0.0, 0.001])
             self.assertNotIn("cases", result)
             self.assertIn("artifact invalid", result["blocker"])
+
+    def test_upstream_environment_clears_host_virtualenv_and_python_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            inherited = {
+                "VIRTUAL_ENV": str(root / "host-venv"),
+                "PYTHONHOME": "host-python-home",
+                "PYTHONPATH": "host-python-path",
+                "PYTHONUNTRUSTED": "host-python-value",
+            }
+            with patch.dict(runner.os.environ, inherited, clear=False):
+                uv_environment = runner.upstream_environment(root, direct=False)
+                direct_environment = runner.upstream_environment(root, direct=True)
+            self.assertNotIn("VIRTUAL_ENV", uv_environment)
+            self.assertNotIn("PYTHONHOME", uv_environment)
+            self.assertNotIn("PYTHONPATH", uv_environment)
+            self.assertNotIn("PYTHONUNTRUSTED", uv_environment)
+            self.assertEqual(uv_environment["PYTHONNOUSERSITE"], "1")
+            self.assertNotIn("VIRTUAL_ENV", direct_environment)
+            self.assertNotIn("PYTHONHOME", direct_environment)
+            self.assertNotIn("PYTHONUNTRUSTED", direct_environment)
+            self.assertEqual(direct_environment["PYTHONPATH"], str((root / "src").resolve()))
+
+    def test_archive_uv_virtual_env_receipt_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".venv").mkdir()
+            receipt = runner.uv_virtual_env_receipt(root, {"VIRTUAL_ENV": str(root / ".venv")})
+            self.assertEqual(
+                receipt,
+                {
+                    "present": True,
+                    "relative_path": ".venv",
+                    "basename": ".venv",
+                    "root_contained": True,
+                    "path_redacted": True,
+                    "identity": runner.UV_PROJECT_VENV_IDENTITY,
+                },
+            )
+            runner.validate_uv_virtual_env_receipt(receipt)
+
+    def test_external_uv_virtual_env_receipt_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "archive"
+            external = Path(directory) / "external-venv"
+            root.mkdir()
+            external.mkdir()
+            with self.assertRaises(ValueError):
+                runner.uv_virtual_env_receipt(root, {"VIRTUAL_ENV": str(external)})
+
+    def test_symlink_or_reparse_uv_virtual_env_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            venv = root / ".venv"
+            venv.mkdir()
+            with patch.object(runner, "is_reparse_point", return_value=True):
+                with self.assertRaises(ValueError):
+                    runner.uv_virtual_env_receipt(root, {"VIRTUAL_ENV": str(venv)})
+
+    def test_uv_virtual_env_receipt_is_path_free(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".venv").mkdir()
+            receipt = runner.uv_virtual_env_receipt(root, {"VIRTUAL_ENV": str(root / ".venv")})
+            runner.assert_report_path_free(receipt)
+            self.assertNotIn(str(root), json.dumps(receipt))
 
     def test_runtime_proof_binds_independent_source_identity(self) -> None:
         proof = self._runtime_proof()

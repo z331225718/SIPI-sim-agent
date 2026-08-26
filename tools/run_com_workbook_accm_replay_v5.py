@@ -28,6 +28,9 @@ UPSTREAM_COMMIT = "5272ffe74702cd585054d975559b06f8afae7b6e"
 UPSTREAM_TREE = "7094ab6e84989b218730c52432c70da10261f8ea"
 UPSTREAM_ARCHIVE_SHA256 = "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
 UPSTREAM_ARCHIVE_BYTES = 43694080
+UV_PROJECT_VENV_IDENTITY = "materialized_upstream_project_venv"
+UV_VENV_ABSENT_IDENTITY = "not_injected"
+REGULAR_NONREPARSE_IDENTITY = "regular_nonreparse_file"
 WORKBOOK = "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx"
 S4P = "fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p"
 FIXTURE_EXPECTED = {
@@ -198,6 +201,54 @@ def bounded_file_bytes(path: Path, maximum: int) -> bytes:
     if len(payload) != size:
         raise ValueError("file changed while reading")
     return payload
+
+
+def uv_virtual_env_receipt(root: Path, environment: dict[str, str]) -> dict[str, Any]:
+    """Accept only uv's project venv and publish no host path."""
+    raw = environment.get("VIRTUAL_ENV")
+    if raw is None:
+        return {
+            "present": False,
+            "relative_path": None,
+            "basename": None,
+            "root_contained": False,
+            "path_redacted": True,
+            "identity": UV_VENV_ABSENT_IDENTITY,
+        }
+    if not isinstance(raw, str) or not raw:
+        raise ValueError("VIRTUAL_ENV is not a non-empty path")
+    try:
+        raw_path = Path(raw)
+        root_path = root.resolve()
+        expected = (root_path / ".venv").resolve()
+        if is_reparse_point(raw_path):
+            raise ValueError("uv VIRTUAL_ENV is a reparse point")
+        resolved = raw_path.resolve()
+        if resolved != expected or is_reparse_point(resolved) or not resolved.is_dir():
+            raise ValueError("uv VIRTUAL_ENV escaped the materialized project")
+        relative = resolved.relative_to(root_path).as_posix()
+    except (OSError, RuntimeError, ValueError) as error:
+        if isinstance(error, ValueError) and str(error) == "uv VIRTUAL_ENV escaped the materialized project":
+            raise
+        raise ValueError("uv VIRTUAL_ENV is not the materialized project venv") from error
+    if relative != ".venv":
+        raise ValueError("uv VIRTUAL_ENV relative identity drift")
+    return {
+        "present": True,
+        "relative_path": relative,
+        "basename": ".venv",
+        "root_contained": True,
+        "path_redacted": True,
+        "identity": UV_PROJECT_VENV_IDENTITY,
+    }
+
+
+def project_venv_relative(value: Any) -> bool:
+    """Recognize only a normalized package path below the project venv."""
+    if not isinstance(value, str) or not value or "\\" in value or ":" in value:
+        return False
+    parts = value.split("/")
+    return len(parts) >= 2 and parts[0] == ".venv" and all(part not in ("", ".", "..") for part in parts)
 
 
 def archive(repo: Path, revision: str, destination: Path, expected: dict[str, Any] | None = None) -> tuple[int, str]:
@@ -665,13 +716,36 @@ from agent_com import BehaviorProfile, ChannelSet, RunOptions, load_config, run_
 MAX_SOURCE_FILE_BYTES = {MAX_SOURCE_FILE_BYTES}
 UPSTREAM_ENV_CLEARED_KEYS = {UPSTREAM_ENV_CLEARED_KEYS!r}
 EXPECTED_SOURCE_IDENTITY = {source_identity!r}
+UV_PROJECT_VENV_IDENTITY = {UV_PROJECT_VENV_IDENTITY!r}
+UV_VENV_ABSENT_IDENTITY = {UV_VENV_ABSENT_IDENTITY!r}
+REGULAR_NONREPARSE_IDENTITY = {REGULAR_NONREPARSE_IDENTITY!r}
 
-def bytes_receipt(path, root, require_contained=False):
+def is_reparse(path):
+    if path.is_symlink():
+        return True
+    try:
+        return bool(getattr(path.stat(follow_symlinks=False), "st_file_attributes", 0) & 0x400)
+    except OSError:
+        return True
+
+def has_reparse_ancestor(path):
+    current = Path(path)
+    while True:
+        if is_reparse(current):
+            return True
+        parent = current.parent
+        if parent == current:
+            return False
+        current = parent
+
+def bytes_receipt(path, root, require_contained=False, package=False):
     raw_path = Path(path)
-    if raw_path.is_symlink():
-        raise RuntimeError("runtime module is a symlink")
+    if has_reparse_ancestor(raw_path):
+        raise RuntimeError("runtime module path has a symlink or reparse ancestor")
     path = raw_path.resolve()
     root = Path(root).resolve()
+    if has_reparse_ancestor(path):
+        raise RuntimeError("resolved runtime module path has a symlink or reparse ancestor")
     try:
         relative = path.relative_to(root).as_posix()
         contained = True
@@ -685,7 +759,10 @@ def bytes_receipt(path, root, require_contained=False):
     payload = path.read_bytes()
     if len(payload) > MAX_SOURCE_FILE_BYTES:
         raise RuntimeError("runtime module exceeds source bound")
-    return {{"relative_path": relative, "basename": path.name, "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest(), "root_contained": contained, "path_redacted": True}}
+    receipt = {{"relative_path": relative, "basename": path.name, "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest(), "root_contained": contained, "path_redacted": True}}
+    if package:
+        receipt.update({{"regular_file": True, "reparse_checked": True, "identity": REGULAR_NONREPARSE_IDENTITY}})
+    return receipt
 
 def source_inventory(root):
     raw_package = Path(root) / "src" / "agent_com"
@@ -696,7 +773,7 @@ def source_inventory(root):
         raise RuntimeError("materialized agent_com source package is unavailable")
     entries = []
     for path in sorted(package.rglob("*.py"), key=lambda item: item.as_posix()):
-        if path.is_symlink() or not path.is_file():
+        if has_reparse_ancestor(path) or not path.is_file():
             raise RuntimeError("agent_com source inventory contains a non-regular file")
         payload = path.read_bytes()
         if len(payload) > MAX_SOURCE_FILE_BYTES:
@@ -709,13 +786,30 @@ def module_receipt(module, root, name):
     filename = getattr(module, "__file__", None)
     if not filename:
         raise RuntimeError(f"{{name}} has no module file")
-    receipt = bytes_receipt(filename, root)
+    receipt = bytes_receipt(filename, root, package=True)
     receipt.update({{"module": name, "version": str(getattr(module, "__version__", "unknown"))}})
     return receipt
 
+def project_venv_relative(value):
+    if not isinstance(value, str) or not value or "\\\\" in value or ":" in value:
+        return False
+    parts = value.split("/")
+    return len(parts) >= 2 and parts[0] == ".venv" and all(part not in ("", ".", "..") for part in parts)
+
+def validate_package_location(receipt, name, uv_virtual_env):
+    if receipt["regular_file"] is not True or receipt["reparse_checked"] is not True or receipt["identity"] != REGULAR_NONREPARSE_IDENTITY:
+        raise RuntimeError(f"{{name}} runtime file identity is not regular and non-reparse")
+    if uv_virtual_env["present"]:
+        relative = receipt["relative_path"]
+        if not receipt["root_contained"] or not project_venv_relative(relative):
+            raise RuntimeError(f"{{name}} runtime module escaped the uv project venv")
+    elif receipt["root_contained"] is not False or receipt["relative_path"] is not None:
+        raise RuntimeError(f"{{name}} external runtime identity is not explicit")
+
 def runtime_proof(root):
-    missing = [key for key in UPSTREAM_ENV_CLEARED_KEYS if key != "PYTHONPATH" and key in os.environ]
-    if missing:
+    missing = [key for key in UPSTREAM_ENV_CLEARED_KEYS if key not in ("PYTHONPATH", "VIRTUAL_ENV") and key in os.environ]
+    unexpected_python = [key for key in os.environ if key.startswith("PYTHON") and key not in ("PYTHONNOUSERSITE", "PYTHONPATH")]
+    if missing or unexpected_python:
         raise RuntimeError("host Python environment override survived sanitization")
     if os.environ.get("PYTHONNOUSERSITE") != "1" or os.environ.get("UV_NO_CONFIG") != "1":
         raise RuntimeError("required isolated Python environment flags are missing")
@@ -729,12 +823,38 @@ def runtime_proof(root):
     package_file = bytes_receipt(agent_com.__file__, root, require_contained=True)
     if package_file["relative_path"] != "src/agent_com/__init__.py":
         raise RuntimeError("agent_com import did not resolve to the archive package")
+    raw_virtual_env = os.environ.get("VIRTUAL_ENV")
+    if raw_virtual_env is None:
+        uv_virtual_env = {{"present": False, "relative_path": None, "basename": None, "root_contained": False, "path_redacted": True, "identity": UV_VENV_ABSENT_IDENTITY}}
+    else:
+        virtual_env = Path(raw_virtual_env)
+        archive_root = Path(root).resolve()
+        expected_virtual_env = (archive_root / ".venv").resolve()
+        if virtual_env.is_symlink():
+            raise RuntimeError("uv VIRTUAL_ENV is a symlink")
+        try:
+            if bool(getattr(virtual_env.stat(follow_symlinks=False), "st_file_attributes", 0) & 0x400):
+                raise RuntimeError("uv VIRTUAL_ENV is a reparse point")
+        except OSError as error:
+            raise RuntimeError("uv VIRTUAL_ENV cannot be inspected") from error
+        resolved_virtual_env = virtual_env.resolve()
+        if resolved_virtual_env != expected_virtual_env or not resolved_virtual_env.is_dir():
+            raise RuntimeError("uv VIRTUAL_ENV escaped the materialized project")
+        try:
+            relative_virtual_env = resolved_virtual_env.relative_to(archive_root).as_posix()
+        except ValueError as error:
+            raise RuntimeError("uv VIRTUAL_ENV is outside the materialized archive") from error
+        if relative_virtual_env != ".venv":
+            raise RuntimeError("uv VIRTUAL_ENV relative identity drift")
+        uv_virtual_env = {{"present": True, "relative_path": relative_virtual_env, "basename": ".venv", "root_contained": True, "path_redacted": True, "identity": UV_PROJECT_VENV_IDENTITY}}
     proof = {{
-        "environment": {{"cleared": list(UPSTREAM_ENV_CLEARED_KEYS), "pythonpath_mode": pythonpath_mode, "pythonno_user_site": True, "uv_no_config": True}},
+        "environment": {{"cleared": list(UPSTREAM_ENV_CLEARED_KEYS), "pythonpath_mode": pythonpath_mode, "pythonno_user_site": True, "uv_no_config": True, "uv_virtual_env": uv_virtual_env}},
         "agent_com": {{"module": "agent_com", "contained_in_materialized_archive": True, "module_file": package_file, "package_source_inventory": source_inventory(root)}},
         "numpy": module_receipt(np, root, "numpy"),
         "scipy": module_receipt(scipy, root, "scipy"),
     }}
+    validate_package_location(proof["numpy"], "numpy", uv_virtual_env)
+    validate_package_location(proof["scipy"], "scipy", uv_virtual_env)
     if EXPECTED_SOURCE_IDENTITY is not None:
         if proof["agent_com"]["module_file"] != EXPECTED_SOURCE_IDENTITY["module_file"] or proof["agent_com"]["package_source_inventory"] != EXPECTED_SOURCE_IDENTITY["package_source_inventory"]:
             raise RuntimeError("agent_com source identity changed from archive preflight")
@@ -828,14 +948,54 @@ def parse_upstream_probe(completed: subprocess.CompletedProcess[bytes], runtime:
     return payload
 
 
+def validate_uv_virtual_env_receipt(value: Any) -> None:
+    required = {"present", "relative_path", "basename", "root_contained", "path_redacted", "identity"}
+    if not isinstance(value, dict) or set(value) != required or not isinstance(value["present"], bool) or value["path_redacted"] is not True:
+        raise ValueError("uv VIRTUAL_ENV receipt shape invalid")
+    if value["present"]:
+        if value["relative_path"] != ".venv" or value["basename"] != ".venv" or value["root_contained"] is not True or value["identity"] != UV_PROJECT_VENV_IDENTITY:
+            raise ValueError("uv VIRTUAL_ENV containment or identity invalid")
+    elif value["relative_path"] is not None or value["basename"] is not None or value["root_contained"] is not False or value["identity"] != UV_VENV_ABSENT_IDENTITY:
+        raise ValueError("absent uv VIRTUAL_ENV receipt drift")
+
+
+def validate_runtime_package_receipt(value: Any, name: str, uv_virtual_env: dict[str, Any]) -> None:
+    required = {
+        "relative_path",
+        "basename",
+        "bytes",
+        "sha256",
+        "root_contained",
+        "path_redacted",
+        "regular_file",
+        "reparse_checked",
+        "identity",
+        "module",
+        "version",
+    }
+    if not isinstance(value, dict) or set(value) != required or value["module"] != name or value["path_redacted"] is not True or value["regular_file"] is not True or value["reparse_checked"] is not True or value["identity"] != REGULAR_NONREPARSE_IDENTITY:
+        raise ValueError(f"{name} runtime identity invalid")
+    if isinstance(value["bytes"], bool) or not isinstance(value["bytes"], int) or value["bytes"] <= 0 or not valid_hex64(value["sha256"]):
+        raise ValueError(f"{name} runtime receipt invalid")
+    if not isinstance(value["version"], str) or not value["version"] or not isinstance(value["basename"], str) or not value["basename"] or "/" in value["basename"] or "\\" in value["basename"]:
+        raise ValueError(f"{name} runtime basename/version invalid")
+    if uv_virtual_env["present"]:
+        relative = value["relative_path"]
+        if value["root_contained"] is not True or not project_venv_relative(relative):
+            raise ValueError(f"{name} runtime module is outside the uv project venv")
+    elif value["root_contained"] is not False or value["relative_path"] is not None:
+        raise ValueError(f"{name} external runtime identity is not explicit")
+
+
 def validate_runtime_proof(value: Any, source_identity: dict[str, Any] | None = None) -> None:
     if not isinstance(value, dict) or set(value) != {"environment", "agent_com", "numpy", "scipy"}:
         raise ValueError("upstream runtime proof shape invalid")
     environment = value["environment"]
-    if not isinstance(environment, dict) or set(environment) != {"cleared", "pythonpath_mode", "pythonno_user_site", "uv_no_config"}:
+    if not isinstance(environment, dict) or set(environment) != {"cleared", "pythonpath_mode", "pythonno_user_site", "uv_no_config", "uv_virtual_env"}:
         raise ValueError("upstream environment proof shape invalid")
     if environment["cleared"] != list(UPSTREAM_ENV_CLEARED_KEYS) or environment["pythonpath_mode"] not in {"unset", "materialized_archive_src"} or environment["pythonno_user_site"] is not True or environment["uv_no_config"] is not True:
         raise ValueError("upstream environment proof invalid")
+    validate_uv_virtual_env_receipt(environment["uv_virtual_env"])
     agent = value["agent_com"]
     if not isinstance(agent, dict) or set(agent) != {"module", "contained_in_materialized_archive", "module_file", "package_source_inventory"} or agent["module"] != "agent_com" or agent["contained_in_materialized_archive"] is not True:
         raise ValueError("agent_com containment proof invalid")
@@ -851,13 +1011,7 @@ def validate_runtime_proof(value: Any, source_identity: dict[str, Any] | None = 
         if not isinstance(source_identity, dict) or set(source_identity) != {"module_file", "package_source_inventory"} or module_file != source_identity["module_file"] or inventory != source_identity["package_source_inventory"]:
             raise ValueError("agent_com source identity changed from archive preflight")
     for name in ("numpy", "scipy"):
-        package = value[name]
-        if not isinstance(package, dict) or set(package) != {"relative_path", "basename", "bytes", "sha256", "root_contained", "path_redacted", "module", "version"} or package["module"] != name or package["root_contained"] is not False or package["path_redacted"] is not True:
-            raise ValueError(f"{name} runtime identity invalid")
-        if package["relative_path"] is not None or not isinstance(package["bytes"], int) or package["bytes"] <= 0 or not valid_hex64(package["sha256"]) or not isinstance(package["version"], str) or not package["version"]:
-            raise ValueError(f"{name} runtime receipt invalid")
-        if not isinstance(package["basename"], str) or not package["basename"] or "/" in package["basename"] or "\\" in package["basename"]:
-            raise ValueError(f"{name} runtime basename invalid")
+        validate_runtime_package_receipt(value[name], name, environment["uv_virtual_env"])
 
 
 def classify_upstream_blocker(stderr: bytes) -> str:
@@ -871,6 +1025,9 @@ def classify_upstream_blocker(stderr: bytes) -> str:
 
 def upstream_environment(root: Path, direct: bool) -> dict[str, str]:
     environment = dict(os.environ)
+    for key in tuple(environment):
+        if key == "VIRTUAL_ENV" or key.startswith("PYTHON"):
+            environment.pop(key, None)
     for key in UPSTREAM_ENV_CLEARED_KEYS:
         environment.pop(key, None)
     environment["PYTHONNOUSERSITE"] = "1"

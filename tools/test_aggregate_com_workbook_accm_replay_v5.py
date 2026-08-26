@@ -33,7 +33,7 @@ class AggregateCustodyTests(unittest.TestCase):
             },
         }
 
-    def _runtime_proof(self, source: dict[str, object]) -> dict[str, object]:
+    def _runtime_proof(self, source: dict[str, object], *, project_venv: bool = False) -> dict[str, object]:
         external = {
             "relative_path": None,
             "basename": "runtime.pyd",
@@ -41,13 +41,37 @@ class AggregateCustodyTests(unittest.TestCase):
             "sha256": self._hash("numpy-runtime"),
             "root_contained": False,
             "path_redacted": True,
+            "regular_file": True,
+            "reparse_checked": True,
+            "identity": aggregate.REGULAR_NONREPARSE_IDENTITY,
         }
+        package_receipt = (
+            lambda name: {
+                **external,
+                "relative_path": f".venv/Lib/site-packages/{name}/__init__.py",
+                "basename": "__init__.py",
+                "sha256": self._hash(f"{name}-project-runtime"),
+                "root_contained": True,
+                "module": name,
+                "version": "1",
+            }
+            if project_venv
+            else {**external, "module": name, "version": "1"}
+        )
         return {
             "environment": {
                 "cleared": list(aggregate.UPSTREAM_ENV_CLEARED_KEYS),
                 "pythonpath_mode": "materialized_archive_src",
                 "pythonno_user_site": True,
                 "uv_no_config": True,
+                "uv_virtual_env": {
+                    "present": project_venv,
+                    "relative_path": ".venv" if project_venv else None,
+                    "basename": ".venv" if project_venv else None,
+                    "root_contained": project_venv,
+                    "path_redacted": True,
+                    "identity": aggregate.UV_PROJECT_VENV_IDENTITY if project_venv else aggregate.UV_VENV_ABSENT_IDENTITY,
+                },
             },
             "agent_com": {
                 "module": "agent_com",
@@ -55,8 +79,8 @@ class AggregateCustodyTests(unittest.TestCase):
                 "module_file": source["module_file"],
                 "package_source_inventory": source["package_source_inventory"],
             },
-            "numpy": {**external, "module": "numpy", "version": "1"},
-            "scipy": {**external, "module": "scipy", "version": "1"},
+            "numpy": package_receipt("numpy"),
+            "scipy": package_receipt("scipy"),
         }
 
     def _toolchain(self) -> dict[str, object]:
@@ -345,6 +369,48 @@ class AggregateCustodyTests(unittest.TestCase):
             self._write(second, second_report)
             result = aggregate.aggregate(first, second, output)
             self.assertEqual(result["status"], "scoped_mismatch_observed")
+
+    def test_runner_project_venv_proof_is_accepted_by_aggregate(self) -> None:
+        source = self._source()
+        proof = self._runtime_proof(source, project_venv=True)
+        runner.validate_runtime_proof(proof, source)
+        aggregate._upstream_runtime_proof(proof, source)
+
+    def test_runner_project_venv_package_escape_is_rejected_by_aggregate(self) -> None:
+        source = self._source()
+        proof = self._runtime_proof(source, project_venv=True)
+        proof["numpy"]["relative_path"] = "outside/__init__.py"
+        with self.assertRaises(ValueError):
+            aggregate._upstream_runtime_proof(proof, source)
+
+    def test_project_venv_relative_path_mutations_are_rejected_by_both_validators(self) -> None:
+        source = self._source()
+        invalid_paths = (".venv", ".venv//x", ".venv/./x", ".venv/x/..", ".venv\\Lib\\x", "/absolute/x")
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                runner_proof = self._runtime_proof(source, project_venv=True)
+                runner_proof["numpy"]["relative_path"] = invalid_path
+                with self.assertRaises(ValueError):
+                    runner.validate_runtime_proof(runner_proof, source)
+
+                aggregate_proof = self._runtime_proof(source, project_venv=True)
+                aggregate_proof["numpy"]["relative_path"] = invalid_path
+                with self.assertRaises(ValueError):
+                    aggregate._upstream_runtime_proof(aggregate_proof, source)
+
+    def test_project_package_identity_mutations_are_rejected_by_both_validators(self) -> None:
+        source = self._source()
+        for field, forged in (("regular_file", False), ("reparse_checked", False), ("identity", "forged")):
+            with self.subTest(field=field):
+                runner_proof = self._runtime_proof(source, project_venv=True)
+                runner_proof["numpy"][field] = forged
+                with self.assertRaises(ValueError):
+                    runner.validate_runtime_proof(runner_proof, source)
+
+                aggregate_proof = self._runtime_proof(source, project_venv=True)
+                aggregate_proof["numpy"][field] = forged
+                with self.assertRaises(ValueError):
+                    aggregate._upstream_runtime_proof(aggregate_proof, source)
 
     def test_runner_direct_python_fallback_is_blocked(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

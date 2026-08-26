@@ -59,6 +59,9 @@ BUILD_ENV_POLICY = runner.BUILD_ENV_POLICY
 BUILD_CONFIG_POLICY = runner.BUILD_CONFIG_POLICY
 BUILD_CARGO_HOME_POLICY = runner.BUILD_CARGO_HOME_POLICY
 UPSTREAM_UV_COMMAND = runner.UPSTREAM_UV_COMMAND
+UV_PROJECT_VENV_IDENTITY = runner.UV_PROJECT_VENV_IDENTITY
+UV_VENV_ABSENT_IDENTITY = runner.UV_VENV_ABSENT_IDENTITY
+REGULAR_NONREPARSE_IDENTITY = runner.REGULAR_NONREPARSE_IDENTITY
 CANDIDATE_COMMIT = "bc882d2e5a19c2a844bacc485ede5b874e8f9c37"
 CANDIDATE_TREE = "d87cfecea77ccd670073a6c069658e6b4e8c3137"
 CANDIDATE_ARCHIVE = {"bytes": 51384320, "sha256": "1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0"}
@@ -245,6 +248,48 @@ def _source_identity(value: Any, label: str) -> None:
     if not isinstance(module, dict) or set(module) != required or module["relative_path"] != "src/agent_com/__init__.py" or module["basename"] != "__init__.py" or module["root_contained"] is not True or module["path_redacted"] is not True or isinstance(module["bytes"], bool) or not isinstance(module["bytes"], int) or module["bytes"] <= 0:
         raise ValueError(f"{label} module identity drift")
     _hex(module["sha256"], f"{label} module")
+
+
+def _uv_virtual_env(value: Any, label: str) -> None:
+    required = {"present", "relative_path", "basename", "root_contained", "path_redacted", "identity"}
+    if not isinstance(value, dict) or set(value) != required or not isinstance(value["present"], bool) or value["path_redacted"] is not True:
+        raise ValueError(f"{label} uv VIRTUAL_ENV receipt shape drift")
+    if value["present"]:
+        if value["relative_path"] != ".venv" or value["basename"] != ".venv" or value["root_contained"] is not True or value["identity"] != UV_PROJECT_VENV_IDENTITY:
+            raise ValueError(f"{label} uv VIRTUAL_ENV containment/identity drift")
+    elif value["relative_path"] is not None or value["basename"] is not None or value["root_contained"] is not False or value["identity"] != UV_VENV_ABSENT_IDENTITY:
+        raise ValueError(f"{label} absent uv VIRTUAL_ENV receipt drift")
+
+
+def _runtime_package(value: Any, label: str, uv_virtual_env: dict[str, Any]) -> None:
+    required = {
+        "relative_path",
+        "basename",
+        "bytes",
+        "sha256",
+        "root_contained",
+        "path_redacted",
+        "regular_file",
+        "reparse_checked",
+        "identity",
+        "module",
+        "version",
+    }
+    if not isinstance(value, dict) or set(value) != required or value["path_redacted"] is not True or value["regular_file"] is not True or value["reparse_checked"] is not True or value["identity"] != REGULAR_NONREPARSE_IDENTITY:
+        raise ValueError(f"{label} package identity drift")
+    if not isinstance(value["module"], str) or not value["module"] or not isinstance(value["version"], str) or not value["version"]:
+        raise ValueError(f"{label} package name/version drift")
+    if not isinstance(value["basename"], str) or not value["basename"] or "/" in value["basename"] or "\\" in value["basename"]:
+        raise ValueError(f"{label} package basename drift")
+    if isinstance(value["bytes"], bool) or not isinstance(value["bytes"], int) or value["bytes"] <= 0:
+        raise ValueError(f"{label} package bytes drift")
+    _hex(value["sha256"], f"{label} package")
+    if uv_virtual_env["present"]:
+        relative = value["relative_path"]
+        if not value["root_contained"] or not runner.project_venv_relative(relative):
+            raise ValueError(f"{label} package escaped uv project venv")
+    elif value["root_contained"] is not False or value["relative_path"] is not None:
+        raise ValueError(f"{label} external package identity drift")
 
 
 TOOL_KEYS = {"role", "basename", "file_bytes", "file_sha256", "version_args", "version_exit", "version_stdout_sha256", "version_stderr_sha256", "path_redacted"}
@@ -447,8 +492,9 @@ def _upstream_runtime_proof(value: Any, source_identity: dict[str, Any]) -> None
     if not isinstance(value, dict) or set(value) != required:
         raise ValueError("upstream runtime proof schema drift")
     environment = value["environment"]
-    if not isinstance(environment, dict) or set(environment) != {"cleared", "pythonpath_mode", "pythonno_user_site", "uv_no_config"} or environment["cleared"] != list(UPSTREAM_ENV_CLEARED_KEYS) or environment["pythonpath_mode"] not in {"unset", "materialized_archive_src"} or environment["pythonno_user_site"] is not True or environment["uv_no_config"] is not True:
+    if not isinstance(environment, dict) or set(environment) != {"cleared", "pythonpath_mode", "pythonno_user_site", "uv_no_config", "uv_virtual_env"} or environment["cleared"] != list(UPSTREAM_ENV_CLEARED_KEYS) or environment["pythonpath_mode"] not in {"unset", "materialized_archive_src"} or environment["pythonno_user_site"] is not True or environment["uv_no_config"] is not True:
         raise ValueError("upstream environment proof drift")
+    _uv_virtual_env(environment["uv_virtual_env"], "upstream")
     agent = value["agent_com"]
     if not isinstance(agent, dict) or set(agent) != {"module", "contained_in_materialized_archive", "module_file", "package_source_inventory"} or agent["module"] != "agent_com" or agent["contained_in_materialized_archive"] is not True:
         raise ValueError("agent_com containment proof drift")
@@ -459,10 +505,9 @@ def _upstream_runtime_proof(value: Any, source_identity: dict[str, Any]) -> None
         raise ValueError("upstream runtime source identity drift")
     for name in ("numpy", "scipy"):
         package = value[name]
-        required_package = {"relative_path", "basename", "bytes", "sha256", "root_contained", "path_redacted", "module", "version"}
-        if not isinstance(package, dict) or set(package) != required_package or package["module"] != name or package["relative_path"] is not None or package["root_contained"] is not False or package["path_redacted"] is not True or not isinstance(package["basename"], str) or not package["basename"] or "/" in package["basename"] or "\\" in package["basename"] or isinstance(package["bytes"], bool) or not isinstance(package["bytes"], int) or package["bytes"] <= 0 or not isinstance(package["version"], str) or not package["version"]:
+        if not isinstance(package, dict) or package.get("module") != name:
             raise ValueError(f"{name} runtime identity drift")
-        _hex(package["sha256"], f"{name} runtime file")
+        _runtime_package(package, name, environment["uv_virtual_env"])
 
 
 def _upstream_payload(value: Any, source_identity: dict[str, Any]) -> None:
