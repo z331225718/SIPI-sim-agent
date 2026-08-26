@@ -62,6 +62,8 @@ UPSTREAM_UV_COMMAND = runner.UPSTREAM_UV_COMMAND
 UV_PROJECT_VENV_IDENTITY = runner.UV_PROJECT_VENV_IDENTITY
 UV_VENV_ABSENT_IDENTITY = runner.UV_VENV_ABSENT_IDENTITY
 REGULAR_NONREPARSE_IDENTITY = runner.REGULAR_NONREPARSE_IDENTITY
+CANDIDATE_RESULT_PROVENANCE_SCOPE = runner.CANDIDATE_RESULT_PROVENANCE_SCOPE
+PACKAGE_CASE_THRU_SOURCE_KIND = runner.PACKAGE_CASE_THRU_SOURCE_KIND
 CANDIDATE_COMMIT = "bc882d2e5a19c2a844bacc485ede5b874e8f9c37"
 CANDIDATE_TREE = "d87cfecea77ccd670073a6c069658e6b4e8c3137"
 CANDIDATE_ARCHIVE = {"bytes": 51384320, "sha256": "1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0"}
@@ -459,8 +461,8 @@ def _upstream_case(value: Any, index: int) -> None:
 
 
 def _candidate_case(value: Any, index: int) -> None:
-    required = {"case_index", "metrics", "winner", "arrays", "port_order", "port_order_observed", "provenance"}
-    if not isinstance(value, dict) or set(value) != required or value["case_index"] != index or value["port_order"] is not None or value["port_order_observed"] is not False:
+    required = {"case_index", "metrics", "winner", "arrays", "port_order", "port_order_observed"}
+    if not isinstance(value, dict) or set(value) != required or type(value.get("case_index")) is not int or value["case_index"] != index or value["port_order"] is not None or value["port_order_observed"] is not False:
         raise ValueError("candidate case schema or port-order observation drift")
     metrics = value["metrics"]
     winner = value["winner"]
@@ -476,15 +478,34 @@ def _candidate_case(value: Any, index: int) -> None:
         raise ValueError("candidate cursor is outside channel pulse")
     if metrics["impulse_sample_count"] != arrays["channel_impulse"]["sample_count"]:
         raise ValueError("candidate impulse sample count is not bound to the array")
-    provenance = value["provenance"]
-    if not isinstance(provenance, dict) or set(provenance) != {"config_sha256", "channel_source_sha256", "impulse_sha256"}:
-        raise ValueError("candidate provenance schema drift")
-    for key, item in provenance.items():
-        _hex(item, f"candidate provenance.{key}")
-    if provenance["channel_source_sha256"] != FIXTURE_EXPECTED["s4p"]["sha256"]:
-        raise ValueError("candidate channel source is not the pinned S4P fixture")
-    if provenance["impulse_sha256"] != arrays["channel_impulse"]["sha256"]:
-        raise ValueError("candidate impulse provenance is not the reported array")
+
+
+def _first_case_result_provenance(value: Any, cases: list[dict[str, Any]]) -> None:
+    required = {"scope", "case_index", "config_sha256", "channel_source_sha256", "impulse_sha256"}
+    if not isinstance(value, dict) or set(value) != required or value["scope"] != CANDIDATE_RESULT_PROVENANCE_SCOPE or type(value.get("case_index")) is not int or value["case_index"] != 0:
+        raise ValueError("candidate first-case result provenance schema drift")
+    for key in ("config_sha256", "channel_source_sha256", "impulse_sha256"):
+        _hex(value[key], f"candidate first-case provenance.{key}")
+    if value["channel_source_sha256"] != FIXTURE_EXPECTED["s4p"]["sha256"]:
+        raise ValueError("candidate result channel source is not the pinned S4P fixture")
+    if not cases or value["impulse_sha256"] != cases[0]["arrays"]["channel_impulse"]["sha256"]:
+        raise ValueError("candidate first-case impulse provenance is not the reported array")
+
+
+def _package_case_manifests(value: Any, cases: list[dict[str, Any]]) -> None:
+    if not isinstance(value, list) or len(value) != len(cases):
+        raise ValueError("candidate package case manifest count drift")
+    for index, manifest in enumerate(value):
+        required = {"case_id", "order", "thru"}
+        if not isinstance(manifest, dict) or set(manifest) != required or manifest["case_id"] != f"workbook-case-{index}" or type(manifest.get("order")) is not int or manifest["order"] != index:
+            raise ValueError("candidate package case order or identity drift")
+        thru = manifest["thru"]
+        thru_required = {"source_sha256", "identity", "source_kind"}
+        if not isinstance(thru, dict) or set(thru) != thru_required or thru["identity"] != f"{manifest['case_id']}:thru" or thru["source_kind"] != PACKAGE_CASE_THRU_SOURCE_KIND:
+            raise ValueError("candidate package THRU manifest schema drift")
+        _hex(thru["source_sha256"], f"candidate package case {index} THRU source")
+        if thru["source_sha256"] != FIXTURE_EXPECTED["s4p"]["sha256"]:
+            raise ValueError("candidate package THRU source is not the pinned S4P fixture")
 
 
 def _upstream_runtime_proof(value: Any, source_identity: dict[str, Any]) -> None:
@@ -545,7 +566,7 @@ def _upstream_payload(value: Any, source_identity: dict[str, Any]) -> None:
 
 
 def _candidate_payload(value: Any, expected_vector: list[float]) -> None:
-    required = {"exit", "stdout_sha256", "stderr_sha256", "runtime_timeout_s", "command", "vector", "runtime_exit", "consumer_proof", "artifact_sha256", "artifacts", "cases", "blocker"}
+    required = {"exit", "stdout_sha256", "stderr_sha256", "runtime_timeout_s", "command", "vector", "runtime_exit", "consumer_proof", "artifact_sha256", "artifacts", "first_case_result_provenance", "package_case_manifests", "cases", "blocker"}
     if not isinstance(value, dict) or set(value) != required or value["exit"] != 0 or value["runtime_exit"] != 0 or value["runtime_timeout_s"] != 180 or value["consumer_proof"] is not True or value["blocker"] is not None or value["vector"] != expected_vector or not isinstance(value["vector"], list) or not isinstance(value["cases"], list) or len(value["cases"]) != 2:
         raise ValueError("candidate payload schema drift")
     _hex(value["stdout_sha256"], "candidate stdout")
@@ -566,6 +587,8 @@ def _candidate_payload(value: Any, expected_vector: list[float]) -> None:
         raise ValueError("candidate result artifact hash mismatch")
     for index, case in enumerate(value["cases"]):
         _candidate_case(case, index)
+    _first_case_result_provenance(value["first_case_result_provenance"], value["cases"])
+    _package_case_manifests(value["package_case_manifests"], value["cases"])
 
 
 def _comparison(value: Any, upstream_case: dict[str, Any], candidate_case: dict[str, Any]) -> None:
@@ -714,8 +737,8 @@ def aggregate(first_path: Path, second_path: Path, output: Path) -> dict[str, An
             raise ValueError(f"control vector drift at {index}")
         stable = stable_control(left) == stable_control(right)
         typed_stability.append(stable)
-        left_digests = [case["provenance"]["config_sha256"] for case in left["candidate"]["cases"]]
-        right_digests = [case["provenance"]["config_sha256"] for case in right["candidate"]["cases"]]
+        left_digests = [left["candidate"]["first_case_result_provenance"]["config_sha256"]]
+        right_digests = [right["candidate"]["first_case_result_provenance"]["config_sha256"]]
         candidate_config_digests.append(left_digests + right_digests)
         candidate_artifact_drift.append(left["candidate"]["artifacts"] != right["candidate"]["artifacts"])
         upstream_stability.append(left["upstream"]["cases"] == right["upstream"]["cases"])

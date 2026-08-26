@@ -67,6 +67,55 @@ class WorkbookAccmV5Tests(unittest.TestCase):
             "cases": [{"metrics": {}, "winner": {}, "port_order": [1, 3, 2, 4]}],
         }
 
+    def test_candidate_result_provenance_is_scoped_to_first_case(self) -> None:
+        cases = [
+            {"arrays": {"channel_impulse": {"sha256": "a" * 64}}},
+            {"arrays": {"channel_impulse": {"sha256": "b" * 64}}},
+        ]
+        provenance = {
+            "config_sha256": "c" * 64,
+            "channel_source_sha256": runner.FIXTURE_EXPECTED["s4p"]["sha256"],
+            "impulse_sha256": "a" * 64,
+            "ignored_product_metadata": "kept out of the projection",
+        }
+        self.assertEqual(
+            runner.first_case_result_provenance(provenance, cases),
+            {
+                "scope": runner.CANDIDATE_RESULT_PROVENANCE_SCOPE,
+                "case_index": 0,
+                "config_sha256": "c" * 64,
+                "channel_source_sha256": runner.FIXTURE_EXPECTED["s4p"]["sha256"],
+                "impulse_sha256": "a" * 64,
+            },
+        )
+        provenance["impulse_sha256"] = "b" * 64
+        with self.assertRaises(ValueError):
+            runner.first_case_result_provenance(provenance, cases)
+
+    def test_package_case_manifests_bind_order_and_thru_source(self) -> None:
+        raw_cases = [
+            {"case_id": "workbook-case-0", "package_case_index": 0},
+            {"case_id": "workbook-case-1", "package_case_index": 1},
+        ]
+        projected_cases = [{"case_index": 0}, {"case_index": 1}]
+        source_sha = runner.FIXTURE_EXPECTED["s4p"]["sha256"]
+        manifests = {
+            "manifests": [
+                {"case_id": "workbook-case-0", "thru": {"sha256": source_sha, "identity": "workbook-case-0:thru", "source_kind": runner.PACKAGE_CASE_THRU_SOURCE_KIND}},
+                {"case_id": "workbook-case-1", "thru": {"sha256": source_sha, "identity": "workbook-case-1:thru", "source_kind": runner.PACKAGE_CASE_THRU_SOURCE_KIND}},
+            ]
+        }
+        self.assertEqual(
+            runner.package_case_manifests(manifests, raw_cases, projected_cases),
+            [
+                {"case_id": "workbook-case-0", "order": 0, "thru": {"source_sha256": source_sha, "identity": "workbook-case-0:thru", "source_kind": runner.PACKAGE_CASE_THRU_SOURCE_KIND}},
+                {"case_id": "workbook-case-1", "order": 1, "thru": {"source_sha256": source_sha, "identity": "workbook-case-1:thru", "source_kind": runner.PACKAGE_CASE_THRU_SOURCE_KIND}},
+            ],
+        )
+        manifests["manifests"][1]["case_id"] = "workbook-case-0"
+        with self.assertRaises(ValueError):
+            runner.package_case_manifests(manifests, raw_cases, projected_cases)
+
     def test_tokens_and_archive_paths_fail_closed(self) -> None:
         with self.assertRaises(ValueError):
             runner.token("not-a-nonce")

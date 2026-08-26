@@ -170,7 +170,6 @@ class AggregateCustodyTests(unittest.TestCase):
             "arrays": arrays,
             "port_order": None,
             "port_order_observed": False,
-            "provenance": {"config_sha256": "a" * 64, "channel_source_sha256": aggregate.FIXTURE_EXPECTED["s4p"]["sha256"], "impulse_sha256": arrays["channel_impulse"]["sha256"]},
         }
 
     def _upstream(self, source: dict[str, object]) -> dict[str, object]:
@@ -213,6 +212,25 @@ class AggregateCustodyTests(unittest.TestCase):
             "consumer_proof": True,
             "artifact_sha256": artifacts[0]["sha256"],
             "artifacts": artifacts,
+            "first_case_result_provenance": {
+                "scope": aggregate.CANDIDATE_RESULT_PROVENANCE_SCOPE,
+                "case_index": 0,
+                "config_sha256": "a" * 64,
+                "channel_source_sha256": aggregate.FIXTURE_EXPECTED["s4p"]["sha256"],
+                "impulse_sha256": cases[0]["arrays"]["channel_impulse"]["sha256"],
+            },
+            "package_case_manifests": [
+                {
+                    "case_id": f"workbook-case-{index}",
+                    "order": index,
+                    "thru": {
+                        "source_sha256": aggregate.FIXTURE_EXPECTED["s4p"]["sha256"],
+                        "identity": f"workbook-case-{index}:thru",
+                        "source_kind": aggregate.PACKAGE_CASE_THRU_SOURCE_KIND,
+                    },
+                }
+                for index in range(2)
+            ],
             "cases": cases,
             "blocker": None,
         }
@@ -382,6 +400,50 @@ class AggregateCustodyTests(unittest.TestCase):
         proof["numpy"]["relative_path"] = "outside/__init__.py"
         with self.assertRaises(ValueError):
             aggregate._upstream_runtime_proof(proof, source)
+
+    def test_candidate_case_impulses_may_differ_but_each_is_independently_bound(self) -> None:
+        candidate = self._candidate()
+        self.assertNotEqual(candidate["cases"][0]["arrays"]["channel_impulse"], candidate["cases"][1]["arrays"]["channel_impulse"])
+        aggregate._candidate_payload(candidate, [0.0, 0.0])
+
+    def test_candidate_provenance_and_package_manifest_mutations_are_rejected(self) -> None:
+        mutations = []
+
+        candidate = self._candidate()
+        candidate["first_case_result_provenance"]["impulse_sha256"] = candidate["cases"][1]["arrays"]["channel_impulse"]["sha256"]
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["cases"][0]["arrays"]["channel_impulse"]["sha256"] = "d" * 64
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["cases"] = list(reversed(candidate["cases"]))
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["package_case_manifests"][0]["thru"]["source_sha256"] = "e" * 64
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["first_case_result_provenance"]["channel_source_sha256"] = candidate["first_case_result_provenance"]["impulse_sha256"]
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["first_case_result_provenance"]["case_index"] = False
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["cases"][0]["case_index"] = False
+        mutations.append(candidate)
+
+        candidate = self._candidate()
+        candidate["package_case_manifests"][0]["order"] = False
+        mutations.append(candidate)
+
+        for candidate in mutations:
+            with self.assertRaises(ValueError):
+                aggregate._candidate_payload(candidate, [0.0, 0.0])
 
     def test_project_venv_relative_path_mutations_are_rejected_by_both_validators(self) -> None:
         source = self._source()

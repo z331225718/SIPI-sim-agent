@@ -31,6 +31,8 @@ UPSTREAM_ARCHIVE_BYTES = 43694080
 UV_PROJECT_VENV_IDENTITY = "materialized_upstream_project_venv"
 UV_VENV_ABSENT_IDENTITY = "not_injected"
 REGULAR_NONREPARSE_IDENTITY = "regular_nonreparse_file"
+CANDIDATE_RESULT_PROVENANCE_SCOPE = "first_case_result"
+PACKAGE_CASE_THRU_SOURCE_KIND = "workbook-s4p-source"
 WORKBOOK = "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx"
 S4P = "fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p"
 FIXTURE_EXPECTED = {
@@ -508,6 +510,9 @@ def candidate_array_receipt(value: Any, name: str) -> dict[str, Any] | None:
 def candidate_projection(case: Any) -> dict[str, Any]:
     if not isinstance(case, dict):
         raise ValueError("candidate case is not an object")
+    case_index = case.get("case_index")
+    if type(case_index) is not int or case_index < 0:
+        raise ValueError("candidate case index is not an integer")
     diagnostics = case.get("diagnostics")
     if not isinstance(diagnostics, dict):
         raise ValueError("candidate case diagnostics are missing")
@@ -573,18 +578,71 @@ def candidate_projection(case: Any) -> dict[str, Any]:
         ):
             raise ValueError("invalid candidate applied port order")
     return {
-        "case_index": case.get("case_index"),
+        "case_index": case_index,
         "metrics": metric_projection,
         "winner": winner,
         "arrays": arrays,
         "port_order": observed_port_order,
         "port_order_observed": observed_port_order is not None,
-        "provenance": {
-            "config_sha256": None,
-            "channel_source_sha256": None,
-            "impulse_sha256": None,
-        },
     }
+
+
+def first_case_result_provenance(value: Any, cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """Project document provenance once, with an explicit first-case scope."""
+    required = {"config_sha256", "channel_source_sha256", "impulse_sha256"}
+    if not isinstance(value, dict) or not required.issubset(value):
+        raise ValueError("candidate result provenance schema drift")
+    projected = {key: value[key] for key in required}
+    for key, item in projected.items():
+        if not valid_hex64(item):
+            raise ValueError(f"candidate result provenance.{key} is not a SHA-256")
+    if not cases or not isinstance(cases[0], dict):
+        raise ValueError("candidate result has no first case")
+    first_impulse = cases[0].get("arrays", {}).get("channel_impulse")
+    if not isinstance(first_impulse, dict) or projected["impulse_sha256"] != first_impulse.get("sha256"):
+        raise ValueError("candidate first-case impulse provenance is not the reported array")
+    if projected["channel_source_sha256"] != FIXTURE_EXPECTED["s4p"]["sha256"]:
+        raise ValueError("candidate result channel source is not the pinned S4P fixture")
+    return {
+        "scope": CANDIDATE_RESULT_PROVENANCE_SCOPE,
+        "case_index": 0,
+        "config_sha256": projected["config_sha256"],
+        "channel_source_sha256": projected["channel_source_sha256"],
+        "impulse_sha256": projected["impulse_sha256"],
+    }
+
+
+def package_case_manifests(value: Any, raw_cases: list[Any], projected_cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Retain only ordered, path-free per-case THRU source identity."""
+    if not isinstance(value, dict):
+        raise ValueError("candidate package provenance is missing")
+    manifests = value.get("manifests")
+    if not isinstance(manifests, list) or len(manifests) != len(projected_cases) or len(raw_cases) != len(projected_cases):
+        raise ValueError("candidate package case manifest count drift")
+    result: list[dict[str, Any]] = []
+    for index, (raw_case, projected_case, manifest) in enumerate(zip(raw_cases, projected_cases, manifests)):
+        raw_case_index = raw_case.get("package_case_index") if isinstance(raw_case, dict) else None
+        projected_case_index = projected_case.get("case_index") if isinstance(projected_case, dict) else None
+        if type(raw_case_index) is not int or raw_case_index != index or type(projected_case_index) is not int or projected_case_index != index:
+            raise ValueError("candidate package case order drift")
+        if not isinstance(manifest, dict):
+            raise ValueError("candidate package case manifest shape drift")
+        case_id = manifest.get("case_id")
+        raw_case_id = raw_case.get("case_id")
+        thru = manifest.get("thru")
+        if not isinstance(case_id, str) or case_id != f"workbook-case-{index}" or raw_case_id != case_id or not isinstance(thru, dict):
+            raise ValueError("candidate package case identity drift")
+        source_sha = thru.get("sha256")
+        identity = thru.get("identity")
+        source_kind = thru.get("source_kind")
+        if not valid_hex64(source_sha) or source_sha != FIXTURE_EXPECTED["s4p"]["sha256"] or identity != f"{case_id}:thru" or source_kind != PACKAGE_CASE_THRU_SOURCE_KIND:
+            raise ValueError("candidate package THRU source identity drift")
+        result.append({
+            "case_id": case_id,
+            "order": index,
+            "thru": {"source_sha256": source_sha, "identity": identity, "source_kind": source_kind},
+        })
+    return result
 
 
 def artifact_inventory(root: Path) -> list[dict[str, Any]]:
@@ -684,18 +742,16 @@ def run_candidate_probe(root: Path, binary: Path, environment: dict[str, str], v
             raise ValueError("candidate result has no cases")
         projection = [candidate_projection(case) for case in cases]
         provenance = document.get("provenance") if isinstance(document.get("provenance"), dict) else {}
-        for item in projection:
-            item["provenance"] = {
-                "config_sha256": provenance.get("config_sha256") if valid_hex64(provenance.get("config_sha256")) else None,
-                "channel_source_sha256": provenance.get("channel_source_sha256") if valid_hex64(provenance.get("channel_source_sha256")) else None,
-                "impulse_sha256": provenance.get("impulse_sha256") if valid_hex64(provenance.get("impulse_sha256")) else None,
-            }
+        result_provenance = first_case_result_provenance(provenance, projection)
+        case_manifests = package_case_manifests(provenance.get("package_cases"), cases, projection)
         receipt.update(
             {
                 "runtime_exit": completed.returncode,
                 "consumer_proof": True,
                 "artifact_sha256": digest(raw),
                 "artifacts": artifact_inventory(output),
+                "first_case_result_provenance": result_provenance,
+                "package_case_manifests": case_manifests,
                 "cases": projection,
                 "blocker": None,
             }
