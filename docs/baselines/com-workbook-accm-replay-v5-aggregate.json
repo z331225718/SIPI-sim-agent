@@ -1,0 +1,2991 @@
+{
+  "acceptance": false,
+  "archive_post": {
+    "candidate": {
+      "bytes": 51384320,
+      "path_redacted": true,
+      "sha256": "1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0"
+    },
+    "upstream": {
+      "bytes": 43694080,
+      "path_redacted": true,
+      "sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    }
+  },
+  "binary_rebuild_drift": true,
+  "blockers": [
+    "candidate_dfe_taps_not_published"
+  ],
+  "builds": [
+    {
+      "binary_post": {
+        "basename": "sipi-com-direct-run.exe",
+        "bytes": 6386688,
+        "path_redacted": true,
+        "sha256": "27f257fa6409ae00735f20528e45cc82d8e76141892ac20eddf43d3f9588d069"
+      },
+      "binary_pre": {
+        "basename": "sipi-com-direct-run.exe",
+        "bytes": 6386688,
+        "path_redacted": true,
+        "sha256": "27f257fa6409ae00735f20528e45cc82d8e76141892ac20eddf43d3f9588d069"
+      },
+      "binary_stable": true,
+      "command": "cargo build --manifest-path crates/sipi-agent-com-direct/Cargo.toml --bin sipi-com-direct-run --release --locked --offline --config build.rustflags=[] --config build.rustdocflags=[] --config target.x86_64-pc-windows-msvc.rustflags=[] --config target.x86_64-pc-windows-msvc.rustdocflags=[]",
+      "env_policy": "offline_incremental_zero_explicit_rustc_target_flags_and_wrappers_cleared_cli_rustflags_overrides",
+      "env_receipt": {
+        "cargo_home_policy": "host_cargo_home_retained_for_offline_dependency_cache",
+        "cleared_keys": [
+          "RUSTFLAGS",
+          "CARGO_ENCODED_RUSTFLAGS",
+          "RUSTC_WRAPPER",
+          "RUSTC_WORKSPACE_WRAPPER",
+          "CARGO_BUILD_RUSTC",
+          "CARGO_BUILD_RUSTC_WRAPPER",
+          "CARGO_BUILD_RUSTDOC",
+          "RUSTDOCFLAGS",
+          "CARGO_BUILD_TARGET",
+          "RUSTUP_TOOLCHAIN",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTDOCFLAGS",
+          "CARGO_BUILD_JOBS",
+          "CARGO_BUILD_PIPELINING",
+          "RUSTC_BOOTSTRAP"
+        ],
+        "config_policy": "cli_build_and_target_rustflags_and_rustdocflags_empty",
+        "flags_cleared": true,
+        "forced_keys": [
+          "CARGO_INCREMENTAL",
+          "CARGO_NET_OFFLINE",
+          "CARGO_TERM_COLOR",
+          "RUSTC",
+          "CARGO_TARGET_DIR"
+        ],
+        "path_redacted": true,
+        "target_basename": "candidate-target",
+        "target_flags_cleared": true,
+        "wrappers_cleared": true
+      },
+      "exit": 0,
+      "stderr_sha256": "54d20fdd2dcaf6aecc89fa20ae9aa2185aab75c3c1f93ef2f77103f87a70f1bf",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timeout_s": 900
+    },
+    {
+      "binary_post": {
+        "basename": "sipi-com-direct-run.exe",
+        "bytes": 6386688,
+        "path_redacted": true,
+        "sha256": "c779ae89e3d1d7bd65f884d4d0fd96d0bd88409dbc62f7f503b6fe24436a1962"
+      },
+      "binary_pre": {
+        "basename": "sipi-com-direct-run.exe",
+        "bytes": 6386688,
+        "path_redacted": true,
+        "sha256": "c779ae89e3d1d7bd65f884d4d0fd96d0bd88409dbc62f7f503b6fe24436a1962"
+      },
+      "binary_stable": true,
+      "command": "cargo build --manifest-path crates/sipi-agent-com-direct/Cargo.toml --bin sipi-com-direct-run --release --locked --offline --config build.rustflags=[] --config build.rustdocflags=[] --config target.x86_64-pc-windows-msvc.rustflags=[] --config target.x86_64-pc-windows-msvc.rustdocflags=[]",
+      "env_policy": "offline_incremental_zero_explicit_rustc_target_flags_and_wrappers_cleared_cli_rustflags_overrides",
+      "env_receipt": {
+        "cargo_home_policy": "host_cargo_home_retained_for_offline_dependency_cache",
+        "cleared_keys": [
+          "RUSTFLAGS",
+          "CARGO_ENCODED_RUSTFLAGS",
+          "RUSTC_WRAPPER",
+          "RUSTC_WORKSPACE_WRAPPER",
+          "CARGO_BUILD_RUSTC",
+          "CARGO_BUILD_RUSTC_WRAPPER",
+          "CARGO_BUILD_RUSTDOC",
+          "RUSTDOCFLAGS",
+          "CARGO_BUILD_TARGET",
+          "RUSTUP_TOOLCHAIN",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTDOCFLAGS",
+          "CARGO_BUILD_JOBS",
+          "CARGO_BUILD_PIPELINING",
+          "RUSTC_BOOTSTRAP"
+        ],
+        "config_policy": "cli_build_and_target_rustflags_and_rustdocflags_empty",
+        "flags_cleared": true,
+        "forced_keys": [
+          "CARGO_INCREMENTAL",
+          "CARGO_NET_OFFLINE",
+          "CARGO_TERM_COLOR",
+          "RUSTC",
+          "CARGO_TARGET_DIR"
+        ],
+        "path_redacted": true,
+        "target_basename": "candidate-target",
+        "target_flags_cleared": true,
+        "wrappers_cleared": true
+      },
+      "exit": 0,
+      "stderr_sha256": "d72e93a851785bcea4b8aa2102abbc7c65f2a40672a6c5778a712c4091c85727",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timeout_s": 900
+    }
+  ],
+  "candidate": {
+    "archive": {
+      "bytes": 51384320,
+      "command": "git -c core.autocrlf=false archive --format=tar <candidate>",
+      "sha256": "1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0"
+    },
+    "commit": "bc882d2e5a19c2a844bacc485ede5b874e8f9c37",
+    "tree": "d87cfecea77ccd670073a6c069658e6b4e8c3137"
+  },
+  "controls": [
+    {
+      "first": {
+        "candidate": {
+          "artifact_sha256": "67364b77aa196b7670506098b0c6cca30fce0ff436b048d8db6f74ccd936a074",
+          "artifacts": [
+            {
+              "basename": "diagnostics.json",
+              "bytes": 7423,
+              "path_redacted": true,
+              "sha256": "cc53cd89c6525699db6c7154975515a7a709d77795058edd0910f98d0a5d8af3"
+            },
+            {
+              "basename": "report.html",
+              "bytes": 12429,
+              "path_redacted": true,
+              "sha256": "0c16d68581f2c269ea9ac7b8ddbf534d88c2e0c1c4bb7042e5463a9e7ad37c91"
+            },
+            {
+              "basename": "result.json",
+              "bytes": 12342,
+              "path_redacted": true,
+              "sha256": "67364b77aa196b7670506098b0c6cca30fce0ff436b048d8db6f74ccd936a074"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "case_index": 0,
+              "metrics": {
+                "COM_dB": 6.299964873537062,
+                "FOM": 18.64293107565776,
+                "VEC_dB": 5.7499409072654455,
+                "VEO_mV": 24.674010963446406,
+                "available_signal_v": 0.023917005481723205,
+                "impulse_sample_count": 6293.0,
+                "interference_noise_v": 0.011580000000000002,
+                "sigma_N_V": 0.0005968349703879553,
+                "threshold_der": 6.68080121728746e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.64293107565776,
+                "high_pass_index": 4,
+                "selected_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8,
+                  -0.04000000000000001
+                ],
+                "sigma_n_v": 0.0005968349703879553,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "case_index": 1,
+              "metrics": {
+                "COM_dB": 6.391319402484933,
+                "FOM": 18.814003222419274,
+                "VEC_dB": 5.665057421157521,
+                "VEO_mV": 18.52604392816178,
+                "available_signal_v": 0.01778302196408089,
+                "impulse_sample_count": 7448.0,
+                "interference_noise_v": 0.008520000000000002,
+                "sigma_N_V": 0.000581834211405276,
+                "threshold_der": 6.413307520535216e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.814003222419274,
+                "high_pass_index": 3,
+                "selected_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8200000000000001,
+                  -0.020000000000000004
+                ],
+                "sigma_n_v": 0.000581834211405276,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "command": "sipi-com-direct-run run --config <pinned-workbook> --thru <pinned-s4p> --output-dir <fresh-output> --override AC_CM_RMS=<vector> --overwrite",
+          "consumer_proof": true,
+          "exit": 0,
+          "first_case_result_provenance": {
+            "case_index": 0,
+            "channel_source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+            "config_sha256": "55c535f57e33803866d250e4e794a3ed2b5a013eb42dd273a35f6acc29f0635c",
+            "impulse_sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916",
+            "scope": "first_case_result"
+          },
+          "package_case_manifests": [
+            {
+              "case_id": "workbook-case-0",
+              "order": 0,
+              "thru": {
+                "identity": "workbook-case-0:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            },
+            {
+              "case_id": "workbook-case-1",
+              "order": 1,
+              "thru": {
+                "identity": "workbook-case-1:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            }
+          ],
+          "runtime_exit": 0,
+          "runtime_timeout_s": 180,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e86896c3cb2744b82b70986664aa775b5e67a7216d2d18c181c9bffd7ecddc0e",
+          "vector": [
+            0.0,
+            0.0
+          ]
+        },
+        "comparison": [
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 6.750155989720952e-14,
+            "metric_abs_delta": {
+              "COM_dB": 4.618527782440651e-14,
+              "FOM": 6.750155989720952e-14,
+              "VEC_dB": 4.263256414560601e-14,
+              "VEO_mV": 2.4868995751603507e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 7.589415207398531e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 7.589415207398531e-19
+          },
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 7.460698725481052e-14,
+            "metric_abs_delta": {
+              "COM_dB": 1.6697754290362354e-13,
+              "FOM": 7.460698725481052e-14,
+              "VEC_dB": 1.5720758028692217e-13,
+              "VEO_mV": 6.856737400084967e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 9.75781955236954e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 9.75781955236954e-19
+          }
+        ],
+        "upstream": {
+          "artifact": {
+            "basename": "upstream-projection.json",
+            "bytes": 5010,
+            "path_redacted": true,
+            "sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+          },
+          "attempts": [
+            {
+              "blocker": null,
+              "command": "uv run --frozen --offline --project <clean-upstream> --python <pinned-python> python -c <probe>",
+              "exit": 0,
+              "method": "uv_offline",
+              "stderr_bytes": 506,
+              "stderr_sha256": "7d9b4acbda2702f13a0a3db6acba5c0173a9f06ec8e2d3f5b6fe6bfb7d7b486e",
+              "stdout_bytes": 5010,
+              "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.2999648735371085,
+                "FOM": 18.642931075657827,
+                "VEC_dB": 5.749940907265403,
+                "VEO_mV": 24.674010963446655,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.0005968349703879545,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.3719904736464017,
+                  0.07070029489460974,
+                  0.025707700722415606,
+                  0.003152158005807517,
+                  0.025152364862104443,
+                  0.003681003357490398
+                ],
+                "fom_db": 18.642931075657827,
+                "high_pass_index": 4,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.0005968349703879545,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.3913194024851,
+                "FOM": 18.8140032224192,
+                "VEC_dB": 5.665057421157364,
+                "VEO_mV": 18.526043928162466,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.000581834211405275,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.5400101694510671,
+                  0.12865154028130293,
+                  0.04304927724645073,
+                  0.009167927898700844,
+                  0.026740819076851642,
+                  0.005630075948760972
+                ],
+                "fom_db": 18.8140032224192,
+                "high_pass_index": 3,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.000581834211405275,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "config_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+          "exit": 0,
+          "port_order": [
+            1,
+            3,
+            2,
+            4
+          ],
+          "runtime": "executed_clean_archive_uv",
+          "runtime_proof": {
+            "agent_com": {
+              "contained_in_materialized_archive": true,
+              "module": "agent_com",
+              "module_file": {
+                "basename": "__init__.py",
+                "bytes": 1719,
+                "path_redacted": true,
+                "relative_path": "src/agent_com/__init__.py",
+                "root_contained": true,
+                "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+              },
+              "package_source_inventory": {
+                "count": 67,
+                "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+                "total_bytes": 872082
+              }
+            },
+            "environment": {
+              "cleared": [
+                "PYTHONHOME",
+                "PYTHONPATH",
+                "PYTHONSTARTUP",
+                "PYTHONUSERBASE",
+                "PYTHONBREAKPOINT",
+                "PYTHONINSPECT",
+                "PYTHONWARNINGS",
+                "PYTHONSAFEPATH",
+                "PYTHONEXECUTABLE",
+                "PYTHONUTF8",
+                "PYTHONIOENCODING",
+                "PYTHONHASHSEED",
+                "PYTHONMALLOC",
+                "PYTHONPROFILEIMPORTTIME",
+                "VIRTUAL_ENV",
+                "UV_PROJECT_ENVIRONMENT",
+                "UV_PYTHON",
+                "UV_PYTHON_DOWNLOADS",
+                "UV_INDEX_URL",
+                "UV_EXTRA_INDEX_URL",
+                "UV_NO_INDEX",
+                "UV_LINK_MODE",
+                "UV_CACHE_DIR",
+                "PIP_CONFIG_FILE",
+                "PIP_INDEX_URL",
+                "PIP_EXTRA_INDEX_URL",
+                "PIP_FIND_LINKS",
+                "PIP_REQUIRE_VIRTUALENV",
+                "PIP_NO_INDEX",
+                "CONDA_PREFIX",
+                "CONDA_DEFAULT_ENV",
+                "CONDA_PYTHON_EXE"
+              ],
+              "pythonno_user_site": true,
+              "pythonpath_mode": "unset",
+              "uv_no_config": true,
+              "uv_virtual_env": {
+                "basename": ".venv",
+                "identity": "materialized_upstream_project_venv",
+                "path_redacted": true,
+                "present": true,
+                "relative_path": ".venv",
+                "root_contained": true
+              }
+            },
+            "numpy": {
+              "basename": "__init__.py",
+              "bytes": 26470,
+              "identity": "regular_nonreparse_file",
+              "module": "numpy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/numpy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4",
+              "version": "2.5.1"
+            },
+            "scipy": {
+              "basename": "__init__.py",
+              "bytes": 4659,
+              "identity": "regular_nonreparse_file",
+              "module": "scipy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/scipy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f",
+              "version": "1.18.0"
+            }
+          },
+          "stderr_bytes": 506,
+          "stderr_sha256": "7d9b4acbda2702f13a0a3db6acba5c0173a9f06ec8e2d3f5b6fe6bfb7d7b486e",
+          "stdout_bytes": 5010,
+          "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+        },
+        "vector": [
+          0.0,
+          0.0
+        ]
+      },
+      "index": 0,
+      "second": {
+        "candidate": {
+          "artifact_sha256": "7578824c91648c2a99b66a160dd2aa6c109b2a893f89c7a6cb5472bfa4cf4f5d",
+          "artifacts": [
+            {
+              "basename": "diagnostics.json",
+              "bytes": 7423,
+              "path_redacted": true,
+              "sha256": "f1dc81db4dd25231e66aa803778477da8a8e979a373b91ea1b14a262b18284fe"
+            },
+            {
+              "basename": "report.html",
+              "bytes": 12431,
+              "path_redacted": true,
+              "sha256": "51e38f8f9982951187a76b1216261fe93c157b87458ce716c42ba0593a02c3d0"
+            },
+            {
+              "basename": "result.json",
+              "bytes": 12344,
+              "path_redacted": true,
+              "sha256": "7578824c91648c2a99b66a160dd2aa6c109b2a893f89c7a6cb5472bfa4cf4f5d"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "case_index": 0,
+              "metrics": {
+                "COM_dB": 6.299964873537062,
+                "FOM": 18.64293107565776,
+                "VEC_dB": 5.7499409072654455,
+                "VEO_mV": 24.674010963446406,
+                "available_signal_v": 0.023917005481723205,
+                "impulse_sample_count": 6293.0,
+                "interference_noise_v": 0.011580000000000002,
+                "sigma_N_V": 0.0005968349703879553,
+                "threshold_der": 6.68080121728746e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.64293107565776,
+                "high_pass_index": 4,
+                "selected_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8,
+                  -0.04000000000000001
+                ],
+                "sigma_n_v": 0.0005968349703879553,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "case_index": 1,
+              "metrics": {
+                "COM_dB": 6.391319402484933,
+                "FOM": 18.814003222419274,
+                "VEC_dB": 5.665057421157521,
+                "VEO_mV": 18.52604392816178,
+                "available_signal_v": 0.01778302196408089,
+                "impulse_sample_count": 7448.0,
+                "interference_noise_v": 0.008520000000000002,
+                "sigma_N_V": 0.000581834211405276,
+                "threshold_der": 6.413307520535216e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.814003222419274,
+                "high_pass_index": 3,
+                "selected_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8200000000000001,
+                  -0.020000000000000004
+                ],
+                "sigma_n_v": 0.000581834211405276,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "command": "sipi-com-direct-run run --config <pinned-workbook> --thru <pinned-s4p> --output-dir <fresh-output> --override AC_CM_RMS=<vector> --overwrite",
+          "consumer_proof": true,
+          "exit": 0,
+          "first_case_result_provenance": {
+            "case_index": 0,
+            "channel_source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+            "config_sha256": "137a789f503637b0be68f3ef1f8f9a856780f9541c16d8586f7d07379cb268f4",
+            "impulse_sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916",
+            "scope": "first_case_result"
+          },
+          "package_case_manifests": [
+            {
+              "case_id": "workbook-case-0",
+              "order": 0,
+              "thru": {
+                "identity": "workbook-case-0:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            },
+            {
+              "case_id": "workbook-case-1",
+              "order": 1,
+              "thru": {
+                "identity": "workbook-case-1:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            }
+          ],
+          "runtime_exit": 0,
+          "runtime_timeout_s": 180,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "fc036d288f8eb4371785660aff44deaa47f2740652502baee11a27c93fcbedfb",
+          "vector": [
+            0.0,
+            0.0
+          ]
+        },
+        "comparison": [
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 6.750155989720952e-14,
+            "metric_abs_delta": {
+              "COM_dB": 4.618527782440651e-14,
+              "FOM": 6.750155989720952e-14,
+              "VEC_dB": 4.263256414560601e-14,
+              "VEO_mV": 2.4868995751603507e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 7.589415207398531e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 7.589415207398531e-19
+          },
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 7.460698725481052e-14,
+            "metric_abs_delta": {
+              "COM_dB": 1.6697754290362354e-13,
+              "FOM": 7.460698725481052e-14,
+              "VEC_dB": 1.5720758028692217e-13,
+              "VEO_mV": 6.856737400084967e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 9.75781955236954e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 9.75781955236954e-19
+          }
+        ],
+        "upstream": {
+          "artifact": {
+            "basename": "upstream-projection.json",
+            "bytes": 5010,
+            "path_redacted": true,
+            "sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+          },
+          "attempts": [
+            {
+              "blocker": null,
+              "command": "uv run --frozen --offline --project <clean-upstream> --python <pinned-python> python -c <probe>",
+              "exit": 0,
+              "method": "uv_offline",
+              "stderr_bytes": 506,
+              "stderr_sha256": "eb26261242cab7b21314b8ee19e7e0807cbdb2188882233c1970e27798e0dfe6",
+              "stdout_bytes": 5010,
+              "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.2999648735371085,
+                "FOM": 18.642931075657827,
+                "VEC_dB": 5.749940907265403,
+                "VEO_mV": 24.674010963446655,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.0005968349703879545,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.3719904736464017,
+                  0.07070029489460974,
+                  0.025707700722415606,
+                  0.003152158005807517,
+                  0.025152364862104443,
+                  0.003681003357490398
+                ],
+                "fom_db": 18.642931075657827,
+                "high_pass_index": 4,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.0005968349703879545,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.3913194024851,
+                "FOM": 18.8140032224192,
+                "VEC_dB": 5.665057421157364,
+                "VEO_mV": 18.526043928162466,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.000581834211405275,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.5400101694510671,
+                  0.12865154028130293,
+                  0.04304927724645073,
+                  0.009167927898700844,
+                  0.026740819076851642,
+                  0.005630075948760972
+                ],
+                "fom_db": 18.8140032224192,
+                "high_pass_index": 3,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.000581834211405275,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "config_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+          "exit": 0,
+          "port_order": [
+            1,
+            3,
+            2,
+            4
+          ],
+          "runtime": "executed_clean_archive_uv",
+          "runtime_proof": {
+            "agent_com": {
+              "contained_in_materialized_archive": true,
+              "module": "agent_com",
+              "module_file": {
+                "basename": "__init__.py",
+                "bytes": 1719,
+                "path_redacted": true,
+                "relative_path": "src/agent_com/__init__.py",
+                "root_contained": true,
+                "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+              },
+              "package_source_inventory": {
+                "count": 67,
+                "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+                "total_bytes": 872082
+              }
+            },
+            "environment": {
+              "cleared": [
+                "PYTHONHOME",
+                "PYTHONPATH",
+                "PYTHONSTARTUP",
+                "PYTHONUSERBASE",
+                "PYTHONBREAKPOINT",
+                "PYTHONINSPECT",
+                "PYTHONWARNINGS",
+                "PYTHONSAFEPATH",
+                "PYTHONEXECUTABLE",
+                "PYTHONUTF8",
+                "PYTHONIOENCODING",
+                "PYTHONHASHSEED",
+                "PYTHONMALLOC",
+                "PYTHONPROFILEIMPORTTIME",
+                "VIRTUAL_ENV",
+                "UV_PROJECT_ENVIRONMENT",
+                "UV_PYTHON",
+                "UV_PYTHON_DOWNLOADS",
+                "UV_INDEX_URL",
+                "UV_EXTRA_INDEX_URL",
+                "UV_NO_INDEX",
+                "UV_LINK_MODE",
+                "UV_CACHE_DIR",
+                "PIP_CONFIG_FILE",
+                "PIP_INDEX_URL",
+                "PIP_EXTRA_INDEX_URL",
+                "PIP_FIND_LINKS",
+                "PIP_REQUIRE_VIRTUALENV",
+                "PIP_NO_INDEX",
+                "CONDA_PREFIX",
+                "CONDA_DEFAULT_ENV",
+                "CONDA_PYTHON_EXE"
+              ],
+              "pythonno_user_site": true,
+              "pythonpath_mode": "unset",
+              "uv_no_config": true,
+              "uv_virtual_env": {
+                "basename": ".venv",
+                "identity": "materialized_upstream_project_venv",
+                "path_redacted": true,
+                "present": true,
+                "relative_path": ".venv",
+                "root_contained": true
+              }
+            },
+            "numpy": {
+              "basename": "__init__.py",
+              "bytes": 26470,
+              "identity": "regular_nonreparse_file",
+              "module": "numpy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/numpy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4",
+              "version": "2.5.1"
+            },
+            "scipy": {
+              "basename": "__init__.py",
+              "bytes": 4659,
+              "identity": "regular_nonreparse_file",
+              "module": "scipy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/scipy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f",
+              "version": "1.18.0"
+            }
+          },
+          "stderr_bytes": 506,
+          "stderr_sha256": "eb26261242cab7b21314b8ee19e7e0807cbdb2188882233c1970e27798e0dfe6",
+          "stdout_bytes": 5010,
+          "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+        },
+        "vector": [
+          0.0,
+          0.0
+        ]
+      },
+      "typed_projection_stable": false,
+      "vector": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "first": {
+        "candidate": {
+          "artifact_sha256": "3e5a3d8af420ab475d2172a9078ada56c2e7dc9921040658fbb842d3af9e01c1",
+          "artifacts": [
+            {
+              "basename": "diagnostics.json",
+              "bytes": 7423,
+              "path_redacted": true,
+              "sha256": "cc53cd89c6525699db6c7154975515a7a709d77795058edd0910f98d0a5d8af3"
+            },
+            {
+              "basename": "report.html",
+              "bytes": 12431,
+              "path_redacted": true,
+              "sha256": "156fa686d430536c5d9f4f2cbcf467a507b75010b183bf25a96f51c993af9da5"
+            },
+            {
+              "basename": "result.json",
+              "bytes": 12344,
+              "path_redacted": true,
+              "sha256": "3e5a3d8af420ab475d2172a9078ada56c2e7dc9921040658fbb842d3af9e01c1"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "case_index": 0,
+              "metrics": {
+                "COM_dB": 6.299964873537062,
+                "FOM": 18.64293107565776,
+                "VEC_dB": 5.7499409072654455,
+                "VEO_mV": 24.674010963446406,
+                "available_signal_v": 0.023917005481723205,
+                "impulse_sample_count": 6293.0,
+                "interference_noise_v": 0.011580000000000002,
+                "sigma_N_V": 0.0005968349703879553,
+                "threshold_der": 6.68080121728746e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.64293107565776,
+                "high_pass_index": 4,
+                "selected_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8,
+                  -0.04000000000000001
+                ],
+                "sigma_n_v": 0.0005968349703879553,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "case_index": 1,
+              "metrics": {
+                "COM_dB": 6.391319402484933,
+                "FOM": 18.814003222419274,
+                "VEC_dB": 5.665057421157521,
+                "VEO_mV": 18.52604392816178,
+                "available_signal_v": 0.01778302196408089,
+                "impulse_sample_count": 7448.0,
+                "interference_noise_v": 0.008520000000000002,
+                "sigma_N_V": 0.000581834211405276,
+                "threshold_der": 6.413307520535216e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.814003222419274,
+                "high_pass_index": 3,
+                "selected_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8200000000000001,
+                  -0.020000000000000004
+                ],
+                "sigma_n_v": 0.000581834211405276,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "command": "sipi-com-direct-run run --config <pinned-workbook> --thru <pinned-s4p> --output-dir <fresh-output> --override AC_CM_RMS=<vector> --overwrite",
+          "consumer_proof": true,
+          "exit": 0,
+          "first_case_result_provenance": {
+            "case_index": 0,
+            "channel_source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+            "config_sha256": "4d7a905c971a98e8b1dcb5e27792810c93dfce115198093aa459512622d24f2d",
+            "impulse_sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916",
+            "scope": "first_case_result"
+          },
+          "package_case_manifests": [
+            {
+              "case_id": "workbook-case-0",
+              "order": 0,
+              "thru": {
+                "identity": "workbook-case-0:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            },
+            {
+              "case_id": "workbook-case-1",
+              "order": 1,
+              "thru": {
+                "identity": "workbook-case-1:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            }
+          ],
+          "runtime_exit": 0,
+          "runtime_timeout_s": 180,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5059847f330f8077a244c76191a680428b807b6e1ba5f37865a9f221ed94a4ff",
+          "vector": [
+            0.0,
+            0.001
+          ]
+        },
+        "comparison": [
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 6.750155989720952e-14,
+            "metric_abs_delta": {
+              "COM_dB": 4.618527782440651e-14,
+              "FOM": 6.750155989720952e-14,
+              "VEC_dB": 4.263256414560601e-14,
+              "VEO_mV": 2.4868995751603507e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 7.589415207398531e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 7.589415207398531e-19
+          },
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 7.460698725481052e-14,
+            "metric_abs_delta": {
+              "COM_dB": 1.6697754290362354e-13,
+              "FOM": 7.460698725481052e-14,
+              "VEC_dB": 1.5720758028692217e-13,
+              "VEO_mV": 6.856737400084967e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 9.75781955236954e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 9.75781955236954e-19
+          }
+        ],
+        "upstream": {
+          "artifact": {
+            "basename": "upstream-projection.json",
+            "bytes": 5010,
+            "path_redacted": true,
+            "sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+          },
+          "attempts": [
+            {
+              "blocker": null,
+              "command": "uv run --frozen --offline --project <clean-upstream> --python <pinned-python> python -c <probe>",
+              "exit": 0,
+              "method": "uv_offline",
+              "stderr_bytes": 0,
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stdout_bytes": 5010,
+              "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.2999648735371085,
+                "FOM": 18.642931075657827,
+                "VEC_dB": 5.749940907265403,
+                "VEO_mV": 24.674010963446655,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.0005968349703879545,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.3719904736464017,
+                  0.07070029489460974,
+                  0.025707700722415606,
+                  0.003152158005807517,
+                  0.025152364862104443,
+                  0.003681003357490398
+                ],
+                "fom_db": 18.642931075657827,
+                "high_pass_index": 4,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.0005968349703879545,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.3913194024851,
+                "FOM": 18.8140032224192,
+                "VEC_dB": 5.665057421157364,
+                "VEO_mV": 18.526043928162466,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.000581834211405275,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.5400101694510671,
+                  0.12865154028130293,
+                  0.04304927724645073,
+                  0.009167927898700844,
+                  0.026740819076851642,
+                  0.005630075948760972
+                ],
+                "fom_db": 18.8140032224192,
+                "high_pass_index": 3,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.000581834211405275,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "config_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+          "exit": 0,
+          "port_order": [
+            1,
+            3,
+            2,
+            4
+          ],
+          "runtime": "executed_clean_archive_uv",
+          "runtime_proof": {
+            "agent_com": {
+              "contained_in_materialized_archive": true,
+              "module": "agent_com",
+              "module_file": {
+                "basename": "__init__.py",
+                "bytes": 1719,
+                "path_redacted": true,
+                "relative_path": "src/agent_com/__init__.py",
+                "root_contained": true,
+                "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+              },
+              "package_source_inventory": {
+                "count": 67,
+                "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+                "total_bytes": 872082
+              }
+            },
+            "environment": {
+              "cleared": [
+                "PYTHONHOME",
+                "PYTHONPATH",
+                "PYTHONSTARTUP",
+                "PYTHONUSERBASE",
+                "PYTHONBREAKPOINT",
+                "PYTHONINSPECT",
+                "PYTHONWARNINGS",
+                "PYTHONSAFEPATH",
+                "PYTHONEXECUTABLE",
+                "PYTHONUTF8",
+                "PYTHONIOENCODING",
+                "PYTHONHASHSEED",
+                "PYTHONMALLOC",
+                "PYTHONPROFILEIMPORTTIME",
+                "VIRTUAL_ENV",
+                "UV_PROJECT_ENVIRONMENT",
+                "UV_PYTHON",
+                "UV_PYTHON_DOWNLOADS",
+                "UV_INDEX_URL",
+                "UV_EXTRA_INDEX_URL",
+                "UV_NO_INDEX",
+                "UV_LINK_MODE",
+                "UV_CACHE_DIR",
+                "PIP_CONFIG_FILE",
+                "PIP_INDEX_URL",
+                "PIP_EXTRA_INDEX_URL",
+                "PIP_FIND_LINKS",
+                "PIP_REQUIRE_VIRTUALENV",
+                "PIP_NO_INDEX",
+                "CONDA_PREFIX",
+                "CONDA_DEFAULT_ENV",
+                "CONDA_PYTHON_EXE"
+              ],
+              "pythonno_user_site": true,
+              "pythonpath_mode": "unset",
+              "uv_no_config": true,
+              "uv_virtual_env": {
+                "basename": ".venv",
+                "identity": "materialized_upstream_project_venv",
+                "path_redacted": true,
+                "present": true,
+                "relative_path": ".venv",
+                "root_contained": true
+              }
+            },
+            "numpy": {
+              "basename": "__init__.py",
+              "bytes": 26470,
+              "identity": "regular_nonreparse_file",
+              "module": "numpy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/numpy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4",
+              "version": "2.5.1"
+            },
+            "scipy": {
+              "basename": "__init__.py",
+              "bytes": 4659,
+              "identity": "regular_nonreparse_file",
+              "module": "scipy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/scipy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f",
+              "version": "1.18.0"
+            }
+          },
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 5010,
+          "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+        },
+        "vector": [
+          0.0,
+          0.001
+        ]
+      },
+      "index": 1,
+      "second": {
+        "candidate": {
+          "artifact_sha256": "29e8db4c9c09eb5c10b17a9530aa38f51180593512ec13aa4c9450dbd6e3a6fd",
+          "artifacts": [
+            {
+              "basename": "diagnostics.json",
+              "bytes": 7423,
+              "path_redacted": true,
+              "sha256": "f1dc81db4dd25231e66aa803778477da8a8e979a373b91ea1b14a262b18284fe"
+            },
+            {
+              "basename": "report.html",
+              "bytes": 12431,
+              "path_redacted": true,
+              "sha256": "b2673bbaf8ebd115d35199069ff5fbe58c3423aa504881db19284a1433a323a2"
+            },
+            {
+              "basename": "result.json",
+              "bytes": 12344,
+              "path_redacted": true,
+              "sha256": "29e8db4c9c09eb5c10b17a9530aa38f51180593512ec13aa4c9450dbd6e3a6fd"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "case_index": 0,
+              "metrics": {
+                "COM_dB": 6.299964873537062,
+                "FOM": 18.64293107565776,
+                "VEC_dB": 5.7499409072654455,
+                "VEO_mV": 24.674010963446406,
+                "available_signal_v": 0.023917005481723205,
+                "impulse_sample_count": 6293.0,
+                "interference_noise_v": 0.011580000000000002,
+                "sigma_N_V": 0.0005968349703879553,
+                "threshold_der": 6.68080121728746e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.64293107565776,
+                "high_pass_index": 4,
+                "selected_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8,
+                  -0.04000000000000001
+                ],
+                "sigma_n_v": 0.0005968349703879553,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "case_index": 1,
+              "metrics": {
+                "COM_dB": 6.391319402484933,
+                "FOM": 18.814003222419274,
+                "VEC_dB": 5.665057421157521,
+                "VEO_mV": 18.52604392816178,
+                "available_signal_v": 0.01778302196408089,
+                "impulse_sample_count": 7448.0,
+                "interference_noise_v": 0.008520000000000002,
+                "sigma_N_V": 0.000581834211405276,
+                "threshold_der": 6.413307520535216e-11
+              },
+              "port_order": null,
+              "port_order_observed": false,
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": false,
+                "dfe_taps": null,
+                "fom_db": 18.814003222419274,
+                "high_pass_index": 3,
+                "selected_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                },
+                "selected_tx_taps": [
+                  0.0,
+                  0.02,
+                  -0.14,
+                  0.8200000000000001,
+                  -0.020000000000000004
+                ],
+                "sigma_n_v": 0.000581834211405276,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "command": "sipi-com-direct-run run --config <pinned-workbook> --thru <pinned-s4p> --output-dir <fresh-output> --override AC_CM_RMS=<vector> --overwrite",
+          "consumer_proof": true,
+          "exit": 0,
+          "first_case_result_provenance": {
+            "case_index": 0,
+            "channel_source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+            "config_sha256": "7320ade761f288ed20775c831501de58b6df8d6369d7c9a1ce76bc1aa959af42",
+            "impulse_sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916",
+            "scope": "first_case_result"
+          },
+          "package_case_manifests": [
+            {
+              "case_id": "workbook-case-0",
+              "order": 0,
+              "thru": {
+                "identity": "workbook-case-0:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            },
+            {
+              "case_id": "workbook-case-1",
+              "order": 1,
+              "thru": {
+                "identity": "workbook-case-1:thru",
+                "source_kind": "workbook-s4p-source",
+                "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+              }
+            }
+          ],
+          "runtime_exit": 0,
+          "runtime_timeout_s": 180,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "0f6817e28a740df86921ac684618e7820763b6c3e3109a8fb3dd4845bddc5288",
+          "vector": [
+            0.0,
+            0.001
+          ]
+        },
+        "comparison": [
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 6293,
+                  "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+                },
+                "channel_pulse": {
+                  "sample_count": 6293,
+                  "sha256": "6b37c9cfdf1b05165693d1b222e9f7a65cea6fd32854646a83d742c42f5bdecb"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 6.750155989720952e-14,
+            "metric_abs_delta": {
+              "COM_dB": 4.618527782440651e-14,
+              "FOM": 6.750155989720952e-14,
+              "VEC_dB": 4.263256414560601e-14,
+              "VEO_mV": 2.4868995751603507e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 7.589415207398531e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 7.589415207398531e-19
+          },
+          {
+            "array_receipts": {
+              "candidate": {
+                "channel_impulse": {
+                  "sample_count": 7448,
+                  "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+                },
+                "channel_pulse": {
+                  "sample_count": 7448,
+                  "sha256": "0af13dd47993b2b452b95411843f9d9670d303edf43f8f1d2b77cd343fc48d49"
+                }
+              },
+              "upstream": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              }
+            },
+            "cursor_index_match": true,
+            "dfe": {
+              "candidate_published": false,
+              "status": "candidate_missing",
+              "upstream_published": true
+            },
+            "fom_db_abs_delta": 7.460698725481052e-14,
+            "metric_abs_delta": {
+              "COM_dB": 1.6697754290362354e-13,
+              "FOM": 7.460698725481052e-14,
+              "VEC_dB": 1.5720758028692217e-13,
+              "VEO_mV": 6.856737400084967e-13,
+              "available_signal_v": null,
+              "impulse_sample_count": null,
+              "interference_noise_v": null,
+              "sigma_N_V": 9.75781955236954e-19,
+              "threshold_der": null
+            },
+            "port_order_match": false,
+            "port_order_observed": false,
+            "port_order_status": "not_observed",
+            "sigma_n_v_abs_delta": 9.75781955236954e-19
+          }
+        ],
+        "upstream": {
+          "artifact": {
+            "basename": "upstream-projection.json",
+            "bytes": 5010,
+            "path_redacted": true,
+            "sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+          },
+          "attempts": [
+            {
+              "blocker": null,
+              "command": "uv run --frozen --offline --project <clean-upstream> --python <pinned-python> python -c <probe>",
+              "exit": 0,
+              "method": "uv_offline",
+              "stderr_bytes": 0,
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stdout_bytes": 5010,
+              "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+            }
+          ],
+          "blocker": null,
+          "cases": [
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                  "shape": [
+                    6293
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 50344,
+                  "sample_count": 6293,
+                  "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                  "shape": [
+                    6293
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.2999648735371085,
+                "FOM": 18.642931075657827,
+                "VEC_dB": 5.749940907265403,
+                "VEO_mV": 24.674010963446655,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.0005968349703879545,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 13,
+                "cursor_index": 2094,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.3719904736464017,
+                  0.07070029489460974,
+                  0.025707700722415606,
+                  0.003152158005807517,
+                  0.025152364862104443,
+                  0.003681003357490398
+                ],
+                "fom_db": 18.642931075657827,
+                "high_pass_index": 4,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.0005968349703879545,
+                "tx_grid_index": 1215
+              }
+            },
+            {
+              "arrays": {
+                "equalized_pulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                  "shape": [
+                    7448
+                  ]
+                },
+                "frequency_hz": {
+                  "bytes": 64008,
+                  "sample_count": 8001,
+                  "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                  "shape": [
+                    8001
+                  ]
+                },
+                "ptdr": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "ptdr_gated": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "tdr_time_s": {
+                  "bytes": 8936,
+                  "sample_count": 1117,
+                  "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                  "shape": [
+                    1117
+                  ]
+                },
+                "unequalized_impulse": {
+                  "bytes": 59584,
+                  "sample_count": 7448,
+                  "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                  "shape": [
+                    7448
+                  ]
+                }
+              },
+              "metrics": {
+                "COM_dB": 6.3913194024851,
+                "FOM": 18.8140032224192,
+                "VEC_dB": 5.665057421157364,
+                "VEO_mV": 18.526043928162466,
+                "available_signal_v": null,
+                "impulse_sample_count": null,
+                "interference_noise_v": null,
+                "sigma_N_V": 0.000581834211405275,
+                "threshold_der": null
+              },
+              "port_order": [
+                1,
+                3,
+                2,
+                4
+              ],
+              "winner": {
+                "ctle_index": 12,
+                "cursor_index": 2464,
+                "dfe_published": true,
+                "dfe_taps": [
+                  0.5400101694510671,
+                  0.12865154028130293,
+                  0.04304927724645073,
+                  0.009167927898700844,
+                  0.026740819076851642,
+                  0.005630075948760972
+                ],
+                "fom_db": 18.8140032224192,
+                "high_pass_index": 3,
+                "selected_tx_taps": null,
+                "sigma_n_v": 0.000581834211405275,
+                "tx_grid_index": 1216
+              }
+            }
+          ],
+          "config_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+          "exit": 0,
+          "port_order": [
+            1,
+            3,
+            2,
+            4
+          ],
+          "runtime": "executed_clean_archive_uv",
+          "runtime_proof": {
+            "agent_com": {
+              "contained_in_materialized_archive": true,
+              "module": "agent_com",
+              "module_file": {
+                "basename": "__init__.py",
+                "bytes": 1719,
+                "path_redacted": true,
+                "relative_path": "src/agent_com/__init__.py",
+                "root_contained": true,
+                "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+              },
+              "package_source_inventory": {
+                "count": 67,
+                "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+                "total_bytes": 872082
+              }
+            },
+            "environment": {
+              "cleared": [
+                "PYTHONHOME",
+                "PYTHONPATH",
+                "PYTHONSTARTUP",
+                "PYTHONUSERBASE",
+                "PYTHONBREAKPOINT",
+                "PYTHONINSPECT",
+                "PYTHONWARNINGS",
+                "PYTHONSAFEPATH",
+                "PYTHONEXECUTABLE",
+                "PYTHONUTF8",
+                "PYTHONIOENCODING",
+                "PYTHONHASHSEED",
+                "PYTHONMALLOC",
+                "PYTHONPROFILEIMPORTTIME",
+                "VIRTUAL_ENV",
+                "UV_PROJECT_ENVIRONMENT",
+                "UV_PYTHON",
+                "UV_PYTHON_DOWNLOADS",
+                "UV_INDEX_URL",
+                "UV_EXTRA_INDEX_URL",
+                "UV_NO_INDEX",
+                "UV_LINK_MODE",
+                "UV_CACHE_DIR",
+                "PIP_CONFIG_FILE",
+                "PIP_INDEX_URL",
+                "PIP_EXTRA_INDEX_URL",
+                "PIP_FIND_LINKS",
+                "PIP_REQUIRE_VIRTUALENV",
+                "PIP_NO_INDEX",
+                "CONDA_PREFIX",
+                "CONDA_DEFAULT_ENV",
+                "CONDA_PYTHON_EXE"
+              ],
+              "pythonno_user_site": true,
+              "pythonpath_mode": "unset",
+              "uv_no_config": true,
+              "uv_virtual_env": {
+                "basename": ".venv",
+                "identity": "materialized_upstream_project_venv",
+                "path_redacted": true,
+                "present": true,
+                "relative_path": ".venv",
+                "root_contained": true
+              }
+            },
+            "numpy": {
+              "basename": "__init__.py",
+              "bytes": 26470,
+              "identity": "regular_nonreparse_file",
+              "module": "numpy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/numpy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4",
+              "version": "2.5.1"
+            },
+            "scipy": {
+              "basename": "__init__.py",
+              "bytes": 4659,
+              "identity": "regular_nonreparse_file",
+              "module": "scipy",
+              "path_redacted": true,
+              "regular_file": true,
+              "relative_path": ".venv/Lib/site-packages/scipy/__init__.py",
+              "reparse_checked": true,
+              "root_contained": true,
+              "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f",
+              "version": "1.18.0"
+            }
+          },
+          "stderr_bytes": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 5010,
+          "stdout_sha256": "48af97e44a3b70b96c4e2b2f773172e2393ac8fc4f573a01dab9a8e55e6597b6"
+        },
+        "vector": [
+          0.0,
+          0.001
+        ]
+      },
+      "typed_projection_stable": false,
+      "vector": [
+        0.0,
+        0.001
+      ]
+    }
+  ],
+  "fixture_post": {
+    "s4p": {
+      "materialized_bytes": 6457063,
+      "materialized_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+      "source_bytes": 6457063,
+      "source_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec"
+    },
+    "workbook": {
+      "materialized_bytes": 67087,
+      "materialized_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+      "source_bytes": 67087,
+      "source_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925"
+    }
+  },
+  "fixtures": {
+    "s4p": {
+      "basename": "kappa_asymmetric_reflective_10db_at_26p56ghz.s4p",
+      "bytes": 6457063,
+      "git_blob_sha1": "a1fe8618043b31f63dfb24454ac1d296000010c0",
+      "materialized_bytes": 6457063,
+      "materialized_sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+      "path": "fixtures/synthetic/kappa_asymmetric_reflective_10db_at_26p56ghz.s4p",
+      "sha256": "3a563543ba664fcc04c1ac5603ad305cb0b1d110c3d9020727444b1c3fd2d0ec",
+      "source_commit": "5272ffe74702cd585054d975559b06f8afae7b6e"
+    },
+    "workbook": {
+      "basename": "config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx",
+      "bytes": 67087,
+      "git_blob_sha1": "22b633b6092b4b0de0ca89273515329b362eabae",
+      "materialized_bytes": 67087,
+      "materialized_sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+      "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx",
+      "sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925",
+      "source_commit": "5272ffe74702cd585054d975559b06f8afae7b6e"
+    }
+  },
+  "matched": false,
+  "non_claims": [
+    "no S-parameter fit",
+    "channel uses one final FD-to-TD impulse",
+    "no upstream or global numeric parity",
+    "no release or promotion claim",
+    "candidate DFE publication is not inferred from hidden state"
+  ],
+  "port_order": {
+    "one_based": [
+      1,
+      3,
+      2,
+      4
+    ],
+    "source_cell": "COM_Settings!G7",
+    "source_key": "Port Order"
+  },
+  "replay_variance": {
+    "candidate_artifact_receipts_drift_by_control": [
+      true,
+      true
+    ],
+    "candidate_config_provenance_drift": true,
+    "candidate_config_provenance_sha256": [
+      [
+        "55c535f57e33803866d250e4e794a3ed2b5a013eb42dd273a35f6acc29f0635c",
+        "137a789f503637b0be68f3ef1f8f9a856780f9541c16d8586f7d07379cb268f4"
+      ],
+      [
+        "4d7a905c971a98e8b1dcb5e27792810c93dfce115198093aa459512622d24f2d",
+        "7320ade761f288ed20775c831501de58b6df8d6369d7c9a1ce76bc1aa959af42"
+      ]
+    ],
+    "typed_projection_stable_by_control": [
+      false,
+      false
+    ],
+    "upstream_projection_stable_by_control": [
+      true,
+      true
+    ]
+  },
+  "runs": [
+    {
+      "basename": "com-workbook-accm-replay-v5-run1.json",
+      "bytes": 58401,
+      "nonce": "03049bcdfa43e0e8907cc2a69e9265d89579be21059d18928162a9ef31302e5b",
+      "run_id": "1374cb690e7f1eb90247caa4b63ed0a6ce6873556f899452046260b8b9007868",
+      "sha256": "fc14c562020883d0706bfaa16c3d970cb9834bcbf971f9e57b260021a8ca1a64",
+      "slot": "run1",
+      "status": "scoped_mismatch_observed"
+    },
+    {
+      "basename": "com-workbook-accm-replay-v5-run2.json",
+      "bytes": 58401,
+      "nonce": "8289a1caa5ac62c36229b62cce2dc9a43dac4f355f5d021ac8683ce9841d71c5",
+      "run_id": "950d932509047d64c89177cc54146d1a65301068c88c3f8bdcba1fe916328f77",
+      "sha256": "ef732c7b063a72e422aa5f68325df1d029da056b2eb092502e7a7c7eb26fda01",
+      "slot": "run2",
+      "status": "scoped_mismatch_observed"
+    }
+  ],
+  "schema": "sipi.com.workbook-accm-replay.v5.aggregate",
+  "scratch_roots": [
+    {
+      "basename": "com-workbook-accm-v5-formal-run1-03049bcdfa43e0e8907cc2a69e9265d89579be21059d18928162a9ef31302e5b",
+      "marker": {
+        "basename": ".sipi-com-workbook-accm-v5-root-marker",
+        "bytes": 169,
+        "path_redacted": true,
+        "sha256": "0619eeb11dcd09ad843bcf8dcc332f7b7da621e9badab487b4c29ea2846a8405"
+      },
+      "nonce": "03049bcdfa43e0e8907cc2a69e9265d89579be21059d18928162a9ef31302e5b",
+      "slot": "run1"
+    },
+    {
+      "basename": "com-workbook-accm-v5-formal-run2-8289a1caa5ac62c36229b62cce2dc9a43dac4f355f5d021ac8683ce9841d71c5",
+      "marker": {
+        "basename": ".sipi-com-workbook-accm-v5-root-marker",
+        "bytes": 169,
+        "path_redacted": true,
+        "sha256": "99370dcf8d7326020e6d023bf39a198784789c98c0b2fc0ef692fe2afb51fca2"
+      },
+      "nonce": "8289a1caa5ac62c36229b62cce2dc9a43dac4f355f5d021ac8683ce9841d71c5",
+      "slot": "run2"
+    }
+  ],
+  "status": "scoped_mismatch_observed",
+  "toolchain": {
+    "cargo": {
+      "basename": "cargo.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+    },
+    "python": {
+      "basename": "python.exe",
+      "file_bytes": 45568,
+      "file_sha256": "a5143a28b87a4f4bd327cd8b0c73472e2ba39f0931fa68d488869ef767efc78d",
+      "path_redacted": true,
+      "role": "python",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f133aa4c375d22e9226cb4ee8a71740d78c77f15c82b7842a0b93e594eed1884"
+    },
+    "rustc": {
+      "basename": "rustc.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+    },
+    "uv": {
+      "basename": "uv.exe",
+      "file_bytes": 68317696,
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+    }
+  },
+  "toolchain_post": {
+    "cargo": {
+      "basename": "cargo.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+    },
+    "python": {
+      "basename": "python.exe",
+      "file_bytes": 45568,
+      "file_sha256": "a5143a28b87a4f4bd327cd8b0c73472e2ba39f0931fa68d488869ef767efc78d",
+      "path_redacted": true,
+      "role": "python",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f133aa4c375d22e9226cb4ee8a71740d78c77f15c82b7842a0b93e594eed1884"
+    },
+    "rustc": {
+      "basename": "rustc.exe",
+      "file_bytes": 12814336,
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+    },
+    "uv": {
+      "basename": "uv.exe",
+      "file_bytes": 68317696,
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+    }
+  },
+  "toolchain_stable": true,
+  "upstream": {
+    "archive": {
+      "bytes": 43694080,
+      "command": "git -c core.autocrlf=false archive --format=tar <upstream>",
+      "sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    },
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "upstream_source_post": {
+    "module_file": {
+      "basename": "__init__.py",
+      "bytes": 1719,
+      "path_redacted": true,
+      "relative_path": "src/agent_com/__init__.py",
+      "root_contained": true,
+      "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+    },
+    "package_source_inventory": {
+      "count": 67,
+      "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+      "total_bytes": 872082
+    }
+  },
+  "upstream_source_pre": {
+    "module_file": {
+      "basename": "__init__.py",
+      "bytes": 1719,
+      "path_redacted": true,
+      "relative_path": "src/agent_com/__init__.py",
+      "root_contained": true,
+      "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+    },
+    "package_source_inventory": {
+      "count": 67,
+      "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+      "total_bytes": 872082
+    }
+  }
+}
