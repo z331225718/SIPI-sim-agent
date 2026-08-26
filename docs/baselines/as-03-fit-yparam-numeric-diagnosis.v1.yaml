@@ -1,0 +1,116 @@
+schema: sipi.as-03-fit-yparam-numeric-diagnosis.v2
+status: blocked_numeric_semantics
+parity_claim: false
+numeric_parity: false
+integrity_gate: passed
+trust:
+  scope: integrity_only
+  external_trust_root: false
+  reciprocal_execution_anchor: true
+scope:
+  workflow: fit-yparam
+  y_parameter_fit: true
+  si_s_parameter_fit: false
+  as05_xyce_xdm: false
+  fixture:
+    kind: fixed_touchstone_line_s2p_v1
+    sha256: 4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70
+    bytes: 137
+    frequency_points: 4
+source:
+  candidate:
+    commit: a804c844d88b6189dba36c4abc41d7d4828d0e5c
+    tree: 4bdf6691d3aa40dde2ab0712eaf71fda9b181b3a
+    archive:
+      bytes: 52224000
+      sha256: b4b7a43df3186bbf955171bbcc7f3d922cd4acae690017fe02b5b51d23c9463a
+    files:
+      - path: crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs
+        git_blob: f92a28bf2706e39bfbbcabd6d5e290b5b39ec1d7
+        bytes: 78970
+        sha256: 490ce387c53eb81ead3f7adf38ae1cb78a23f1c3b0b9985f48a3f216ce1e8dd6
+      - path: crates/sipi-agent-spice-direct/src/fit_sparam.rs
+        git_blob: a0f004c92197e08af6fe02ddf801193e5a16f9a9
+        bytes: 120227
+        sha256: 73924b3302bb6064a568c1011fb8db5bec364e8438355c5d038cf83e5af10021
+  upstream:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    archive:
+      bytes: 119920640
+      sha256: bcc11eedf6c12530c1d243d71d9154b54416b6043e267a76fe302dffb1a0b8b5
+    files:
+      - path: src/agent_spice/sparam/yparam.py
+        git_blob: 473746afe5efb3e5117c58b446e2a7ccb3ca8872
+        bytes: 30937
+        sha256: ca6ec999b93f78094c7ea58997676bd886130baf0bdaec04957c3c480ba5b713
+      - path: src/agent_spice/sparam/native_vf.py
+        git_blob: 971a98924d52b9fb57738a6a729501dfda934968
+        bytes: 61818
+        sha256: 90db63aadeeb0be5c0a29b750d617079d598f0afe7c441a0398a8648daad31a6
+      - path: src/agent_spice/sparam/pole_relocation.py
+        git_blob: befdbbfbd3dd98a9d45ea5133e17aa3a252d50f3
+        bytes: 18535
+        sha256: 515bdc4ebaa6f1c1642ff9ebd5ebe773fae8723c59f779f496f389d38545a0a5
+physical_checkpoint:
+  frequency_hz: 1000000
+  sample_index: 0
+  ports: 2
+  candidate_physical_f64_le_sha256: ff0167b944a031045b75d38221425586e727cd303c14a625db1b5b9ffc1e2e52
+  candidate_normalized_sha256: 1889b0dba461fecac519bdd8b0be508c6a64e609848d668be0c065e2f3f586c5
+  upstream_physical_f64_le_sha256: fb08388ada1ac60945b5c91fc9a0833367bfb0963d01b3d59a100ce6d9d7e55e
+  upstream_normalized_sha256: fd64c9b013b14ddb744f835901a5da2c44824ff51e01df43ecb4953a4f941951
+  parser_receipt_sha256: 2c7012be2937f1a66c4d6b01aebc4feae9508481753daef44923809e05e834ba
+  reciprocal_anchor_sha256: c2ae892304daea4fe967b69222df3a82308f4a37361942b3a711698a67c0fc48
+  first_lexicographic_difference:
+    row: 0
+    column: 0
+    component: re
+    candidate: "0.08628781899500133"
+    upstream: "0.08628781899500129"
+    delta: "4.163336342344337e-17"
+    delta_bits: 3c88000000000000
+  max_abs_difference:
+    row: 1
+    column: 1
+    component: re
+    candidate: "0.08628781899500135"
+    upstream: "0.08628781899500129"
+    delta: "5.551115123125783e-17"
+    delta_bits: 3c90000000000000
+evidence:
+  runner:
+    path: tools/run_as_03_numeric_checkpoint.py
+    sha256: 7a80b11900225a6c4dadf5bb4b468e71b3c73aa5a4fe46d35b631d4ca217aed5
+  aggregator:
+    path: tools/aggregate_as_03_numeric_checkpoint.py
+    sha256: 93ae9255963554679644728bc3e24b54042b644a000517a62e3c2f524033aab8
+  verifier:
+    path: tools/verify_as_03_numeric_diagnosis.py
+    sha256: 436c40b49605a2400edd03b850fce1624310c84c40ac702a4c001acfe0c86c7a
+  mutation_test:
+    path: tools/test_verify_as_03_numeric_diagnosis.py
+    sha256: d83f97a771affb2cf9e7fd3037cd263593d6eb1479a73f63d0315ad875100c32
+  reports:
+    - path: docs/baselines/as-03-numeric-checkpoint-run-01.json
+      sha256: 692014dba476bc50a390b46eeb1805324824a52e99c7726fa68fc2eba6270e24
+    - path: docs/baselines/as-03-numeric-checkpoint-run-02.json
+      sha256: 57a88fa9669e527d14f242841cc95bdcff897ca1640c163d09174b9a2cd7cd12
+  aggregate:
+    path: docs/baselines/as-03-numeric-checkpoint-aggregate.json
+    sha256: 847c6dea510d352b5d456b3744736967fa38a1e96d420ec4920a75dc39d456f0
+  report_runs: 2
+audit:
+  path: docs/baselines/audits/2026-08-27-as-03-fit-yparam-numeric-diagnosis.md
+  sha256: 209fab959924d49a3bea072149fb1612f9b0f23ddd96d33089724b559b46544b
+blockers:
+  - s_to_y_operation_order_divergence_before_fit
+  - residue_least_squares_solver_is_faer_qr_not_numpy_lstsq
+  - exact_cross_runtime_float_parity_requires_numpy_lapack_or_a_new_solver
+non_claims:
+  - no_external_trust_root
+  - no_global_numeric_parity
+  - no_acceptance_tolerance
+  - no_si_channel_s_parameter_fit
+  - no_as05_xyce_xdm
+  - no_product_or_release_promotion
