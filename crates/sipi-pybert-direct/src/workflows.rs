@@ -488,7 +488,7 @@ fn apply_statistical_override(
         .take()
         .unwrap_or(StatisticalEyeConfigV1 {
             target_ber: 1.0e-5,
-            contour_ber_levels: vec![1.0e-4, 1.0e-3],
+            contour_ber_levels: vec![1.0e-5, 1.0e-4, 1.0e-3],
             rx_rj_ui: None,
             rx_dj_ui: None,
             tx_rj_ui: None,

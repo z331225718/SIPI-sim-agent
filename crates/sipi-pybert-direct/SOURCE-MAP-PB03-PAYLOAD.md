@@ -29,6 +29,9 @@ The pinned files are bound by Git blob, raw byte length, and SHA-256:
 | --- | --- | ---: | --- | --- |
 | `src/pybert_web/engine_adapter.py` | `8cdb9fb612635b58cf2e071a9e90d07d272faa61` | 50326 | `c86a84a9787c542b81247784eb14a1a4c7aa266c36a2e33e73a7e74f7c2452b5` | BSD-3-Clause via pinned `LICENSE` |
 | `src/pybert_web/simulation.py` | `cdc065bd692ca4836a7c62eb5a71492ff34620c1` | 45813 | `e5e0c0ba1e3cdc4356f027a8ea79a1e459d11377657a1ba231be5b7cbdf98c3c` | BSD-3-Clause via pinned `LICENSE` |
+| `src/pybert_web/models.py` | `ec69a14ed97dbb500e57e378c4d8f39d359aaf20` | 11640 | `66194501d7753ddb07105edf9b724095f13682f538585e3ee455dbad5fd554d9` | BSD-3-Clause via pinned `LICENSE` |
+| `src/pybert/utility/sigproc.py` | `9e4abd5991e0d31123f5a4b7d3d3c8d618dc7140` | 17416 | `394c8ffebf5ae2c352ab16c0155a1241b84089f6bd8bbb40fc7ce1d73e0758ad` | BSD-3-Clause via pinned `LICENSE` |
+| `src/pybert/utility/statistical_eye.py` | `195f87f48cecc55bf7bcda371c4c51b17111ea21` | 38893 | `da70853bde4c0b5f428eef072c47dbd085692744031ce18fce1e0ec079d18895` | BSD-3-Clause via pinned `LICENSE` |
 | `LICENSE` | `64d198ba43675ede5fbdef1ec918a63954951640` | 1466 | `4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1` | BSD-3-Clause; copyright David Banas |
 
 These bindings identify the semantic reference and its license. They do not
@@ -43,13 +46,41 @@ mechanical operations below.
 | `jitter_bins` | `src/pybert_web/engine_adapter.py:681-685`; `src/pybert_web/simulation.py:771` | Alias existing `jitter_bin_centers_s`. |
 | `bathtub_chnl`, `bathtub_tx`, `bathtub_ctle`, `bathtub_dfe`, `bathtub_rx` | `src/pybert_web/engine_adapter.py:687-692`; `src/pybert_web/simulation.py:624-770` | Apply the pinned `log10(max(value, 1e-13))` presentation to existing BER curves; RX aliases DFE. |
 
+## Eye and contour follow-up
+
+- `src/pybert_web/models.py` defines the pinned default with
+  `statistical_ber_levels = [1e-5, 1e-4, 1e-3]`. `project_legacy_config_v1` and the workflow fallback
+  now pass that list to the existing typed `StatisticalEyeConfigV1`, and the
+  existing `calculate_statistical_contours` operation emits one summary and
+  coordinate pair per requested level. This is parameter plumbing only; it
+  does not add a visual-eye algorithm. The pinned contour semantics are mapped
+  to `src/pybert/utility/statistical_eye.py`; the Rust implementation remains
+  the already admitted typed contour operation.
+- The third contour summary and its `eye_contour_2_x_ui` /
+  `eye_contour_2_y_v` keys are therefore materialized by the existing typed
+  contour operation. Empty coordinates remain empty when that operation finds
+  no points; no points are fabricated by the serializer.
+- The ten pinned display matrices (`eye_chnl`, `eye_tx`, `eye_ctle`,
+  `eye_dfe`, `eye_rx`, and the five `native_eye_*` fields) remain blocked.
+  Their producer is `pybert.utility.sigproc.calc_eye` followed by the Web
+  adapter's resampling step, while the current typed output has no 2-D eye
+  source. Porting that producer would be a new algorithm and is outside this
+  mechanical slice.
+- The seven response magnitude fields (`chnl_H`, `chnl_trimmed_H`,
+  `ctle_out_H`, `dfe_out_H`, `rx_out_H`, `tx_H`, `tx_out_H`) continue to use
+  the mechanical magnitude projection above. Their candidate/oracle logical
+  f64 hashes drift because the upstream telemetry differs before serialization;
+  no serializer-only correction or ULP claim is made.
+
 ## Explicitly not ported
 
 The pinned adapter creates `eye_*` and `native_eye_*` display matrices through
 its eye extraction/resampling path. The current typed Rust output does not
 contain those 2-D sources. The projection therefore does not recreate that
-algorithm. The candidate/oracle contour count also remains 2 versus 3 and is
-recorded as drift rather than guessed.
+algorithm. Before the contour follow-up, the legacy defaults requested two
+additional levels; the follow-up now requests the pinned three-level list
+through the existing typed contour operation. Numerical parity remains
+unclaimed until a clean replay.
 
 AMI, IBIS, DLL, GetWave, vendor noise, and exact `PyBertData` class pickle
 behavior are outside this map. No public wire schema v2 or second engine was

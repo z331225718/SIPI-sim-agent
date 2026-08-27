@@ -15,3 +15,9 @@ coverage, exact class-pickle compatibility, product capability, or release
 approval. Remaining eye, contour, external-model, and vendor branches are
 explicitly blocked until their owners provide the missing typed contracts and
 source evidence.
+
+The contour follow-up only passes PyBERT's existing three statistical BER
+levels into the crate's existing typed contour operation. It does not recreate
+the pinned 2-D eye extraction/resampling algorithm. The ten eye/native-eye
+matrices remain blocked, and seven response magnitudes remain recorded as
+pre-serialization telemetry drift rather than being numerically adjusted.

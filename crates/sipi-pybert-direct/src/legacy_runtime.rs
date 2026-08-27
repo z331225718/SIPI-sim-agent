@@ -574,7 +574,12 @@ impl LegacyConfigProjectionV1 {
             analysis: AnalysisConfigV1 {
                 statistical_eye: is_nrz.then_some(crate::StatisticalEyeConfigV1 {
                     target_ber: 1.0e-5,
-                    contour_ber_levels: vec![1.0e-4, 1.0e-3],
+                    // PyBERT's statistical BER list includes the target
+                    // contour itself before the two additional display
+                    // levels.  The contour implementation already accepts
+                    // this list; keep the legacy projection's defaults
+                    // aligned without adding another eye algorithm.
+                    contour_ber_levels: vec![1.0e-5, 1.0e-4, 1.0e-3],
                     rx_rj_ui: None,
                     rx_dj_ui: None,
                     tx_rj_ui: None,

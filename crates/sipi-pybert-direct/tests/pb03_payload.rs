@@ -49,7 +49,7 @@ fn sim_rust_publishes_the_existing_web_payload_projection() {
         .keys()
         .map(String::as_str)
         .collect::<BTreeSet<_>>();
-    assert_eq!(names.len(), 140);
+    assert_eq!(names.len(), 142);
     for name in expected {
         assert!(names.contains(name), "missing projected array {name}");
     }
@@ -67,6 +67,27 @@ fn sim_rust_publishes_the_existing_web_payload_projection() {
     );
     assert!(report.output.arrays.contains_key("tx_impulse_v_per_v"));
     assert!(report.output.arrays.contains_key("receiver_input_noise_v"));
+    assert_eq!(report.output.metrics["eye_contour_count"], 3.0);
+    assert_eq!(
+        report.output.arrays["eye_contour_ber"].as_slice(),
+        &[1.0e-5, 1.0e-4, 1.0e-3]
+    );
+    for index in 0..3 {
+        assert!(
+            report
+                .output
+                .arrays
+                .contains_key(&format!("eye_contour_{index}_x_ui"))
+        );
+        assert!(
+            report
+                .output
+                .arrays
+                .contains_key(&format!("eye_contour_{index}_y_v"))
+        );
+    }
+    assert!(report.output.arrays["eye_contour_2_x_ui"].is_empty());
+    assert!(report.output.arrays["eye_contour_2_y_v"].is_empty());
     assert!(report.metadata["output"]["arrays"]["chnl_p"].is_array());
     assert_eq!(report.metadata["schema"], "pybert.native-cli-result.v1");
 
