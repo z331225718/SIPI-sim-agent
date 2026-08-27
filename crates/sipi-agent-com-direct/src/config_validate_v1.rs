@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sipi_com::{
-    CellValueV1, ComSettingsV1, ResolvedDefaultV1, WorkbookErrorV1, parse_literal_v1,
+    CellValueV1, ComSettingsV1, LiteralV1, ResolvedDefaultV1, WorkbookErrorV1, parse_literal_v1,
     read_com_settings_csv_v1, read_com_settings_mat_v1, read_com_settings_xlsx_v1,
     resolve_default_value_v1,
 };
@@ -33,6 +33,7 @@ const MAX_CONFIG_FILE_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_CONFIG_CELLS: usize = 1_000_000;
 const MAX_NUMERIC_ELEMENTS: usize = 1_000_000;
 const MAX_COUNT_VALUE: usize = 1_000_000;
+const MAX_MATERIALIZED_FINGERPRINT_BYTES: usize = MAX_CONFIG_FILE_BYTES as usize;
 
 pub const CONFIG_VALIDATE_POLICY_V1: &str =
     "sipi.com-01.config-validate-v1.source-schema-materialized";
@@ -263,7 +264,12 @@ pub fn config_validate_v1(
     if request.materialized_json {
         let parameters_json = json_map(&materialized.parameters);
         let options_json = json_map(&materialized.options);
-        let fingerprint = materialized_fingerprint(&parameters_json, &options_json)?;
+        let fingerprint = materialized_fingerprint(
+            &parameters_json,
+            &options_json,
+            &materialized.integer_parameters,
+            &materialized.integer_options,
+        )?;
         return Ok(ConfigValidateReportV1 {
             value: json!({
                 "schema_version": 1,
@@ -357,6 +363,7 @@ fn materialize_r480(
         .collect();
     calls.sort_by_key(|call| call.source_line);
     let mut parameters = BTreeMap::new();
+    let mut integer_parameters = BTreeSet::new();
     let mut options = BTreeMap::from([
         ("TDMODE".to_owned(), ResolvedDefaultV1::Boolean(false)),
         ("GET_FD".to_owned(), ResolvedDefaultV1::Boolean(true)),
@@ -365,6 +372,7 @@ fn materialize_r480(
             ResolvedDefaultV1::Boolean(false),
         ),
     ]);
+    let mut integer_options = BTreeSet::new();
     for call in calls {
         let Some(target) = call.target.as_deref() else {
             continue;
@@ -379,25 +387,41 @@ fn materialize_r480(
         } else {
             continue;
         };
-        let value = call_value(rows, call, &parameters, &options, overrides)?;
+        let value = call_value(
+            rows,
+            call,
+            &parameters,
+            &options,
+            &integer_parameters,
+            &integer_options,
+            overrides,
+        )?;
         let value = scale_value(value, call.scale)
             .map_err(|error| ConfigValidateErrorV1::Workbook(format!("{}: {error}", call.key)))?;
+        let scalar_encoding = value.scalar_encoding;
+        let value = value.value;
         if call.key == "b_max(1)" {
             parameters.insert("_bmax_first".to_owned(), value.clone());
+            record_scalar_encoding(&mut integer_parameters, "_bmax_first", scalar_encoding);
         }
         if call.key == "b_min(1)" {
             parameters.insert("_bmin_first".to_owned(), value.clone());
+            record_scalar_encoding(&mut integer_parameters, "_bmin_first", scalar_encoding);
         }
         if kind == "parameters" {
             parameters.insert(field.to_owned(), value);
+            record_scalar_encoding(&mut integer_parameters, field, scalar_encoding);
         } else {
             options.insert(field.to_owned(), value);
+            record_scalar_encoding(&mut integer_options, field, scalar_encoding);
         }
         validate_output_budget(&parameters, &options)?;
     }
     finalize_r480(
         &mut parameters,
         &mut options,
+        &mut integer_parameters,
+        &mut integer_options,
         schema,
         packages,
         overrides,
@@ -406,13 +430,41 @@ fn materialize_r480(
     Ok(MaterializedV1 {
         parameters,
         options,
+        integer_parameters,
+        integer_options,
     })
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ScalarEncodingV1 {
+    Integer,
+    Float,
+}
+
+#[derive(Clone, Debug)]
+struct ResolvedValueV1 {
+    value: ResolvedDefaultV1,
+    scalar_encoding: Option<ScalarEncodingV1>,
 }
 
 #[derive(Clone, Debug)]
 struct MaterializedV1 {
     parameters: BTreeMap<String, ResolvedDefaultV1>,
     options: BTreeMap<String, ResolvedDefaultV1>,
+    integer_parameters: BTreeSet<String>,
+    integer_options: BTreeSet<String>,
+}
+
+fn record_scalar_encoding(
+    integer_keys: &mut BTreeSet<String>,
+    key: &str,
+    encoding: Option<ScalarEncodingV1>,
+) {
+    if encoding == Some(ScalarEncodingV1::Integer) {
+        integer_keys.insert(key.to_owned());
+    } else {
+        integer_keys.remove(key);
+    }
 }
 
 fn call_value(
@@ -420,13 +472,22 @@ fn call_value(
     call: &SchemaCall,
     parameters: &BTreeMap<String, ResolvedDefaultV1>,
     options: &BTreeMap<String, ResolvedDefaultV1>,
+    integer_parameters: &BTreeSet<String>,
+    integer_options: &BTreeSet<String>,
     overrides: &BTreeMap<String, String>,
-) -> Result<ResolvedDefaultV1, ConfigValidateErrorV1> {
+) -> Result<ResolvedValueV1, ConfigValidateErrorV1> {
     if let Some(raw) = overrides.get(&call.key) {
         if let Ok(parsed) = parse_literal_v1(raw) {
-            return Ok(parsed.to_resolved());
+            let value = parsed.to_resolved();
+            return Ok(ResolvedValueV1 {
+                scalar_encoding: override_scalar_encoding(rows, &call.key, &value)?,
+                value,
+            });
         }
-        return Ok(ResolvedDefaultV1::String(raw.clone()));
+        return Ok(ResolvedValueV1 {
+            value: ResolvedDefaultV1::String(raw.clone()),
+            scalar_encoding: None,
+        });
     }
     match lookup_value(rows, &call.key)? {
         LookupValueV1::Present(value) => {
@@ -434,7 +495,10 @@ fn call_value(
                 && let ResolvedDefaultV1::String(text) = value
             {
                 return parse_literal_v1(&text)
-                    .map(|literal| literal.to_resolved())
+                    .map(|literal| ResolvedValueV1 {
+                        value: literal.to_resolved(),
+                        scalar_encoding: None,
+                    })
                     .map_err(|error| {
                         ConfigValidateErrorV1::Workbook(format!(
                             "invalid MATLAB literal for {}: {error:?}",
@@ -442,7 +506,10 @@ fn call_value(
                         ))
                     });
             }
-            Ok(value)
+            Ok(ResolvedValueV1 {
+                value,
+                scalar_encoding: source_scalar_encoding(rows, &call.key, call.evaluate_strings)?,
+            })
         }
         LookupValueV1::Missing => {
             if call.required || call.default_expression.is_none() {
@@ -455,16 +522,54 @@ fn call_value(
                 call.default_expression.as_deref().unwrap_or_default(),
                 parameters,
                 options,
+                integer_parameters,
+                integer_options,
             )
         }
     }
+}
+
+fn override_scalar_encoding(
+    rows: &[Vec<sipi_com::RawCellV1>],
+    key: &str,
+    value: &ResolvedDefaultV1,
+) -> Result<Option<ScalarEncodingV1>, ConfigValidateErrorV1> {
+    let Some(cell) = lookup_source_cell(rows, key)? else {
+        return Ok(None);
+    };
+    let is_source_integer = matches!(cell.value(), CellValueV1::Integer(_));
+    let is_integer_literal =
+        as_scalar(value).is_some_and(|value| value.is_finite() && value.fract() == 0.0);
+    Ok((is_source_integer && is_integer_literal).then_some(ScalarEncodingV1::Integer))
+}
+
+fn source_scalar_encoding(
+    rows: &[Vec<sipi_com::RawCellV1>],
+    key: &str,
+    evaluate_strings: bool,
+) -> Result<Option<ScalarEncodingV1>, ConfigValidateErrorV1> {
+    let Some(cell) = lookup_source_cell(rows, key)? else {
+        return Ok(None);
+    };
+    Ok(match cell.value() {
+        CellValueV1::Integer(_) => Some(ScalarEncodingV1::Integer),
+        CellValueV1::Number(_) => Some(ScalarEncodingV1::Float),
+        CellValueV1::String(text) if evaluate_strings => {
+            parse_literal_v1(text).ok().and_then(|literal| {
+                matches!(literal, LiteralV1::Scalar(_)).then_some(ScalarEncodingV1::Float)
+            })
+        }
+        _ => None,
+    })
 }
 
 fn resolve_default(
     expression: &str,
     parameters: &BTreeMap<String, ResolvedDefaultV1>,
     options: &BTreeMap<String, ResolvedDefaultV1>,
-) -> Result<ResolvedDefaultV1, ConfigValidateErrorV1> {
+    integer_parameters: &BTreeSet<String>,
+    integer_options: &BTreeSet<String>,
+) -> Result<ResolvedValueV1, ConfigValidateErrorV1> {
     let expression = expression.trim();
     if expression == "-param.bmax(1)" {
         let value = parameters
@@ -476,12 +581,18 @@ fn resolve_default(
                     "default expression requires scalar param.bmax(1)".to_owned(),
                 )
             })?;
-        return Ok(ResolvedDefaultV1::Scalar(-value));
+        return Ok(ResolvedValueV1 {
+            value: ResolvedDefaultV1::Scalar(-value),
+            scalar_encoding: Some(ScalarEncodingV1::Float),
+        });
     }
     if expression == "-1*param.bmax(2:param.ndfe)" {
         let count = bounded_count(parameters.get("ndfe"), "N_b", 0)?;
         if count <= 1 {
-            return Ok(ResolvedDefaultV1::Empty);
+            return Ok(ResolvedValueV1 {
+                value: ResolvedDefaultV1::Empty,
+                scalar_encoding: None,
+            });
         }
         let first = parameters
             .get("_bmax_first")
@@ -511,21 +622,45 @@ fn resolve_default(
                 "default expression requires bmax values through N_b".to_owned(),
             ));
         }
-        return Ok(ResolvedDefaultV1::Vector(
-            values
-                .into_iter()
-                .skip(1)
-                .take(count - 1)
-                .map(|value| -value)
-                .collect(),
-        ));
+        return Ok(ResolvedValueV1 {
+            value: ResolvedDefaultV1::Vector(
+                values
+                    .into_iter()
+                    .skip(1)
+                    .take(count - 1)
+                    .map(|value| -value)
+                    .collect(),
+            ),
+            scalar_encoding: None,
+        });
     }
     if expression.starts_with('\'') && expression.ends_with('\'') && expression.len() >= 2 {
         let inner = expression[1..expression.len() - 1].replace("''", "'");
-        return Ok(parse_literal_v1(&inner)
-            .map(|literal| literal.to_resolved())
-            .unwrap_or(ResolvedDefaultV1::String(inner)));
+        return Ok(ResolvedValueV1 {
+            value: parse_literal_v1(&inner)
+                .map(|literal| literal.to_resolved())
+                .unwrap_or(ResolvedDefaultV1::String(inner)),
+            scalar_encoding: None,
+        });
     }
+    if let Some((namespace, field)) = direct_default_reference(expression) {
+        let (values, integer_keys) = if namespace == "param" {
+            (parameters, integer_parameters)
+        } else {
+            (options, integer_options)
+        };
+        if let Some(value) = values.get(field) {
+            return Ok(ResolvedValueV1 {
+                value: value.clone(),
+                scalar_encoding: if integer_keys.contains(field) {
+                    Some(ScalarEncodingV1::Integer)
+                } else {
+                    None
+                },
+            });
+        }
+    }
+    validate_materialized_storage_budget(parameters, options)?;
     let mut parameters_hash = HashMap::new();
     parameters_hash.extend(
         parameters
@@ -539,17 +674,38 @@ fn resolve_default(
             .map(|(key, value)| (key.clone(), value.clone())),
     );
     let normalized = expression.replace("(1)", "").replace("( 1 )", "");
-    resolve_default_value_v1(&normalized, &parameters_hash, &options_hash).map_err(|error| {
-        ConfigValidateErrorV1::Workbook(format!("cannot resolve default {expression:?}: {error:?}"))
+    let value = resolve_default_value_v1(&normalized, &parameters_hash, &options_hash).map_err(
+        |error| {
+            ConfigValidateErrorV1::Workbook(format!(
+                "cannot resolve default {expression:?}: {error:?}"
+            ))
+        },
+    )?;
+    Ok(ResolvedValueV1 {
+        value,
+        scalar_encoding: Some(ScalarEncodingV1::Float),
     })
 }
 
+fn direct_default_reference(expression: &str) -> Option<(&str, &str)> {
+    let (namespace, field) = expression.trim().split_once('.')?;
+    if namespace != "param" && namespace != "OP" {
+        return None;
+    }
+    let field = field.trim_end_matches("(1)").trim();
+    (!field.is_empty()
+        && field
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '_'))
+    .then_some((namespace, field))
+}
+
 fn scale_value(
-    value: ResolvedDefaultV1,
+    value: ResolvedValueV1,
     scale: f64,
-) -> Result<ResolvedDefaultV1, ConfigValidateErrorV1> {
+) -> Result<ResolvedValueV1, ConfigValidateErrorV1> {
     if scale == 1.0 {
-        validate_resolved_value(&value, "configuration value")?;
+        validate_resolved_value(&value.value, "configuration value")?;
         return Ok(value);
     }
     if !scale.is_finite() {
@@ -557,7 +713,7 @@ fn scale_value(
             "configuration scale must be finite".to_owned(),
         ));
     }
-    let scaled = match value {
+    let scaled = match value.value {
         ResolvedDefaultV1::Scalar(value) => ResolvedDefaultV1::Scalar(value * scale),
         ResolvedDefaultV1::Vector(values) => {
             ResolvedDefaultV1::Vector(values.into_iter().map(|value| value * scale).collect())
@@ -572,12 +728,23 @@ fn scale_value(
         | ResolvedDefaultV1::Empty) => other,
     };
     validate_resolved_value(&scaled, "scaled configuration value")?;
-    Ok(scaled)
+    let scalar_encoding = if matches!(scaled, ResolvedDefaultV1::Scalar(_)) {
+        Some(ScalarEncodingV1::Float)
+    } else {
+        None
+    };
+    Ok(ResolvedValueV1 {
+        value: scaled,
+        scalar_encoding,
+    })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn finalize_r480(
     parameters: &mut BTreeMap<String, ResolvedDefaultV1>,
     options: &mut BTreeMap<String, ResolvedDefaultV1>,
+    integer_parameters: &mut BTreeSet<String>,
+    integer_options: &mut BTreeSet<String>,
     schema: &SchemaDocument,
     packages: &[PackageBlockV1],
     overrides: &BTreeMap<String, String>,
@@ -586,9 +753,20 @@ fn finalize_r480(
     if truthy(options.get("FORCE_TR")) {
         options.insert("T_r_meas_point".to_owned(), ResolvedDefaultV1::Scalar(0.0));
         options.insert("T_r_filter_type".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        record_scalar_encoding(
+            integer_options,
+            "T_r_meas_point",
+            Some(ScalarEncodingV1::Integer),
+        );
+        record_scalar_encoding(
+            integer_options,
+            "T_r_filter_type",
+            Some(ScalarEncodingV1::Integer),
+        );
     }
     if truthy(options.get("WC_PORTZ")) {
         options.insert("TDR".to_owned(), ResolvedDefaultV1::Scalar(1.0));
+        record_scalar_encoding(integer_options, "TDR", Some(ScalarEncodingV1::Integer));
     }
     transpose_package_fields(parameters)?;
     expand_package_fields(parameters)?;
@@ -596,7 +774,7 @@ fn finalize_r480(
     assemble_dfe_limits(parameters)?;
     parameter_size_adjustment(parameters, options)?;
     validate_gqual(parameters)?;
-    derive_core_parameters(parameters)?;
+    derive_core_parameters(parameters, integer_parameters)?;
     if is_nonempty(parameters.get("f_HP_Z")) {
         parameters.insert(
             "CTLE_type".to_owned(),
@@ -626,6 +804,7 @@ fn finalize_r480(
         options.insert("EW".to_owned(), ResolvedDefaultV1::Boolean(true));
     } else {
         parameters.insert("T_O".to_owned(), ResolvedDefaultV1::Scalar(0.0));
+        record_scalar_encoding(integer_parameters, "T_O", Some(ScalarEncodingV1::Integer));
     }
     if parameters
         .get("Gx")
@@ -633,6 +812,7 @@ fn finalize_r480(
         .is_some_and(|value| value as i64 == 1)
     {
         parameters.insert("Grr".to_owned(), ResolvedDefaultV1::Scalar(2.0));
+        record_scalar_encoding(integer_parameters, "Grr", Some(ScalarEncodingV1::Integer));
     }
     let pre = parameters
         .get("ffe_pre_tap_len")
@@ -653,6 +833,21 @@ fn finalize_r480(
     parameters.insert("RxFFE_cmx".to_owned(), ResolvedDefaultV1::Scalar(pre));
     parameters.insert("RxFFE_cpx".to_owned(), ResolvedDefaultV1::Scalar(post));
     parameters.insert("RxFFE_stepz".to_owned(), ResolvedDefaultV1::Scalar(step));
+    record_scalar_encoding(
+        integer_parameters,
+        "RxFFE_cmx",
+        Some(ScalarEncodingV1::Integer),
+    );
+    record_scalar_encoding(
+        integer_parameters,
+        "RxFFE_cpx",
+        Some(ScalarEncodingV1::Integer),
+    );
+    record_scalar_encoding(
+        integer_parameters,
+        "RxFFE_stepz",
+        Some(ScalarEncodingV1::Float),
+    );
     options.insert(
         "RxFFE".to_owned(),
         ResolvedDefaultV1::Boolean(pre != 0.0 || post != 0.0),
@@ -696,6 +891,7 @@ fn materialize_package_r480(
         .collect();
     calls.sort_by_key(|call| call.source_line);
     let mut parameters = BTreeMap::new();
+    let empty_integer_keys = BTreeSet::new();
     for call in calls {
         let value = scale_value(
             call_value(
@@ -703,6 +899,8 @@ fn materialize_package_r480(
                 call,
                 &parameters,
                 &BTreeMap::new(),
+                &empty_integer_keys,
+                &empty_integer_keys,
                 overrides,
             )?,
             call.scale,
@@ -713,7 +911,7 @@ fn materialize_package_r480(
             .as_deref()
             .and_then(|target| target.strip_prefix("param_struct."))
             .ok_or_else(|| ConfigValidateErrorV1::Workbook("invalid package target".to_owned()))?;
-        parameters.insert(field.to_owned(), value);
+        parameters.insert(field.to_owned(), value.value);
         validate_output_budget(&parameters, &BTreeMap::new())?;
     }
     transpose_package_fields(&mut parameters)?;
@@ -1051,6 +1249,7 @@ fn validate_gqual(
 
 fn derive_core_parameters(
     parameters: &mut BTreeMap<String, ResolvedDefaultV1>,
+    integer_parameters: &mut BTreeSet<String>,
 ) -> Result<(), ConfigValidateErrorV1> {
     let fb = parameters.get("fb").and_then(as_scalar).ok_or_else(|| {
         ConfigValidateErrorV1::Workbook("f_b must yield a positive finite baud rate".to_owned())
@@ -1077,20 +1276,47 @@ fn derive_core_parameters(
     let levels = levels_count as f64;
     let ui = 1.0 / fb;
     parameters.insert("ui".to_owned(), ResolvedDefaultV1::Scalar(ui));
+    record_scalar_encoding(integer_parameters, "ui", Some(ScalarEncodingV1::Float));
     parameters.insert("sample_dt".to_owned(), ResolvedDefaultV1::Scalar(ui / m));
+    record_scalar_encoding(
+        integer_parameters,
+        "sample_dt",
+        Some(ScalarEncodingV1::Float),
+    );
     parameters.insert(
         "sigma_X".to_owned(),
         ResolvedDefaultV1::Scalar(
             ((levels * levels - 1.0) / (3.0 * (levels - 1.0).powi(2))).sqrt(),
         ),
     );
+    record_scalar_encoding(integer_parameters, "sigma_X", Some(ScalarEncodingV1::Float));
     parameters.insert(
         "fb_BT_cutoff".to_owned(),
         ResolvedDefaultV1::Scalar(0.473037 * fr),
     );
+    record_scalar_encoding(
+        integer_parameters,
+        "fb_BT_cutoff",
+        Some(ScalarEncodingV1::Float),
+    );
     parameters.insert("fb_BW_cutoff".to_owned(), ResolvedDefaultV1::Scalar(fr));
+    record_scalar_encoding(
+        integer_parameters,
+        "fb_BW_cutoff",
+        Some(ScalarEncodingV1::Float),
+    );
     parameters.insert("Tx_rd_sel".to_owned(), ResolvedDefaultV1::Scalar(1.0));
     parameters.insert("Rx_rd_sel".to_owned(), ResolvedDefaultV1::Scalar(2.0));
+    record_scalar_encoding(
+        integer_parameters,
+        "Tx_rd_sel",
+        Some(ScalarEncodingV1::Integer),
+    );
+    record_scalar_encoding(
+        integer_parameters,
+        "Rx_rd_sel",
+        Some(ScalarEncodingV1::Integer),
+    );
     Ok(())
 }
 
@@ -1098,29 +1324,9 @@ fn lookup_value(
     rows: &[Vec<sipi_com::RawCellV1>],
     key: &str,
 ) -> Result<LookupValueV1, ConfigValidateErrorV1> {
-    let folded = key.to_ascii_lowercase();
-    let mut found = Vec::new();
-    for (row_index, row) in rows.iter().enumerate() {
-        for (column_index, cell) in row.iter().enumerate() {
-            if let CellValueV1::String(value) = cell.value()
-                && value.to_ascii_lowercase() == folded
-            {
-                found.push((row_index, column_index));
-            }
-        }
-    }
-    if found.is_empty() {
+    let Some(value) = lookup_source_cell(rows, key)? else {
         return Ok(LookupValueV1::Missing);
-    }
-    if found.len() != 1 {
-        return Err(ConfigValidateErrorV1::Workbook(format!(
-            "duplicate configuration parameter: {key}"
-        )));
-    }
-    let (row_index, column_index) = found[0];
-    let value = rows[row_index]
-        .get(column_index + 1)
-        .ok_or_else(|| ConfigValidateErrorV1::Workbook(format!("{key}: right-hand value")))?;
+    };
     if matches!(value.value(), CellValueV1::None) {
         return Err(ConfigValidateErrorV1::Workbook(format!(
             "{key}: right-hand value"
@@ -1132,6 +1338,35 @@ fn lookup_value(
     Ok(LookupValueV1::Present(cell_value(value.value()).map_err(
         |error| ConfigValidateErrorV1::Workbook(format!("{key}: {error}")),
     )?))
+}
+
+fn lookup_source_cell<'a>(
+    rows: &'a [Vec<sipi_com::RawCellV1>],
+    key: &str,
+) -> Result<Option<&'a sipi_com::RawCellV1>, ConfigValidateErrorV1> {
+    let folded = key.to_ascii_lowercase();
+    let mut found = None;
+    for (row_index, row) in rows.iter().enumerate() {
+        for (column_index, cell) in row.iter().enumerate() {
+            if let CellValueV1::String(value) = cell.value()
+                && value.to_ascii_lowercase() == folded
+            {
+                if found.is_some() {
+                    return Err(ConfigValidateErrorV1::Workbook(format!(
+                        "duplicate configuration parameter: {key}"
+                    )));
+                }
+                found = Some((row_index, column_index));
+            }
+        }
+    }
+    let Some((row_index, column_index)) = found else {
+        return Ok(None);
+    };
+    rows[row_index]
+        .get(column_index + 1)
+        .map(Some)
+        .ok_or_else(|| ConfigValidateErrorV1::Workbook(format!("{key}: right-hand value")))
 }
 
 fn cell_value(value: &CellValueV1) -> Result<ResolvedDefaultV1, ConfigValidateErrorV1> {
@@ -1383,7 +1618,13 @@ fn json_value(value: &ResolvedDefaultV1) -> Value {
         ),
         ResolvedDefaultV1::Matrix(rows) => Value::Array(
             rows.iter()
-                .map(|row| Value::Array(row.iter().map(|value| json!(value)).collect()))
+                .map(|row| {
+                    Value::Array(
+                        row.iter()
+                            .map(|value| json_value(&ResolvedDefaultV1::Scalar(*value)))
+                            .collect(),
+                    )
+                })
                 .collect(),
         ),
         ResolvedDefaultV1::Boolean(value) => json!(value),
@@ -1395,16 +1636,329 @@ fn json_value(value: &ResolvedDefaultV1) -> Value {
 fn materialized_fingerprint(
     parameters: &Value,
     options: &Value,
+    integer_parameters: &BTreeSet<String>,
+    integer_options: &BTreeSet<String>,
 ) -> Result<String, ConfigValidateErrorV1> {
-    // Python's materialized_fingerprint uses sort_keys=True, so the
-    // lexicographically earlier `options` key precedes `parameters`.
-    let mut payload = serde_json::Map::new();
-    payload.insert("options".to_owned(), options.clone());
-    payload.insert("parameters".to_owned(), parameters.clone());
-    let bytes = serde_json::to_vec(&payload).map_err(|error| {
-        ConfigValidateErrorV1::Workbook(format!("cannot encode fingerprint: {error}"))
-    })?;
+    let bytes =
+        canonical_materialized_bytes(parameters, options, integer_parameters, integer_options)?;
     Ok(format!("{:x}", Sha256::digest(bytes)))
+}
+
+fn canonical_materialized_bytes(
+    parameters: &Value,
+    options: &Value,
+    integer_parameters: &BTreeSet<String>,
+    integer_options: &BTreeSet<String>,
+) -> Result<Vec<u8>, ConfigValidateErrorV1> {
+    canonical_materialized_bytes_with_limit(
+        parameters,
+        options,
+        integer_parameters,
+        integer_options,
+        MAX_MATERIALIZED_FINGERPRINT_BYTES,
+    )
+}
+
+fn canonical_materialized_bytes_with_limit(
+    parameters: &Value,
+    options: &Value,
+    integer_parameters: &BTreeSet<String>,
+    integer_options: &BTreeSet<String>,
+    limit: usize,
+) -> Result<Vec<u8>, ConfigValidateErrorV1> {
+    // The pinned implementation hashes Python's compact json.dumps payload.
+    // serde_json deliberately uses a different float spelling, so this is a
+    // small writer rather than a generic serde serialization.
+    let mut writer = BoundedFingerprintWriter::new(limit);
+    writer.push(b'{')?;
+    write_python_json_string("options", &mut writer)?;
+    writer.push(b':')?;
+    write_python_canonical_value(options, &mut writer, Some(integer_options), false)?;
+    writer.push(b',')?;
+    write_python_json_string("parameters", &mut writer)?;
+    writer.push(b':')?;
+    write_python_canonical_value(parameters, &mut writer, Some(integer_parameters), false)?;
+    writer.push(b'}')?;
+    Ok(writer.into_bytes())
+}
+
+struct BoundedFingerprintWriter {
+    bytes: Vec<u8>,
+    limit: usize,
+}
+
+impl BoundedFingerprintWriter {
+    fn new(limit: usize) -> Self {
+        Self {
+            bytes: Vec::with_capacity(limit.min(4096)),
+            limit,
+        }
+    }
+
+    fn push(&mut self, byte: u8) -> Result<(), ConfigValidateErrorV1> {
+        self.ensure(1)?;
+        self.bytes.push(byte);
+        Ok(())
+    }
+
+    fn extend(&mut self, bytes: &[u8]) -> Result<(), ConfigValidateErrorV1> {
+        self.ensure(bytes.len())?;
+        self.bytes.extend_from_slice(bytes);
+        Ok(())
+    }
+
+    fn ensure(&self, additional: usize) -> Result<(), ConfigValidateErrorV1> {
+        let next = self.bytes.len().checked_add(additional).ok_or_else(|| {
+            ConfigValidateErrorV1::Workbook(
+                "materialized fingerprint byte-count overflow".to_owned(),
+            )
+        })?;
+        if next > self.limit {
+            return Err(ConfigValidateErrorV1::Workbook(format!(
+                "materialized fingerprint exceeds {}-byte budget",
+                self.limit
+            )));
+        }
+        Ok(())
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        self.bytes
+    }
+}
+
+fn write_python_canonical_value(
+    value: &Value,
+    output: &mut BoundedFingerprintWriter,
+    integer_keys: Option<&BTreeSet<String>>,
+    integer_scalar: bool,
+) -> Result<(), ConfigValidateErrorV1> {
+    match value {
+        Value::Null => output.extend(b"null")?,
+        Value::Bool(value) => output.extend(if *value { b"true" } else { b"false" })?,
+        Value::Number(number) => {
+            if integer_scalar {
+                let value = number.as_f64().ok_or_else(|| {
+                    ConfigValidateErrorV1::Workbook(
+                        "cannot encode non-f64 integer fingerprint scalar".to_owned(),
+                    )
+                })?;
+                if !value.is_finite() || value.fract() != 0.0 {
+                    return Err(ConfigValidateErrorV1::Workbook(
+                        "integer fingerprint scalar is not an exact finite integer".to_owned(),
+                    ));
+                }
+                let integer = value as i64;
+                if integer as f64 != value {
+                    return Err(ConfigValidateErrorV1::Workbook(
+                        "integer fingerprint scalar is outside exact i64 range".to_owned(),
+                    ));
+                }
+                output.extend(integer.to_string().as_bytes())?;
+            } else if let Some(value) = number.as_i64() {
+                output.extend(value.to_string().as_bytes())?;
+            } else if let Some(value) = number.as_u64() {
+                output.extend(value.to_string().as_bytes())?;
+            } else {
+                let value = number.as_f64().ok_or_else(|| {
+                    ConfigValidateErrorV1::Workbook("cannot decode fingerprint number".to_owned())
+                })?;
+                output.extend(python_float_repr(value)?.as_bytes())?;
+            }
+        }
+        Value::String(value) => write_python_json_string(value, output)?,
+        Value::Array(values) => {
+            output.push(b'[')?;
+            for (index, value) in values.iter().enumerate() {
+                if index != 0 {
+                    output.push(b',')?;
+                }
+                write_python_canonical_value(value, output, None, false)?;
+            }
+            output.push(b']')?;
+        }
+        Value::Object(values) => {
+            if let Some(special) = special_float_name(values) {
+                output.extend(b"{\"__float__\":")?;
+                write_python_json_string(special, output)?;
+                output.push(b'}')?;
+                return Ok(());
+            }
+            let mut keys = values.keys().collect::<Vec<_>>();
+            keys.sort();
+            output.push(b'{')?;
+            for (index, key) in keys.iter().enumerate() {
+                if index != 0 {
+                    output.push(b',')?;
+                }
+                write_python_json_string(key, output)?;
+                output.push(b':')?;
+                let child_is_integer = integer_keys.is_some_and(|keys| keys.contains(*key));
+                write_python_canonical_value(&values[*key], output, None, child_is_integer)?;
+            }
+            output.push(b'}')?;
+        }
+    }
+    Ok(())
+}
+
+fn special_float_name(values: &serde_json::Map<String, Value>) -> Option<&'static str> {
+    if values.len() != 1 {
+        return None;
+    }
+    let Value::String(value) = values.get("$special_float")? else {
+        return None;
+    };
+    match value.as_str() {
+        "NaN" => Some("nan"),
+        "Infinity" => Some("inf"),
+        "-Infinity" => Some("-inf"),
+        _ => None,
+    }
+}
+
+fn write_python_json_string(
+    value: &str,
+    output: &mut BoundedFingerprintWriter,
+) -> Result<(), ConfigValidateErrorV1> {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    output.push(b'"')?;
+    for character in value.chars() {
+        match character {
+            '"' => output.extend(b"\\\"")?,
+            '\\' => output.extend(b"\\\\")?,
+            '\u{08}' => output.extend(b"\\b")?,
+            '\u{0c}' => output.extend(b"\\f")?,
+            '\n' => output.extend(b"\\n")?,
+            '\r' => output.extend(b"\\r")?,
+            '\t' => output.extend(b"\\t")?,
+            character if character.is_ascii_control() => {
+                let value = character as u32;
+                output.extend(b"\\u00")?;
+                output.push(HEX[(value >> 4) as usize])?;
+                output.push(HEX[(value & 0x0f) as usize])?;
+            }
+            character if character.is_ascii() => output.push(character as u8)?,
+            character => {
+                let value = character as u32;
+                if value <= 0xffff {
+                    output.extend(b"\\u")?;
+                    output.push(HEX[((value >> 12) & 0x0f) as usize])?;
+                    output.push(HEX[((value >> 8) & 0x0f) as usize])?;
+                    output.push(HEX[((value >> 4) & 0x0f) as usize])?;
+                    output.push(HEX[(value & 0x0f) as usize])?;
+                } else {
+                    let value = value - 0x1_0000;
+                    let high = 0xd800 + (value >> 10);
+                    let low = 0xdc00 + (value & 0x3ff);
+                    for value in [high, low] {
+                        output.extend(b"\\u")?;
+                        output.push(HEX[((value >> 12) & 0x0f) as usize])?;
+                        output.push(HEX[((value >> 8) & 0x0f) as usize])?;
+                        output.push(HEX[((value >> 4) & 0x0f) as usize])?;
+                        output.push(HEX[(value & 0x0f) as usize])?;
+                    }
+                }
+            }
+        }
+    }
+    output.push(b'"')?;
+    Ok(())
+}
+
+fn python_float_repr(value: f64) -> Result<String, ConfigValidateErrorV1> {
+    if !value.is_finite() {
+        return Err(ConfigValidateErrorV1::Workbook(
+            "non-finite number missing special-float envelope".to_owned(),
+        ));
+    }
+    let raw = value.to_string();
+    if value == 0.0 {
+        return Ok(if value.is_sign_negative() {
+            "-0.0".to_owned()
+        } else {
+            "0.0".to_owned()
+        });
+    }
+    let scientific = value.abs() < 1e-4 || value.abs() >= 1e16;
+    let (negative, mantissa, exponent) = split_decimal_repr(&raw)?;
+    let mut result = if scientific {
+        let digits = mantissa.trim_end_matches('0');
+        let mut chars = digits.chars();
+        let first = chars.next().ok_or_else(|| {
+            ConfigValidateErrorV1::Workbook("empty floating-point mantissa".to_owned())
+        })?;
+        let rest = chars.collect::<String>();
+        let mut result = String::new();
+        if negative {
+            result.push('-');
+        }
+        result.push(first);
+        if !rest.is_empty() {
+            result.push('.');
+            result.push_str(&rest);
+        }
+        result.push('e');
+        if exponent >= 0 {
+            result.push('+');
+        } else {
+            result.push('-');
+        }
+        result.push_str(&format!("{:02}", exponent.unsigned_abs()));
+        result
+    } else {
+        let mut result = decimal_from_digits(&mantissa, exponent);
+        if negative {
+            result.insert(0, '-');
+        }
+        result
+    };
+    if !result.contains('.') && !result.contains('e') {
+        result.push_str(".0");
+    }
+    Ok(result)
+}
+
+fn split_decimal_repr(raw: &str) -> Result<(bool, String, i32), ConfigValidateErrorV1> {
+    let (negative, unsigned) = match raw.strip_prefix('-') {
+        Some(value) => (true, value),
+        None => (false, raw),
+    };
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => (
+            mantissa,
+            exponent.parse::<i32>().map_err(|_| {
+                ConfigValidateErrorV1::Workbook("invalid floating-point exponent".to_owned())
+            })?,
+        ),
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let digits = format!("{whole}{fraction}");
+    let first = digits
+        .find(|character: char| character != '0')
+        .ok_or_else(|| {
+            ConfigValidateErrorV1::Workbook("zero floating-point mantissa".to_owned())
+        })?;
+    let digits = digits[first..].to_owned();
+    let decimal_position = whole.len() as i32 - first as i32;
+    Ok((negative, digits, exponent + decimal_position - 1))
+}
+
+fn decimal_from_digits(digits: &str, exponent: i32) -> String {
+    let decimal_position = exponent + 1;
+    if decimal_position <= 0 {
+        return format!("0.{}{}", "0".repeat((-decimal_position) as usize), digits);
+    }
+    if decimal_position as usize >= digits.len() {
+        return format!(
+            "{}{}",
+            digits,
+            "0".repeat(decimal_position as usize - digits.len())
+        );
+    }
+    let position = decimal_position as usize;
+    format!("{}.{}", &digits[..position], &digits[position..])
 }
 
 fn consumption_report(
@@ -1818,7 +2372,74 @@ fn validate_output_budget(
             "materialized output exceeds {MAX_NUMERIC_ELEMENTS}-numeric-element budget"
         )));
     }
+    validate_materialized_storage_budget(parameters, options)
+}
+
+fn validate_materialized_storage_budget(
+    parameters: &BTreeMap<String, ResolvedDefaultV1>,
+    options: &BTreeMap<String, ResolvedDefaultV1>,
+) -> Result<(), ConfigValidateErrorV1> {
+    validate_materialized_storage_budget_with_limit(
+        parameters,
+        options,
+        MAX_MATERIALIZED_FINGERPRINT_BYTES,
+    )
+}
+
+fn validate_materialized_storage_budget_with_limit(
+    parameters: &BTreeMap<String, ResolvedDefaultV1>,
+    options: &BTreeMap<String, ResolvedDefaultV1>,
+    limit: usize,
+) -> Result<(), ConfigValidateErrorV1> {
+    let total =
+        parameters
+            .iter()
+            .chain(options.iter())
+            .try_fold(0_usize, |total, (key, value)| {
+                let total = total.checked_add(key.len()).ok_or_else(|| {
+                    ConfigValidateErrorV1::Workbook(
+                        "materialized key/default-copy byte count overflow".to_owned(),
+                    )
+                })?;
+                let bytes = resolved_value_owned_bytes(value)?;
+                total.checked_add(bytes).ok_or_else(|| {
+                    ConfigValidateErrorV1::Workbook(
+                        "materialized value/default-copy byte count overflow".to_owned(),
+                    )
+                })
+            })?;
+    if total > limit {
+        return Err(ConfigValidateErrorV1::Workbook(format!(
+            "materialized values/default copies exceed {}-byte budget",
+            limit
+        )));
+    }
     Ok(())
+}
+
+fn resolved_value_owned_bytes(value: &ResolvedDefaultV1) -> Result<usize, ConfigValidateErrorV1> {
+    match value {
+        ResolvedDefaultV1::Scalar(_) | ResolvedDefaultV1::Boolean(_) => Ok(8),
+        ResolvedDefaultV1::String(value) => Ok(value.len()),
+        ResolvedDefaultV1::Empty => Ok(0),
+        ResolvedDefaultV1::Vector(values) => values.len().checked_mul(8).ok_or_else(|| {
+            ConfigValidateErrorV1::Workbook(
+                "materialized vector/default-copy byte count overflow".to_owned(),
+            )
+        }),
+        ResolvedDefaultV1::Matrix(rows) => rows.iter().try_fold(0_usize, |total, row| {
+            let bytes = row.len().checked_mul(8).ok_or_else(|| {
+                ConfigValidateErrorV1::Workbook(
+                    "materialized matrix/default-copy byte count overflow".to_owned(),
+                )
+            })?;
+            total.checked_add(bytes).ok_or_else(|| {
+                ConfigValidateErrorV1::Workbook(
+                    "materialized matrix/default-copy byte count overflow".to_owned(),
+                )
+            })
+        }),
+    }
 }
 
 fn as_vector(value: Option<&ResolvedDefaultV1>) -> Option<Vec<f64>> {
@@ -1860,7 +2481,10 @@ fn is_nonempty(value: Option<&ResolvedDefaultV1>) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
+    use zip::ZipWriter;
+    use zip::write::SimpleFileOptions;
 
     fn csv_file(contents: &str) -> PathBuf {
         let nonce = SystemTime::now()
@@ -1869,6 +2493,52 @@ mod tests {
             .as_nanos();
         let path = std::env::temp_dir().join(format!("sipi-com-01-{nonce}.csv"));
         fs::write(&path, contents).expect("write fixture");
+        path
+    }
+
+    fn xlsx_file(rows: &[(&str, &str)]) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("sipi-com-01-{nonce}.xlsx"));
+        let file = fs::File::create(&path).expect("xlsx fixture");
+        let mut archive = ZipWriter::new(file);
+        let options = SimpleFileOptions::default();
+        let mut sheet = String::from("<worksheet><sheetData>");
+        for (index, (key, value)) in rows.iter().enumerate() {
+            let row = index + 1;
+            sheet.push_str(&format!("<row r=\"{row}\">"));
+            sheet.push_str(&format!(
+                "<c r=\"A{row}\" t=\"inlineStr\"><is><t>{key}</t></is></c>"
+            ));
+            if value.parse::<f64>().is_ok() {
+                sheet.push_str(&format!("<c r=\"B{row}\"><v>{value}</v></c>"));
+            } else {
+                sheet.push_str(&format!(
+                    "<c r=\"B{row}\" t=\"inlineStr\"><is><t>{value}</t></is></c>"
+                ));
+            }
+            sheet.push_str("</row>");
+        }
+        sheet.push_str("</sheetData></worksheet>");
+        for (name, contents) in [
+            (
+                "xl/workbook.xml",
+                "<workbook xmlns:r=\"r\"><sheets><sheet name=\"COM_Settings\" r:id=\"rId1\"/></sheets></workbook>",
+            ),
+            (
+                "xl/_rels/workbook.xml.rels",
+                "<Relationships><Relationship Id=\"rId1\" Target=\"worksheets/sheet1.xml\"/></Relationships>",
+            ),
+            ("xl/worksheets/sheet1.xml", sheet.as_str()),
+        ] {
+            archive.start_file(name, options).expect("xlsx entry");
+            archive
+                .write_all(contents.as_bytes())
+                .expect("xlsx contents");
+        }
+        archive.finish().expect("finish xlsx");
         path
     }
 
@@ -1940,7 +2610,15 @@ mod tests {
     #[test]
     fn literal_and_default_catalog_are_executable() {
         assert_eq!(
-            resolve_default("0.5", &BTreeMap::new(), &BTreeMap::new()).expect("literal"),
+            resolve_default(
+                "0.5",
+                &BTreeMap::new(),
+                &BTreeMap::new(),
+                &BTreeSet::new(),
+                &BTreeSet::new(),
+            )
+            .expect("literal")
+            .value,
             ResolvedDefaultV1::Scalar(0.5)
         );
     }
@@ -2001,9 +2679,276 @@ mod tests {
             ("levels".to_owned(), ResolvedDefaultV1::Scalar(4.0)),
             ("f_r".to_owned(), ResolvedDefaultV1::Scalar(4.0)),
         ]);
-        assert!(derive_core_parameters(&mut parameters).is_err());
+        assert!(derive_core_parameters(&mut parameters, &mut BTreeSet::new()).is_err());
         parameters.insert("samples_per_ui".to_owned(), ResolvedDefaultV1::Scalar(32.0));
         parameters.insert("levels".to_owned(), ResolvedDefaultV1::Scalar(f64::NAN));
-        assert!(derive_core_parameters(&mut parameters).is_err());
+        assert!(derive_core_parameters(&mut parameters, &mut BTreeSet::new()).is_err());
+    }
+
+    #[test]
+    fn fingerprint_writer_matches_python_types_float_spelling_and_specials() {
+        let parameters = json!({"z": 1.0});
+        let options = json!({
+            "f": 1e-5,
+            "i": 2.0,
+            "special": {"$special_float": "Infinity"},
+            "unicode": "π"
+        });
+        let bytes = canonical_materialized_bytes(
+            &parameters,
+            &options,
+            &BTreeSet::new(),
+            &BTreeSet::from(["i".to_owned()]),
+        )
+        .expect("canonical payload");
+        assert_eq!(
+            String::from_utf8(bytes).expect("ASCII canonical payload"),
+            r#"{"options":{"f":1e-05,"i":2,"special":{"__float__":"inf"},"unicode":"\u03c0"},"parameters":{"z":1.0}}"#
+        );
+        assert_eq!(python_float_repr(1e-5).expect("small float"), "1e-05");
+        assert_eq!(
+            python_float_repr(9.5909e-5).expect("small fixed float"),
+            "9.5909e-05"
+        );
+        assert_eq!(python_float_repr(1e-4).expect("fixed threshold"), "0.0001");
+        assert_eq!(python_float_repr(1e16).expect("large threshold"), "1e+16");
+        assert_eq!(python_float_repr(-0.0).expect("negative zero"), "-0.0");
+    }
+
+    #[test]
+    fn fingerprint_writer_sorts_nested_keys_and_escapes_python_strings() {
+        let parameters = json!({
+            "é": "line\nquote\"",
+            "astral": "😀",
+            "control": "\u{0001}"
+        });
+        let options = json!({"b": [true, null], "a": {"z": 1.0, "a": 2.0}});
+        let bytes =
+            canonical_materialized_bytes(&parameters, &options, &BTreeSet::new(), &BTreeSet::new())
+                .expect("canonical payload");
+        assert_eq!(
+            String::from_utf8(bytes).expect("ASCII canonical payload"),
+            r#"{"options":{"a":{"a":2.0,"z":1.0},"b":[true,null]},"parameters":{"astral":"\ud83d\ude00","control":"\u0001","\u00e9":"line\nquote\""}}"#
+        );
+    }
+
+    #[test]
+    fn fingerprint_distinguishes_python_integer_and_float_scalars() {
+        let parameters = json!({"n": 2.0});
+        let options = json!({});
+        assert_eq!(
+            materialized_fingerprint(
+                &parameters,
+                &options,
+                &BTreeSet::from(["n".to_owned()]),
+                &BTreeSet::new(),
+            )
+            .expect("integer fingerprint"),
+            "06195e8effb1a430714e2d9327bbcd7d8016ac3e3c2b0ebe120cd21d9581fdd2"
+        );
+        assert_eq!(
+            materialized_fingerprint(&parameters, &options, &BTreeSet::new(), &BTreeSet::new(),)
+                .expect("float fingerprint"),
+            "a3cea6b1a1226ec898b7ff5010eefa460587857fc7d6f761905034d40fe2b261"
+        );
+    }
+
+    #[test]
+    fn fingerprint_writer_enforces_single_cumulative_and_unicode_byte_limits() {
+        let empty = BTreeSet::new();
+        let large = json!({"payload": "x".repeat(64)});
+        let single_error =
+            canonical_materialized_bytes_with_limit(&large, &json!({}), &empty, &empty, 32)
+                .expect_err("single large string must be bounded");
+        assert!(
+            single_error
+                .to_string()
+                .contains("fingerprint exceeds 32-byte")
+        );
+
+        let one = json!({"a": "123456"});
+        let one_bytes =
+            canonical_materialized_bytes_with_limit(&one, &json!({}), &empty, &empty, 256)
+                .expect("one string");
+        let two = json!({"a": "123456", "b": "123456"});
+        let cumulative_error = canonical_materialized_bytes_with_limit(
+            &two,
+            &json!({}),
+            &empty,
+            &empty,
+            one_bytes.len(),
+        )
+        .expect_err("cumulative strings must be bounded");
+        assert!(cumulative_error.to_string().contains("fingerprint exceeds"));
+
+        let ascii = json!({"u": "aaaa"});
+        let ascii_bytes =
+            canonical_materialized_bytes_with_limit(&ascii, &json!({}), &empty, &empty, 256)
+                .expect("ASCII string");
+        let unicode = json!({"u": "😀"});
+        let unicode_error = canonical_materialized_bytes_with_limit(
+            &unicode,
+            &json!({}),
+            &empty,
+            &empty,
+            ascii_bytes.len(),
+        )
+        .expect_err("Unicode surrogate expansion must be bounded");
+        assert!(unicode_error.to_string().contains("fingerprint exceeds"));
+
+        let mut defaults = BTreeMap::from([(
+            "a".to_owned(),
+            ResolvedDefaultV1::String("123456".to_owned()),
+        )]);
+        let one_default_bytes =
+            resolved_value_owned_bytes(defaults.get("a").expect("value")).expect("default bytes");
+        assert_eq!(one_default_bytes, 6);
+        defaults.insert(
+            "b".to_owned(),
+            ResolvedDefaultV1::String("123456".to_owned()),
+        );
+        let default_error = validate_materialized_storage_budget_with_limit(
+            &defaults,
+            &BTreeMap::new(),
+            one_default_bytes + 1,
+        )
+        .expect_err("cumulative default copies must be bounded");
+        assert!(default_error.to_string().contains("default copies exceed"));
+    }
+
+    #[test]
+    fn matrix_json_projection_recurses_special_float_envelopes() {
+        let matrix =
+            ResolvedDefaultV1::Matrix(vec![vec![f64::INFINITY, f64::NEG_INFINITY, f64::NAN, 1.0]]);
+        assert_eq!(
+            json_value(&matrix),
+            json!([[
+                {"$special_float": "Infinity"},
+                {"$special_float": "-Infinity"},
+                {"$special_float": "NaN"},
+                1.0
+            ]])
+        );
+    }
+
+    #[test]
+    fn derive_core_parameters_removes_integer_origin_from_derived_floats() {
+        let mut parameters = BTreeMap::from([
+            ("fb".to_owned(), ResolvedDefaultV1::Scalar(53.125e9)),
+            ("samples_per_ui".to_owned(), ResolvedDefaultV1::Scalar(32.0)),
+            ("levels".to_owned(), ResolvedDefaultV1::Scalar(4.0)),
+            ("f_r".to_owned(), ResolvedDefaultV1::Scalar(4.0)),
+            ("fb_BT_cutoff".to_owned(), ResolvedDefaultV1::Scalar(1.0)),
+        ]);
+        let mut integer_parameters = BTreeSet::from(["fb_BT_cutoff".to_owned()]);
+        derive_core_parameters(&mut parameters, &mut integer_parameters).expect("derived core");
+        assert_eq!(
+            parameters.get("fb_BT_cutoff"),
+            Some(&ResolvedDefaultV1::Scalar(1.892148e0))
+        );
+        assert!(!integer_parameters.contains("fb_BT_cutoff"));
+        for key in ["ui", "sample_dt", "sigma_X", "fb_BW_cutoff"] {
+            assert!(!integer_parameters.contains(key), "{key} must be float");
+        }
+        let parameters_json = json_map(&parameters);
+        let options_json = json!({});
+        assert_eq!(
+            parameters_json.get("fb_BT_cutoff"),
+            Some(&json!(1.892148_f64))
+        );
+        let digest = materialized_fingerprint(
+            &parameters_json,
+            &options_json,
+            &integer_parameters,
+            &BTreeSet::new(),
+        )
+        .expect("derived float fingerprint");
+        assert_eq!(digest.len(), 64);
+    }
+
+    #[test]
+    fn xlsx_integer_source_to_derived_float_reaches_digest_boundary() {
+        let path = xlsx_file(&[
+            ("A_DD", "0.02"),
+            ("b_max(1)", "0.4"),
+            ("c(0)", "0.54"),
+            ("Delta_f", "10000000"),
+            ("DER_0", "0.00001"),
+            ("eta_0", "0.000000041"),
+            ("f_b", "53125000000"),
+            ("f_min", "50000000"),
+            ("g_DC", "[-13 -12]"),
+            ("Include PCB", "0"),
+            ("L", "4"),
+            ("M", "32"),
+            ("N_b", "4"),
+            ("R_0", "50"),
+            ("R_LM", "0.95"),
+            ("RESULT_DIR", "."),
+            ("sigma_RJ", "0.01"),
+            ("SNR_TX", "[32.5 32.5]"),
+            ("TDR_f_BT_3db", "1"),
+        ]);
+        let request = request(path.clone());
+        let profile = request.validate().expect("profile");
+        let schema = load_schema().expect("schema");
+        let settings = load_settings(&path).expect("xlsx settings");
+        let (rows, packages, _) = split_packages(&settings, &profile).expect("package split");
+        let materialized = materialize_r480(&schema, &rows, &packages, &BTreeMap::new(), &profile)
+            .expect("materialize");
+        assert!(!materialized.integer_parameters.contains("fb_BT_cutoff"));
+        let parameters_json = json_map(&materialized.parameters);
+        let options_json = json_map(&materialized.options);
+        assert_eq!(
+            parameters_json.get("fb_BT_cutoff"),
+            Some(&json!(1.892148_f64))
+        );
+        let digest = materialized_fingerprint(
+            &parameters_json,
+            &options_json,
+            &materialized.integer_parameters,
+            &materialized.integer_options,
+        )
+        .expect("materialized digest");
+        assert_eq!(digest.len(), 64);
+        fs::remove_file(path).expect("cleanup");
+    }
+
+    #[test]
+    fn python_float_repr_matches_nextafter_thresholds_subnormal_and_maximum() {
+        let below_small = f64::from_bits(1e-4_f64.to_bits() - 1);
+        let above_small = f64::from_bits(1e-4_f64.to_bits() + 1);
+        let below_large = f64::from_bits(1e16_f64.to_bits() - 1);
+        let above_large = f64::from_bits(1e16_f64.to_bits() + 1);
+        assert_eq!(
+            python_float_repr(below_small).expect("below small threshold"),
+            "9.999999999999999e-05"
+        );
+        assert_eq!(python_float_repr(1e-4).expect("small threshold"), "0.0001");
+        assert_eq!(
+            python_float_repr(above_small).expect("above small threshold"),
+            "0.00010000000000000002"
+        );
+        assert_eq!(
+            python_float_repr(below_large).expect("below large threshold"),
+            "9999999999999998.0"
+        );
+        assert_eq!(python_float_repr(1e16).expect("large threshold"), "1e+16");
+        assert_eq!(
+            python_float_repr(above_large).expect("above large threshold"),
+            "1.0000000000000002e+16"
+        );
+        assert_eq!(
+            python_float_repr(f64::from_bits(1)).expect("subnormal"),
+            "5e-324"
+        );
+        assert_eq!(
+            python_float_repr(f64::MAX).expect("maximum"),
+            "1.7976931348623157e+308"
+        );
+        assert_eq!(
+            python_float_repr(-below_small).expect("negative below small"),
+            "-9.999999999999999e-05"
+        );
     }
 }

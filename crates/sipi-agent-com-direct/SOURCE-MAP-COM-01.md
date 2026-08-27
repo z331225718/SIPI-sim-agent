@@ -15,7 +15,7 @@ runtime itself is not executed here.
 | src/agent_com/config/consumption.py | implemented/report-only/unimplemented/obsolete/unverified field registry | derived registry consumed in Rust; full runtime trace sections open |
 | schemas/behavior-presets.yaml | preset/fix-id catalog | exact MIT blob quarantined and parsed |
 | schemas/r480-config.schema.yaml | complete r4.80 call/default catalog | exact MIT blob quarantined and parsed |
-| src/agent_com/capabilities.py | materialized fingerprint boundary | hash field ported; Python numeric formatting parity open |
+| src/agent_com/capabilities.py | materialized fingerprint boundary | ported: canonical key ordering, Python scalar int/float spelling, special-float tags, compact JSON string escaping, and float exponent formatting |
 
 Exact pinned source Git identities and embedded resource hashes are bound in
 docs/baselines/com-01-direct-port-preparation.v1.yaml. Resource custody is
@@ -45,3 +45,19 @@ unimplemented. The trusted workbook materializer retains that option only in
 its source consumption/diagnostic record, with scope limited to the
 Wiener-Hopf branch; that branch remains fail-closed. It is not projected into
 the generic COM DTO or numerical chain, and public JSON cannot inject it.
+
+The materialized fingerprint writer mirrors the pinned `capabilities.py`
+boundary rather than delegating to `serde_json`: source integer cells retain
+their JSON integer spelling, floating scalars use Python's fixed/scientific
+notation thresholds and padded exponents, and the materialized JSON special
+float envelope is normalized to the pinned `__float__` sentinel. JSON object
+keys are sorted at every level and strings use Python's ASCII-safe
+`json.dumps` escaping. The writer is bounded by the same 16 MiB trust budget
+as the configuration input, checks every escaped character (including UTF-16
+surrogate expansion) with checked byte accounting, and rejects cumulative
+materialized/default-copy storage before cloning default maps. Derived core
+fields overwrite stale integer-origin markers as floating values, and matrix
+JSON projection recursively preserves special-float envelopes. Focused tests
+cover these first-divergence and budget cases; broader upstream replay
+evidence remains a separate immutable artifact and is not overwritten by this
+source change.
