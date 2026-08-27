@@ -1,0 +1,1027 @@
+{
+  "acceptance": false,
+  "blockers": [
+    "materialized_fingerprint_drift"
+  ],
+  "candidate": {
+    "archive": {
+      "bytes": 51384320,
+      "command": "git -c core.autocrlf=false archive --format=tar <revision>",
+      "path_redacted": true,
+      "sha256": "1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0"
+    },
+    "build": {
+      "binary_post": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3725312,
+        "nlink": 1,
+        "path_redacted": true,
+        "sha256": "a139f24ecb03463cdd594beb052f580f4664e9aeeebe069925fd195c28b79269"
+      },
+      "binary_pre": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3725312,
+        "nlink": 1,
+        "path_redacted": true,
+        "sha256": "a139f24ecb03463cdd594beb052f580f4664e9aeeebe069925fd195c28b79269"
+      },
+      "binary_stable": true,
+      "cargo_source_post": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3725312,
+        "nlink": 2,
+        "path_redacted": true,
+        "sha256": "a139f24ecb03463cdd594beb052f580f4664e9aeeebe069925fd195c28b79269"
+      },
+      "cargo_source_pre": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3725312,
+        "nlink": 2,
+        "path_redacted": true,
+        "sha256": "a139f24ecb03463cdd594beb052f580f4664e9aeeebe069925fd195c28b79269"
+      },
+      "cargo_source_stable": true,
+      "command": "cargo build --manifest-path <candidate>/crates/sipi-agent-com-direct/Cargo.toml --bin sipi-com-direct-config-validate --release --locked --offline",
+      "copy_matches_source": true,
+      "environment": {
+        "cargo_cache_bound_pre_post": true,
+        "cargo_home_policy": "host_cargo_home_retained_for_offline_dependency_cache",
+        "cleared": [
+          "RUSTFLAGS",
+          "CARGO_ENCODED_RUSTFLAGS",
+          "RUSTC_WRAPPER",
+          "RUSTC_WORKSPACE_WRAPPER",
+          "CARGO_BUILD_RUSTC",
+          "CARGO_BUILD_RUSTC_WRAPPER",
+          "CARGO_BUILD_RUSTDOC",
+          "RUSTDOCFLAGS",
+          "CARGO_BUILD_TARGET",
+          "RUSTUP_TOOLCHAIN",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTDOCFLAGS",
+          "CARGO_BUILD_JOBS",
+          "CARGO_BUILD_PIPELINING",
+          "RUSTC_BOOTSTRAP",
+          "CARGO_BUILD_RUSTFLAGS",
+          "CARGO_BUILD_RUSTDOCFLAGS",
+          "CARGO_CONFIG",
+          "CC",
+          "CXX",
+          "CL",
+          "LINK",
+          "LIB",
+          "INCLUDE"
+        ],
+        "incremental": "0",
+        "linker_forced": true,
+        "native_linker_overrides_cleared": true,
+        "offline": true,
+        "rustc_forced": true,
+        "source_path_remapped": true,
+        "target_is_independent": true,
+        "wrappers_cleared": true
+      },
+      "log_policy": "stable_event_categories",
+      "raw_binary_scope": "environment_local_scoped_no_canonical_pe_strategy",
+      "stderr_sha256": "932ed58fa7be85be5103d641a29ffe97f9d288478c5f108732d3344b87db44bf",
+      "stdout_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "cargo_lock_sha256": "7bb650c602f7fe9f74930580380e399089014924e16576bc72c3b82764136a7f",
+    "commit": "bc882d2e5a19c2a844bacc485ede5b874e8f9c37",
+    "inventory": {
+      "file_count": 24,
+      "sha256": "dc09a6d02b58400ce74ca3a446b3610ddf03cfb05b5092251f290431643ade2e",
+      "total_bytes": 1622324
+    },
+    "source_date_epoch": "1787651138",
+    "source_mode": "git_archive_at_immutable_commit",
+    "tree": "d87cfecea77ccd670073a6c069658e6b4e8c3137"
+  },
+  "difference_scenario_ids": [],
+  "fixtures": [
+    {
+      "basename": "config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx",
+      "bytes": 63311,
+      "extension": ".xlsx",
+      "path_redacted": true,
+      "role": "primary_xlsx",
+      "sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9"
+    },
+    {
+      "basename": "com-01-package-warning.csv",
+      "bytes": 4600,
+      "extension": ".csv",
+      "path_redacted": true,
+      "role": "package_warning_csv",
+      "sha256": "ebf22813b12e12d73bef253197eb747ac71db0bee4aee86a130fcba92dbaf295"
+    }
+  ],
+  "harness": {
+    "archive_only_inputs": true,
+    "corpus": "docs/baselines/com-01-direct-port-corpus.v1.json",
+    "report_policy": "bounded_hashes_counts_error_categories_and_difference_keys_only",
+    "runner": "tools/run_com_01_current_candidate.py",
+    "scenario_count": 14,
+    "scenario_set_sha256": "abcb4cdecfb67f5de13439baec64cf45f752bc76a7765ace7434b2874523fa96",
+    "semantic_runner": "tools/run_com_01_direct_oracle.py",
+    "shared_helper_schema": "sipi.com-current.shared-custody.v1",
+    "source": {
+      "commit": "e74e10d2933b1ddbc73f7da1a7785ca15ba49e09",
+      "files": [
+        {
+          "bytes": 83652,
+          "path": "tools/run_com_01_current_candidate.py",
+          "sha256": "199080030f9d07bdd8d9c8b087268c25e12c8caf2d4bc0f61be2fc1540de68bb"
+        },
+        {
+          "bytes": 11321,
+          "path": "tools/aggregate_com_01_current_candidate.py",
+          "sha256": "678256aa893d1d03a6e952dbdee62d5dd787849cea5107ce766ca59ac82dff15"
+        },
+        {
+          "bytes": 21938,
+          "path": "tools/verify_com_01_current_candidate.py",
+          "sha256": "1e3fc34efa93844a9115bb78316b49bf5f8c8eae30249c346aeee60d6e15903d"
+        },
+        {
+          "bytes": 23658,
+          "path": "tools/test_verify_com_01_current_candidate.py",
+          "sha256": "69ad3d83a35e70aaeaa4f8031afbab1c8e512301472baf310c89640cfcf39128"
+        }
+      ],
+      "shared_helper_schema": "sipi.com-current.shared-custody.v1",
+      "tree": "2e49b25641439d29110747edde157eb232d1250c"
+    },
+    "timeout_seconds": 300
+  },
+  "leaf": "config-validate",
+  "matched": false,
+  "non_claims": [
+    "no_complete_com_parity",
+    "no_global_migration_row_close",
+    "no_product_capability_promotion",
+    "no_release_readiness",
+    "no_S_parameter_fit",
+    "channel_impulse_only_policy_unchanged",
+    "no_raw_configuration_values_in_evidence"
+  ],
+  "nonce": "bda431695c2b0b09d91c07d1cab00d5dc6ba33aec750fba83100f6e1ad7a6889",
+  "outcomes": {
+    "error_code_match": 7,
+    "passed": 6,
+    "values_equal_fingerprint_drift": 1
+  },
+  "run_id": "70c4a1c1187c17b0f350a5d00d45df83fb5f6b666908cf52bf3b411362ce7acf",
+  "scenarios": [
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "36b6ee0f4f461eb051d539e7ab7a8187b0789a24c00409b8824391d43c8cb558",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_json_default_r480",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "36b6ee0f4f461eb051d539e7ab7a8187b0789a24c00409b8824391d43c8cb558",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "stdout_bytes": 46,
+        "stdout_sha256": "a7e4fa38f3a9ffc563554f0e9a4bbcbbe04d6fab79c087e46b3e73494710246d"
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_text_default_r480",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "stdout_bytes": 47,
+        "stdout_sha256": "cc05aa6efa7f46a138d4b7a2f0588833376705bd3051da206b07126dbc4a4c49"
+      },
+      "output": "text",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "consumption_summary": {
+          "status_counts": {
+            "implemented": {
+              "options": 63,
+              "parameters": 133,
+              "total": 196
+            },
+            "obsolete": {
+              "options": 5,
+              "parameters": 10,
+              "total": 15
+            },
+            "report_only": {
+              "options": 21,
+              "parameters": 5,
+              "total": 26
+            },
+            "unimplemented": {
+              "options": 1,
+              "parameters": 0,
+              "total": 1
+            },
+            "unverified": {
+              "options": 0,
+              "parameters": 0,
+              "total": 0
+            }
+          },
+          "total": 238
+        },
+        "materialized": {
+          "option_count": 90,
+          "option_keys_sha256": "db2dcb5e7d9b32ee6d2c55e905fe22d28a744581c8c3a88757754b61cfbd0137",
+          "parameter_count": 148,
+          "parameter_keys_sha256": "0d5ac58e2807c5cda038371fcb4f3b689359a393fe0053c6f9773927227ad870"
+        },
+        "materialized_fingerprint": "2d0791ee45451a46093e3318c16d3c3b3797ef3fecb687fa56db84aaa8ef7532",
+        "projection_sha256": "9d5ce30e6d90812ea7edfc9212c531a4b400194af70ead78cc38ffea40b47c45",
+        "schema_version": 1,
+        "top_level_keys": [
+          "config",
+          "config_consumption",
+          "execution",
+          "materialized",
+          "materialized_fingerprint",
+          "schema_version",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "values_equal_fingerprint_drift",
+      "difference_keys": [],
+      "fingerprint_match": false,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_materialized_json_default",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "consumption_summary": {
+          "status_counts": {
+            "implemented": {
+              "options": 63,
+              "parameters": 133,
+              "total": 196
+            },
+            "obsolete": {
+              "options": 5,
+              "parameters": 10,
+              "total": 15
+            },
+            "report_only": {
+              "options": 21,
+              "parameters": 5,
+              "total": 26
+            },
+            "unimplemented": {
+              "options": 1,
+              "parameters": 0,
+              "total": 1
+            },
+            "unverified": {
+              "options": 0,
+              "parameters": 0,
+              "total": 0
+            }
+          },
+          "total": 238
+        },
+        "materialized": {
+          "option_count": 90,
+          "option_keys_sha256": "db2dcb5e7d9b32ee6d2c55e905fe22d28a744581c8c3a88757754b61cfbd0137",
+          "parameter_count": 148,
+          "parameter_keys_sha256": "0d5ac58e2807c5cda038371fcb4f3b689359a393fe0053c6f9773927227ad870"
+        },
+        "materialized_fingerprint": "d6963c122533d58273e4ebf3224bade1dc38b040f740c1cd92d4c9727e4483dc",
+        "projection_sha256": "9305ec5f61f31bfb35dec92c91ecd886a0680a1180e58531da5bf9bc1f14f7b6",
+        "schema_version": 1,
+        "top_level_keys": [
+          "config",
+          "config_consumption",
+          "execution",
+          "materialized",
+          "materialized_fingerprint",
+          "schema_version",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "materialized_json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "experimental_corrected",
+        "projection_sha256": "8859c9fec939865d8a8566ca8e4ae4edf7af77b5d438fc21462547d261e050ed",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_experimental_corrected_profile",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "experimental_corrected",
+        "projection_sha256": "8859c9fec939865d8a8566ca8e4ae4edf7af77b5d438fc21462547d261e050ed",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_custom_standard_reader",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 2,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "afb7a6522d8434f0414cfe9514b77e192d856241ac42e447bdc8de86f7d5380c",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": [
+          "R480-PKG-DUP-NAME"
+        ]
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "package_warning_csv",
+      "id": "csv_package_warning_json_loader",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 2,
+        "parameters": 148,
+        "profile": "r480",
+        "projection_sha256": "afb7a6522d8434f0414cfe9514b77e192d856241ac42e447bdc8de86f7d5380c",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": [
+          "R480-PKG-DUP-NAME"
+        ]
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": null,
+      "candidate_exit": 0,
+      "candidate_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "comparison": "passed",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "xlsx_custom_fix_config_defaults",
+      "oracle_error_category": null,
+      "oracle_exit": 0,
+      "oracle_summary": {
+        "options": 90,
+        "package_blocks": 0,
+        "parameters": 148,
+        "profile": "custom",
+        "projection_sha256": "e529b4d32331ad759fcedab142d720fdc05e323df373f46cae2b5f9c6d5f79ca",
+        "top_level_keys": [
+          "config",
+          "options",
+          "package_blocks",
+          "parameters",
+          "profile",
+          "warnings"
+        ],
+        "warnings": []
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "argument_error",
+      "candidate_exit": 2,
+      "candidate_summary": {
+        "error_category": "argument_error",
+        "stderr_bytes": 83,
+        "stderr_sha256": "453347a91d36495bb9503edf090a6d98708fa598419364acf925ebb8ff829981",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "mutually_exclusive_json_modes",
+      "oracle_error_category": "argument_error",
+      "oracle_exit": 2,
+      "oracle_summary": {
+        "error_category": "argument_error",
+        "stderr_bytes": 352,
+        "stderr_sha256": "6fe5385e6fd305bcf65f3b304bb5ee5300130ee3a9d4a03a1a037b9af6d2c1cd",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json_and_materialized_json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "profile_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 73,
+        "stderr_sha256": "68ef45e782996207b6540473941b2c5abf20834b785fb7c4a7328f8991695c2d",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "custom_profile_without_selector",
+      "oracle_error_category": "profile_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 48,
+        "stderr_sha256": "e22fa7fa3eb52750550139863c6aa50ce11338db4962e8f0ac7eccc46d72b35d",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "profile_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 73,
+        "stderr_sha256": "cbbc66e5863fdce6dad8286c40a258a4a11c5f424936fc761ce93b4d0f209dcf",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "reader_without_custom_profile",
+      "oracle_error_category": "profile_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 48,
+        "stderr_sha256": "c37b3783341ce92a647cc6d4ffb4ab45db336d630fdbef3f03d1c55484d63664",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "profile_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 71,
+        "stderr_sha256": "0ec9d59d9ca5a450c18d7ad0bfae2c890b0e5c56ec8698c42b9243567a02942a",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "unknown_fix_id",
+      "oracle_error_category": "profile_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "profile_error",
+        "stderr_bytes": 46,
+        "stderr_sha256": "a7317acd974e3697355d20e3c8438862b65b1e05c38de99601261b49a59f4f6f",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "override_error",
+      "candidate_exit": 2,
+      "candidate_summary": {
+        "error_category": "override_error",
+        "stderr_bytes": 42,
+        "stderr_sha256": "5639a9c691cf89c521b858e7f5bc9a22f60e9ebc8f9e7e5fd52a5c86050562bf",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "primary_xlsx",
+      "id": "duplicate_override",
+      "oracle_error_category": "override_error",
+      "oracle_exit": 2,
+      "oracle_summary": {
+        "error_category": "override_error",
+        "stderr_bytes": 25,
+        "stderr_sha256": "9000af808d3e8756b97db7055bc43c8e36b01500e4dd496ccf69cdb92539042b",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "unsupported_path",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "unsupported_path",
+        "stderr_bytes": 77,
+        "stderr_sha256": "d50de239486fea93403c92f358f401aeef425cbbb556eb08fa3766b3041dbe61",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "unsupported_text",
+      "id": "unsupported_extension",
+      "oracle_error_category": "unsupported_path",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "unsupported_path",
+        "stderr_bytes": 57,
+        "stderr_sha256": "7641b44ff04b2981cfb4b8921bcdbf7dcabf7196c28497713f4766bf15fc7939",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    },
+    {
+      "candidate_error_category": "input_error",
+      "candidate_exit": 3,
+      "candidate_summary": {
+        "error_category": "input_error",
+        "stderr_bytes": 50,
+        "stderr_sha256": "ce54f932b6857dc591230c5e62be94dc2020cef26f018bd65b80d38671e3dc7c",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "comparison": "error_code_match",
+      "difference_keys": [],
+      "fingerprint_match": null,
+      "fixture_role": "missing_xlsx",
+      "id": "missing_config_path",
+      "oracle_error_category": "input_error",
+      "oracle_exit": 3,
+      "oracle_summary": {
+        "error_category": "input_error",
+        "stderr_bytes": 36,
+        "stderr_sha256": "1164003c5460dd444bc3298cdd23eaadfa1e89f17cf04011f4ebfc9332314e70",
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "output": "json",
+      "value_match": true
+    }
+  ],
+  "schema": "sipi.com-01.current-candidate-replay.v1",
+  "status": "scoped_current_candidate_observed",
+  "toolchain": {
+    "post": {
+      "cargo": {
+        "basename": "cargo.exe",
+        "file_bytes": 31288320,
+        "file_sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+      },
+      "cargo_cache": {
+        "file_count": 6249,
+        "package_count": 157,
+        "path_redacted": true,
+        "scope": "resolved_locked_dependency_sources",
+        "sha256": "c541c74ff5981823b7637517fe162ed11b1d3e521105690b7501e45776f20c10",
+        "total_bytes": 81838410
+      },
+      "linker": {
+        "basename": "rust-lld.exe",
+        "file_bytes": 113417728,
+        "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+        "path_redacted": true,
+        "role": "linker",
+        "version_args": [
+          "-flavor",
+          "link",
+          "help"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "cdc50cad3df15ff35c8e78282617235fd63461e2e79087a265b873f33aa69d00"
+      },
+      "python": {
+        "basename": "python.exe",
+        "file_bytes": 91648,
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "basename": "rustc.exe",
+        "file_bytes": 110592,
+        "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+      },
+      "uv": {
+        "basename": "uv.exe",
+        "file_bytes": 68317696,
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "pre": {
+      "cargo": {
+        "basename": "cargo.exe",
+        "file_bytes": 31288320,
+        "file_sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+      },
+      "cargo_cache": {
+        "file_count": 6249,
+        "package_count": 157,
+        "path_redacted": true,
+        "scope": "resolved_locked_dependency_sources",
+        "sha256": "c541c74ff5981823b7637517fe162ed11b1d3e521105690b7501e45776f20c10",
+        "total_bytes": 81838410
+      },
+      "linker": {
+        "basename": "rust-lld.exe",
+        "file_bytes": 113417728,
+        "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+        "path_redacted": true,
+        "role": "linker",
+        "version_args": [
+          "-flavor",
+          "link",
+          "help"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "cdc50cad3df15ff35c8e78282617235fd63461e2e79087a265b873f33aa69d00"
+      },
+      "python": {
+        "basename": "python.exe",
+        "file_bytes": 91648,
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "basename": "rustc.exe",
+        "file_bytes": 110592,
+        "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+      },
+      "uv": {
+        "basename": "uv.exe",
+        "file_bytes": 68317696,
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "stable": true
+  },
+  "upstream": {
+    "archive": {
+      "bytes": 43694080,
+      "command": "git -c core.autocrlf=false archive --format=tar <revision>",
+      "path_redacted": true,
+      "sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    },
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "inventory": {
+      "file_count": 70,
+      "sha256": "1cd0366c0d1cb7e14678ccfc5671918d6a36f8f993896aa2b4729fec487b621e",
+      "total_bytes": 1006648
+    },
+    "runtime": {
+      "command": "uv run --frozen --offline --project <clean-upstream> --python <pinned-python> python -c <probe>",
+      "environment": {
+        "cleared": [
+          "PYTHONHOME",
+          "PYTHONPATH",
+          "PYTHONSTARTUP",
+          "PYTHONUSERBASE",
+          "PYTHONBREAKPOINT",
+          "PYTHONINSPECT",
+          "PYTHONWARNINGS",
+          "PYTHONSAFEPATH",
+          "PYTHONEXECUTABLE",
+          "PYTHONUTF8",
+          "PYTHONIOENCODING",
+          "PYTHONHASHSEED",
+          "PYTHONMALLOC",
+          "PYTHONPROFILEIMPORTTIME",
+          "VIRTUAL_ENV",
+          "UV_PROJECT_ENVIRONMENT",
+          "UV_PYTHON",
+          "UV_PYTHON_DOWNLOADS",
+          "UV_INDEX_URL",
+          "UV_EXTRA_INDEX_URL",
+          "UV_NO_INDEX",
+          "UV_LINK_MODE",
+          "UV_CACHE_DIR",
+          "PIP_CONFIG_FILE",
+          "PIP_INDEX_URL",
+          "PIP_EXTRA_INDEX_URL",
+          "PIP_FIND_LINKS",
+          "PIP_REQUIRE_VIRTUALENV",
+          "PIP_NO_INDEX",
+          "CONDA_PREFIX",
+          "CONDA_DEFAULT_ENV",
+          "CONDA_PYTHON_EXE"
+        ],
+        "direct_python_fallback": false,
+        "global_uv_cache": "required_path_redacted_environment_local",
+        "project_venv": "materialized_inside_archive",
+        "pythonno_user_site": true,
+        "uv_frozen": true,
+        "uv_no_config": true,
+        "uv_offline": true
+      },
+      "exit": 0,
+      "modules": {
+        "agent_com": {
+          "basename": "__init__.py",
+          "bytes": 1719,
+          "relative_path": "src/agent_com/__init__.py",
+          "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+        },
+        "numpy": {
+          "basename": "__init__.py",
+          "bytes": 26470,
+          "relative_path": ".venv/Lib/site-packages/numpy/__init__.py",
+          "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4"
+        },
+        "openpyxl": {
+          "basename": "__init__.py",
+          "bytes": 603,
+          "relative_path": ".venv/Lib/site-packages/openpyxl/__init__.py",
+          "sha256": "b36b17729f138575c7b3035287e52e422e411eca1ab2e7335328cd373d15ba97"
+        },
+        "scipy": {
+          "basename": "__init__.py",
+          "bytes": 4659,
+          "relative_path": ".venv/Lib/site-packages/scipy/__init__.py",
+          "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f"
+        },
+        "yaml": {
+          "basename": "__init__.py",
+          "bytes": 12311,
+          "relative_path": ".venv/Lib/site-packages/yaml/__init__.py",
+          "sha256": "b19dfcc333d6a75dfd73073901164507252f271b41d3b5f7d85510033a0547a7"
+        }
+      },
+      "runtime": "executed_clean_archive_uv_frozen_offline",
+      "source": {
+        "module_file": {
+          "basename": "__init__.py",
+          "bytes": 1719,
+          "path_redacted": true,
+          "relative_path": "src/agent_com/__init__.py",
+          "root_contained": true,
+          "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+        },
+        "package_source_inventory": {
+          "file_count": 67,
+          "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+          "total_bytes": 872082
+        }
+      },
+      "stderr_bytes": 11,
+      "stderr_sha256": "732ff88a1b23a72b6c34a74f34f9ca5c2754e9b022c8c846788ede525ed8c853",
+      "stdout_bytes": 944,
+      "stdout_sha256": "4efd5b25432d8507ef96512b10a2194028c7194561a54036f4047be509de9af1"
+    },
+    "source": {
+      "module_file": {
+        "basename": "__init__.py",
+        "bytes": 1719,
+        "path_redacted": true,
+        "relative_path": "src/agent_com/__init__.py",
+        "root_contained": true,
+        "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+      },
+      "package_source_inventory": {
+        "file_count": 67,
+        "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+        "total_bytes": 872082
+      }
+    },
+    "source_mode": "git_archive_at_immutable_commit",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "uv_lock": {
+      "bytes": 79106,
+      "sha256": "5495d481034518d4424a55a27aa2319c90d2045bc280705748d66f44e159a00f"
+    }
+  },
+  "values_aligned": true,
+  "work_item": "COM-01"
+}

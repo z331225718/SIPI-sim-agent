@@ -1,0 +1,116 @@
+schema: sipi.com-01.current-candidate-replay.v1
+status: scoped_current_candidate_observed
+scope:
+  work_item: COM-01
+  leaf: config-validate
+  complete_com_parity: false
+  global_migration_row_closed: false
+  product_capability_promoted: false
+  release_ready: false
+policy:
+  s_parameter_fit: not_in_scope
+  channel_simulation: impulse_only
+  raw_configuration_values_in_evidence: false
+  same_crate_self_comparison: false
+candidate:
+  commit: bc882d2e5a19c2a844bacc485ede5b874e8f9c37
+  tree: d87cfecea77ccd670073a6c069658e6b4e8c3137
+  source_mode: git_archive_at_immutable_commit
+  archive_bytes: 51384320
+  archive_sha256: 1f44f6dccba7a00684a82c4c7ce6248eb5ea7f353875af5d9589d17ece6883d0
+  inventory:
+    file_count: 24
+    total_bytes: 1622324
+    sha256: dc09a6d02b58400ce74ca3a446b3610ddf03cfb05b5092251f290431643ade2e
+  cargo_lock_sha256: 7bb650c602f7fe9f74930580380e399089014924e16576bc72c3b82764136a7f
+  source_date_epoch: "1787651138"
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  source_mode: git_archive_at_immutable_commit
+  archive_bytes: 43694080
+  archive_sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+  inventory:
+    file_count: 70
+    total_bytes: 1006648
+    sha256: 1cd0366c0d1cb7e14678ccfc5671918d6a36f8f993896aa2b4729fec487b621e
+  runtime_mode: executed_clean_archive_uv_frozen_offline
+  direct_python_fallback: false
+  source_module_sha256: 0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0
+harness:
+  commit: e74e10d2933b1ddbc73f7da1a7785ca15ba49e09
+  tree: 2e49b25641439d29110747edde157eb232d1250c
+  runner: tools/run_com_01_current_candidate.py
+  runner_blob: e64e3dbd5d98e00a7136dc2e533a374d0c9e0077
+  runner_sha256: 199080030f9d07bdd8d9c8b087268c25e12c8caf2d4bc0f61be2fc1540de68bb
+  aggregate_runner: tools/aggregate_com_01_current_candidate.py
+  aggregate_runner_blob: d07fbd804d8348042fb422a9b0376eec0c11693a
+  aggregate_runner_sha256: 678256aa893d1d03a6e952dbdee62d5dd787849cea5107ce766ca59ac82dff15
+  verifier_blob: f9698adc980704bc7ff6cb250fc6928189cdcde7
+  mutation_test_blob: 99bc4c4296a52fde9ba261ee36792c6d26ad89d2
+  semantic_runner: tools/run_com_01_direct_oracle.py
+  semantic_runner_blob: c3ec5823d3cf6d2f0ee1fdb17e414d29592a5c9a
+  semantic_runner_sha256: 6d84145b661570f9aa5fac5ea730063201fe4eea8cb03fde0ea722e2a5809baa
+  scenario_count: 14
+  scenario_set_sha256: abcb4cdecfb67f5de13439baec64cf45f752bc76a7765ace7434b2874523fa96
+  archive_only_inputs: true
+  same_crate_self_comparison: false
+  no_s_fit: true
+  channel_impulse_only: true
+fixtures:
+  - role: primary_xlsx
+    basename: config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+    bytes: 63311
+    sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+    path_redacted: true
+  - role: package_warning_csv
+    basename: com-01-package-warning.csv
+    bytes: 4600
+    sha256: ebf22813b12e12d73bef253197eb747ac71db0bee4aee86a130fcba92dbaf295
+    path_redacted: true
+reports:
+  - path: docs/baselines/com-01-current-candidate-replay-run1.v1.json
+    sha256: 53415dcbf1d7eb45ca1c62fc8bdccd8ba8c14f014a08eba22a7057f575df00ee
+    run_id: cde918c354b8c69033c5a4b1ae0700ecdd9e092efc742545f03900d6dad7390c
+    nonce: 0d29ba9ed7baf5753e6076d01de735d5076d9570eea006da1127e2e9f622c3e7
+  - path: docs/baselines/com-01-current-candidate-replay-run2.v1.json
+    sha256: 29d947762dc3dc04cea3aac08366f494dfa6faac1d277d2d2f9f8d47befe671d
+    run_id: 70c4a1c1187c17b0f350a5d00d45df83fb5f6b666908cf52bf3b411362ce7acf
+    nonce: bda431695c2b0b09d91c07d1cab00d5dc6ba33aec750fba83100f6e1ad7a6889
+aggregate:
+  path: docs/baselines/com-01-current-candidate-replay.aggregate.v1.json
+  sha256: 07c1f59bb2bfa61c35c0ad1eaadfdd4077048db8d4ee09c9b5db4bb0f2118c78
+audit:
+  path: docs/baselines/audits/2026-08-27-com-01-current-candidate-replay.md
+  sha256: 7758810b2f72dc0cffebb57bad0b739ddd7985ebc800750a9b9f50b546a26b01
+physical:
+  - {path: tools/run_com_01_current_candidate.py, sha256: 199080030f9d07bdd8d9c8b087268c25e12c8caf2d4bc0f61be2fc1540de68bb}
+  - {path: tools/aggregate_com_01_current_candidate.py, sha256: 678256aa893d1d03a6e952dbdee62d5dd787849cea5107ce766ca59ac82dff15}
+  - {path: tools/verify_com_01_current_candidate.py, sha256: 1e3fc34efa93844a9115bb78316b49bf5f8c8eae30249c346aeee60d6e15903d}
+  - {path: tools/test_verify_com_01_current_candidate.py, sha256: 69ad3d83a35e70aaeaa4f8031afbab1c8e512301472baf310c89640cfcf39128}
+  - {path: tools/run_com_01_direct_oracle.py, sha256: 6d84145b661570f9aa5fac5ea730063201fe4eea8cb03fde0ea722e2a5809baa}
+  - {path: crates/sipi-agent-com-direct/SOURCE-MAP-COM-01.md, sha256: 2709d584c0c25f6ec95c50437bae1eddb372804fe85a54409bfe73d92c92715c}
+  - {path: crates/sipi-agent-com-direct/NOTICE-AGENT-COM-MIT.md, sha256: 04344354a492e4afa55a71fe6fd39047f8ee52f78370ea0ea4fb243d9104817f}
+non_claims:
+  - no_complete_com_parity
+  - no_global_migration_row_close
+  - no_product_capability_promotion
+  - no_release_readiness
+  - no_S_parameter_fit
+  - channel_impulse_only_policy_unchanged
+  - no_raw_configuration_values_in_evidence
+formal_verification_gate:
+  schema: sipi.com-01-03.current-formal-gate.v1
+  commit: a27d90b887e28d81494e4019ae0a1378a6599429
+  tree: 38bd4bd4898fb4858ce7ee0c0d22a21f8ce5f518
+  files:
+    verifier:
+      path: tools/verify_com_01_03_current_formal.py
+      bytes: 24051
+      sha256: b729806a8311004226ba448710483ac1c7863b692660acfc42e31ce04f778339
+      git_blob_sha1: d37fde410afe2c33f4ff9a84a6672b14c8b608b7
+    mutation_tests:
+      path: tools/test_verify_com_01_03_current_formal.py
+      bytes: 11476
+      sha256: 77b185169d2d2c997b0defa9d86f6b359fba9d4c712e9eee35be95d6e69ce1db
+      git_blob_sha1: 9c6467db6998b53b6b61ff5a55c65c807b923706
