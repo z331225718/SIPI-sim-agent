@@ -1,0 +1,78 @@
+schema: sipi.as-03-power-wave-solve-source-map.v1
+status: implemented_well_conditioned_scope_numeric_parity_open
+candidate:
+  path: crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs
+  role: private bounded power-wave S-to-Y construction and dense solve
+authority_bridge:
+  project: Agent-Spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  path: src/agent_spice/sparam/yparam.py
+  blob: 473746afe5efb3e5117c58b446e2a7ccb3ca8872
+  bytes: 30937
+  sha256: ca6ec999b93f78094c7ea58997676bd886130baf0bdaec04957c3c480ba5b713
+  role: constructs a scikit-rf Network and consumes Network.y
+  dependency_declaration:
+    path: pyproject.toml
+    requirement: scikit-rf>=1.6
+    exact_version_pinned_by_repository: false
+    blob: 29006b652445c770df4a01027357117adf9c95ad
+    bytes: 909
+    sha256: c0f8264a2de1375a4f40a8834173d49859dd9c4717d718fc5f622f1ea4f68c88
+dependency_source:
+  project: scikit-rf
+  version: 2.0.1
+  tag: v2.0.1
+  commit: bd651e923cac6020de49a096e1d7e9b5f949f884
+  tree: e01dc798d1ba119357cc41e96802ac9aca83b9bc
+  oracle_runtime_observation:
+    observed_version: 2.0.1
+    network_content_matches_tag: true
+    math_functions_content_matches_tag: true
+  license: BSD-3-Clause
+  license_path: LICENSE.txt
+  license_blob: ddfd40848d4b5d3e7c4e129f514e6d41c8322546
+  license_bytes: 1553
+  license_sha256: 299e52a519304ca8d51105cdc3d404c221d74e29f885555e06ab998868322025
+  copyright:
+    - Copyright (c) 2010, Alexander Arsenovic
+    - Copyright (c) 2020, scikit-rf Developers
+paths:
+  - path: skrf/network.py
+    lines: 6929-6932
+    role: power-wave F/G construction and left solve A X = B for s2y
+    blob: be5a55e367628b888a39376b693e7a5368df45a9
+    bytes: 291611
+    sha256: 62d5bd5434eb4f2bb6fef2262dd02fac828f93b9742f7c900920fbf313c8b759
+  - path: skrf/mathFunctions.py
+    lines: 1367-1415
+    role: nudge_eig implementation called by network.s2y
+    source_port: false
+    blob: ad356cd00d90799ed483d4efeff83bcffeb3674f
+    bytes: 32637
+    sha256: 7ff864b104b672ddcbd06b5fe7c6d6806040827b2d156732948d58a671010462
+  - path: skrf/constants.py
+    lines: 108-115
+    role: nudge_eig default thresholds EIG_COND=1e-9 and EIG_MIN=1e-12
+    source_port: false
+    blob: 2064f8b734e449f214c63f7977d83031483c10ff
+    bytes: 5529
+    sha256: be3da422ceefb438b335f0e8dc0b8789a63bf2c6da2eec9ed7adbd52d7acfdf5
+scope:
+  power_wave_s_to_y_construction: true
+  left_dense_solve: true
+  existing_condition_gate_is_fail_closed: true
+  existing_condition_gate_default_limit: 1.0e12
+  verified_well_conditioned_fixtures_only: true
+  matrix_direction_fixture_i_plus_s_condition_lt: 2.0
+  matrix_direction_fixture_nudge_eig_effect: no_change
+  fixed_line_fixture_i_plus_s_condition: 8.61904761904762
+  fixed_line_fixture_nudge_eig_effect: no_change
+  nudge_eig_implemented: false
+  nudge_eig_claimed: false
+  general_nudge_eig_equivalence: false
+  s_parameter_fit: false
+  public_api_added: false
+  openblas_or_lapack_added: false
+  numeric_parity_closed: false
+  governing_as_03_numeric_mismatch_open: true

@@ -10,7 +10,7 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use faer::{Mat, Side, linalg::solvers::DenseSolveCore};
+use faer::{Mat, Side, linalg::solvers::DenseSolveCore, prelude::Solve};
 use num_complex::Complex64 as Complex;
 use serde_json::{Value, json};
 
@@ -521,19 +521,71 @@ fn convert_s_to_y(
             "S-to-Y conversion condition estimate {condition:.12e} exceeds {limit:.12e}"
         )));
     }
-    let inverse = mat_inverse(&plus, n)
-        .ok_or_else(|| FitYparamError::Numerical("I+S is singular".to_owned()))?;
-    let i_minus_s = mat_add_identity(sample, n, -1.0)
-        .into_iter()
-        .map(|v| -v)
+    // Keep the pinned scikit-rf power-wave sequence: build A=(S@G+conj(G))@F,
+    // B=(I-S)@F, then solve A X=B instead of materializing an inverse. The
+    // caller-configured condition gate above remains fail-closed; nudge_eig is
+    // not ported, so equivalence is limited to verified well-conditioned cases.
+    let g = (0..n * n)
+        .map(|index| {
+            if index / n == index % n {
+                Complex::new(z0, 0.0)
+            } else {
+                Complex::new(0.0, 0.0)
+            }
+        })
         .collect::<Vec<_>>();
-    Ok((
-        mat_scale(
-            &mat_mul(&i_minus_s, &inverse, n),
-            Complex::new(1.0 / z0, 0.0),
-        ),
-        condition,
-    ))
+    let f_value = 1.0 / (2.0 * z0.sqrt());
+    let f = (0..n * n)
+        .map(|index| {
+            if index / n == index % n {
+                Complex::new(f_value, 0.0)
+            } else {
+                Complex::new(0.0, 0.0)
+            }
+        })
+        .collect::<Vec<_>>();
+    let a = mat_mul(
+        &mat_mul(sample, &g, n)
+            .iter()
+            .zip(g.iter())
+            .map(|(left, right)| *left + right.conj())
+            .collect::<Vec<_>>(),
+        &f,
+        n,
+    );
+    let identity = (0..n * n)
+        .map(|index| {
+            if index / n == index % n {
+                Complex::new(1.0, 0.0)
+            } else {
+                Complex::new(0.0, 0.0)
+            }
+        })
+        .collect::<Vec<_>>();
+    let b = mat_mul(
+        &identity
+            .iter()
+            .zip(sample.iter())
+            .map(|(left, right)| *left - *right)
+            .collect::<Vec<_>>(),
+        &f,
+        n,
+    );
+    let lhs = Mat::from_fn(n, n, |row, column| a[row * n + column]);
+    let rhs = Mat::from_fn(n, n, |row, column| b[row * n + column]);
+    let solved = lhs.partial_piv_lu().solve(rhs.as_ref());
+    let result = (0..n * n)
+        .map(|index| solved[(index / n, index % n)])
+        .collect::<Vec<_>>();
+    if result
+        .iter()
+        .any(|value| !value.re.is_finite() || !value.im.is_finite())
+    {
+        return Err(FitYparamError::Numerical(
+            "power-wave S-to-Y solve produced non-finite values".to_owned(),
+        ));
+    }
+    Ok((result, condition))
 }
 
 fn y_to_s(y: &[Complex], n: usize, z0: f64) -> Option<Vec<Complex>> {
@@ -1900,6 +1952,107 @@ mod tests {
     }
 
     #[test]
+    fn power_wave_solve_has_stable_fixed_line_checkpoint() {
+        let s = vec![
+            Complex::new(0.01, 0.0),
+            Complex::new(0.8, 0.0),
+            Complex::new(0.8, 0.0),
+            Complex::new(0.01, 0.0),
+        ];
+        let (y, condition) = convert_s_to_y(&s, 2, 50.0, 1.0e12).unwrap();
+        assert!(condition.is_finite());
+        assert_eq!(y[0].re.to_bits(), 0x3fb6_16f5_60a0_6f4a);
+        assert_eq!(y[1].re.to_bits(), 0xbfb5_8d5e_7e37_17c4);
+        assert_eq!(y[2].re.to_bits(), 0xbfb5_8d5e_7e37_17c4);
+        assert_eq!(y[3].re.to_bits(), 0x3fb6_16f5_60a0_6f49);
+    }
+
+    #[test]
+    fn power_wave_solve_preserves_complex_two_port_direction() {
+        let s = vec![
+            Complex::new(0.1, 0.02),
+            Complex::new(0.03, -0.04),
+            Complex::new(0.07, 0.05),
+            Complex::new(-0.08, 0.01),
+        ];
+        // scikit-rf v2.0.1 s2y(..., s_def="power") checkpoint.
+        let expected = [
+            Complex::new(0.016497023844251828, -0.000_714_953_490_144_419_1),
+            Complex::new(-0.0011413990243110358, 0.0016225473355625177),
+            Complex::new(-0.0028364373781399723, -0.0018983044283924807),
+            Complex::new(0.023647463899561454, -0.000_535_851_088_336_346_8),
+        ];
+        let (actual, condition) = convert_s_to_y(&s, 2, 50.0, 1.0e12).unwrap();
+        assert!(condition < 2.0);
+        assert!(
+            actual
+                .iter()
+                .zip(expected)
+                .all(|(left, right)| (*left - right).norm() < 1.0e-17)
+        );
+    }
+
+    #[test]
+    fn power_wave_solve_preserves_nport_row_column_direction() {
+        let s = vec![
+            Complex::new(0.05, 0.01),
+            Complex::new(0.02, -0.03),
+            Complex::new(-0.01, 0.04),
+            Complex::new(0.07, 0.02),
+            Complex::new(-0.04, 0.01),
+            Complex::new(0.03, -0.02),
+            Complex::new(-0.02, 0.01),
+            Complex::new(0.06, 0.05),
+            Complex::new(0.08, -0.03),
+        ];
+        // scikit-rf v2.0.1 s2y(..., s_def="power") checkpoint.
+        let expected = [
+            Complex::new(0.018166332032645744, -0.00046389054974381384),
+            Complex::new(-0.0008668313453335766, 0.001282945590378771),
+            Complex::new(0.000_377_061_201_475_975_9, -0.0014590790234972437),
+            Complex::new(-0.0028224709621312376, -0.000_709_314_748_825_646),
+            Complex::new(0.021863720420335974, -0.0004987635301543018),
+            Complex::new(-0.0012297418170710939, 0.000_852_917_361_848_341_2),
+            Complex::new(0.000_831_143_353_744_531_1, -0.00016881888673416406),
+            Complex::new(-0.002_299_067_993_686_986, -0.0019425046516270731),
+            Complex::new(0.017_110_263_411_363_31, 0.0010098775546285635),
+        ];
+        let (actual, condition) = convert_s_to_y(&s, 3, 50.0, 1.0e12).unwrap();
+        assert!(condition < 2.0);
+        assert!(
+            actual
+                .iter()
+                .zip(expected)
+                .all(|(left, right)| (*left - right).norm() < 1.0e-17)
+        );
+    }
+
+    #[test]
+    fn power_wave_solve_rejects_singular_and_over_limit_inputs() {
+        let singular = vec![
+            Complex::new(-1.0, 0.0),
+            Complex::new(0.0, 0.0),
+            Complex::new(0.0, 0.0),
+            Complex::new(-1.0, 0.0),
+        ];
+        assert!(matches!(
+            convert_s_to_y(&singular, 2, 50.0, 1.0e12),
+            Err(FitYparamError::Numerical(message)) if message.contains("condition estimate")
+        ));
+
+        let conditioned = vec![
+            Complex::new(0.1, 0.02),
+            Complex::new(0.03, -0.04),
+            Complex::new(0.07, 0.05),
+            Complex::new(-0.08, 0.01),
+        ];
+        assert!(matches!(
+            convert_s_to_y(&conditioned, 2, 50.0, 1.1),
+            Err(FitYparamError::Numerical(message)) if message.contains("exceeds")
+        ));
+    }
+
+    #[test]
     fn exact_rfm_requires_no_proportional() {
         let o = FitYparamOptions {
             exact_s_rfm: Some(PathBuf::from("x.rfm")),
@@ -1957,8 +2110,8 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         let input = root.join("network.s3p");
         let row_low = [
-            0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.1, 0.0,
+            0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1,
+            0.0,
         ]
         .iter()
         .map(ToString::to_string)
