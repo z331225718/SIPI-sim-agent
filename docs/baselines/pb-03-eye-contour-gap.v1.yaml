@@ -1,0 +1,109 @@
+schema: sipi.pb-03.eye-contour-gap.v1
+version: 1
+row: PB-03
+status: scoped_contour_cardinality_bound_eye_response_blocked
+scope:
+  evidence_mode: candidate_archive_and_production_source_binding
+  clean_external_replay: false
+  whole_payload_parity: false
+  description: Source-bound contour-cardinality follow-up; no external replay or whole-payload
+    parity claim.
+source:
+  candidate:
+    commit: e18b09917c7c0dbd79a1f1a9fedd22104f6f1c1e
+    tree: 505aa18797c4509012185f5ec89771d7138c027c
+    archive:
+      format: git-archive-tar
+      bytes: 53094400
+      sha256: db9402a466e84ab006bd53046975a0fa37485cd717517a12a6aa4ca747c47072
+production_files:
+- path: crates/sipi-pybert-direct/src/legacy_runtime.rs
+  blob: 7c29dff4fda9b673fe9477bef6792600630b38fe
+  bytes: 132018
+  sha256: 42c4c4398aef9608525ec0a9ce4428a734df018de96f1a11c6980924385596cb
+- path: crates/sipi-pybert-direct/src/workflows.rs
+  blob: b28853f0643ff317b4e55e841b75152bb1d247fe
+  bytes: 64900
+  sha256: 7c7ee604b1073a212a96020dc22b786a05a72ab3e96b5ff534e4965fea30878b
+- path: crates/sipi-pybert-direct/tests/pb03_payload.rs
+  blob: 5e058fe23cf73cc2db59261353dfb38088a8c1bf
+  bytes: 2812
+  sha256: e13fd59211436b448b65aebdb555d813a28368765decc715f2c985c02bc35cea
+- path: crates/sipi-pybert-direct/SOURCE-MAP-PB03-PAYLOAD.md
+  blob: da309ffbe1b5fb06b0e6bfd716bf0040c6dd701f
+  bytes: 6188
+  sha256: b48b77966dd1b9dc999ffe5a74c3bde964018a583e42788db30b018faa6f8066
+- path: crates/sipi-pybert-direct/NOTICE-PYBERT-PB03-PAYLOAD.md
+  blob: 23f996b4fd2ac68caedf74dcddba711d8f31f0f6
+  bytes: 1311
+  sha256: a146cfa41cb8151bd26b610c04ab67548284b26d75ed9050a4dd39ec46263e2d
+payload:
+  candidate_field_count: 142
+  ordered_contour_ber_levels:
+  - 1.0e-05
+  - 0.0001
+  - 0.001
+  third_contour:
+    members:
+    - eye_contour_2_x_ui.npy
+    - eye_contour_2_y_v.npy
+    x_count: 0
+    y_count: 0
+    empty: true
+  blocked:
+    eye_matrices:
+    - eye_chnl.npy
+    - eye_tx.npy
+    - eye_ctle.npy
+    - eye_dfe.npy
+    - eye_rx.npy
+    - native_eye_chnl.npy
+    - native_eye_tx.npy
+    - native_eye_ctle.npy
+    - native_eye_dfe.npy
+    - native_eye_rx.npy
+    response_hash_drift:
+    - chnl_H.npy
+    - chnl_trimmed_H.npy
+    - ctle_out_H.npy
+    - dfe_out_H.npy
+    - rx_out_H.npy
+    - tx_H.npy
+    - tx_out_H.npy
+claims:
+  candidate_source_bound: true
+  candidate_field_count: true
+  ordered_contour_levels: true
+  third_contour_empty: true
+  eye_matrix_parity: false
+  response_hash_parity: false
+  whole_payload_parity: false
+  execution_provenance: false
+  product_capability: false
+  release_approval: false
+non_claims:
+- The ten eye/native-eye matrices remain blocked because no typed two-dimensional
+  source exists.
+- The seven response magnitudes remain pre-serialization telemetry hash drift.
+- The source-bound 142-field observation is not an external replay or whole-payload
+  parity result.
+- This record is not execution provenance, product acceptance, or release approval.
+bindings:
+  audit:
+    path: docs/baselines/audits/2026-08-27-pb-03-eye-contour-gap.md
+    sha256: a7f56aed59e5798615e55bad7b7356d4444438fbd9bc437a95b8328ed043289a
+git_gate:
+  candidate_ancestor: e18b09917c7c0dbd79a1f1a9fedd22104f6f1c1e
+  commit: 4230b9f238b1cf538cb9fb0226e7e62b5c8014a0
+  tree: a7b608c6bc0a606a69b5465876690a522edcd29c
+  files:
+    verifier:
+      path: tools/verify_pb_03_eye_contour_gap.py
+      blob: 8baa6b0a02fd3d92f2cf057e1bce21a258ac063e
+      bytes: 24743
+      sha256: 5ddae66877bacf7446374e48fe5e2d6414541b0a4cff8e2aa651f4a19da49e79
+    mutation_test:
+      path: tools/test_verify_pb_03_eye_contour_gap.py
+      blob: 1b6fddbd711a43bba121ddc4fdc19c6f09e36cd6
+      bytes: 10419
+      sha256: 5343d663babd999b599278f448a7d7cf7145d5c56e5b6068397b04fc487f4ac6
