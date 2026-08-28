@@ -49,17 +49,31 @@ class Tests(unittest.TestCase):
    with self.assertRaises(RuntimeError):runner.load_csv(path)
    path.write_text("time,v(src),v(out)\n0,0,inf\n",encoding="ascii")
    with self.assertRaises(RuntimeError):runner.load_csv(path)
+ def test_build_environment_binds_resolved_rustc_and_removes_wrappers(self):
+  with tempfile.TemporaryDirectory() as raw, mock.patch.dict(
+   runner.os.environ,
+   {"RUSTC":"untrusted", "RUSTC_WRAPPER":"wrapper", "RUSTC_WORKSPACE_WRAPPER":"workspace", "RUSTFLAGS":"flags", "KEEP_ME":"yes"},
+   clear=True,
+  ):
+   rustc=Path(raw)/"toolchain"/"rustc.exe";target=Path(raw)/"target"
+   env=runner.build_environment(rustc,target)
+   self.assertEqual(env["RUSTC"],str(rustc))
+   self.assertEqual(env["CARGO_TARGET_DIR"],str(target))
+   self.assertEqual(env["KEEP_ME"],"yes")
+   self.assertNotIn("RUSTC_WRAPPER",env)
+   self.assertNotIn("RUSTC_WORKSPACE_WRAPPER",env)
+   self.assertNotIn("RUSTFLAGS",env)
  def test_gate_requires_fixed_parent_exact_four_first_introduction(self):
   payloads={path:(path+"\n").encode() for path in verifier.PATHS}
   def fake_git(repo,*args,raw=False):
    if args[:2]==("rev-parse","gate"):return "gate"
-   if args[:3]==("show","-s","--format=%P"):return verifier.PREP_PARENT
+   if args[:3]==("show","-s","--format=%P"):return verifier.PREP_PARENT if args[3]==verifier.ORIGINAL_GATE else verifier.ORIGINAL_GATE
    if args[:1]==("merge-base",):return verifier.AS_CANDIDATE
    if args[:2]==("rev-parse",f"{verifier.AS_CANDIDATE}^{{tree}}"):return verifier.AS_CANDIDATE_TREE
+   if args[:2]==("rev-parse",f"{verifier.ORIGINAL_GATE}^{{tree}}"):return verifier.ORIGINAL_GATE_TREE
    if args[:4]==("diff","--name-status","--no-renames",verifier.AS_CANDIDATE):return "\n".join(verifier.INTERPOSED)
-   if args[0]=="diff-tree":return "\n".join(f"A\t{path}" for path in verifier.PATHS)
+   if args[0]=="diff-tree":return "\n".join(f"M\t{path}" for path in verifier.HARDENING_PATHS)
    if args[0]=="ls-tree":
-    if args[1]==verifier.PREP_PARENT:return ""
     path=args[-1]
     if path in verifier.FORMAL:return ""
     return f"100644 blob {'9'*40}\t{path}"
@@ -69,18 +83,18 @@ class Tests(unittest.TestCase):
    raise AssertionError(args)
   with mock.patch.object(verifier,"git",side_effect=fake_git):
    self.assertTrue(verifier.verify_gate(Path("."),"gate",require_live=False)["valid"])
-  with mock.patch.object(verifier,"git",side_effect=lambda repo,*args,**kwargs: "wrong" if args[:3]==("show","-s","--format=%P") else fake_git(repo,*args,**kwargs)):
+  with mock.patch.object(verifier,"git",side_effect=lambda repo,*args,**kwargs: "wrong" if args[:3]==("show","-s","--format=%P") and args[3]=="gate" else fake_git(repo,*args,**kwargs)):
    with self.assertRaises(ValueError):verifier.verify_gate(Path("."),"gate",require_live=False)
   cases=(
    lambda args,value: value+"\nextra" if args and args[0]=="diff-tree" else value,
-   lambda args,value: "100644 blob dead\tpath" if args and args[0]=="ls-tree" and args[1]==verifier.PREP_PARENT and args[-1] in verifier.PATHS else value,
+   lambda args,value: "" if args and args[0]=="ls-tree" and args[1]==verifier.ORIGINAL_GATE and args[-1] in verifier.PATHS else value,
    lambda args,value: "100644 blob dead\tformal" if args and args[0]=="ls-tree" and args[-1] in verifier.FORMAL else value,
    lambda args,value: value.replace("100644 blob","100755 blob") if args and args[0]=="ls-tree" and args[1]=="gate" and args[-1] in verifier.PATHS else value,
    lambda args,value: "wrong" if args and args[0]=="merge-base" else value,
    lambda args,value: "0"*40 if args[:2]==("rev-parse",f"{verifier.AS_CANDIDATE}^{{tree}}") else value,
    lambda args,value: value+"\nM\textra" if args[:4]==("diff","--name-status","--no-renames",verifier.AS_CANDIDATE) else value,
    lambda args,value: value.replace("M\t","R100\t",1) if args[:4]==("diff","--name-status","--no-renames",verifier.AS_CANDIDATE) else value,
-   lambda args,value: value.replace("A\t","M\t",1) if args and args[0]=="diff-tree" else value,
+   lambda args,value: value.replace("M\t","A\t",1) if args and args[0]=="diff-tree" else value,
   )
   for mutate in cases:
    def altered(repo,*args,**kwargs):return mutate(args,fake_git(repo,*args,**kwargs))

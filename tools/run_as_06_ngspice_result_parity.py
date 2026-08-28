@@ -122,6 +122,16 @@ def identity(path: Path, role: str) -> dict:
     return {"role": role, "basename": resolved.name, "sha256": sha(resolved), "version_exit": version.returncode, "version_sha256": hashlib.sha256(version.stdout + version.stderr).hexdigest(), "path_redacted": True}
 
 
+def build_environment(rustc: Path, target: Path) -> dict[str, str]:
+    rejected_prefixes = ("CARGO", "RUST", "RUSTDOC", "PYTHON", "PIP", "UV", "SPICE", "NGSPICE")
+    env = {key: value for key, value in os.environ.items() if not key.upper().startswith(rejected_prefixes)}
+    env["CARGO_TARGET_DIR"] = str(target)
+    env["RUSTC"] = str(rustc)
+    env.pop("RUSTC_WRAPPER", None)
+    env.pop("RUSTC_WORKSPACE_WRAPPER", None)
+    return env
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate-repo", type=Path, required=True)
@@ -157,9 +167,7 @@ def main() -> int:
         if toolchain_pre["ngspice"]["sha256"] != NGSPICE_SHA256:
             raise RuntimeError("ngspice-46 expected SHA-256 drift")
         target = root / "target"
-        rejected_prefixes = ("CARGO", "RUST", "RUSTDOC", "PYTHON", "PIP", "UV", "SPICE", "NGSPICE")
-        env = {key: value for key, value in os.environ.items() if not key.upper().startswith(rejected_prefixes)}
-        env["CARGO_TARGET_DIR"] = str(target)
+        env = build_environment(rustc, target)
         run([str(cargo), "build", "--locked", "--offline", "--manifest-path", str(candidate / "crates/sipi-agent-spice-direct/Cargo.toml"), "--bin", "sipi-agent-spice-run-rfm"], cwd=candidate, env=env)
         rust_bin = target / "debug" / ("sipi-agent-spice-run-rfm.exe" if os.name == "nt" else "sipi-agent-spice-run-rfm")
         regular(rust_bin)
