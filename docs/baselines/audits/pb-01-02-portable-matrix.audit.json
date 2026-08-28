@@ -1,0 +1,28 @@
+{
+  "binding": {
+    "aggregate": "42ca29be99b7031bde2f7bd62e539a8860b6d78f36df8d574a380533cb09b02b",
+    "formal_gate_commit": "f795ccf872819f63fd2d74e4d63706e4dcbde912",
+    "normalized_manifest_sha256": "d39f2730817453aaebf10d85d05557bf56d8ec055d5f093ab26dddf5abaf7120",
+    "reports": [
+      "adb98ac6e9ff6d7d31069d222f215193c3cd379f0ad12a08cc43120a352fecec",
+      "0d74ab7b4b439b11cd0482f63b9505405897f3896163058ed3b54a956796d0bf"
+    ],
+    "stage1_prep_commit": "4042f0d9fdd0846e20ea95e8da7752812a4eea45"
+  },
+  "claims": {
+    "global_branch_parity": false,
+    "numeric_parity": false,
+    "release_acceptance": false,
+    "whole_payload_parity": false
+  },
+  "marker": "sipi-pb-01-02-formal-binding-v1",
+  "non_claims": [
+    "no_global_branch_parity",
+    "no_whole_payload_parity",
+    "no_release_acceptance",
+    "no_numeric_parity_promotion",
+    "scoped_portable_matrix_only"
+  ],
+  "schema": "sipi.pb-01-02-portable-matrix-audit.v1",
+  "status": "scoped_matrix_blocked"
+}

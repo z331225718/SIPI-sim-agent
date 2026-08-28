@@ -1,0 +1,611 @@
+{
+  "cases": [
+    {
+      "first_status": "passed",
+      "id": "pb01_nrz_analytic_line",
+      "observation_equal": true,
+      "passed_scoped": true,
+      "second_status": "passed"
+    },
+    {
+      "first_status": "passed",
+      "id": "pb01_nrz_tx_ffe",
+      "observation_equal": true,
+      "passed_scoped": true,
+      "second_status": "passed"
+    },
+    {
+      "first_status": "passed",
+      "id": "pb01_nrz_rx_dfe",
+      "observation_equal": true,
+      "passed_scoped": true,
+      "second_status": "passed"
+    },
+    {
+      "first_status": "passed",
+      "id": "pb01_pam4_analytic_line",
+      "observation_equal": true,
+      "passed_scoped": true,
+      "second_status": "passed"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb01_duo_binary_analytic_line",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    },
+    {
+      "first_status": "passed",
+      "id": "pb01_nrz_ctle",
+      "observation_equal": true,
+      "passed_scoped": true,
+      "second_status": "passed"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb02_nrz_impulse",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb02_pam4_impulse",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb02_duo_binary_impulse",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb02_impulse_tx_rx_equalization",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb02_impulse_analytic_ctle",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    },
+    {
+      "first_status": "blocked",
+      "id": "pb02_impulse_jitter_bathtub_analysis",
+      "observation_equal": true,
+      "passed_scoped": false,
+      "second_status": "blocked"
+    }
+  ],
+  "claims": {
+    "global_branch_parity": false,
+    "numeric_parity": false,
+    "release_acceptance": false,
+    "whole_payload_parity": false
+  },
+  "corpus": {
+    "blob": "35457947086ce7cc1ceaa6fdf60adc7734c22b64",
+    "bytes": 5339,
+    "path": "docs/baselines/pb-01-02-portable-matrix-inputs.v1.json",
+    "sha256": "77d6db2f34de256bea69888122e86281ba578a71da1a1719b790f9b9ed332ddb"
+  },
+  "preparation": {
+    "changed_paths": [
+      "docs/baselines/pb-01-02-portable-matrix-inputs.v1.json",
+      "tools/aggregate_pb_01_02_portable_matrix.py",
+      "tools/run_pb_01_02_portable_matrix.py",
+      "tools/test_verify_pb_01_02_portable_matrix.py",
+      "tools/verify_pb_01_02_portable_matrix.py"
+    ],
+    "commit": "4042f0d9fdd0846e20ea95e8da7752812a4eea45",
+    "files": {
+      "docs/baselines/pb-01-02-portable-matrix-inputs.v1.json": {
+        "blob": "35457947086ce7cc1ceaa6fdf60adc7734c22b64",
+        "bytes": 5339,
+        "live_equal": true,
+        "live_post": {
+          "bytes": 5339,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "docs/baselines/pb-01-02-portable-matrix-inputs.v1.json",
+          "post_identity": [
+            12437349290275704424,
+            17169973584260736,
+            5339,
+            1787798685961587700
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            17169973584260736,
+            5339,
+            1787798685961587700
+          ],
+          "regular": true,
+          "sha256": "77d6db2f34de256bea69888122e86281ba578a71da1a1719b790f9b9ed332ddb",
+          "single_handle_read": true
+        },
+        "live_pre": {
+          "bytes": 5339,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "docs/baselines/pb-01-02-portable-matrix-inputs.v1.json",
+          "post_identity": [
+            12437349290275704424,
+            17169973584260736,
+            5339,
+            1787798685961587700
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            17169973584260736,
+            5339,
+            1787798685961587700
+          ],
+          "regular": true,
+          "sha256": "77d6db2f34de256bea69888122e86281ba578a71da1a1719b790f9b9ed332ddb",
+          "single_handle_read": true
+        },
+        "sha256": "77d6db2f34de256bea69888122e86281ba578a71da1a1719b790f9b9ed332ddb"
+      },
+      "tools/aggregate_pb_01_02_portable_matrix.py": {
+        "blob": "404522560ef1f3c7a2d3215941043d61bcf14a36",
+        "bytes": 36965,
+        "live_equal": true,
+        "live_post": {
+          "bytes": 36965,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/aggregate_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            6473924469382782,
+            36965,
+            1787923422144676100
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            6473924469382782,
+            36965,
+            1787923422144676100
+          ],
+          "regular": true,
+          "sha256": "da55b0876091d513dd0308d039559fca899f7c0486a5bc6686c1df99ae8ae55f",
+          "single_handle_read": true
+        },
+        "live_pre": {
+          "bytes": 36965,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/aggregate_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            6473924469382782,
+            36965,
+            1787923422144676100
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            6473924469382782,
+            36965,
+            1787923422144676100
+          ],
+          "regular": true,
+          "sha256": "da55b0876091d513dd0308d039559fca899f7c0486a5bc6686c1df99ae8ae55f",
+          "single_handle_read": true
+        },
+        "sha256": "da55b0876091d513dd0308d039559fca899f7c0486a5bc6686c1df99ae8ae55f"
+      },
+      "tools/run_pb_01_02_portable_matrix.py": {
+        "blob": "95491549d847ad5bd50418e7c48b8e5b2d2fe2a8",
+        "bytes": 65761,
+        "live_equal": true,
+        "live_post": {
+          "bytes": 65761,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/run_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            6473924469382236,
+            65761,
+            1787923966972185300
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            6473924469382236,
+            65761,
+            1787923966972185300
+          ],
+          "regular": true,
+          "sha256": "afde325bca6fd2b6e97b4b0ad34715aae2d8aa1aab1cc28b5cab3723c1fedcb2",
+          "single_handle_read": true
+        },
+        "live_pre": {
+          "bytes": 65761,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/run_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            6473924469382236,
+            65761,
+            1787923966972185300
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            6473924469382236,
+            65761,
+            1787923966972185300
+          ],
+          "regular": true,
+          "sha256": "afde325bca6fd2b6e97b4b0ad34715aae2d8aa1aab1cc28b5cab3723c1fedcb2",
+          "single_handle_read": true
+        },
+        "sha256": "afde325bca6fd2b6e97b4b0ad34715aae2d8aa1aab1cc28b5cab3723c1fedcb2"
+      },
+      "tools/test_verify_pb_01_02_portable_matrix.py": {
+        "blob": "330449f428920244bb1f3a4fa40d834c145fa9f0",
+        "bytes": 22315,
+        "live_equal": true,
+        "live_post": {
+          "bytes": 22315,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/test_verify_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            20547673303308611,
+            22315,
+            1787923917424385300
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            20547673303308611,
+            22315,
+            1787923917424385300
+          ],
+          "regular": true,
+          "sha256": "ca00fabc36b860201119bb7311856b503ed09e3e06064bc3a5ee098fbf1ce7e5",
+          "single_handle_read": true
+        },
+        "live_pre": {
+          "bytes": 22315,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/test_verify_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            20547673303308611,
+            22315,
+            1787923917424385300
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            20547673303308611,
+            22315,
+            1787923917424385300
+          ],
+          "regular": true,
+          "sha256": "ca00fabc36b860201119bb7311856b503ed09e3e06064bc3a5ee098fbf1ce7e5",
+          "single_handle_read": true
+        },
+        "sha256": "ca00fabc36b860201119bb7311856b503ed09e3e06064bc3a5ee098fbf1ce7e5"
+      },
+      "tools/verify_pb_01_02_portable_matrix.py": {
+        "blob": "ac64fa32c6e1448b0fd9d3dbe0292301f8af6dee",
+        "bytes": 45709,
+        "live_equal": true,
+        "live_post": {
+          "bytes": 45709,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/verify_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            5348024562541566,
+            45709,
+            1787923966973185200
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            5348024562541566,
+            45709,
+            1787923966973185200
+          ],
+          "regular": true,
+          "sha256": "a73317a78117bac80ed914f38322f75495f8d06c182d83f429f10ccb7aa08847",
+          "single_handle_read": true
+        },
+        "live_pre": {
+          "bytes": 45709,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "tools/verify_pb_01_02_portable_matrix.py",
+          "post_identity": [
+            12437349290275704424,
+            5348024562541566,
+            45709,
+            1787923966973185200
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            5348024562541566,
+            45709,
+            1787923966973185200
+          ],
+          "regular": true,
+          "sha256": "a73317a78117bac80ed914f38322f75495f8d06c182d83f429f10ccb7aa08847",
+          "single_handle_read": true
+        },
+        "sha256": "a73317a78117bac80ed914f38322f75495f8d06c182d83f429f10ccb7aa08847"
+      }
+    },
+    "parent": "d44581ac8b10adbc8f803bb0292107ae3303e015",
+    "tree": "8f60a9c35be8e981c6637fbd87cfd5b5a16080fe"
+  },
+  "report_files": [
+    {
+      "bytes": 303775,
+      "nlink": 1,
+      "nonlink": true,
+      "path": "out1d/report.json",
+      "regular": true,
+      "sha256": "adb98ac6e9ff6d7d31069d222f215193c3cd379f0ad12a08cc43120a352fecec",
+      "single_handle_read": true
+    },
+    {
+      "bytes": 303857,
+      "nlink": 1,
+      "nonlink": true,
+      "path": "out2/report.json",
+      "regular": true,
+      "sha256": "0d74ab7b4b439b11cd0482f63b9505405897f3896163058ed3b54a956796d0bf",
+      "single_handle_read": true
+    }
+  ],
+  "runs": [
+    {
+      "nonce": "8e7fc634c51904178a0c90047698b5aa22b2dc7caf4f788dcb3f437e114e63ec",
+      "run_id": "formal-01"
+    },
+    {
+      "nonce": "e6892ae6e0b1635202b78c8a3806e11fd1e38847fe7681bd53eed4eb4718f64d",
+      "run_id": "formal-02"
+    }
+  ],
+  "schema": "sipi.pb-01-02-portable-matrix-aggregate.v2",
+  "source": {
+    "candidate": {
+      "archive_sha256": "6ec8d67ea7a18fd0063431df88c549ed10b86d6aa6e952bf98466b23254e417c",
+      "commit": "4042f0d9fdd0846e20ea95e8da7752812a4eea45",
+      "inventory_equal": true,
+      "inventory_post_sha256": "65eb8b812c62a7a40681b4f3ccb306f42da38a2f04817a77ad25ed754e32ff01",
+      "inventory_pre_sha256": "65eb8b812c62a7a40681b4f3ccb306f42da38a2f04817a77ad25ed754e32ff01",
+      "tree": "8f60a9c35be8e981c6637fbd87cfd5b5a16080fe"
+    },
+    "upstream": {
+      "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+      "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+      "inventory_equal": true,
+      "inventory_post_sha256": "829d2d5428c12e6aba58f0aae0f2a5bc8427b54fc6310fb4c90049e2797f8855",
+      "inventory_pre_sha256": "829d2d5428c12e6aba58f0aae0f2a5bc8427b54fc6310fb4c90049e2797f8855",
+      "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+    }
+  },
+  "status": "scoped_matrix_blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 31288320,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "cargo.exe",
+        "post_identity": [
+          12437349290275704424,
+          2251799815187010,
+          31288320,
+          1784161194237989000
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2251799815187010,
+          31288320,
+          1784161194237989000
+        ],
+        "regular": true,
+        "sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 31288320,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "cargo.exe",
+        "post_identity": [
+          12437349290275704424,
+          2251799815187010,
+          31288320,
+          1784161194237989000
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2251799815187010,
+          31288320,
+          1784161194237989000
+        ],
+        "regular": true,
+        "sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+        "single_handle_read": true
+      },
+      "file_sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit": 0,
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "link": {
+      "executable": "link.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 3252576,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "link.exe",
+        "post_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "regular": true,
+        "sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 3252576,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "link.exe",
+        "post_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "regular": true,
+        "sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+        "single_handle_read": true
+      },
+      "file_sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+      "path_redacted": true,
+      "role": "link",
+      "version_exit": 0,
+      "version_sha256": "f5967e8fed8a0058b2813fa1c42f18645e258cb02d8817bef7760e09d0441412"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 110592,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "rustc.exe",
+        "post_identity": [
+          12437349290275704424,
+          81346268271102363,
+          110592,
+          1784161200628306300
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          81346268271102363,
+          110592,
+          1784161200628306300
+        ],
+        "regular": true,
+        "sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 110592,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "rustc.exe",
+        "post_identity": [
+          12437349290275704424,
+          81346268271102363,
+          110592,
+          1784161200628306300
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          81346268271102363,
+          110592,
+          1784161200628306300
+        ],
+        "regular": true,
+        "sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+        "single_handle_read": true
+      },
+      "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit": 0,
+      "version_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "uv": {
+      "executable": "uv.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 68317696,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "uv.exe",
+        "post_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "regular": true,
+        "sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 68317696,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "uv.exe",
+        "post_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "regular": true,
+        "sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "single_handle_read": true
+      },
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit": 0,
+      "version_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "version": 2
+}

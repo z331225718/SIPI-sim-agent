@@ -1,0 +1,42 @@
+schema: sipi.pb-01-02-portable-matrix-formal.v1
+version: 1
+status: scoped_matrix_blocked
+stage1_preparation:
+  commit: 4042f0d9fdd0846e20ea95e8da7752812a4eea45
+  tree: 8f60a9c35be8e981c6637fbd87cfd5b5a16080fe
+  parent: d44581ac8b10adbc8f803bb0292107ae3303e015
+formal_gate:
+  commit: f795ccf872819f63fd2d74e4d63706e4dcbde912
+  tree: bcc91705e40ebc8064831c95b3a8506aa1e57ae8
+  parent: b96828c209006960cbd519d8ce62e33db527a849
+  files:
+  - path: tools/test_verify_pb_01_02_portable_matrix_formal.py
+    blob: 1d2d2ee18c9057ead3fa003db576e385949ea1db
+    sha256: 73c3f3c21f5e5c31d2820911621fa0e59005cdb59c2552cc2d4b00951b49831e
+    bytes: 22497
+  - path: tools/verify_pb_01_02_portable_matrix_formal.py
+    blob: 0d829258bf9b064f3b807e92cfb6247a6f75ac8d
+    sha256: 08cc9a567e14c77884385ef568ab1cfbb65fb8f9ec154182c5b6a721ea47a4af
+    bytes: 19818
+evidence:
+  reports:
+  - path: docs/baselines/pb-01-02-portable-matrix-run-01.v1.json
+    sha256: adb98ac6e9ff6d7d31069d222f215193c3cd379f0ad12a08cc43120a352fecec
+    bytes: 303775
+  - path: docs/baselines/pb-01-02-portable-matrix-run-02.v1.json
+    sha256: 0d74ab7b4b439b11cd0482f63b9505405897f3896163058ed3b54a956796d0bf
+    bytes: 303857
+  aggregate:
+    path: docs/baselines/pb-01-02-portable-matrix-aggregate.v1.json
+    sha256: 42ca29be99b7031bde2f7bd62e539a8860b6d78f36df8d574a380533cb09b02b
+    bytes: 18631
+audit_binding:
+  path: docs/baselines/audits/pb-01-02-portable-matrix.audit.json
+  sha256: ff062f6790509ae2f89ccce4951074179bfcd5af013cc271521428db7702cb2b
+  bytes: 991
+  normalized_manifest_sha256: d39f2730817453aaebf10d85d05557bf56d8ec055d5f093ab26dddf5abaf7120
+claims:
+  numeric_parity: false
+  release_acceptance: false
+  global_branch_parity: false
+  whole_payload_parity: false
