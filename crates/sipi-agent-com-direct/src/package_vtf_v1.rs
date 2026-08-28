@@ -358,17 +358,15 @@ fn validate_s4p_axis_v1(
     Ok(())
 }
 
-/// Apply the workbook's `snpPortsOrder` before the mixed-mode transform.
+/// Resolve the source-exact workbook `snpPortsOrder` execution control.
 ///
-/// The pinned reader reorders the single-ended matrix before both the DD and
-/// SDC paths.  The direct parser owns raw file order, so skipping this step
-/// silently produces a plausible but different VTF.  The legacy JSON route is
-/// left unchanged when no typed workbook order is present.
-pub(crate) fn reorder_s4p_samples_v1(
-    samples: &[FourPortSMatrixV1],
+/// The pinned reader requires this one-based permutation for trusted
+/// workbooks. Keeping validation and matrix application on the same typed
+/// path prevents diagnostics or tests from re-reading or guessing the order.
+pub(crate) fn configured_snp_port_order_v1(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     trusted_workbook: bool,
-) -> Result<Vec<FourPortSMatrixV1>, DirectRunErrorV1> {
+) -> Result<Option<[usize; 4]>, DirectRunErrorV1> {
     let folded_keys = values
         .keys()
         .filter(|key| key.eq_ignore_ascii_case("snpPortsOrder"))
@@ -384,7 +382,7 @@ pub(crate) fn reorder_s4p_samples_v1(
                 "snpPortsOrder is a trusted workbook-only control".to_owned(),
             ));
         }
-        return Ok(samples.to_vec());
+        return Ok(None);
     }
     let Some(value) = values.get("snpPortsOrder") else {
         return Err(DirectRunErrorV1::Parameters(
@@ -413,14 +411,34 @@ pub(crate) fn reorder_s4p_samples_v1(
             "snpPortsOrder must be a one-based four-port permutation".to_owned(),
         ));
     }
+    let mut normalized = [0usize; 4];
+    for (index, value) in order.iter().enumerate() {
+        normalized[index] = *value as usize;
+    }
+    Ok(Some(normalized))
+}
+
+/// Apply the workbook's `snpPortsOrder` before the mixed-mode transform.
+///
+/// The pinned reader reorders the single-ended matrix before both the DD and
+/// SDC paths.  The direct parser owns raw file order, so skipping this step
+/// silently produces a plausible but different VTF.  The legacy JSON route is
+/// left unchanged when no typed workbook order is present.
+pub(crate) fn reorder_s4p_samples_v1(
+    samples: &[FourPortSMatrixV1],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    trusted_workbook: bool,
+) -> Result<Vec<FourPortSMatrixV1>, DirectRunErrorV1> {
+    let Some(order) = configured_snp_port_order_v1(values, trusted_workbook)? else {
+        return Ok(samples.to_vec());
+    };
     samples
         .iter()
         .map(|sample| {
             let mut reordered = *sample;
             for row in 0..4 {
                 for column in 0..4 {
-                    reordered[row][column] =
-                        sample[order[row] as usize - 1][order[column] as usize - 1];
+                    reordered[row][column] = sample[order[row] - 1][order[column] - 1];
                 }
             }
             Ok(reordered)
@@ -1614,6 +1632,23 @@ mod tests {
         let reordered = reorder_s4p_samples_v1(&[sample], &config, true).unwrap();
         assert_eq!(reordered[0][1][2].real(), 3.0);
         assert_eq!(reordered[0][2][1].real(), 4.0);
+    }
+
+    #[test]
+    fn configured_snp_port_order_is_the_applied_one_based_permutation() {
+        let mut config = values();
+        config.insert(
+            "snpPortsOrder".to_owned(),
+            ResolvedDefaultV1::Vector(vec![1.0, 3.0, 2.0, 4.0]),
+        );
+        assert_eq!(
+            configured_snp_port_order_v1(&config, true).unwrap(),
+            Some([1, 3, 2, 4])
+        );
+        assert_eq!(
+            configured_snp_port_order_v1(&values(), false).unwrap(),
+            None
+        );
     }
 
     #[test]

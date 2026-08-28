@@ -3777,6 +3777,7 @@ fn portable_branch_result_with_sigma_v1(
                 "selected_pulse_sha256": sha256_f64_v1(&result_view.selected_pulse),
                 "selected_pulse_sample_count": result_view.selected_pulse.len(),
                 "selected_tx_taps": result_view.selected_tx_taps.clone(),
+                "dfe_taps": result.selected_dfe_taps(),
                 "td_input": search_input.td_fillin.as_ref().map(|fillin| json!({
                     "frequency_sha256": sha256_f64_v1(&fillin.frequency_hz),
                     "noise_frequency_sha256": sha256_f64_v1(&fillin.noise_frequency_hz),
@@ -7234,6 +7235,30 @@ fn sha256_complex_v1(values: &[Complex64]) -> String {
 mod tests {
     use super::*;
 
+    fn assert_no_search_dfe_publication(result: &Value) {
+        let cases = result["cases"].as_array().expect("result cases");
+        for case in cases {
+            let search = case.pointer("/diagnostics/portable_branches/search");
+            assert!(
+                search.and_then(|value| value.get("dfe_taps")).is_none(),
+                "DFE taps require an actual search winner"
+            );
+            assert!(case.get("port_order").is_none());
+            assert!(case.get("port_order_observed").is_none());
+        }
+    }
+
+    fn assert_search_dfe_matches_winner(branches: &PortableBranchResultV1) {
+        let winner = branches
+            .search_winner
+            .as_ref()
+            .expect("search winner for DFE publication");
+        assert_eq!(
+            branches.diagnostics["search"]["dfe_taps"],
+            json!(winner.selected_dfe_taps())
+        );
+    }
+
     fn temp_root(name: &str) -> PathBuf {
         let root =
             std::env::temp_dir().join(format!("sipi-com-direct-{name}-{}", std::process::id()));
@@ -7291,6 +7316,7 @@ mod tests {
         fs::write(&pulse, pulse_bytes()).unwrap();
         let request = DirectRunRequestV1::new(&config, &pulse, &output);
         let report = load_config_run_com_write_artifacts_v1(&request).expect("run succeeds");
+        assert_no_search_dfe_publication(&report.result);
         assert_eq!(
             report.workflow,
             vec!["load_config", "run_com", "write_artifacts"]
@@ -7816,6 +7842,7 @@ mod tests {
         let probe_pulse = rectangular_pulse_response_v1(&probe.values, 8).unwrap();
         assert!(probe_pulse.iter().any(|value| *value > 0.1));
         let report = run_com_v1(&request).expect("typed public S4P workflow");
+        assert_no_search_dfe_publication(&report.result);
         let case = &report.result["cases"][0];
         assert_eq!(
             case["diagnostics"]["channel_impulse"]["source_kind"],
@@ -8244,6 +8271,11 @@ mod tests {
         assert_eq!(input.erl_values.as_ref().map(Vec::len), Some(1));
         assert!(input.causality_correction_db.is_some());
         assert!(input.truncation_db.is_some());
+        let document = canonical_parameters();
+        let branches =
+            portable_branch_result_with_sigma_v1(&document, &input, None, None, None, false)
+                .expect("S2P branch observation without search");
+        assert!(branches.diagnostics.get("search").is_none());
         let _ = fs::remove_dir_all(root);
     }
 
@@ -8914,6 +8946,7 @@ mod tests {
         assert_eq!(equalization["pulse_count"], 1);
         let search = &report.result["cases"][0]["diagnostics"]["portable_branches"]["search"];
         assert!(search["fom_db"].as_f64().is_some_and(|value| value > 0.0));
+        assert_eq!(search["dfe_taps"].as_array().map(Vec::len), Some(2));
         for key in ["available_signal_v", "sigma_n_v", "sigma_ne_v", "h_j"] {
             assert!(search.get(key).is_none(), "public search wire leaked {key}");
         }
@@ -8952,6 +8985,24 @@ mod tests {
             false,
         )
         .expect("nonzero sigma search");
+        assert_search_dfe_matches_winner(&sigma_zero);
+        let mut floating_values = values.clone();
+        floating_values["portable"]["search"]["candidate"]["floating_dfe"] = json!(true);
+        floating_values["portable"]["search"]["candidate"]["ndfe"] = json!(1);
+        floating_values["portable"]["search"]["candidate"]["n_bmax"] = json!(4);
+        floating_values["portable"]["search"]["candidate"]["bmax"] = json!([0.5]);
+        floating_values["portable"]["search"]["candidate"]["bmin"] = json!([-0.5]);
+        floating_values["portable"]["search"]["candidate"]["b_float_rss_max"] = json!(0.5);
+        let floating = portable_branch_result_with_sigma_v1(
+            &floating_values,
+            &probe_input,
+            None,
+            Some(&probe_controls),
+            Some(0.0),
+            false,
+        )
+        .expect("floating DFE search");
+        assert_search_dfe_matches_winner(&floating);
         let sigma_zero_search = &sigma_zero.diagnostics["search"];
         let sigma_high_search = &sigma_high.diagnostics["search"];
         assert_eq!(sigma_zero_search["calibration_sigma_ne_v"], 0.0);

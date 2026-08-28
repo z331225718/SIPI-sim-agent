@@ -461,6 +461,12 @@ impl SearchLoopResultWithWinnerV2 {
         &self.result
     }
 
+    /// Selected DFE taps owned by the same winner consumed by the final COM
+    /// chain. This exposes no winner construction or mutable context.
+    pub fn selected_dfe_taps(&self) -> &[f64] {
+        &self.winner.dfe_taps
+    }
+
     pub(crate) fn winner(&self) -> &ComWinnerContextV1 {
         &self.winner
     }
@@ -862,6 +868,82 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn winner_with_dfe(taps: Vec<f64>, floating_dfe: bool) -> SearchLoopResultWithWinnerV2 {
+        let tap_count = taps.len();
+        SearchLoopResultWithWinnerV2 {
+            result: SearchLoopResultWithMetricsV1 {
+                fom_db: 1.0,
+                ctle_index: 0,
+                high_pass_index: 0,
+                tx_grid_index: 0,
+                cursor_index: 1,
+                sigma_tx_v: 0.0,
+                selected_pulse: vec![0.0, 1.0],
+                selected_tx_taps: vec![1.0],
+                available_signal_v: 1.0,
+                sigma_n_v: 0.0,
+                sigma_ne_v: 0.0,
+                h_j: vec![0.0],
+            },
+            winner: ComWinnerContextV1 {
+                cursor_index: 1,
+                dfe_taps: taps,
+                dfe_max: vec![0.5; tap_count],
+                dfe_min: vec![-0.5; tap_count],
+                dfe_step: 0.01,
+                floating_dfe,
+                dfe_max_count: floating_dfe.then_some(tap_count as i64),
+                sigma_n_v: 0.0,
+            },
+        }
+    }
+
+    #[test]
+    fn selected_dfe_taps_are_read_from_fixed_and_floating_winners() {
+        for (taps, floating) in [(vec![0.2, -0.1], false), (vec![0.3, 0.0], true)] {
+            let result = winner_with_dfe(taps.clone(), floating);
+            assert_eq!(result.selected_dfe_taps(), taps);
+            assert_eq!(result.winner().dfe_taps, taps);
+        }
+    }
+
+    #[test]
+    fn historical_v1_result_shape_remains_exact() {
+        let result = SearchLoopResultV1 {
+            fom_db: 1.0,
+            ctle_index: 2,
+            high_pass_index: 3,
+            tx_grid_index: 4,
+            cursor_index: 5,
+            sigma_tx_v: 0.1,
+            selected_pulse: vec![0.0, 1.0],
+            selected_tx_taps: vec![1.0],
+        };
+        let SearchLoopResultV1 {
+            fom_db,
+            ctle_index,
+            high_pass_index,
+            tx_grid_index,
+            cursor_index,
+            sigma_tx_v,
+            selected_pulse,
+            selected_tx_taps,
+        } = result;
+        assert_eq!(
+            (
+                fom_db,
+                ctle_index,
+                high_pass_index,
+                tx_grid_index,
+                cursor_index,
+                sigma_tx_v,
+                selected_pulse,
+                selected_tx_taps,
+            ),
+            (1.0, 2, 3, 4, 5, 0.1, vec![0.0, 1.0], vec![1.0])
+        );
+    }
 
     #[test]
     fn policy_string_is_fixed() {
