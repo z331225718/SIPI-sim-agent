@@ -977,6 +977,11 @@ verifier、mutation tests、audit 与物理 evidence SHA 必须同步绑定。�
 predecessor、candidate archive、scope counts、COM blocker 或 release gate 漂移，
 验证必须 fail closed。
 
+**2026-08-29 v14 upstream integration successor：** 新增 additive v14 ledger，绑定当前
+`beb5b764` clean candidate 与 AS-06、COM-02/04、PB-01/02 的最新 scoped formal records。
+15 条 upstream rows 仍全部 open/scoped，`release_ready=0`；AS-05 Xyce/XDM 明确排除，
+S 参数保持 no-fit，channel 仅允许 one-final FD-to-TD impulse。
+
 ## 19. 完成定义
 
 本计划完成时：
