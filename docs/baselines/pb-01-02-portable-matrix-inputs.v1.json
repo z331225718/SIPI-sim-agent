@@ -1,0 +1,152 @@
+{
+  "schema": "sipi.pb-01-02-portable-matrix-inputs.v1",
+  "version": 1,
+  "purpose": "Content-addressed replay matrix for already implemented portable PyBERT branches; no new runtime feature is introduced.",
+  "base_fixtures": {
+    "PB-01": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+    "PB-02": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json"
+  },
+  "pb01_cases": [
+    {
+      "id": "pb01_nrz_analytic_line",
+      "branches": ["legacy.modulation.nrz", "legacy.channel.rlgc", "legacy.tx_rx.ffe_dfe_defaults"],
+      "patch": {}
+    },
+    {
+      "id": "pb01_nrz_tx_ffe",
+      "branches": ["legacy.modulation.nrz", "legacy.channel.rlgc", "legacy.tx.ffe.enabled"],
+      "patch": {
+        "replacements": [
+          {
+            "from": "- !!python/tuple [false, 0.0, -0.05, 0.05]",
+            "to": "- !!python/tuple [true, 0.0, -0.05, 0.05]",
+            "count": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "pb01_nrz_rx_dfe",
+      "branches": ["legacy.modulation.nrz", "legacy.channel.rlgc", "legacy.rx.dfe_cdr"],
+      "patch": {
+        "replacements": [
+          {
+            "from": "- !!python/tuple [false, -0.2, 0.4]",
+            "to": "- !!python/tuple [true, -0.2, 0.4]"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pb01_pam4_analytic_line",
+      "branches": ["legacy.modulation.pam4", "legacy.channel.rlgc", "legacy.tx_rx.ffe_dfe_defaults"],
+      "patch": {
+        "scalars": {"mod_type": "PAM-4"}
+      }
+    },
+    {
+      "id": "pb01_duo_binary_analytic_line",
+      "branches": ["legacy.modulation.duo_binary", "legacy.channel.rlgc", "legacy.tx_rx.ffe_dfe_defaults"],
+      "patch": {
+        "scalars": {"mod_type": "Duo-binary"}
+      }
+    },
+    {
+      "id": "pb01_nrz_ctle",
+      "branches": ["legacy.modulation.nrz", "legacy.channel.rlgc", "legacy.rx.ctle.analytic"],
+      "patch": {
+        "scalars": {"ctle_enable": true}
+      }
+    }
+  ],
+  "pb02_cases": [
+    {
+      "id": "pb02_nrz_impulse",
+      "branches": ["modulation.nrz", "pattern.prbs", "channel.impulse_response", "tx.ffe.disabled", "rx.ffe.disabled"],
+      "patch": {}
+    },
+    {
+      "id": "pb02_pam4_impulse",
+      "branches": ["modulation.pam4", "pattern.prbs", "channel.impulse_response"],
+      "patch": {"modulation": "pam4"}
+    },
+    {
+      "id": "pb02_duo_binary_impulse",
+      "branches": ["modulation.duo_binary", "pattern.prbs", "channel.impulse_response"],
+      "patch": {"modulation": "duo_binary"}
+    },
+    {
+      "id": "pb02_impulse_tx_rx_equalization",
+      "branches": ["modulation.nrz", "channel.impulse_response", "tx.ffe.enabled", "rx.ffe.enabled", "rx.dfe_cdr"],
+      "patch": {
+        "tx": {
+          "ffe": {
+            "enabled": true,
+            "weights": [0.05, 0.8, 0.15],
+            "cursorPosition": 1
+          }
+        },
+        "rx": {
+          "ffe": {
+            "enabled": true,
+            "weights": [0.0, 1.0, 0.0],
+            "cursorPosition": 1
+          },
+          "dfeTaps": 1,
+          "dfe": {
+            "gain": 0.1,
+            "decisionScaler": 0.4,
+            "nAve": 4,
+            "deltaT": 1e-13,
+            "alpha": 0.01,
+            "nLockAve": 4,
+            "relLockTol": 0.1,
+            "lockSustain": 2,
+            "ideal": true,
+            "bandwidth": 1.2e10,
+            "useAgc": true,
+            "agcNAve": 4,
+            "tapLimits": [[-0.2, 0.2]]
+          }
+        }
+      }
+    },
+    {
+      "id": "pb02_impulse_analytic_ctle",
+      "branches": ["modulation.nrz", "channel.impulse_response", "rx.ctle.analytic"],
+      "patch": {
+        "rx": {
+          "nativeCtleEnabled": true,
+          "ctle": {
+            "bandwidth": 1.2e10,
+            "peakFrequency": 5e9,
+            "peakMagnitudeDb": 1.7,
+            "frequencyStepHz": 1e9,
+            "frequencyMaxHz": 2e10,
+            "impulseResponseVPerV": [1.0, 0.25, -0.05]
+          }
+        }
+      }
+    },
+    {
+      "id": "pb02_impulse_jitter_bathtub_analysis",
+      "branches": ["modulation.nrz", "channel.impulse_response", "analysis.jitter", "analysis.bathtub"],
+      "patch": {
+        "analysis": {
+          "includeJitter": true,
+          "includeBathtub": true,
+          "berEyeBits": 16,
+          "jitterEyeUis": 8
+        }
+      }
+    }
+  ],
+  "excluded_branches": [
+    {"id": "legacy.external.ami_ibis_ts4_getwave", "status": "external_blocked", "reason": "host-owned model/DLL/service is outside the portable replay"},
+    {"id": "legacy.channel.imported_s2p", "status": "excluded_from_this_matrix", "reason": "this matrix validates the already portable analytic line path; no new S-parameter fitting or channel path is added"},
+    {"id": "legacy.noise.periodic_random", "status": "excluded_from_this_matrix", "reason": "noise is intentionally outside the requested portable branch matrix"},
+    {"id": "legacy.result.class_pickle", "status": "implemented_not_covered_by_matrix", "reason": "the explicit class-pickle codec exists; this matrix compares the default data-only artifact only"},
+    {"id": "native.external_models", "status": "external_blocked", "reason": "externalModels are rejected or require host-owned resources"},
+    {"id": "native.random_noise", "status": "excluded_from_this_matrix", "reason": "noise is intentionally outside the requested portable branch matrix"}
+  ]
+}
