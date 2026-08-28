@@ -1,0 +1,106 @@
+{
+  "aggregate": {
+    "path": "com-01-fingerprint-current-replay-stage2-aggregate.json",
+    "sha256": "96f4636fe35858d4af6ccf61479ec69f668f0f689d72e629c83ee1400c4856f8"
+  },
+  "artifact_policy": "hash_counts_and_exactness_only_no_configuration_payloads",
+  "audit": {
+    "canonical_sha256": "05fd1c1b2936752d152ae3a54b82b92662bb16eb90e74681844d5dbe9c19c3d3",
+    "normalized": {
+      "claims": [
+        "raw_sha256_per_replay_only",
+        "scoped_exact_fingerprint_only"
+      ],
+      "exact": true,
+      "non_claims": [
+        "no_complete_com_parity",
+        "no_global_migration_row_close",
+        "no_product_capability_promotion",
+        "no_release_readiness",
+        "no_configuration_value_payloads_committed",
+        "no_S_parameter_fit",
+        "channel_impulse_only_policy_unchanged",
+        "no_canonical_pe_or_bit_reproducibility"
+      ],
+      "schema": "sipi.com-01.fingerprint-current-replay.stage2-audit.v1",
+      "scope": {
+        "acceptance": false,
+        "binary_claim": "raw_sha256_per_replay_only",
+        "leaf": "config-validate",
+        "parity_claim": "scoped_exact_fingerprint_only",
+        "work_item": "COM-01"
+      },
+      "status": "scoped_exact_materialized_fingerprint_stage2_formal_record"
+    },
+    "path": "docs/baselines/audits/2026-08-28-com-01-fingerprint-current-replay-stage2.md",
+    "sha256": "4c2f041725735b4340cfe2d67c8dac1cf55d9486e442c9f462f4706f19f57360"
+  },
+  "formal_gate": {
+    "changed_paths": [
+      "tools/verify_com_01_fingerprint_current_replay_formal.py",
+      "tools/test_verify_com_01_fingerprint_current_replay_formal.py"
+    ],
+    "commit": "583d560ec0185c8b59cb63a497e6f8f679fdab51",
+    "files": [
+      {
+        "bytes": 17345,
+        "content_sha256": "10755dd214dd187246124cadcf17094f208c14044ed7eb9c660d26a56f6b1d71",
+        "git_blob_sha1": "698d3f66fcdb2e21adbc5288d01b009aa6d87fc7",
+        "path": "tools/verify_com_01_fingerprint_current_replay_formal.py"
+      },
+      {
+        "bytes": 16970,
+        "content_sha256": "0da741bd3cba60a0bc47a7a238bfd14adac7753913d5c3def3ed8cf712342ac8",
+        "git_blob_sha1": "7c88498fc9b3c5e3aed0900b99989ac926ecef48",
+        "path": "tools/test_verify_com_01_fingerprint_current_replay_formal.py"
+      }
+    ],
+    "first_introduction": true,
+    "formal_artifacts_absent": true,
+    "parent": "e3b1d2dc482be64bff8a3f69f1fdf03eb0792d26",
+    "tree": "76ca4d25caa492fd2207863f118a68ce611a64f9"
+  },
+  "non_claims": [
+    "no_complete_com_parity",
+    "no_global_migration_row_close",
+    "no_product_capability_promotion",
+    "no_release_readiness",
+    "no_configuration_value_payloads_committed",
+    "no_S_parameter_fit",
+    "channel_impulse_only_policy_unchanged",
+    "no_canonical_pe_or_bit_reproducibility"
+  ],
+  "prep": {
+    "candidate_commit": "ef9f651839be98142eb4a54b9aa161e471d23a0c",
+    "candidate_tree": "338336fcd29d4151f87257f6ac54b0c843a9996a",
+    "commit": "d44581ac8b10adbc8f803bb0292107ae3303e015",
+    "parent": "dadc9720d932f2e71886700d9112a12cd2a027d5",
+    "production_path_unchanged": true,
+    "tree": "2577bdea09e4263937f6253197746b17dd4af78c"
+  },
+  "reports": [
+    {
+      "candidate_binary_sha256": "d70226fe4d5cc51ed35e280b769563186e8f8b4c396e7a55158765c043247d68",
+      "fresh_run_nonce": "90a0d4e41609541130c330c67a7a41569833502cf6b26ab291dfdfe7257de708",
+      "path": "com-01-fingerprint-current-replay-stage2-run-01.json",
+      "run_id": "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sha256": "e6d978c9e7270ec492e3f29983145b491807d3f17c5df4d8c807fd0b66228810"
+    },
+    {
+      "candidate_binary_sha256": "ee12cf33c007b6467291251711161fadeaa2a9a3b6991587dd1fd0b0c0b417e6",
+      "fresh_run_nonce": "6835e5fa4a4ed6a6809d28a2c9163299d241fbc748d2a7ff026f9767bbdd5fe0",
+      "path": "com-01-fingerprint-current-replay-stage2-run-02.json",
+      "run_id": "2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "sha256": "09f1e5a3b87352d29e7c5df1dc6d9fc542b5bfe90fdf393cf8665397deaec59e"
+    }
+  ],
+  "schema": "sipi.com-01.fingerprint-current-replay.stage2-formal-bundle.v1",
+  "scope": {
+    "acceptance": false,
+    "binary_claim": "raw_sha256_per_replay_only",
+    "leaf": "config-validate",
+    "parity_claim": "scoped_exact_fingerprint_only",
+    "work_item": "COM-01"
+  },
+  "status": "scoped_exact_materialized_fingerprint_stage2_formal_record"
+}

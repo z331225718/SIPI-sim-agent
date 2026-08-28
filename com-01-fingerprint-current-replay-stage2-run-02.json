@@ -1,0 +1,664 @@
+{
+  "acceptance": false,
+  "artifact_policy": "hash_counts_and_exactness_only_no_configuration_payloads",
+  "candidate": {
+    "archive": {
+      "bytes": 53166080,
+      "command": "git -c core.autocrlf=false archive --format=tar <revision>",
+      "path_redacted": true,
+      "sha256": "160d92bf28ef619b2fe3d2f14f055ea0320e1ddcf2f32f927ef6449f5fb06544"
+    },
+    "build": {
+      "binary_post": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3760640,
+        "nlink": 1,
+        "path_redacted": true,
+        "sha256": "ee12cf33c007b6467291251711161fadeaa2a9a3b6991587dd1fd0b0c0b417e6"
+      },
+      "binary_pre": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3760640,
+        "nlink": 1,
+        "path_redacted": true,
+        "sha256": "ee12cf33c007b6467291251711161fadeaa2a9a3b6991587dd1fd0b0c0b417e6"
+      },
+      "cargo_source_pre": {
+        "basename": "sipi-com-direct-config-validate.exe",
+        "bytes": 3760640,
+        "nlink": 2,
+        "path_redacted": true,
+        "sha256": "ee12cf33c007b6467291251711161fadeaa2a9a3b6991587dd1fd0b0c0b417e6"
+      },
+      "command": "cargo build --manifest-path <candidate>/crates/sipi-agent-com-direct/Cargo.toml --bin sipi-com-direct-config-validate --release --locked --offline",
+      "copy_matches_source": true,
+      "dependency_cache_equal": true,
+      "dependency_cache_post": {
+        "file_count": 6249,
+        "package_count": 157,
+        "path_redacted": true,
+        "scope": "resolved_locked_dependency_sources",
+        "sha256": "c541c74ff5981823b7637517fe162ed11b1d3e521105690b7501e45776f20c10",
+        "total_bytes": 81838410
+      },
+      "dependency_cache_pre": {
+        "file_count": 6249,
+        "package_count": 157,
+        "path_redacted": true,
+        "scope": "resolved_locked_dependency_sources",
+        "sha256": "c541c74ff5981823b7637517fe162ed11b1d3e521105690b7501e45776f20c10",
+        "total_bytes": 81838410
+      },
+      "environment": {
+        "cargo_cache_bound_pre_post": true,
+        "cargo_home_policy": "host_cargo_home_retained_for_offline_dependency_cache",
+        "cleared": [
+          "RUSTFLAGS",
+          "CARGO_ENCODED_RUSTFLAGS",
+          "RUSTC_WRAPPER",
+          "RUSTC_WORKSPACE_WRAPPER",
+          "CARGO_BUILD_RUSTC",
+          "CARGO_BUILD_RUSTC_WRAPPER",
+          "CARGO_BUILD_RUSTDOC",
+          "RUSTDOCFLAGS",
+          "CARGO_BUILD_TARGET",
+          "RUSTUP_TOOLCHAIN",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTDOCFLAGS",
+          "CARGO_BUILD_JOBS",
+          "CARGO_BUILD_PIPELINING",
+          "RUSTC_BOOTSTRAP",
+          "CARGO_BUILD_RUSTFLAGS",
+          "CARGO_BUILD_RUSTDOCFLAGS",
+          "CARGO_CONFIG",
+          "CC",
+          "CXX",
+          "CL",
+          "LINK",
+          "LIB",
+          "INCLUDE"
+        ],
+        "incremental": "0",
+        "linker_forced": true,
+        "native_linker_overrides_cleared": true,
+        "offline": true,
+        "rustc_forced": true,
+        "source_path_remapped": true,
+        "target_is_independent": true,
+        "wrappers_cleared": true
+      },
+      "git_identity_equal": true,
+      "git_identity_post": {
+        "basename": "git.EXE",
+        "bytes": 46480,
+        "nlink": 2,
+        "path_redacted": true,
+        "sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5"
+      },
+      "git_identity_pre": {
+        "basename": "git.EXE",
+        "bytes": 46480,
+        "nlink": 2,
+        "path_redacted": true,
+        "sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5"
+      },
+      "log_policy": "stable_event_categories",
+      "raw_binary_scope": "execution_copy_only",
+      "stderr_sha256": "932ed58fa7be85be5103d641a29ffe97f9d288478c5f108732d3344b87db44bf",
+      "stdout_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "tool_identities_equal": true,
+      "tool_identities_post": {
+        "cargo": {
+          "basename": "cargo.exe",
+          "file_bytes": 31288320,
+          "file_sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+          "path_redacted": true,
+          "role": "cargo",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+        },
+        "linker": {
+          "basename": "rust-lld.exe",
+          "file_bytes": 113417728,
+          "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+          "path_redacted": true,
+          "role": "linker",
+          "version_args": [
+            "-flavor",
+            "link",
+            "help"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "cdc50cad3df15ff35c8e78282617235fd63461e2e79087a265b873f33aa69d00"
+        },
+        "python": {
+          "basename": "python.exe",
+          "file_bytes": 91648,
+          "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+          "path_redacted": true,
+          "role": "python",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+        },
+        "rustc": {
+          "basename": "rustc.exe",
+          "file_bytes": 110592,
+          "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+          "path_redacted": true,
+          "role": "rustc",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+        },
+        "uv": {
+          "basename": "uv.exe",
+          "file_bytes": 68317696,
+          "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+          "path_redacted": true,
+          "role": "uv",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+        }
+      },
+      "tool_identities_pre": {
+        "cargo": {
+          "basename": "cargo.exe",
+          "file_bytes": 31288320,
+          "file_sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+          "path_redacted": true,
+          "role": "cargo",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+        },
+        "linker": {
+          "basename": "rust-lld.exe",
+          "file_bytes": 113417728,
+          "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+          "path_redacted": true,
+          "role": "linker",
+          "version_args": [
+            "-flavor",
+            "link",
+            "help"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "cdc50cad3df15ff35c8e78282617235fd63461e2e79087a265b873f33aa69d00"
+        },
+        "python": {
+          "basename": "python.exe",
+          "file_bytes": 91648,
+          "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+          "path_redacted": true,
+          "role": "python",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+        },
+        "rustc": {
+          "basename": "rustc.exe",
+          "file_bytes": 110592,
+          "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+          "path_redacted": true,
+          "role": "rustc",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+        },
+        "uv": {
+          "basename": "uv.exe",
+          "file_bytes": 68317696,
+          "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+          "path_redacted": true,
+          "role": "uv",
+          "version_args": [
+            "--version"
+          ],
+          "version_exit": 0,
+          "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+        }
+      }
+    },
+    "cargo_binary_basename": "sipi-com-direct-config-validate.exe",
+    "cargo_lock_sha256": "7bb650c602f7fe9f74930580380e399089014924e16576bc72c3b82764136a7f",
+    "commit": "ef9f651839be98142eb4a54b9aa161e471d23a0c",
+    "inventory": {
+      "file_count": 22,
+      "sha256": "19dbff925c2c1d48a6f36d22e30d0122fa67aed77dc6a9c02a883753599d843e",
+      "total_bytes": 1630466
+    },
+    "source_date_epoch": "1787795490",
+    "source_mode": "git_archive_at_immutable_commit",
+    "tree": "338336fcd29d4151f87257f6ac54b0c843a9996a"
+  },
+  "exact": {
+    "all": true,
+    "consumption": true,
+    "materialized_fingerprint": true,
+    "options": true,
+    "parameters": true,
+    "warnings": true
+  },
+  "expected": {
+    "materialized_fingerprint": "d6963c122533d58273e4ebf3224bade1dc38b040f740c1cd92d4c9727e4483dc",
+    "option_count": 90,
+    "parameter_count": 148,
+    "warning_count": 0
+  },
+  "fixture": {
+    "basename": "config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx",
+    "bytes": 63311,
+    "custody": "upstream_git_archive_only",
+    "path_redacted": true,
+    "relative_path": "matlab_src/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx",
+    "role": "primary_xlsx",
+    "sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9"
+  },
+  "fresh_run_nonce": "6835e5fa4a4ed6a6809d28a2c9163299d241fbc748d2a7ff026f9767bbdd5fe0",
+  "harness": {
+    "changed_paths": [
+      "tools/run_com_01_fingerprint_current_replay.py",
+      "tools/aggregate_com_01_fingerprint_current_replay.py",
+      "tools/verify_com_01_fingerprint_current_replay.py",
+      "tools/test_verify_com_01_fingerprint_current_replay.py"
+    ],
+    "files": [
+      {
+        "bytes": 46276,
+        "content_sha256": "e58ca8300d138511555e6b2c27b969a011acfe9b1fddf7711190a3fc30fe72ea",
+        "git_blob_sha1": "5797512a0d6eeb40a8eb2470844db4e8f0bb576d",
+        "path": "tools/run_com_01_fingerprint_current_replay.py"
+      },
+      {
+        "bytes": 5661,
+        "content_sha256": "8be5bdb80a7da65411e27dc2fc9b43c092ab6f0ddd278d0774db05503fce2460",
+        "git_blob_sha1": "cc9766d3c116f2271fff41ec3150c99aa2528f3c",
+        "path": "tools/aggregate_com_01_fingerprint_current_replay.py"
+      },
+      {
+        "bytes": 47602,
+        "content_sha256": "4719a3d32b98023b5f47a86a84dd1c3062808f6efdb70343d7007ea548acd37c",
+        "git_blob_sha1": "7917c2d530b2fab632bc26c5f9da08a72754ffa1",
+        "path": "tools/verify_com_01_fingerprint_current_replay.py"
+      },
+      {
+        "bytes": 33295,
+        "content_sha256": "8c68d0384417056db9f75bb6afedec568f4d3d42238507e5f7d3c4ea8480cd44",
+        "git_blob_sha1": "f04bcd27ddcda40e89efacd4741023723a7a1674",
+        "path": "tools/test_verify_com_01_fingerprint_current_replay.py"
+      }
+    ],
+    "first_introduction": true,
+    "formal_artifacts_absent": true,
+    "prep_commit": "d44581ac8b10adbc8f803bb0292107ae3303e015",
+    "prep_parent": "dadc9720d932f2e71886700d9112a12cd2a027d5",
+    "prep_tree": "2577bdea09e4263937f6253197746b17dd4af78c",
+    "shared_custody": {
+      "commit": "e74e10d2933b1ddbc73f7da1a7785ca15ba49e09",
+      "files": [
+        {
+          "bytes": 83652,
+          "content_sha256": "199080030f9d07bdd8d9c8b087268c25e12c8caf2d4bc0f61be2fc1540de68bb",
+          "git_blob_sha1": "e64e3dbd5d98e00a7136dc2e533a374d0c9e0077",
+          "path": "tools/run_com_01_current_candidate.py"
+        },
+        {
+          "bytes": 11321,
+          "content_sha256": "678256aa893d1d03a6e952dbdee62d5dd787849cea5107ce766ca59ac82dff15",
+          "git_blob_sha1": "d07fbd804d8348042fb422a9b0376eec0c11693a",
+          "path": "tools/aggregate_com_01_current_candidate.py"
+        },
+        {
+          "bytes": 21938,
+          "content_sha256": "1e3fc34efa93844a9115bb78316b49bf5f8c8eae30249c346aeee60d6e15903d",
+          "git_blob_sha1": "f9698adc980704bc7ff6cb250fc6928189cdcde7",
+          "path": "tools/verify_com_01_current_candidate.py"
+        },
+        {
+          "bytes": 23658,
+          "content_sha256": "69ad3d83a35e70aaeaa4f8031afbab1c8e512301472baf310c89640cfcf39128",
+          "git_blob_sha1": "99bc4c4296a52fde9ba261ee36792c6d26ad89d2",
+          "path": "tools/test_verify_com_01_current_candidate.py"
+        }
+      ],
+      "tree": "2e49b25641439d29110747edde157eb232d1250c"
+    },
+    "source_mode": "raw_git_blob_bound_before_execution"
+  },
+  "leaf": "config-validate",
+  "non_claims": [
+    "no_complete_com_parity",
+    "no_global_migration_row_close",
+    "no_product_capability_promotion",
+    "no_release_readiness",
+    "no_configuration_value_payloads_committed",
+    "no_S_parameter_fit",
+    "channel_impulse_only_policy_unchanged",
+    "no_canonical_pe_or_bit_reproducibility"
+  ],
+  "run_id": "2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "scenario": {
+    "candidate": {
+      "exit_code": 0,
+      "payload": {
+        "config_sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9",
+        "consumption": {
+          "common_sha256": "f61982ef0d313fc2d1612d594e37aea6d8291f4dbaa739400819abe158bd055b",
+          "keys": [
+            "implemented",
+            "report_only",
+            "unimplemented",
+            "obsolete",
+            "unverified",
+            "summary"
+          ],
+          "oracle_only_sha256": "711b49e22c6c029019c8a36e79d546afc73deeafebcf7636e03350662d773f80",
+          "semantic_sha256": "f61982ef0d313fc2d1612d594e37aea6d8291f4dbaa739400819abe158bd055b"
+        },
+        "materialized_fingerprint": "d6963c122533d58273e4ebf3224bade1dc38b040f740c1cd92d4c9727e4483dc",
+        "options": {
+          "count": 90,
+          "keys_sha256": "db2dcb5e7d9b32ee6d2c55e905fe22d28a744581c8c3a88757754b61cfbd0137",
+          "semantic_sha256": "04c57c402183eeb4d9b0147344baa2a9e7fe57fb635ba7676704c68d8ca5f79c"
+        },
+        "parameters": {
+          "count": 148,
+          "keys_sha256": "0d5ac58e2807c5cda038371fcb4f3b689359a393fe0053c6f9773927227ad870",
+          "semantic_sha256": "4bd968fef4a4281ba8dd9d2ff7dd90ea5822e4bcdfeaa0e9c66f0d92b42e3ac9"
+        },
+        "projection_sha256": "7ecc464128d48202b2652d48fc4acfe6d6c57a9f8a4e733c9dfc5980a39290e2",
+        "warnings": {
+          "count": 0,
+          "semantic_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "runtime": "archive_binary_execution_copy"
+    },
+    "comparison_mode": "parsed_json_semantic_numbers_with_exact_fingerprint",
+    "exact": {
+      "all": true,
+      "consumption": true,
+      "materialized_fingerprint": true,
+      "options": true,
+      "parameters": true,
+      "warnings": true
+    },
+    "fixture_role": "primary_xlsx",
+    "id": "xlsx_materialized_json_default",
+    "oracle": {
+      "exit_code": 0,
+      "payload": {
+        "config_sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9",
+        "consumption": {
+          "common_sha256": "f61982ef0d313fc2d1612d594e37aea6d8291f4dbaa739400819abe158bd055b",
+          "keys": [
+            "implemented",
+            "report_only",
+            "unimplemented",
+            "obsolete",
+            "unverified",
+            "summary",
+            "materialization_provenance",
+            "source_field_trace",
+            "source_order_default_consumption",
+            "unverified_mutability"
+          ],
+          "oracle_only_sha256": "b4b661d83b210291ff8254334199a7e92432a45182081d15ea01a6e6f65c846d",
+          "semantic_sha256": "a29fc93c371c206ebdacc2d10f8744f7fbab445bf997a47cc1459873533310d6"
+        },
+        "materialized_fingerprint": "d6963c122533d58273e4ebf3224bade1dc38b040f740c1cd92d4c9727e4483dc",
+        "options": {
+          "count": 90,
+          "keys_sha256": "db2dcb5e7d9b32ee6d2c55e905fe22d28a744581c8c3a88757754b61cfbd0137",
+          "semantic_sha256": "04c57c402183eeb4d9b0147344baa2a9e7fe57fb635ba7676704c68d8ca5f79c"
+        },
+        "parameters": {
+          "count": 148,
+          "keys_sha256": "0d5ac58e2807c5cda038371fcb4f3b689359a393fe0053c6f9773927227ad870",
+          "semantic_sha256": "4bd968fef4a4281ba8dd9d2ff7dd90ea5822e4bcdfeaa0e9c66f0d92b42e3ac9"
+        },
+        "projection_sha256": "e8a3975d04e8e62316fe0d4f089a59389898f0a12760b6267ab64d26f889eaf1",
+        "warnings": {
+          "count": 0,
+          "semantic_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      },
+      "runtime": "uv_frozen_offline"
+    },
+    "output": "materialized_json",
+    "profile": "r480"
+  },
+  "schema": "sipi.com-01.fingerprint-current-replay.v1",
+  "source_mode": "git_archive_at_immutable_commit",
+  "status": "scoped_exact_materialized_fingerprint_replay",
+  "toolchain": {
+    "cargo": {
+      "basename": "cargo.exe",
+      "file_bytes": 31288320,
+      "file_sha256": "3cd119fe81dfedb9dce4573696bf65058f16b57c9e5babe415b71624315cbb7d",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f4f564f8936fa8eb53bca8bbe50666489252bbcbeaae0cb0dd54682444697e52"
+    },
+    "linker": {
+      "basename": "rust-lld.exe",
+      "file_bytes": 113417728,
+      "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+      "path_redacted": true,
+      "role": "linker",
+      "version_args": [
+        "-flavor",
+        "link",
+        "help"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "cdc50cad3df15ff35c8e78282617235fd63461e2e79087a265b873f33aa69d00"
+    },
+    "python": {
+      "basename": "python.exe",
+      "file_bytes": 91648,
+      "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+      "path_redacted": true,
+      "role": "python",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+    },
+    "rustc": {
+      "basename": "rustc.exe",
+      "file_bytes": 110592,
+      "file_sha256": "6d1c5543ed3a45cfbc1c1332d42d6550d883c14d3c2e323427e631c331cebeeb",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "ac31499b5910ed7ddbf1a62e57e03c1d0ca49fa78efc075b291afa8d192a4d44"
+    },
+    "timeout_seconds": 600,
+    "uv": {
+      "basename": "uv.exe",
+      "file_bytes": 68317696,
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_args": [
+        "--version"
+      ],
+      "version_exit": 0,
+      "version_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version_stdout_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+    }
+  },
+  "upstream": {
+    "archive": {
+      "bytes": 43694080,
+      "command": "git -c core.autocrlf=false archive --format=tar <revision>",
+      "path_redacted": true,
+      "sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    },
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "inventory": {
+      "file_count": 70,
+      "sha256": "1cd0366c0d1cb7e14678ccfc5671918d6a36f8f993896aa2b4729fec487b621e",
+      "total_bytes": 1006648
+    },
+    "runtime": {
+      "command": "uv run --frozen --offline --project <clean-upstream> --python <pinned-python> python -c <probe>",
+      "environment": {
+        "cleared": [
+          "PYTHONHOME",
+          "PYTHONPATH",
+          "PYTHONSTARTUP",
+          "PYTHONUSERBASE",
+          "PYTHONBREAKPOINT",
+          "PYTHONINSPECT",
+          "PYTHONWARNINGS",
+          "PYTHONSAFEPATH",
+          "PYTHONEXECUTABLE",
+          "PYTHONUTF8",
+          "PYTHONIOENCODING",
+          "PYTHONHASHSEED",
+          "PYTHONMALLOC",
+          "PYTHONPROFILEIMPORTTIME",
+          "VIRTUAL_ENV",
+          "UV_PROJECT_ENVIRONMENT",
+          "UV_PYTHON",
+          "UV_PYTHON_DOWNLOADS",
+          "UV_INDEX_URL",
+          "UV_EXTRA_INDEX_URL",
+          "UV_NO_INDEX",
+          "UV_LINK_MODE",
+          "UV_CACHE_DIR",
+          "PIP_CONFIG_FILE",
+          "PIP_INDEX_URL",
+          "PIP_EXTRA_INDEX_URL",
+          "PIP_FIND_LINKS",
+          "PIP_REQUIRE_VIRTUALENV",
+          "PIP_NO_INDEX",
+          "CONDA_PREFIX",
+          "CONDA_DEFAULT_ENV",
+          "CONDA_PYTHON_EXE"
+        ],
+        "dependency_modules_scope": "environment_local_recheck_not_replay_artifact",
+        "direct_python_fallback": false,
+        "global_uv_cache": "required_path_redacted_environment_local",
+        "project_venv": "materialized_inside_archive",
+        "pythonno_user_site": true,
+        "uv_frozen": true,
+        "uv_no_config": true,
+        "uv_offline": true
+      },
+      "exit": 0,
+      "modules": {
+        "agent_com": {
+          "basename": "__init__.py",
+          "bytes": 1719,
+          "relative_path": "src/agent_com/__init__.py",
+          "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+        },
+        "numpy": {
+          "basename": "__init__.py",
+          "bytes": 26470,
+          "relative_path": ".venv/Lib/site-packages/numpy/__init__.py",
+          "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4"
+        },
+        "openpyxl": {
+          "basename": "__init__.py",
+          "bytes": 603,
+          "relative_path": ".venv/Lib/site-packages/openpyxl/__init__.py",
+          "sha256": "b36b17729f138575c7b3035287e52e422e411eca1ab2e7335328cd373d15ba97"
+        },
+        "scipy": {
+          "basename": "__init__.py",
+          "bytes": 4659,
+          "relative_path": ".venv/Lib/site-packages/scipy/__init__.py",
+          "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f"
+        },
+        "yaml": {
+          "basename": "__init__.py",
+          "bytes": 12311,
+          "relative_path": ".venv/Lib/site-packages/yaml/__init__.py",
+          "sha256": "b19dfcc333d6a75dfd73073901164507252f271b41d3b5f7d85510033a0547a7"
+        }
+      },
+      "runtime": "executed_clean_archive_uv_frozen_offline",
+      "source": {
+        "module_file": {
+          "basename": "__init__.py",
+          "bytes": 1719,
+          "path_redacted": true,
+          "relative_path": "src/agent_com/__init__.py",
+          "root_contained": true,
+          "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+        },
+        "package_source_inventory": {
+          "file_count": 67,
+          "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+          "total_bytes": 872082
+        }
+      },
+      "stderr_bytes": 11,
+      "stderr_sha256": "732ff88a1b23a72b6c34a74f34f9ca5c2754e9b022c8c846788ede525ed8c853",
+      "stdout_bytes": 944,
+      "stdout_sha256": "4efd5b25432d8507ef96512b10a2194028c7194561a54036f4047be509de9af1"
+    },
+    "source": {
+      "module_file": {
+        "basename": "__init__.py",
+        "bytes": 1719,
+        "path_redacted": true,
+        "relative_path": "src/agent_com/__init__.py",
+        "root_contained": true,
+        "sha256": "0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0"
+      },
+      "package_source_inventory": {
+        "file_count": 67,
+        "sha256": "dbacf2e869bd2d0f00dd65f41a86d357d6abcffce0d81ad69b9421e6e45372b4",
+        "total_bytes": 872082
+      }
+    },
+    "source_mode": "git_archive_at_immutable_commit",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "work_item": "COM-01"
+}
