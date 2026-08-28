@@ -167,6 +167,25 @@ Wiener-Hopf-only diagnostic；不进入通用 DTO/数值链，公共 JSON 不得
 保持 immutable；15/15 rows 仍 open/scoped，release-ready=0，保留 no-S-fit、impulse-only、
 no-global-parity/non-release 约束。
 
+**2026-08-28 v13 upstream-first successor：** 新增
+[`upstream-integration-ledger.v13`](docs/baselines/upstream-integration-ledger.v13.yaml)，以
+clean candidate `189ffaa85f8f21ae7cdc7b2ca8f126122d9b335f`、tree
+`f4a76932fef0a8f1f790ce682477d7639c7822de` 及
+`core.autocrlf=true` 的 archive SHA
+`3e96cf027f2aa9daa313474061cf783a0bff07fb8f896ae86c4380f9ea08ecbf`
+（`55480320` bytes）绑定 v12 successor。v13 只更新当前 formal evidence
+的治理索引，不新增领域功能、不关闭 migration row，也不改变 v1-v12 历史
+账本。AS-03 绑定 power-wave solve 的 `blocked_numeric_semantics` 观察
+（4 个 real bits 中 3 个有差异、最大 1 ULP），因此仍无 numeric/global
+parity 或 release；PB-01/PB-02 绑定两次 fresh portable matrix，分别记录
+PB-01 五个通过且 Duo blocked、PB-02 六个 blocked，整体保持
+`scoped_matrix_blocked`；COM-01 绑定 current stage2 的 scoped exact
+materialized fingerprint，COM-03 绑定 current candidate 的 scoped/nonrelease
+replay。AS-05 继续 `owner_excluded_not_required`，不做 Xyce/XDM；SI S 参数
+禁止 fit，channel 只允许一次最终 FD-to-TD impulse。15/15 rows 仍 open，
+release-ready=0，任何 observation 均不得解释为 row close、promotion、
+global parity 或 release readiness。
+
 以下第 1 节及之后内容是 v0.2 历史计划。其 checklist 继续供旧 evidence/verifier
 解释来源，不再决定 v0.3 的功能优先级。
 
