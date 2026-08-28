@@ -1,0 +1,58 @@
+schema: sipi.as-06-ngspice-result-parity-evidence.v2
+status: passed_scoped_external_observation
+harness_gate:
+  commit: 927d9047315c6a88ec9497c452a5f6d5197210a0
+  tree: edc20977b556ed9e88c1ac0feaa1cbcfd6254208
+  files:
+    tools/run_as_06_ngspice_result_parity.py: 84d4b30e9af34d00ecea411757465966529812721ce3b493a19f1b04a9b1adef
+    tools/aggregate_as_06_ngspice_result_parity.py: 252393ca3dc69b33c73e83a0c11b84765992c00117e0689725bbd5ca8e6a7107
+    tools/verify_as_06_ngspice_result_parity.py: b76be5005000fa228a78c80741151088ef833f3867a2789c519acd845d9a60e7
+    tools/test_verify_as_06_ngspice_result_parity.py: 7d567b384a7652f51378968bfdf3b12d62aa0e21d05dadccebd24f6bb1f22bb0
+formal_gate:
+  commit: 591a2563179713a97a7b2346597a986f42bb1af9
+  tree: 0d6c50580cd7acd5321768f98e04776677882db0
+  files:
+    tools/verify_as_06_ngspice_result_parity_formal.py:
+      blob: 254f901864f7510423d608bba7fcbab4d166136d
+      sha256: 3cc51b16e29c556aaeba463a9cbdbf876f7ba32c4f90bdadda656129df6557df
+      bytes: 12965
+    tools/test_verify_as_06_ngspice_result_parity_formal.py:
+      blob: f62eb1a58c7d86bcf6d19c690a4a0b5d13cc5a39
+      sha256: 06e994de7a6a7cfe19f96d88fb172997a16758f0ea417cdcc2f21e97eab46ece
+      bytes: 12135
+candidate:
+  commit: aea546510d345cd7e280e55897c027be872d759a
+  tree: df99e5bb1c2381bb52fe0037b7b8fbb38b7c6cb9
+  sha256: 4da4772366c49330679c85626b63eeccd3234643303d04bcd9b657c0d9eff326
+  bytes: 54640640
+upstream:
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  sha256: a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144
+  bytes: 120238080
+records:
+  docs/baselines/as-06-ngspice-result-parity-run-01.v2.json: 0e5d9b118335e2e7bf00d04d0650bd5b03e1d9499c1b0738045795d4dff0563d
+  docs/baselines/as-06-ngspice-result-parity-run-02.v2.json: 1d8fa1d937c8f9ba21e40bf8b1feeb2307aee72e21b980344fee6929365b7713
+  docs/baselines/as-06-ngspice-result-parity-aggregate.v2.json: aafa363f0745dcdb2a17f4ae97214db64935f7d256575547e606bc45772ce7f5
+audit:
+  path: docs/baselines/audits/2026-08-29-as-06-ngspice-result-parity-v2.md
+  sha256: a025727ecec1ac7479cbb2260df10a1c538e6d389ae08cd1c1dc973562cf7bfb
+result:
+  headers: [time, v(src), v(out)]
+  waveform_rows: 1029
+  float_bit_exact: true
+  max_abs_error: 0.0
+  logical_manifest_equal: true
+  runtime_semantics_equal: true
+  rust_reconstruction_rms: 0.0
+  upstream_reconstruction_rms: 0.0
+  rust_reconstruction_max: 0.0
+  upstream_reconstruction_max: 0.0
+claims:
+  external_solver_scoped_observation: true
+  solver_correctness: false
+  release_acceptance: false
+  s_parameter_fit: false
+  as05_xyce_xdm: false
+  environment_injection_resistance: false
+  hostile_writer_resistance: false
