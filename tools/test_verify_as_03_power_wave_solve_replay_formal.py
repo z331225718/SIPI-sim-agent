@@ -76,7 +76,8 @@ class FormalGateTests(unittest.TestCase):
         result = formal.verify_formal_gate(self.repo, self.commit)
         self.assertEqual(result["parent"], formal.FORMAL_GATE_PARENT)
         self.assertEqual(tuple(result["changed_paths"]), formal.FORMAL_GATE_PATHS)
-        self.assertTrue(result["first_introduction"])
+        self.assertFalse(result["first_introduction"])
+        self.assertTrue(result["original_gate_first_introduction"])
         self.assertTrue(result["formal_artifacts_absent"])
         self.assertTrue(all("current" in item for item in result["files"].values()))
 
@@ -223,7 +224,7 @@ class FormalBundleTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def _write_bundle(self, *, attack: bool = False, audit_extra: bool = False, extra_path: bool = False) -> None:
+    def _write_bundle(self, *, attack: bool = False, audit_extra: bool = False, extra_path: bool = False, old_gate: bool = False) -> None:
         first = stage1_test.report("formal-01", "a")
         second = stage1_test.report("formal-02", "b")
         for report in (first, second):
@@ -258,13 +259,15 @@ class FormalBundleTests(unittest.TestCase):
             "aggregate": {"path": formal.AGGREGATE_PATH, "sha256": hashlib.sha256(aggregate_payload).hexdigest(), "bytes": len(aggregate_payload)},
         }
         manifest["audit_binding"] = {"path": formal.AUDIT_PATH, "sha256": "0" * 64, "bytes": 1, "normalized_manifest_sha256": "0" * 64}
+        if old_gate:
+            manifest["formal_gate"].update({"commit": formal.ORIGINAL_GATE_COMMIT, "tree": formal.ORIGINAL_GATE_TREE, "parent": formal.FORMAL_GATE_PARENT})
         manifest["audit_binding"]["normalized_manifest_sha256"] = formal.normalized_manifest_sha256(manifest)
         binding = {
             "normalized_manifest_sha256": manifest["audit_binding"]["normalized_manifest_sha256"],
             "reports": [item["sha256"] for item in manifest["evidence"]["reports"]],
             "aggregate": manifest["evidence"]["aggregate"]["sha256"],
             "stage1_prep_commit": formal.STAGE1_PREP_COMMIT,
-            "formal_gate_commit": gate["commit"],
+            "formal_gate_commit": manifest["formal_gate"]["commit"],
         }
         audit_payload = formal._audit_payload(binding) + (b"release_acceptance: true\n" if audit_extra else b"")
         manifest["audit_binding"].update({"sha256": hashlib.sha256(audit_payload).hexdigest(), "bytes": len(audit_payload)})
@@ -282,12 +285,23 @@ class FormalBundleTests(unittest.TestCase):
         git(self.repo, "commit", "--quiet", "-m", "test: AS03 formal record")
 
     def _verify(self) -> dict:
-        with mock.patch.object(formal.stage1_verify, "verify_files", return_value={"status": "valid"}):
+        def verify_disjoint(repo: Path, agent: Path, skrf: Path, prep: str, evidence: Path, first: Path, second: Path, aggregate: Path, git_value: str, temp: Path) -> dict:
+            formal.replay._require_disjoint_roots({"repository": repo, "agent": agent, "skrf": skrf, "evidence": evidence, "temp": temp})
+            self.assertEqual(prep, formal.STAGE1_PREP_COMMIT)
+            self.assertEqual(git_value, "git")
+            self.assertEqual(evidence.parent, temp.parent)
+            self.assertEqual({item.name for item in evidence.iterdir()}, {first.name, second.name, aggregate.name})
+            for path in (first, second, aggregate):
+                formal.replay._read_regular(path, formal.replay.MAX_REPORT_BYTES)
+            return {"status": "valid"}
+
+        with mock.patch.object(formal.stage1_verify, "verify_files", side_effect=verify_disjoint):
             return formal.verify_formal_bundle(self.repo, formal.MANIFEST_PATH, self.agent_repo, self.skrf_repo, self.verify_temp)
 
     def test_complete_future_bundle_valid_baseline(self) -> None:
         self._write_bundle()
         self.assertTrue(self._verify()["valid"])
+        self.assertEqual(list(self.verify_temp.iterdir()), [])
 
     def test_exact_audit_rejects_extra_promotion_claim(self) -> None:
         self._write_bundle(audit_extra=True)
@@ -319,6 +333,64 @@ class FormalBundleTests(unittest.TestCase):
             formal.verify_record_commit(self.repo, self.gate_commit)
         with self.assertRaises(formal.FormalError):
             formal.verify_record_commit(self.repo, formal.STAGE1_PREP_COMMIT)
+
+    def test_record_pointing_to_original_gate_is_rejected(self) -> None:
+        self._write_bundle(old_gate=True)
+        with self.assertRaises(formal.FormalError):
+            self._verify()
+
+    def test_bridge_rejects_overlapping_root_and_cleans_after_stage1_failure(self) -> None:
+        self._write_bundle()
+        with mock.patch.object(formal.stage1_verify, "verify_files", side_effect=RuntimeError("forced Stage1 failure")):
+            with self.assertRaises(RuntimeError):
+                formal.verify_formal_bundle(self.repo, formal.MANIFEST_PATH, self.agent_repo, self.skrf_repo, self.verify_temp)
+        self.assertEqual(list(self.verify_temp.iterdir()), [])
+        with self.assertRaises(RuntimeError):
+            formal._verify_stage1_through_external_bridge(self.repo, self.agent_repo, self.skrf_repo, self.repo, [], b"")
+
+    def test_bridge_cleans_after_exclusive_write_failure(self) -> None:
+        self._write_bundle()
+        original = formal.replay._create_file
+        calls = 0
+
+        def fail_second(path: Path, payload: bytes, maximum: int) -> dict:
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise RuntimeError("forced exclusive write failure")
+            return original(path, payload, maximum)
+
+        with mock.patch.object(formal.replay, "_create_file", side_effect=fail_second), self.assertRaises(RuntimeError):
+            formal.verify_formal_bundle(self.repo, formal.MANIFEST_PATH, self.agent_repo, self.skrf_repo, self.verify_temp)
+        self.assertEqual(list(self.verify_temp.iterdir()), [])
+
+    def test_bridge_exact_files_reject_extra_and_hardlink(self) -> None:
+        bridge = self.verify_temp / "bridge"
+        bridge.mkdir()
+        (bridge / "expected").write_bytes(b"data")
+        (bridge / "extra").write_bytes(b"extra")
+        with self.assertRaises(formal.FormalError):
+            formal._bridge_receipts(bridge, ("expected",))
+        (bridge / "extra").unlink()
+        hardlink = bridge / "hardlink"
+        os.link(bridge / "expected", hardlink)
+        with self.assertRaises(RuntimeError):
+            formal._bridge_receipts(bridge, ("expected", "hardlink"))
+        hardlink.unlink()
+
+    def test_bridge_rejects_symlink_when_available(self) -> None:
+        bridge = self.verify_temp / "bridge-symlink"
+        bridge.mkdir()
+        (bridge / "expected").write_bytes(b"data")
+        symlink = bridge / "symlink"
+        try:
+            symlink.symlink_to(bridge / "expected")
+        except OSError:
+            return
+        with self.assertRaises(formal.FormalError):
+            formal._bridge_receipts(bridge, ("expected", "symlink"))
+
+    def test_manifest_rejects_bool_byte_count(self) -> None:
         value = manifest_template()
         value["evidence"]["reports"][0]["bytes"] = True
         with self.assertRaises(formal.FormalError):

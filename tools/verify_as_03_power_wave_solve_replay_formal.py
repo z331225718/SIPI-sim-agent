@@ -24,7 +24,10 @@ import verify_as_03_power_wave_solve_replay as stage1_verify
 STAGE1_PREP_COMMIT = "e3b1d2dc482be64bff8a3f69f1fdf03eb0792d26"
 STAGE1_PREP_TREE = "115cf9755bfd988bc4f72fd2a3123229d403669c"
 STAGE1_PREP_PARENT = "4042f0d9fdd0846e20ea95e8da7752812a4eea45"
-FORMAL_GATE_PARENT = "6a9b2cbe96eb51b4e406cb94be9ef11a3a487944"
+ORIGINAL_GATE_COMMIT = "743c57d8d612643df7e116c6ee04c950cb370ff1"
+ORIGINAL_GATE_TREE = "c716591a0db27030c06a3adcf8feb8d7dd96ce83"
+ORIGINAL_GATE_PARENT = "6a9b2cbe96eb51b4e406cb94be9ef11a3a487944"
+FORMAL_GATE_PARENT = ORIGINAL_GATE_COMMIT
 FORMAL_GATE_PATHS = (
     "tools/test_verify_as_03_power_wave_solve_replay_formal.py",
     "tools/verify_as_03_power_wave_solve_replay_formal.py",
@@ -172,9 +175,34 @@ def _verify_stage1_prep(repo: Path) -> None:
             raise FormalError("formal artifact unexpectedly present in Stage1 prep")
 
 
+def _verify_original_gate(repo: Path) -> None:
+    if str(_git(repo, "rev-parse", f"{ORIGINAL_GATE_COMMIT}^{{tree}}")) != ORIGINAL_GATE_TREE:
+        raise FormalError("original formal gate tree drift")
+    parents = str(_git(repo, "show", "-s", "--format=%P", ORIGINAL_GATE_COMMIT)).split()
+    if parents != [ORIGINAL_GATE_PARENT]:
+        raise FormalError("original formal gate parent drift")
+    changed_raw = _git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", ORIGINAL_GATE_PARENT, ORIGINAL_GATE_COMMIT, binary=True)
+    assert isinstance(changed_raw, bytes)
+    changed = tuple(sorted(item.decode("utf-8", "strict") for item in changed_raw.split(b"\0") if item))
+    if changed != FORMAL_GATE_PATHS:
+        raise FormalError("original formal gate changed-path set drift")
+    for relative in FORMAL_GATE_PATHS:
+        old = _git(repo, "ls-tree", "-z", ORIGINAL_GATE_PARENT, "--", relative, binary=True)
+        current = _git(repo, "ls-tree", "-z", ORIGINAL_GATE_COMMIT, "--", relative, binary=True)
+        assert isinstance(old, bytes) and isinstance(current, bytes)
+        if old or not current or str(_git(repo, "cat-file", "-t", f"{ORIGINAL_GATE_COMMIT}:{relative}")) != "blob":
+            raise FormalError("original formal gate first-introduction drift")
+    for relative in FORMAL_ARTIFACT_PATHS:
+        present = _git(repo, "ls-tree", "-z", ORIGINAL_GATE_COMMIT, "--", relative, binary=True)
+        assert isinstance(present, bytes)
+        if present:
+            raise FormalError("formal artifact unexpectedly present in original gate")
+
+
 def verify_formal_gate(repo: Path, commit: str, *, require_live: bool = True) -> dict[str, Any]:
     repo = repo.resolve(strict=True)
     _verify_stage1_prep(repo)
+    _verify_original_gate(repo)
     resolved = str(_git(repo, "rev-parse", f"{commit}^{{commit}}"))
     tree = str(_git(repo, "rev-parse", f"{resolved}^{{tree}}"))
     if not _is_ancestor(repo, replay.PRODUCTION_COMMIT, STAGE1_PREP_COMMIT) or not _is_ancestor(repo, STAGE1_PREP_COMMIT, FORMAL_GATE_PARENT) or not _is_ancestor(repo, FORMAL_GATE_PARENT, resolved):
@@ -189,10 +217,8 @@ def verify_formal_gate(repo: Path, commit: str, *, require_live: bool = True) ->
         raise FormalError("formal gate must change exactly the two verifier files")
     files: dict[str, Any] = {}
     for relative in FORMAL_GATE_PATHS:
-        old = _git(repo, "ls-tree", "-z", FORMAL_GATE_PARENT, "--", relative, binary=True)
-        assert isinstance(old, bytes)
-        if old or str(_git(repo, "cat-file", "-t", f"{resolved}:{relative}")) != "blob":
-            raise FormalError("formal verifier is not a first-introduced blob")
+        if str(_git(repo, "cat-file", "-t", f"{resolved}:{relative}")) != "blob":
+            raise FormalError("formal successor verifier is not a blob")
         blob = str(_git(repo, "rev-parse", f"{resolved}:{relative}"))
         size_text = str(_git(repo, "cat-file", "-s", blob))
         if not size_text.isascii() or not size_text.isdigit() or int(size_text) > MAX_FORMAL_FILE_BYTES:
@@ -218,7 +244,7 @@ def verify_formal_gate(repo: Path, commit: str, *, require_live: bool = True) ->
         assert isinstance(present, bytes)
         if present:
             raise FormalError("formal artifact is present in the verifier-only gate")
-    return {"commit": resolved, "tree": tree, "parent": FORMAL_GATE_PARENT, "stage1_ancestor": STAGE1_PREP_COMMIT, "changed_paths": list(FORMAL_GATE_PATHS), "first_introduction": True, "formal_artifacts_absent": True, "locked_paths_stable": True, "files": files}
+    return {"commit": resolved, "tree": tree, "parent": FORMAL_GATE_PARENT, "original_gate": ORIGINAL_GATE_COMMIT, "stage1_ancestor": STAGE1_PREP_COMMIT, "changed_paths": list(FORMAL_GATE_PATHS), "first_introduction": False, "original_gate_first_introduction": True, "successor_exact_two": True, "formal_artifacts_absent": True, "locked_paths_stable": True, "files": files}
 
 
 def _finite_tree(value: Any) -> None:
@@ -345,6 +371,72 @@ def verify_record_commit(repo: Path, formal_gate_commit: str) -> dict[str, Any]:
     return {"commit": head, "tree": str(_git(repo, "rev-parse", f"{head}^{{tree}}")), "parent": formal_gate_commit, "changed_paths": list(sorted(FORMAL_ARTIFACT_PATHS)), "first_introduction": True, "worktree_clean": True, "files": files}
 
 
+def _bridge_receipts(root: Path, expected: tuple[str, ...]) -> list[dict[str, Any]]:
+    root = replay._safe_directory(root)
+    entries = list(root.iterdir())
+    if len(entries) != len(expected) or {entry.name for entry in entries} != set(expected):
+        raise FormalError("external evidence bridge exact-file gate failed")
+    receipts = []
+    for name in expected:
+        path = root / name
+        if replay._is_reparse(path):
+            raise FormalError("external evidence bridge contains a reparse entry")
+        payload = replay._read_regular(path, replay.MAX_REPORT_BYTES)
+        receipts.append({"basename": name, "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest(), "nlink": 1})
+    return receipts
+
+
+def _verify_stage1_through_external_bridge(
+    repo: Path,
+    agent_spice_repo: Path,
+    skrf_repo: Path,
+    temp_root: Path,
+    report_payloads: list[tuple[bytes, dict[str, Any]]],
+    aggregate_payload: bytes,
+) -> None:
+    repo = replay._safe_directory(repo)
+    agent_spice_repo = replay._safe_directory(agent_spice_repo)
+    skrf_repo = replay._safe_directory(skrf_repo)
+    parent = replay._safe_directory(temp_root)
+    replay._require_disjoint_roots({"repository": repo, "agent_spice": agent_spice_repo, "scikit_rf": skrf_repo, "temp": parent})
+    evidence_root: Path | None = None
+    verifier_temp: Path | None = None
+    try:
+        evidence_root = replay._fresh_child(parent, "as03-formal-evidence")
+        verifier_temp = replay._fresh_child(parent, "as03-formal-verify")
+        _bridge_receipts(evidence_root, ())
+        names = (Path(REPORT_PATHS[0]).name, Path(REPORT_PATHS[1]).name, Path(AGGREGATE_PATH).name)
+        payloads = (report_payloads[0][0], report_payloads[1][0], aggregate_payload)
+        for name, payload in zip(names, payloads, strict=True):
+            replay._create_file(evidence_root / name, payload, replay.MAX_REPORT_BYTES)
+        before = _bridge_receipts(evidence_root, names)
+        stage1_verify.verify_files(
+            repo,
+            agent_spice_repo,
+            skrf_repo,
+            STAGE1_PREP_COMMIT,
+            evidence_root,
+            evidence_root / names[0],
+            evidence_root / names[1],
+            evidence_root / names[2],
+            "git",
+            verifier_temp,
+        )
+        after = _bridge_receipts(evidence_root, names)
+        if before != after:
+            raise FormalError("external evidence bridge changed during Stage1 verification")
+    finally:
+        cleanup_errors: list[BaseException] = []
+        for child in (verifier_temp, evidence_root):
+            if child is not None and child.exists():
+                try:
+                    replay._remove_fresh_tree(child, parent)
+                except BaseException as error:
+                    cleanup_errors.append(error)
+        if cleanup_errors:
+            raise FormalError("external evidence bridge cleanup failed") from cleanup_errors[0]
+
+
 def verify_formal_bundle(repo: Path, manifest_relative: str, agent_spice_repo: Path, skrf_repo: Path, temp_root: Path) -> dict[str, Any]:
     if _safe_relative(manifest_relative) != MANIFEST_PATH:
         raise FormalError("formal manifest path drift")
@@ -363,8 +455,7 @@ def verify_formal_bundle(repo: Path, manifest_relative: str, agent_spice_repo: P
     reports = [replay.validate_report(json.loads(payload)) for payload, _ in report_payloads]
     aggregate = json.loads(aggregate_payload)
     stage1_verify.verify_values(reports[0], reports[1], aggregate, report_payloads[0][0], report_payloads[1][0], Path(REPORT_PATHS[0]).name, Path(REPORT_PATHS[1]).name)
-    evidence_root = repo.resolve(strict=True) / "docs/baselines"
-    stage1_verify.verify_files(repo, agent_spice_repo, skrf_repo, STAGE1_PREP_COMMIT, evidence_root, repo / REPORT_PATHS[0], repo / REPORT_PATHS[1], repo / AGGREGATE_PATH, "git", temp_root)
+    _verify_stage1_through_external_bridge(repo, agent_spice_repo, skrf_repo, temp_root, report_payloads, aggregate_payload)
     audit_payload, audit_fact = _read_ref(repo, manifest["audit_binding"])
     expected = {
         "normalized_manifest_sha256": manifest["audit_binding"]["normalized_manifest_sha256"],
