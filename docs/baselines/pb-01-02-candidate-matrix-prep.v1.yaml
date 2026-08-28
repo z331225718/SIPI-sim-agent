@@ -1,0 +1,386 @@
+schema: sipi.pb-01-02-candidate-matrix-prep.v1
+version: 1
+status: preparation_only_pending_immutable_harness_commit
+scope:
+  workflow: PB-01/PB-02
+  product_crate: crates/sipi-pybert-direct
+  purpose: bind a future two-run immutable replay without recording formal evidence
+  production_changes: false
+  new_domain_functionality: false
+  formal_replay_generated: false
+  release_acceptance: false
+  global_branch_parity: false
+  codec_byte_parity: false
+candidate:
+  commit: 0d57b36f965588bed3393d2a0a529e4d573a493c
+  tree: 26f2390c90dd9f44753da27041e12b10b8186d55
+  parent: af518684936f8656eda61288abe2647f7d909ea4
+  archive_sha256: 97cbfeb61d94c7b473314e407286bde2391c6b83e59324d4faaa873ec41f8354
+  archive_bytes: 54661120
+  archive_limit_bytes: 536870912
+  archive_mode: git_archive_format_tar
+interposed_checkpoint:
+  from_commit: 0d57b36f965588bed3393d2a0a529e4d573a493c
+  from_tree: 26f2390c90dd9f44753da27041e12b10b8186d55
+  to_commit: 2dea3bbe6039224704f1e07aebc3ebd6c178abed
+  to_tree: 2d680777f93c86373104c9b294cc833e28ea1cba
+  to_parent: e5d9bfe5fa946ee88b9eb06df1db3b574dd43c05
+  to_archive_sha256: 5afec4afba5902ee1faf7e054411fd595058b8f95b2b09dc8a81e2be546edb18
+  to_archive_bytes: 55592960
+  archive_limit_bytes: 536870912
+  archive_mode: git_archive_format_tar
+  exact_name_status:
+    - status: A
+      path: docs/baselines/as-06-ngspice-result-parity-aggregate.v2.json
+    - status: A
+      path: docs/baselines/as-06-ngspice-result-parity-run-01.v2.json
+    - status: A
+      path: docs/baselines/as-06-ngspice-result-parity-run-02.v2.json
+    - status: A
+      path: docs/baselines/as-06-ngspice-result-parity.v2.yaml
+    - status: A
+      path: docs/baselines/audits/2026-08-29-as-06-ngspice-result-parity-v2.md
+    - status: A
+      path: docs/baselines/audits/2026-08-29-com-02-04-result-surface-formal.md
+    - status: M
+      path: docs/baselines/audits/2026-08-29-com-02-04-result-surface.md
+    - status: A
+      path: docs/baselines/com-02-04-result-surface-formal-aggregate.v1.json
+    - status: A
+      path: docs/baselines/com-02-04-result-surface-formal.v1.yaml
+    - status: A
+      path: docs/baselines/com-02-result-surface-formal-run1.v1.json
+    - status: A
+      path: docs/baselines/com-02-result-surface-formal-run2.v1.json
+    - status: A
+      path: docs/baselines/com-04-result-surface-formal-run1.v1.json
+    - status: A
+      path: docs/baselines/com-04-result-surface-formal-run2.v1.json
+    - status: A
+      path: tools/aggregate_as_06_ngspice_result_parity.py
+    - status: A
+      path: tools/aggregate_com_02_04_result_surface.py
+    - status: M
+      path: tools/com_direct_semantic_replay.py
+    - status: M
+      path: tools/com_direct_semantic_replay_v2.py
+    - status: A
+      path: tools/run_as_06_ngspice_result_parity.py
+    - status: A
+      path: tools/test_com_direct_semantic_replay_prep.py
+    - status: A
+      path: tools/test_verify_as_06_ngspice_result_parity.py
+    - status: A
+      path: tools/test_verify_as_06_ngspice_result_parity_formal.py
+    - status: A
+      path: tools/test_verify_com_02_04_result_surface_gate.py
+    - status: A
+      path: tools/verify_as_06_ngspice_result_parity.py
+    - status: A
+      path: tools/verify_as_06_ngspice_result_parity_formal.py
+    - status: A
+      path: tools/verify_com_02_04_result_surface_gate.py
+  protected_paths:
+    - crates/sipi-pybert-direct
+    - docs/baselines/pb-01-02-portable-matrix-inputs.v1.json
+    - tools/run_pb_01_02_portable_matrix.py
+    - tools/run_pb_02_direct_replay.py
+  protected_blobs_unchanged: true
+prep_parent:
+  commit: 2dea3bbe6039224704f1e07aebc3ebd6c178abed
+  tree: 2d680777f93c86373104c9b294cc833e28ea1cba
+  parent: e5d9bfe5fa946ee88b9eb06df1db3b574dd43c05
+  archive_sha256: 5afec4afba5902ee1faf7e054411fd595058b8f95b2b09dc8a81e2be546edb18
+  archive_bytes: 55592960
+  archive_limit_bytes: 536870912
+  archive_mode: git_archive_format_tar
+  exact_new_paths:
+    - tools/run_pb_01_02_candidate_matrix.py
+    - tools/verify_pb_01_02_candidate_matrix_prep.py
+    - tools/test_verify_pb_01_02_candidate_matrix_prep.py
+    - docs/baselines/pb-01-02-candidate-matrix-prep.v1.yaml
+    - docs/baselines/audits/2026-08-29-pb-01-02-candidate-matrix-prep.md
+  exact_new_mode: "100644"
+  first_introduction_required: true
+  raw_blob_live_equality_required: true
+  unrelated_worktree_changes_allowed: true
+historical_stage1_preparation:
+  commit: 4042f0d9fdd0846e20ea95e8da7752812a4eea45
+  tree: 8f60a9c35be8e981c6637fbd87cfd5b5a16080fe
+  parent: d44581ac8b10adbc8f803bb0292107ae3303e015
+  archive_sha256: 6ec8d67ea7a18fd0063431df88c549ed10b86d6aa6e952bf98466b23254e417c
+  archive_bytes: 53504000
+  exact_paths:
+    - docs/baselines/pb-01-02-portable-matrix-inputs.v1.json
+    - tools/aggregate_pb_01_02_portable_matrix.py
+    - tools/run_pb_01_02_portable_matrix.py
+    - tools/test_verify_pb_01_02_portable_matrix.py
+    - tools/verify_pb_01_02_portable_matrix.py
+  role: historical_bounded_matrix_primitives_only
+upstream:
+  repository_label: pybert-agent
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  parent: 1d6565e5c0398faeef9b757fc6ff21c91d36ccfd
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  archive_bytes: 132587520
+  archive_limit_bytes: 536870912
+  archive_mode: git_archive_format_tar
+  execution: uv_frozen_offline_from_clean_archive
+corpus:
+  path: docs/baselines/pb-01-02-portable-matrix-inputs.v1.json
+  bytes: 5339
+  sha256: 77d6db2f34de256bea69888122e86281ba578a71da1a1719b790f9b9ed332ddb
+  source: candidate_archive
+  schema: sipi.pb-01-02-portable-matrix-inputs.v1
+fixtures:
+  PB-01:
+    path: crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml
+    bytes: 1171
+    sha256: d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48
+    source: candidate_archive
+  PB-02:
+    path: crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+    bytes: 1245
+    sha256: 5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13
+    source: candidate_archive
+cases:
+  - id: pb01_duo_binary_analytic_line
+    lane: PB-01
+    patch_sha256: 2defed125a18ccb89433720ded6d3b9f28646ff1680803b5bbf0d92dba44933a
+    derived_bytes: 1178
+    derived_sha256: d69f1f2391099de3b1c15846f2ee1400164c48c1ee6abdacd058294c9e3f7a12
+    diagnostic_status: passed_selected_arrays
+    diagnostic_blockers: []
+    comparator: selected_numeric_arrays
+  - id: pb02_nrz_impulse
+    lane: PB-02
+    patch_sha256: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+    derived_bytes: 1297
+    derived_sha256: 78b86c19952a3d2324d7898c4efa2f4a47ea930cf638496b34a1279fa5e2a007
+    diagnostic_status: blocked
+    diagnostic_blockers:
+      - complete_metadata_drift
+    comparator: strict_complete_metadata_and_logical_npz
+  - id: pb02_pam4_impulse
+    lane: PB-02
+    patch_sha256: dc86fedf497ea07aa717cdb5ba71f49d9b5a7cdfc2553a88401c0054d5aa3fce
+    derived_bytes: 1298
+    derived_sha256: 60dc637747a0c15c69b34fc4a77871b4e1e9fabfb6eaedbbc5de8e98745f54a0
+    diagnostic_status: blocked
+    diagnostic_blockers:
+      - complete_metadata_drift
+    comparator: strict_complete_metadata_and_logical_npz
+  - id: pb02_duo_binary_impulse
+    lane: PB-02
+    patch_sha256: 4262a9f6b934ae6ca3e50df9303a1674cd146912e4a8f84282c3c516078f22ce
+    derived_bytes: 1304
+    derived_sha256: 2213680c7a060062432624b24554e68932496b12eb8e5f5ba038277be9a5f163
+    diagnostic_status: blocked
+    diagnostic_blockers:
+      - complete_metadata_drift
+    comparator: strict_complete_metadata_and_logical_npz
+  - id: pb02_impulse_tx_rx_equalization
+    lane: PB-02
+    patch_sha256: 98c9b6a1a540d5bb9dd43f5b9c74ecf75c90a04ab0695bfacae434805e6a3df6
+    derived_bytes: 1745
+    derived_sha256: be3720dd6df8cbec1495e75145e25f824f5f233ed48bb38a505d3383eb42da3c
+    diagnostic_status: blocked
+    diagnostic_blockers:
+      - candidate_artifact_invalid
+      - oracle_artifact_invalid
+      - strict_native_npz_member_set_drift
+    comparator: strict_complete_metadata_and_logical_npz
+  - id: pb02_impulse_analytic_ctle
+    lane: PB-02
+    patch_sha256: f5eb514c8e4a24f8891f7a822f6fd7f074e4bf1082af61c698e2e3e798ea4e43
+    derived_bytes: 1559
+    derived_sha256: dc02aa08cddd65727f4540b56a9fc1e65cf0e09fa07dcc7d135ffdb963da306b
+    diagnostic_status: blocked
+    diagnostic_blockers:
+      - complete_array_payload_drift
+      - complete_metadata_drift
+      - local_ctle_impulse_extension_not_in_pinned_native_schema
+    comparator: strict_complete_metadata_and_logical_npz
+  - id: pb02_impulse_jitter_bathtub_analysis
+    lane: PB-02
+    patch_sha256: 93b8974948e917d29a25b36ea9789db303c7c4804588ca34ae537981aa10c878
+    derived_bytes: 1290
+    derived_sha256: b1761bb84895c1f3b8805747cae30e3e9b9793fdfc99589c37678a79f0aaa4d7
+    diagnostic_status: blocked
+    diagnostic_blockers:
+      - candidate_or_oracle_process_failed
+      - candidate_output_missing
+      - jitter_span_invalid_for_16_bit_prbs7_fixture
+      - oracle_output_missing
+    comparator: strict_complete_metadata_and_logical_npz
+comparator_policy:
+  PB-01:
+    kind: selected_numeric_arrays
+    names:
+      - chnl_h
+      - tx_out_h
+      - ctle_out_h
+      - dfe_out_h
+      - chnl_s
+      - tx_out_s
+      - ctle_out_s
+      - dfe_out_s
+      - chnl_p
+      - tx_out_p
+      - ctle_out_p
+      - dfe_out_p
+    atol: 0.0000011
+    rtol: 0.0
+    codec_byte_parity: false
+  PB-02:
+    kind: strict_complete_metadata_and_logical_npz
+    metadata_projection: complete_normalized_metadata
+    metadata_drop_allowed: false
+    npz_member_policy: exact_fixed_member_set
+    npz_members:
+      - channel_impulse_v_per_v.npy
+      - channel_output_v.npy
+      - ctle_output_v.npy
+      - rx_ffe_impulse_v_per_v.npy
+      - rx_filter_impulse_v_per_v.npy
+      - rx_input_v.npy
+      - rx_output_v.npy
+      - symbols_v.npy
+      - time_s.npy
+      - tx_channel_impulse_v_per_v.npy
+      - tx_waveform_v.npy
+    logical_dtype: float64
+    wrapper_metadata_silently_ignored: false
+claims:
+  candidate_production_implemented: true
+  pb01_selected_array_parity: false
+  pb02_complete_typed_output_parity: false
+  global_branch_parity: false
+  whole_payload_parity: false
+  release_acceptance: false
+  product_capability_admission: false
+  license_decision: false
+custody_policy:
+  candidate_materialization: clean_git_archive_only
+  upstream_materialization: clean_git_archive_only
+  oracle_materialization: separate_copy_of_upstream_archive
+  candidate_worktree_overlay: false
+  upstream_worktree_overlay: false
+  derived_inputs_from_archived_base: true
+  output_root_outside_source_repositories: true
+  fresh_work_root_per_run: true
+  work_root_preexisting_content_allowed: false
+  path_redacted_records: true
+  unsafe_relative_fixture_rejected: true
+  symlink_and_reparse_escape_rejected: true
+  source_inventory_pre_post_equal_required: true
+  archive_limit_bytes: 536870912
+  file_limit_bytes: 16777216
+  report_limit_bytes: 536870912
+harness:
+  source_mode: working_tree_content_hash_pending_prep_commit
+  immutable_harness_commit: null
+  runner:
+    path: tools/run_pb_01_02_candidate_matrix.py
+    sha256: 3eb706ea5e2de057fa3824d09675d6e63ca5cffdcdc63dd724ee5b0f079ada1d
+  verifier:
+    path: tools/verify_pb_01_02_candidate_matrix_prep.py
+    sha256: 1384ee198387fb7605ee56331bd466203e0bf83ace72cc23ae488140284918f3
+  tests:
+    path: tools/test_verify_pb_01_02_candidate_matrix_prep.py
+    sha256: bef770a670abb134a85ac65f133cd0cdcc5c9e5240f06235bd3d727b41a30061
+  legacy_matrix_primitives:
+    path: tools/run_pb_01_02_portable_matrix.py
+    sha256: afde325bca6fd2b6e97b4b0ad34715aae2d8aa1aab1cc28b5cab3723c1fedcb2
+  native_custody_primitives:
+    path: tools/run_pb_02_direct_replay.py
+    sha256: c7839a7d67425fda0df675c35925a87f7e3527996fa3b659e2ee7c036408d863
+toolchain:
+  mode: explicit_resolved_path_with_path_free_identity
+  timeout_seconds: 1200
+  rust_wrappers_cleared: true
+  cargo_offline: true
+  uv_frozen_offline: true
+  roles:
+    cargo:
+      executable: cargo.exe
+      file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7
+      version_sha256: e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb
+      version_exit: 0
+      path_redacted: true
+      hardlink_policy: allowed_and_recorded
+    rustc:
+      executable: rustc.exe
+      file_sha256: 86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7
+      version_sha256: d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db
+      version_exit: 0
+      path_redacted: true
+      hardlink_policy: allowed_and_recorded
+    uv:
+      executable: uv.exe
+      file_sha256: 5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68
+      version_sha256: ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d
+      version_exit: 0
+      path_redacted: true
+      hardlink_policy: require_regular_nonlink
+    link:
+      executable: link.exe
+      file_sha256: ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d
+      version_sha256: f5967e8fed8a0058b2813fa1c42f18645e258cb02d8817bef7760e09d0441412
+      version_exit: 0
+      path_redacted: true
+      hardlink_policy: require_regular_nonlink
+future_replay:
+  run_count: 2
+  run_ids:
+    - pb-01-02-candidate-run-01
+    - pb-01-02-candidate-run-02
+  run_id_pattern: ^pb-01-02-candidate-run-(01|02)$
+  nonce_hex_bytes: 32
+  nonces_distinct_required: true
+  report_sha256_distinct_required: true
+  challenge:
+    id: pb-01-02-candidate-matrix-v1
+    run_count: 2
+    fresh_archive_replay: true
+    nonce_required: true
+    report_sha256_required: true
+  required_report_fields:
+    - schema
+    - version
+    - status
+    - run_id
+    - challenge
+    - fresh_run_nonce
+    - candidate
+    - upstream
+    - corpus
+    - fixtures
+    - toolchain
+    - custody
+    - cases
+    - claims
+  formal_record_not_created_in_prep: true
+  formal_paths:
+    - docs/baselines/pb-01-02-candidate-matrix-run-01.v1.json
+    - docs/baselines/pb-01-02-candidate-matrix-run-02.v1.json
+    - docs/baselines/pb-01-02-candidate-matrix-aggregate.v1.json
+    - docs/baselines/pb-01-02-candidate-matrix-formal.v1.yaml
+    - docs/baselines/audits/2026-08-29-pb-01-02-candidate-matrix-formal.md
+audit:
+  path: docs/baselines/audits/2026-08-29-pb-01-02-candidate-matrix-prep.md
+  sha256: 44d0965da1bd2c75b7a5aa1be0becbfc8c969e1552ea885bf5de82ad68b33b04
+  bytes: 3037
+  status: preparation_only
+non_claims:
+  - no_formal_replay_record
+  - no_aggregate_or_reciprocal_audit_binding
+  - no_pb02_complete_typed_output_parity
+  - no_global_branch_parity
+  - no_release_acceptance
+  - no_product_capability_admission
+  - no_license_decision
+  - no_class_pickle_byte_parity
+  - no_external_ami_ibis_admission
+  - no_s_parameter_fit_or_new_channel_path
