@@ -14,7 +14,6 @@ import json
 import math
 import os
 import stat
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +48,26 @@ GATE_PATHS = (
     "tools/verify_pb_01_02_candidate_matrix_stage2.py",
     "tools/test_verify_pb_01_02_candidate_matrix_stage2.py",
 )
+ORIGINAL_GATE_COMMIT = "840806ef117af8cc19533e8d23a22fb6fc85a290"
+ORIGINAL_GATE_TREE = "ee86a0cb8f39c661a2f5108389efc2f48ab0bf3f"
+ORIGINAL_GATE_PARENT = "176956771a0d24255b427c0243d3dabc4e3fdeca"
+ORIGINAL_GATE_FILE_RECEIPTS = {
+    "tools/aggregate_pb_01_02_candidate_matrix_stage2.py": {
+        "blob": "4095fa444216a26455af47e95022f83cbfed535e",
+        "sha256": "d6ecc5535ebcd8320718ccc8d4fb6f89d7025f15c85815b37c84cc38b8d0b28f",
+        "bytes": 47_014,
+    },
+    "tools/verify_pb_01_02_candidate_matrix_stage2.py": {
+        "blob": "0c8fe9701b4099641aea1ce8a2a83c283a1bf82e",
+        "sha256": "a09ca6c588577313309bd02389d9654161ee42e41add2f55bf586f73becad795",
+        "bytes": 24_282,
+    },
+    "tools/test_verify_pb_01_02_candidate_matrix_stage2.py": {
+        "blob": "d5ef5e754725297b573d38cda1de062d7040de5d",
+        "sha256": "54045c845d06c35f9e40bceb35cf3b4713ae6a093d14fa713527ba28c9de3351",
+        "bytes": 18_099,
+    },
+}
 FORMAL_PATHS = aggregate.FORMAL_PATHS
 FILE_LIMIT = 16 * 1024 * 1024
 GIT_TIMEOUT = 120
@@ -293,19 +312,19 @@ def _verify_prep(repo: Path, *, require_live: bool) -> dict[str, Any]:
     }
 
 
-def _verify_gate(repo: Path, gate_commit: str, *, upstream_repo: Path, require_live: bool = True) -> dict[str, Any]:
+def _verify_original_gate(repo: Path, gate_commit: str, *, upstream_repo: Path, require_live: bool = True) -> dict[str, Any]:
     source = _verify_fixed_sources(repo, upstream_repo)
     prep = _verify_prep(repo, require_live=require_live)
     resolved, tree, parents = _commit_facts_checked(repo, gate_commit, "Stage-2 gate")
-    if resolved != gate_commit or parents != [PREP_COMMIT]:
-        raise VerifyError("Stage-2 gate must be the direct child of the PB preparation commit")
+    if resolved != ORIGINAL_GATE_COMMIT or tree != ORIGINAL_GATE_TREE or parents != [ORIGINAL_GATE_PARENT]:
+        raise VerifyError("original Stage-2 gate commit/tree/parent drift")
     changed = _changed_name_status(repo, PREP_COMMIT, resolved)
     if sorted(changed) != sorted(("A", path) for path in GATE_PATHS):
-        raise VerifyError("Stage-2 gate changed paths are not the exact three-file set")
+        raise VerifyError("original Stage-2 gate changed paths are not the exact three-file set")
     files: list[dict[str, Any]] = []
     for relative in GATE_PATHS:
         _assert_absent(repo, PREP_COMMIT, relative, "PB preparation")
-        receipt = _assert_regular_blob(repo, resolved, relative)
+        receipt = _assert_regular_blob(repo, resolved, relative, ORIGINAL_GATE_FILE_RECEIPTS[relative])
         if require_live:
             live = _live_file(repo, relative)
             if live != _path_entry(repo, resolved, relative)[1]:
@@ -317,7 +336,7 @@ def _verify_gate(repo: Path, gate_commit: str, *, upstream_repo: Path, require_l
         "valid": True,
         "commit": resolved,
         "tree": tree,
-        "parent": PREP_COMMIT,
+        "parent": ORIGINAL_GATE_PARENT,
         "changed_paths": list(GATE_PATHS),
         "first_introduction": True,
         "files": files,
@@ -328,12 +347,41 @@ def _verify_gate(repo: Path, gate_commit: str, *, upstream_repo: Path, require_l
 
 
 def verify_gate(repo: Path = ROOT, gate_commit: str = "", *, upstream_repo: Path | None = None, require_live: bool = True) -> dict[str, Any]:
-    """Verify only the additive three-file gate; formal records must be absent."""
+    """Verify the immutable original three-file gate; formal records are absent."""
 
     if not gate_commit:
         raise VerifyError("gate commit is required")
     source_repo = (upstream_repo or Path(r"C:\Users\z3312\code\Py-bert-agent")).resolve()
-    return _verify_gate(repo.resolve(), gate_commit, upstream_repo=source_repo, require_live=require_live)
+    return _verify_original_gate(repo.resolve(), gate_commit, upstream_repo=source_repo, require_live=require_live)
+
+
+def verify_successor(repo: Path, successor_commit: str, *, upstream_repo: Path | None = None, require_live: bool = True) -> dict[str, Any]:
+    """Verify the exact-three-file modified successor of the immutable gate."""
+
+    if not successor_commit:
+        raise VerifyError("successor commit is required")
+    source_repo = (upstream_repo or Path(r"C:\Users\z3312\code\Py-bert-agent")).resolve()
+    original = _verify_original_gate(repo.resolve(), ORIGINAL_GATE_COMMIT, upstream_repo=source_repo, require_live=False)
+    resolved, tree, parents = _commit_facts_checked(repo.resolve(), successor_commit, "Stage-2 successor")
+    if resolved != successor_commit or parents != [ORIGINAL_GATE_COMMIT]:
+        raise VerifyError("Stage-2 successor must be the direct child of original gate 840")
+    changed = _changed_name_status(repo.resolve(), ORIGINAL_GATE_COMMIT, resolved)
+    if sorted(changed) != sorted(("M", path) for path in GATE_PATHS):
+        raise VerifyError("Stage-2 successor changed paths are not the exact three-file modification set")
+    files: list[dict[str, Any]] = []
+    for relative in GATE_PATHS:
+        previous = _assert_regular_blob(repo, ORIGINAL_GATE_COMMIT, relative, ORIGINAL_GATE_FILE_RECEIPTS[relative])
+        receipt = _assert_regular_blob(repo, resolved, relative)
+        if receipt["blob"] == previous["blob"] or receipt["sha256"] == previous["sha256"]:
+            raise VerifyError(f"Stage-2 successor did not modify {relative}")
+        if require_live:
+            live = _live_file(repo, relative)
+            if live != _path_entry(repo, resolved, relative)[1]:
+                raise VerifyError(f"Stage-2 successor live/blob drift: {relative}")
+        files.append(receipt)
+    for relative in FORMAL_PATHS:
+        _assert_absent(repo, resolved, relative, "Stage-2 successor")
+    return {"valid": True, "commit": resolved, "tree": tree, "parent": ORIGINAL_GATE_COMMIT, "changed_paths": list(GATE_PATHS), "first_introduction": False, "files": files, "formal_paths_absent": True, "original_gate": original}
 
 
 def verify_record_commit(repo: Path, gate_commit: str, record_commit: str, *, upstream_repo: Path | None = None, require_live: bool = True, require_clean: bool = True) -> dict[str, Any]:
@@ -341,8 +389,7 @@ def verify_record_commit(repo: Path, gate_commit: str, record_commit: str, *, up
 
     if upstream_repo is None:
         upstream_repo = Path(r"C:\Users\z3312\code\Py-bert-agent")
-    gate = _verify_gate(repo.resolve(), gate_commit, upstream_repo=upstream_repo.resolve(), require_live=False)
-    del gate
+    gate = verify_successor(repo.resolve(), gate_commit, upstream_repo=upstream_repo.resolve(), require_live=False)
     resolved, tree, parents = _commit_facts_checked(repo.resolve(), record_commit, "PB formal record")
     if resolved != record_commit or parents != [gate_commit]:
         raise VerifyError("formal record must be the direct child of the Stage-2 gate")
@@ -362,7 +409,7 @@ def verify_record_commit(repo: Path, gate_commit: str, record_commit: str, *, up
             if live != _path_entry(repo, resolved, relative)[1]:
                 raise VerifyError(f"formal record live/blob drift: {relative}")
         files[relative] = receipt
-    return {"valid": True, "commit": resolved, "tree": tree, "parent": gate_commit, "files": files, "clean": require_clean}
+    return {"valid": True, "commit": resolved, "tree": tree, "parent": gate_commit, "files": files, "clean": require_clean, "gate": gate}
 
 
 def _manifest_audit_payload(manifest: dict[str, Any]) -> bytes:
@@ -406,7 +453,7 @@ def _validate_manifest(value: Any, gate: dict[str, Any], expected_document: dict
     if manifest["schema"] != FORMAL_SCHEMA or manifest["version"] != 1 or manifest["status"] != expected_document["status"]:
         raise VerifyError("formal manifest identity/status drift")
     gate_ref = _exact(manifest["gate"], {"commit", "tree", "parent", "files"}, "formal manifest gate")
-    if gate_ref["commit"] != gate["commit"] or gate_ref["tree"] != gate["tree"] or gate_ref["parent"] != PREP_COMMIT:
+    if gate_ref["commit"] != gate["commit"] or gate_ref["tree"] != gate["tree"] or gate_ref["parent"] != ORIGINAL_GATE_COMMIT:
         raise VerifyError("formal manifest gate identity drift")
     if type(gate_ref["files"]) is not list or len(gate_ref["files"]) != len(GATE_PATHS):
         raise VerifyError("formal manifest gate file cardinality drift")
@@ -455,7 +502,15 @@ def verify_formal_record(repo: Path, upstream_repo: Path, gate_commit: str, reco
             raise VerifyError("formal report validation drift")
         reports.append(report)
         report_facts.append({"path": relative, "sha256": digest, "bytes": len(payload)})
-    expected_document = aggregate.aggregate_documents(reports[0], report_facts[0]["sha256"], reports[1], report_facts[1]["sha256"], repo / Path(REPORT_PATHS[0]), repo / Path(REPORT_PATHS[1]))
+    expected_document = aggregate.aggregate_documents(
+        reports[0],
+        report_facts[0]["sha256"],
+        reports[1],
+        report_facts[1]["sha256"],
+        repo / Path(REPORT_PATHS[0]),
+        repo / Path(REPORT_PATHS[1]),
+        repository_root=repo,
+    )
     aggregate_report, aggregate_digest, aggregate_payload = _load_json(repo / Path(AGGREGATE_PATH))
     expected_payload = json.dumps(expected_document, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8") + b"\n"
     if aggregate_payload != expected_payload or aggregate_report != expected_document:
@@ -478,11 +533,15 @@ def main() -> int:
     parser.add_argument("--repository", "--repo", type=Path, default=ROOT)
     parser.add_argument("--upstream-repository", "--upstream-repo", type=Path, default=Path(r"C:\Users\z3312\code\Py-bert-agent"))
     parser.add_argument("--gate-commit", required=True)
+    parser.add_argument("--successor-commit")
     parser.add_argument("--record-commit")
     args = parser.parse_args()
     try:
         if args.record_commit:
-            result = verify_formal_record(args.repository, args.upstream_repository, args.gate_commit, args.record_commit)
+            successor = args.successor_commit or args.gate_commit
+            result = verify_formal_record(args.repository, args.upstream_repository, successor, args.record_commit)
+        elif args.successor_commit:
+            result = verify_successor(args.repository, args.successor_commit, upstream_repo=args.upstream_repository)
         else:
             result = verify_gate(args.repository, args.gate_commit, upstream_repo=args.upstream_repository)
     except (aggregate.AggregateError, VerifyError, OSError, ValueError, TypeError, yaml.YAMLError, UnicodeError) as error:

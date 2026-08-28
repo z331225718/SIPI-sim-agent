@@ -218,6 +218,11 @@ TOOLCHAIN = {
     "uv": ("uv.exe", "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68", "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"),
     "link": ("link.exe", "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d", "f5967e8fed8a0058b2813fa1c42f18645e258cb02d8817bef7760e09d0441412"),
 }
+HARNESS_SHA256 = {
+    "runner": "3eb706ea5e2de057fa3824d09675d6e63ca5cffdcdc63dd724ee5b0f079ada1d",
+    "legacy_matrix_primitives": "afde325bca6fd2b6e97b4b0ad34715aae2d8aa1aab1cc28b5cab3723c1fedcb2",
+    "native_custody_primitives": "c7839a7d67425fda0df675c35925a87f7e3527996fa3b659e2ee7c036408d863",
+}
 NON_CLAIMS = [
     "This is an additive candidate replay from the immutable production commit, not the historical preparation gate.",
     "PB-01 compares selected numeric arrays across the dictionary and PyBertData class codec boundary; byte/class compatibility is not claimed.",
@@ -543,6 +548,22 @@ def _validate_case(value: Any, expected_id: str) -> dict[str, Any]:
         raise AggregateError(f"case {expected_id} artifact cardinality drift")
     for index, artifact in enumerate(item["artifacts"]):
         _artifact(artifact, f"case {expected_id}.artifacts[{index}]", expected_id)
+    if item["lane"] == "PB-02" and expected_id != "pb02_impulse_tx_rx_equalization":
+        for role in ("candidate", "oracle"):
+            side = item["comparison"][role]
+            role_artifacts = [artifact for artifact in item["artifacts"] if artifact["role"] == role]
+            arrays_artifacts = [artifact for artifact in role_artifacts if artifact["kind"] == "arrays"]
+            meta_artifacts = [artifact for artifact in role_artifacts if artifact["kind"] == "meta"]
+            if side is None:
+                if any(artifact["present"] for artifact in role_artifacts):
+                    raise AggregateError(f"case {expected_id}.{role} artifact present without comparison side")
+                continue
+            if len(arrays_artifacts) != 1 or len(meta_artifacts) != 1 or not arrays_artifacts[0]["present"] or not meta_artifacts[0]["present"]:
+                raise AggregateError(f"case {expected_id}.{role} artifact cardinality/presence drift")
+            arrays = side["arrays"]
+            artifact = arrays_artifacts[0]
+            if artifact["sha256"] != arrays["sha256"] or artifact["bytes"] != arrays["bytes"]:
+                raise AggregateError(f"case {expected_id}.{role} arrays artifact cross-field drift")
     return item
 
 
@@ -567,6 +588,8 @@ def _validate_build(value: Any) -> dict[str, Any]:
     item = _exact(value, {"binary_pre", "cargo_binary_source", "env", "process"}, "build")
     _fact(item["binary_pre"], "build.binary_pre", exclusive=True, nlink_one=True)
     _fact(item["cargo_binary_source"], "build.cargo_binary_source")
+    if item["binary_pre"]["sha256"] != item["cargo_binary_source"]["sha256"] or item["binary_pre"]["bytes"] != item["cargo_binary_source"]["bytes"]:
+        raise AggregateError("build binary source cross-field drift")
     env = _exact(item["env"], {"cargo_cache_lock_bound", "cargo_config_and_flags_cleared", "cargo_home_explicit", "cargo_offline", "cargo_target_external", "path_closed", "rustc_explicit", "rustc_wrappers_cleared"}, "build.env")
     if any(value is not True for value in env.values()):
         raise AggregateError("build environment custody drift")
@@ -650,6 +673,8 @@ def _validate_report(value: Any, expected_run_id: str) -> dict[str, Any]:
         ref = _exact(harness[key], {"path", "sha256"}, f"harness.{key}")
         _safe_relative(ref["path"], f"harness.{key}.path")
         _sha(ref["sha256"], f"harness.{key}.sha256")
+        if ref["sha256"] != HARNESS_SHA256[key]:
+            raise AggregateError(f"harness.{key} content receipt drift")
     if harness["runner"]["path"] != "tools/run_pb_01_02_candidate_matrix.py" or harness["legacy_matrix_primitives"]["path"] != "tools/run_pb_01_02_portable_matrix.py" or harness["native_custody_primitives"]["path"] != "tools/run_pb_02_direct_replay.py":
         raise AggregateError("harness path drift")
     if report["non_claims"] != NON_CLAIMS:
@@ -683,10 +708,11 @@ def load_report(path: Path, expected_run_id: str) -> tuple[dict[str, Any], str]:
     return _validate_report(report, expected_run_id), digest
 
 
-def _stable_report_id(path: Path) -> str:
+def _stable_report_id(path: Path, repository_root: Path | None = None) -> str:
     resolved = path.resolve()
+    base = (repository_root or ROOT).resolve()
     try:
-        return resolved.relative_to(ROOT.resolve()).as_posix()
+        return resolved.relative_to(base).as_posix()
     except ValueError:
         return path.name
 
@@ -733,7 +759,16 @@ def _prep_binding() -> dict[str, Any]:
     }
 
 
-def aggregate_documents(first: dict[str, Any], first_hash: str, second: dict[str, Any], second_hash: str, first_path: Path, second_path: Path) -> dict[str, Any]:
+def aggregate_documents(
+    first: dict[str, Any],
+    first_hash: str,
+    second: dict[str, Any],
+    second_hash: str,
+    first_path: Path,
+    second_path: Path,
+    *,
+    repository_root: Path | None = None,
+) -> dict[str, Any]:
     if first_path.resolve() == second_path.resolve() or first_hash == second_hash:
         raise AggregateError("two reports must have distinct paths and full digests")
     if first["fresh_run_nonce"] == second["fresh_run_nonce"]:
@@ -792,8 +827,8 @@ def aggregate_documents(first: dict[str, Any], first_hash: str, second: dict[str
         "corpus": first["corpus"],
         "fixtures": first["fixtures"],
         "reports": [
-            {"path": _stable_report_id(first_path), "sha256": first_hash, "run_id": first["run_id"], "fresh_run_nonce": first["fresh_run_nonce"], "challenge": first["challenge"]},
-            {"path": _stable_report_id(second_path), "sha256": second_hash, "run_id": second["run_id"], "fresh_run_nonce": second["fresh_run_nonce"], "challenge": second["challenge"]},
+            {"path": _stable_report_id(first_path, repository_root), "sha256": first_hash, "run_id": first["run_id"], "fresh_run_nonce": first["fresh_run_nonce"], "challenge": first["challenge"]},
+            {"path": _stable_report_id(second_path, repository_root), "sha256": second_hash, "run_id": second["run_id"], "fresh_run_nonce": second["fresh_run_nonce"], "challenge": second["challenge"]},
         ],
         "toolchain": first["toolchain"],
         "cases": cases,

@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -184,9 +186,9 @@ def synthetic_report(run_index: int) -> dict:
     }
     harness = {
         "immutable_harness_commit": None,
-        "legacy_matrix_primitives": {"path": "tools/run_pb_01_02_portable_matrix.py", "sha256": ZERO},
-        "native_custody_primitives": {"path": "tools/run_pb_02_direct_replay.py", "sha256": ZERO},
-        "runner": {"path": "tools/run_pb_01_02_candidate_matrix.py", "sha256": ZERO},
+        "legacy_matrix_primitives": {"path": "tools/run_pb_01_02_portable_matrix.py", "sha256": aggregate.HARNESS_SHA256["legacy_matrix_primitives"]},
+        "native_custody_primitives": {"path": "tools/run_pb_02_direct_replay.py", "sha256": aggregate.HARNESS_SHA256["native_custody_primitives"]},
+        "runner": {"path": "tools/run_pb_01_02_candidate_matrix.py", "sha256": aggregate.HARNESS_SHA256["runner"]},
         "source_mode": "working_tree_content_hash_at_replay",
     }
     modules = {name: {"file": _fact(f"{name}.py"), "owner": "venv", "relative_path": f"site-packages/{name}.py", "version": "0"} for name in ("numpy", "pybert", "scipy")}
@@ -231,6 +233,38 @@ class Stage2SyntheticTests(unittest.TestCase):
 
     def _load(self, path: Path, run_id: str) -> tuple[dict, str]:
         return aggregate.load_report(path, run_id)
+
+    def _write_mutated_pair(self, label: str, mutate) -> tuple[Path, Path]:
+        first = copy.deepcopy(self.first)
+        second = copy.deepcopy(self.second)
+        mutate(first)
+        mutate(second)
+        first_path = self.root / f"{label}-01.json"
+        second_path = self.root / f"{label}-02.json"
+        first_path.write_text(json.dumps(first, sort_keys=True) + "\n", encoding="utf-8")
+        second_path.write_text(json.dumps(second, sort_keys=True) + "\n", encoding="utf-8")
+        return first_path, second_path
+
+    def _assert_synchronized_report_mutation_rejected(self, label: str, mutate) -> None:
+        first_path, second_path = self._write_mutated_pair(label, mutate)
+        with self.assertRaises(aggregate.AggregateError):
+            self._load(first_path, aggregate.RUN_IDS[0])
+        with self.assertRaises(aggregate.AggregateError):
+            self._load(second_path, aggregate.RUN_IDS[1])
+
+    def _assert_synchronized_recompute_rejected(self, label: str, mutate) -> None:
+        first_path, second_path = self._write_mutated_pair(label, mutate)
+        first, first_hash = self._load(first_path, aggregate.RUN_IDS[0])
+        second, second_hash = self._load(second_path, aggregate.RUN_IDS[1])
+        with self.assertRaises(aggregate.AggregateError):
+            aggregate.aggregate_documents(first, first_hash, second, second_hash, first_path, second_path)
+
+    @staticmethod
+    def _git(repo: Path, *args: str, env: dict[str, str] | None = None) -> str:
+        result = subprocess.run(["git", "-c", "core.autocrlf=false", *args], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, check=False)
+        if result.returncode != 0:
+            raise AssertionError(f"git {' '.join(args)} failed: {result.stderr}")
+        return result.stdout.strip()
 
     def test_synthetic_reports_validate_and_aggregate(self) -> None:
         first, first_hash = self._load(self.first_path, aggregate.RUN_IDS[0])
@@ -319,6 +353,78 @@ class Stage2SyntheticTests(unittest.TestCase):
         with self.assertRaises(aggregate.AggregateError):
             self._load(path, aggregate.RUN_IDS[0])
 
+    def test_synchronized_blocker_mutation_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-blocker",
+            lambda report: report["cases"][1]["blockers"].append("unapproved_blocker"),
+        )
+
+    def test_synchronized_claim_mutation_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-claim",
+            lambda report: report["claims"].__setitem__("release_acceptance", True),
+        )
+
+    def test_synchronized_candidate_upstream_mutations_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-candidate",
+            lambda report: report["candidate"].__setitem__("tree", "1" * 40),
+        )
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-upstream",
+            lambda report: report["upstream"].__setitem__("tree", "2" * 40),
+        )
+
+    def test_synchronized_toolchain_and_build_mutations_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-toolchain",
+            lambda report: report["toolchain"]["cargo"].__setitem__("file_sha256", "3" * 64),
+        )
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-build",
+            lambda report: report["build"]["binary_pre"].__setitem__("bytes", 1),
+        )
+
+    def test_synchronized_fixture_and_input_mutations_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-fixture",
+            lambda report: report["fixtures"]["PB-02"].__setitem__("sha256", "4" * 64),
+        )
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-input",
+            lambda report: report["cases"][1]["input"].__setitem__("derived_bytes", aggregate.CASE_INPUTS[aggregate.CASE_IDS[1]][0] + 1),
+        )
+
+    def test_synchronized_artifact_npz_and_metadata_mutations_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-artifact",
+            lambda report: report["cases"][1]["artifacts"][1].__setitem__("sha256", "5" * 64),
+        )
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-npz",
+            lambda report: report["cases"][1]["comparison"]["candidate"]["arrays"]["logical_members"][aggregate.PB02_MEMBERS[0]].__setitem__("count", 2),
+        )
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-meta",
+            lambda report: report["cases"][1]["comparison"]["candidate"]["meta"]["fields"]["$object"].__setitem__("type", "string"),
+        )
+
+    def test_synchronized_nonce_rejected_during_recompute(self) -> None:
+        self._assert_synchronized_recompute_rejected(
+            "sync-nonce",
+            lambda report: report.__setitem__("fresh_run_nonce", "a" * 64),
+        )
+
+    def test_synchronized_run_and_challenge_mutations_rejected(self) -> None:
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-run",
+            lambda report: report.__setitem__("run_id", "shared-run-id"),
+        )
+        self._assert_synchronized_report_mutation_rejected(
+            "sync-challenge",
+            lambda report: report["challenge"].__setitem__("run_count", 3),
+        )
+
     def test_manifest_synthetic_baseline_and_audit(self) -> None:
         first, first_hash = self._load(self.first_path, aggregate.RUN_IDS[0])
         second, second_hash = self._load(self.second_path, aggregate.RUN_IDS[1])
@@ -327,11 +433,15 @@ class Stage2SyntheticTests(unittest.TestCase):
         aggregate_payload = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8") + b"\n"
         aggregate_fact = {"path": aggregate.FORMAL_PATHS[2], "sha256": hashlib.sha256(aggregate_payload).hexdigest(), "bytes": len(aggregate_payload)}
         gate_files = [{"path": path, "blob": "1" * 40, "sha256": "2" * 64, "bytes": 1} for path in verifier.GATE_PATHS]
-        manifest = {"schema": verifier.FORMAL_SCHEMA, "version": 1, "status": document["status"], "gate": {"commit": "3" * 40, "tree": "4" * 40, "parent": verifier.PREP_COMMIT, "files": gate_files}, "prep": aggregate._prep_binding(), "candidate": copy.deepcopy(aggregate.CANDIDATE), "upstream": copy.deepcopy(aggregate.UPSTREAM), "corpus": copy.deepcopy(aggregate.CORPUS), "fixtures": copy.deepcopy(aggregate.FIXTURES), "reports": [{**report_facts[0], "run_id": first["run_id"], "fresh_run_nonce": first["fresh_run_nonce"]}, {**report_facts[1], "run_id": second["run_id"], "fresh_run_nonce": second["fresh_run_nonce"]}], "aggregate": aggregate_fact, "audit": {"path": verifier.AUDIT_PATH, "sha256": ZERO, "bytes": 1}, "cases": document["cases"], "claims": document["claims"], "blockers": document["blockers"], "non_claims": verifier.NON_CLAIMS}
+        manifest = {"schema": verifier.FORMAL_SCHEMA, "version": 1, "status": document["status"], "gate": {"commit": "3" * 40, "tree": "4" * 40, "parent": verifier.ORIGINAL_GATE_COMMIT, "files": gate_files}, "prep": aggregate._prep_binding(), "candidate": copy.deepcopy(aggregate.CANDIDATE), "upstream": copy.deepcopy(aggregate.UPSTREAM), "corpus": copy.deepcopy(aggregate.CORPUS), "fixtures": copy.deepcopy(aggregate.FIXTURES), "reports": [{**report_facts[0], "run_id": first["run_id"], "fresh_run_nonce": first["fresh_run_nonce"]}, {**report_facts[1], "run_id": second["run_id"], "fresh_run_nonce": second["fresh_run_nonce"]}], "aggregate": aggregate_fact, "audit": {"path": verifier.AUDIT_PATH, "sha256": ZERO, "bytes": 1}, "cases": document["cases"], "claims": document["claims"], "blockers": document["blockers"], "non_claims": verifier.NON_CLAIMS}
         audit_payload = verifier.expected_audit(manifest)
         manifest["audit"] = {"path": verifier.AUDIT_PATH, "sha256": hashlib.sha256(audit_payload).hexdigest(), "bytes": len(audit_payload)}
         result = verifier._validate_manifest(manifest, {"commit": "3" * 40, "tree": "4" * 40, "files": gate_files}, document, [first, second], report_facts, aggregate_fact, audit_payload)
         self.assertEqual(result["schema"], verifier.FORMAL_SCHEMA)
+        mutated_prep = copy.deepcopy(manifest)
+        mutated_prep["prep"]["commit"] = "5" * 40
+        with self.assertRaises(verifier.VerifyError):
+            verifier._validate_manifest(mutated_prep, {"commit": "3" * 40, "tree": "4" * 40, "files": gate_files}, document, [first, second], report_facts, aggregate_fact, audit_payload)
         mutated = copy.deepcopy(manifest)
         mutated["claims"]["global_branch_parity"] = True
         with self.assertRaises(verifier.VerifyError):
@@ -346,6 +456,70 @@ class Stage2SyntheticTests(unittest.TestCase):
         payload = "schema: one\nschema: two\n"
         with self.assertRaises(verifier.VerifyError):
             yaml.load(payload, Loader=verifier._StrictLoader)
+
+    def test_real_temp_successor_record_round_trip(self) -> None:
+        """Exercise the exact Git custody chain and both real CLIs in a clone."""
+
+        source = Path(__file__).resolve().parents[1]
+        clone = self.root / "git-clone"
+        subprocess.run(["git", "clone", "--no-local", "--no-checkout", "--quiet", str(source), str(clone)], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        self._git(clone, "config", "core.autocrlf", "false")
+        self._git(clone, "checkout", "--detach", verifier.ORIGINAL_GATE_COMMIT)
+        for relative in verifier.GATE_PATHS:
+            path = clone / relative
+            path.write_bytes(path.read_bytes() + b"\n# temporary Stage-2 successor mutation\n")
+        self._git(clone, "add", "--", *verifier.GATE_PATHS)
+        env = os.environ.copy()
+        env.update({"GIT_AUTHOR_NAME": "Stage2 test", "GIT_AUTHOR_EMAIL": "stage2@example.invalid", "GIT_COMMITTER_NAME": "Stage2 test", "GIT_COMMITTER_EMAIL": "stage2@example.invalid"})
+        self._git(clone, "commit", "--quiet", "-m", "test: temporary Stage2 successor", env=env)
+        successor = self._git(clone, "rev-parse", "HEAD")
+        successor_gate = verifier.verify_successor(clone, successor, upstream_repo=source / ".." / "Py-bert-agent")
+        self.assertEqual(successor_gate["parent"], verifier.ORIGINAL_GATE_COMMIT)
+
+        formal_paths = [clone / relative for relative in verifier.FORMAL_PATHS]
+        formal_paths[0].parent.mkdir(parents=True, exist_ok=True)
+        formal_paths[0].write_text(json.dumps(self.first, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        formal_paths[1].write_text(json.dumps(self.second, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        cli = clone / "tools" / "aggregate_pb_01_02_candidate_matrix_stage2.py"
+        aggregate_run = subprocess.run([sys.executable, str(cli), "--first-report", str(formal_paths[0]), "--second-report", str(formal_paths[1]), "--output", str(formal_paths[2])], cwd=clone, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+        self.assertEqual(aggregate_run.returncode, 1, aggregate_run.stderr)
+        aggregate_document = json.loads(formal_paths[2].read_text(encoding="utf-8"))
+        report_facts = []
+        for path, report in zip(formal_paths[:2], (self.first, self.second)):
+            payload = path.read_bytes()
+            report_facts.append({"path": path.relative_to(clone).as_posix(), "sha256": hashlib.sha256(payload).hexdigest(), "bytes": len(payload), "run_id": report["run_id"], "fresh_run_nonce": report["fresh_run_nonce"]})
+        aggregate_payload = formal_paths[2].read_bytes()
+        manifest = {
+            "schema": verifier.FORMAL_SCHEMA,
+            "version": 1,
+            "status": aggregate_document["status"],
+            "gate": {"commit": successor, "tree": successor_gate["tree"], "parent": verifier.ORIGINAL_GATE_COMMIT, "files": successor_gate["files"]},
+            "prep": aggregate._prep_binding(),
+            "candidate": copy.deepcopy(aggregate.CANDIDATE),
+            "upstream": copy.deepcopy(aggregate.UPSTREAM),
+            "corpus": copy.deepcopy(aggregate.CORPUS),
+            "fixtures": copy.deepcopy(aggregate.FIXTURES),
+            "reports": report_facts,
+            "aggregate": {"path": verifier.AGGREGATE_PATH, "sha256": hashlib.sha256(aggregate_payload).hexdigest(), "bytes": len(aggregate_payload)},
+            "audit": {"path": verifier.AUDIT_PATH, "sha256": ZERO, "bytes": 1},
+            "cases": aggregate_document["cases"],
+            "claims": aggregate_document["claims"],
+            "blockers": aggregate_document["blockers"],
+            "non_claims": verifier.NON_CLAIMS,
+        }
+        audit_payload = verifier.expected_audit(manifest)
+        manifest["audit"] = {"path": verifier.AUDIT_PATH, "sha256": hashlib.sha256(audit_payload).hexdigest(), "bytes": len(audit_payload)}
+        formal_paths[3].write_text(yaml.safe_dump(manifest, sort_keys=False), encoding="utf-8")
+        formal_paths[4].parent.mkdir(parents=True, exist_ok=True)
+        formal_paths[4].write_bytes(audit_payload)
+        self._git(clone, "add", "--", *verifier.FORMAL_PATHS)
+        self._git(clone, "commit", "--quiet", "-m", "test: temporary Stage-2 formal record", env=env)
+        record = self._git(clone, "rev-parse", "HEAD")
+        verified = verifier.verify_formal_record(clone, source / ".." / "Py-bert-agent", successor, record)
+        self.assertTrue(verified["valid"])
+        cli_verify = subprocess.run([sys.executable, str(source / "tools" / "verify_pb_01_02_candidate_matrix_stage2.py"), "--repository", str(clone), "--upstream-repository", str(source / ".." / "Py-bert-agent"), "--gate-commit", successor, "--record-commit", record], cwd=source, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+        self.assertEqual(cli_verify.returncode, 0, cli_verify.stderr + cli_verify.stdout)
+        self.assertTrue(json.loads(cli_verify.stdout)["valid"])
 
 
 if __name__ == "__main__":
