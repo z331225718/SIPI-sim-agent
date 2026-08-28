@@ -1114,18 +1114,26 @@ fn max_response_abs(model: &RfmModel) -> f64 {
     maximum
 }
 
-fn reconstruction_max_error(original: &RfmModel, normalized: &RfmModel) -> f64 {
-    response_frequencies(original)
-        .into_iter()
-        .map(|frequency| {
-            let left = original.evaluate_s(frequency);
-            let right = normalized.evaluate_s(frequency);
-            left.iter()
-                .zip(right)
-                .map(|(a, b)| (*a - b).norm())
-                .fold(0.0, f64::max)
-        })
-        .fold(0.0, f64::max)
+fn reconstruction_errors(original: &RfmModel, normalized: &RfmModel) -> (f64, f64) {
+    let mut maximum = 0.0_f64;
+    let mut squared_sum = 0.0_f64;
+    let mut count = 0_usize;
+    for frequency in response_frequencies(original) {
+        let left = original.evaluate_s(frequency);
+        let right = normalized.evaluate_s(frequency);
+        for (a, b) in left.iter().zip(right) {
+            let magnitude = (*a - b).norm();
+            maximum = maximum.max(magnitude);
+            squared_sum += magnitude * magnitude;
+            count += 1;
+        }
+    }
+    let rms = if count == 0 {
+        f64::NAN
+    } else {
+        (squared_sum / count as f64).sqrt()
+    };
+    (maximum, rms)
 }
 
 fn write_text(path: &Path, text: &str) -> Result<(), RfmError> {
@@ -1892,9 +1900,12 @@ fn run_rfm_internal(
     write_cadence_rfm(&staged_rfm, &model)?;
     fs::copy(&rfm, &source_rfm).map_err(|error| RfmError::Output(error.to_string()))?;
     let normalized = parse_cadence_rfm(&staged_rfm)?;
-    let response_max_error = reconstruction_max_error(&model, &normalized);
+    let (response_max_error, response_rms_error) = reconstruction_errors(&model, &normalized);
     let mut delivered_response_max = max_response_abs(&model);
-    if !response_max_error.is_finite() || response_max_error > 1e-11 {
+    if !response_max_error.is_finite()
+        || !response_rms_error.is_finite()
+        || response_max_error > 1e-11
+    {
         return Err(RfmError::Parse(format!(
             "RFM normalization changed the response (max error {response_max_error:.3e})"
         )));
@@ -1966,6 +1977,7 @@ fn run_rfm_internal(
             "sha256": staged_rfm_sha,
             "normalization": "shared-pole union with zero residues; no vector fitting",
             "verification_samples": verification_samples,
+            "reconstruction_rms": response_rms_error,
             "reconstruction_max": response_max_error,
         },
         "artifacts": {
@@ -2767,6 +2779,10 @@ mod tests {
         assert!(!prepared.contains("post=2"));
         let report: serde_json::Value =
             serde_json::from_slice(&fs::read(run_root.join("run_report.json")).unwrap()).unwrap();
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(run_root.join("rfm_run_manifest.json")).unwrap())
+                .unwrap();
+        assert_eq!(manifest["runtime_rfm"]["reconstruction_rms"], 0.0);
         assert_eq!(report["conversion"]["backend"], "ngspice");
         assert!(
             !report["conversion"]["actions"]

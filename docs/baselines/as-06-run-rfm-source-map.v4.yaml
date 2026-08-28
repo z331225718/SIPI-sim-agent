@@ -1,0 +1,34 @@
+schema: sipi.as-06-run-rfm-source-map.v4
+status: additive_ngspice_result_contract_successor
+supersedes: docs/baselines/as-06-run-rfm-source-map.v3.yaml
+upstream:
+  repository: agent-spice
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  license: MIT
+  license_path: LICENSE
+  license_git_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+  license_bytes: 1067
+  license_sha256: d0807e4df7340fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+paths:
+  - upstream: src/agent_spice/sparam/rfm_ngspice.py
+    upstream_git_blob_sha1: 6ac750e93ea9245d652be4c9ef1ca3c314e01dca
+    upstream_bytes: 14946
+    upstream_sha256: 7b26d8c02f575f4c52dccbdfddca3aa3fd2418774fac71f27d8cd66c84e147fc
+    role: pinned run-rfm normalization RMS and maximum result contract
+    rust: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+    source_port: true
+implementation:
+  crate: crates/sipi-agent-spice-direct
+  module: crates/sipi-agent-spice-direct/src/as06_run_rfm.rs
+  scope: existing_ngspice_result_contract_only
+  behavior:
+    - reconstruction_rms_over_verification_frequency_matrix
+    - reconstruction_max_existing_gate_preserved
+    - nonfinite_reconstruction_error_fail_closed
+  non_claims:
+    - external_solver_correctness_not_verified
+    - hostile_writer_resistance_not_claimed
+    - no_si_s_parameter_fit
+    - no_as05_xyce_xdm
+    - no_release_promotion
