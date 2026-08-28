@@ -502,25 +502,135 @@ fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
     fs::write(
         &duo_path,
         projection_yaml(
-            "f_max: 2.0\nmod_type: Duo-binary\npn_mag: 0.001\npn_freq: 1000.0\nrn: 0.001\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
+            "f_max: 4.0\nl_ch: 0.0\nmod_type: Duo-binary\npn_mag: 0.001\npn_freq: 1000.0\nrn: 0.001\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]",
         ),
     )
     .unwrap();
     let duo_result_path = root.join("duo-run.pybert_data");
-    let duo_result = run_legacy_sim_v1(&LegacySimRequestV1 {
+    let duo_report = run_legacy_sim_v1(&LegacySimRequestV1 {
         config_file: duo_path,
         results: Some(duo_result_path.clone()),
-    });
-    let duo_error =
-        duo_result.expect_err("Duo-binary jitter must fail closed when crossings are unavailable");
+    })
+    .expect("Duo-binary legacy jitter must use the configured decision scaler");
+    assert!(matches!(
+        duo_report.input.modulation,
+        ModulationV1::DuoBinary
+    ));
     assert!(
-        duo_error.to_string().contains("crossing") || duo_error.to_string().contains("jitter"),
-        "Duo-binary failure must identify the jitter/crossing branch: {duo_error}"
+        duo_result_path.is_file(),
+        "successful Duo-binary run publishes a result artifact"
     );
-    assert!(
-        !duo_result_path.exists(),
-        "failed jitter must not publish a result artifact"
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn legacy_duobinary_jitter_uses_decision_scaler_for_crossings() {
+    let root = std::env::temp_dir().join(format!("sipi-pb01-duo-scaler-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    let low_path = root.join("low.yaml");
+    let high_path = root.join("high.yaml");
+    let common = "f_max: 4.0\nl_ch: 0.0\nmod_type: Duo-binary\nvod: 0.5\nctle_enable: false\nrn: 0.0\npn_mag: 0.0\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]\n";
+    fs::write(
+        &low_path,
+        projection_yaml(&format!("{common}decision_scaler: 0.2\n")),
+    )
+    .unwrap();
+    fs::write(
+        &high_path,
+        projection_yaml(&format!("{common}decision_scaler: 0.6\n")),
+    )
+    .unwrap();
+
+    let (_, low_input) = project_legacy_config_v1(&low_path, "native-low-scaler").unwrap();
+    let (_, high_input) = project_legacy_config_v1(&high_path, "native-high-scaler").unwrap();
+    assert_ne!(
+        low_input.tx.amplitude.0,
+        low_input
+            .rx
+            .dfe
+            .as_ref()
+            .expect("legacy projection supplies a DFE")
+            .decision_scaler
+            .0
     );
+    let low_native = simulate_native_v1(&low_input).unwrap();
+    let high_native = simulate_native_v1(&high_input).unwrap();
+    assert_eq!(
+        low_native.arrays["jitter_chnl_tie_s"], high_native.arrays["jitter_chnl_tie_s"],
+        "public native jitter must use TX amplitude, not legacy DFE scaler"
+    );
+    assert_eq!(
+        low_native.arrays["jitter_tx_tie_s"], high_native.arrays["jitter_tx_tie_s"],
+        "public native TX jitter must use TX amplitude, not legacy DFE scaler"
+    );
+
+    let low = run_legacy_sim_v1(&LegacySimRequestV1 {
+        config_file: low_path,
+        results: Some(root.join("low.pybert_data")),
+    })
+    .expect("low decision scaler Duo-binary run must complete");
+    let high = run_legacy_sim_v1(&LegacySimRequestV1 {
+        config_file: high_path,
+        results: Some(root.join("high.pybert_data")),
+    })
+    .expect("high decision scaler Duo-binary run must complete");
+    let low_ties = &low.output.arrays["jitter_chnl_tie_s"];
+    let high_ties = &high.output.arrays["jitter_chnl_tie_s"];
+    assert!(!low_ties.is_empty());
+    assert!(!high_ties.is_empty());
+    assert_ne!(
+        low_ties, high_ties,
+        "legacy Duo-binary crossing thresholds must consume decision_scaler"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn legacy_codecs_share_execution_policy_for_nrz_and_pam4() {
+    let root = std::env::temp_dir().join(format!("sipi-pb01-codec-policy-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    for (name, modulation) in [("nrz", "NRZ"), ("pam4", "PAM-4")] {
+        let config_path = root.join(format!("{name}.yaml"));
+        fs::write(
+            &config_path,
+            projection_yaml(&format!(
+                "f_max: 2.0\nmod_type: {modulation}\nrn: 0.0\npn_mag: 0.0\ndfe_tap_tuners:\n- !!python/tuple [true, -0.2, 0.2]\n"
+            )),
+        )
+        .unwrap();
+        for (codec_name, codec) in [
+            ("dictionary", LegacyResultCodecV1::SipiDictionary),
+            ("class", LegacyResultCodecV1::ClassPickle),
+        ] {
+            let result_path = root.join(format!("{name}-{codec_name}.pybert_data"));
+            let report = run_legacy_sim_with_codec_v1(
+                &LegacySimRequestV1 {
+                    config_file: config_path.clone(),
+                    results: Some(result_path.clone()),
+                },
+                codec,
+            )
+            .expect("both legacy codecs must use the same migrated execution policy");
+            assert!(
+                !report.output.arrays.is_empty(),
+                "{name}/{codec_name} must publish the migrated output"
+            );
+            assert!(
+                result_path.is_file(),
+                "{name}/{codec_name} artifact missing"
+            );
+            assert_eq!(
+                report.input.modulation,
+                if modulation == "PAM-4" {
+                    ModulationV1::Pam4
+                } else {
+                    ModulationV1::Nrz
+                }
+            );
+        }
+    }
     let _ = fs::remove_dir_all(root);
 }
 

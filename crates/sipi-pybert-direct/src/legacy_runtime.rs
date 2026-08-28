@@ -36,14 +36,14 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 use yaml_rust2::parser::{Event, EventReceiver, Parser, Tag};
 
+use crate::simulation::simulate_native_v1_with_legacy_crossing_amplitude;
 use crate::touchstone::{S2pImportOptions, parse_touchstone_response_with_options};
 use crate::{
     AdditiveNoiseV1, AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, CtleConfigV1,
     DfeConfigV1, FfeConfigV1, Hertz, LegacySimError, LegacySimRequestV1, MetallicLineChannelV1,
     ModulationV1, Ohms, PatternV1, PeriodicNoiseV1, ResourceLimitsV1, RxConfigV1,
     SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, SimulationOutputV1, TimebaseV1, TxConfigV1,
-    ViterbiConfigV1, Volts, forward_real_spectrum, pulse_response, simulate_native_v1,
-    step_response,
+    ViterbiConfigV1, Volts, forward_real_spectrum, pulse_response, step_response,
 };
 
 const DEFAULT_NBITS: u64 = 15_000;
@@ -1098,8 +1098,8 @@ pub fn run_legacy_sim_v1(
 
 /// Execute the migrated leaf with an explicit result codec.
 ///
-/// Both codecs share the same `SimulationInputV1 -> simulate_native_v1`
-/// path; this dispatcher changes serialization only.
+/// Both codecs share the same validated legacy projection and execution
+/// policy; this dispatcher changes serialization only.
 pub fn run_legacy_sim_with_codec_v1(
     request: &LegacySimRequestV1,
     codec: LegacyResultCodecV1,
@@ -1117,7 +1117,11 @@ pub fn run_legacy_sim_with_codec_v1(
         .unwrap_or("pb-01-legacy")
         .to_owned();
     let input = config.simulation_input(run_id)?;
-    let mut output = simulate_native_v1(&input)?;
+    let mut output = simulate_native_v1_with_legacy_crossing_amplitude(
+        &input,
+        &crate::NativeCancellationToken::default(),
+        config.decision_scaler_v,
+    )?;
     output
         .metrics
         .insert("requested_seed".into(), config.requested_seed as f64);
@@ -2951,7 +2955,7 @@ mod tests {
             .join("fixtures")
             .join("pb-03-legacy-nrz.yaml");
         let (_, input) = project_legacy_config_v1(&fixture, "pb03-unit").unwrap();
-        let output = simulate_native_v1(&input).unwrap();
+        let output = crate::simulate_native_v1(&input).unwrap();
         (input, output)
     }
 

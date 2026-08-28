@@ -141,6 +141,36 @@ pub fn simulate_native_v1_with_cancellation(
     input: &SimulationInputV1,
     cancellation: &NativeCancellationToken,
 ) -> Result<SimulationOutputV1, NativeSimulationError> {
+    simulate_native_v1_inner(input, cancellation, input.tx.amplitude.0)
+}
+
+/// Execute the legacy adapter's existing native path with an explicitly
+/// validated PyBERT crossing amplitude. The public typed v1 path remains
+/// pinned to its native `tx.amplitude` crossing semantics.
+pub(crate) fn simulate_native_v1_with_legacy_crossing_amplitude(
+    input: &SimulationInputV1,
+    cancellation: &NativeCancellationToken,
+    crossing_amplitude_v: f64,
+) -> Result<SimulationOutputV1, NativeSimulationError> {
+    let dfe = input
+        .rx
+        .dfe
+        .as_ref()
+        .ok_or(NativeSimulationError::Contract(ContractError::InvalidDfe))?;
+    if !crate::Volts(crossing_amplitude_v).is_finite_positive()
+        || !dfe.decision_scaler.is_finite_positive()
+        || dfe.decision_scaler.0.to_bits() != crossing_amplitude_v.to_bits()
+    {
+        return Err(NativeSimulationError::Contract(ContractError::InvalidDfe));
+    }
+    simulate_native_v1_inner(input, cancellation, crossing_amplitude_v)
+}
+
+fn simulate_native_v1_inner(
+    input: &SimulationInputV1,
+    cancellation: &NativeCancellationToken,
+    crossing_amplitude_v: f64,
+) -> Result<SimulationOutputV1, NativeSimulationError> {
     cancellation.check()?;
     input.validate()?;
     cancellation.check()?;
@@ -779,6 +809,7 @@ pub fn simulate_native_v1_with_cancellation(
                         .map_or(linear.rx_output.as_slice(), |dfe| dfe.dfe_out.as_slice()),
                 ),
             ],
+            crossing_amplitude_v,
             samples_per_ui,
             input.analysis.include_bathtub,
         );
@@ -963,6 +994,7 @@ struct NativeJitterStageInput<'a> {
     ideal_waveform: &'a [f64],
     waveform: &'a [f64],
     ideal_crossings: &'a [f64],
+    crossing_amplitude_v: f64,
     window_start_s: f64,
     eye_uis: usize,
     pattern_len: usize,
@@ -976,6 +1008,7 @@ fn calculate_native_jitter_metrics(
     prbs_order: u8,
     ideal_waveform: &[f64],
     stages: [(&str, &[f64]); 4],
+    crossing_amplitude_v: f64,
     samples_per_ui: usize,
     include_bathtub: bool,
 ) -> Result<NativeJitterMetrics, NativeSimulationError> {
@@ -998,7 +1031,7 @@ fn calculate_native_jitter_metrics(
     let ideal_crossings = find_crossings(
         &ideal_times_s,
         ideal_waveform,
-        input.tx.amplitude.0,
+        crossing_amplitude_v,
         0.0,
         true,
         0.1,
@@ -1017,6 +1050,7 @@ fn calculate_native_jitter_metrics(
             ideal_waveform,
             waveform,
             ideal_crossings: &ideal_crossings,
+            crossing_amplitude_v,
             window_start_s,
             eye_uis,
             pattern_len: legacy_pattern_len,
@@ -1048,6 +1082,7 @@ fn calculate_native_jitter_stage(
         ideal_waveform,
         waveform,
         ideal_crossings,
+        crossing_amplitude_v,
         window_start_s,
         eye_uis,
         pattern_len,
@@ -1068,7 +1103,7 @@ fn calculate_native_jitter_stage(
     let actual_crossings = find_crossings(
         &times_s,
         waveform,
-        input.tx.amplitude.0,
+        crossing_amplitude_v,
         0.0,
         true,
         0.1,
@@ -2256,10 +2291,110 @@ mod tests {
     use super::{
         ComplexMatrix2, complex_multiply, complex_right_solve, complex_solve, first_maximum_index,
         legacy_arange_grid, legacy_ctle_impulse, legacy_power_wave_nudge_v1,
-        linear_resample_uniform, trim_legacy_impulse_with_start,
+        linear_resample_uniform, simulate_native_v1_with_legacy_crossing_amplitude,
+        trim_legacy_impulse_with_start,
     };
-    use crate::{CtleConfigV1, Hertz, Seconds};
+    use crate::{
+        AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, ContractError, CtleConfigV1,
+        DfeConfigV1, FfeConfigV1, Hertz, ModulationV1, NativeCancellationToken, PatternV1,
+        ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, TimebaseV1,
+        TxConfigV1, Volts,
+    };
     use num_complex::Complex64;
+
+    fn valid_legacy_crossing_input() -> SimulationInputV1 {
+        SimulationInputV1 {
+            schema: SIMULATION_SCHEMA_V1.into(),
+            run_id: "legacy-crossing-test".into(),
+            modulation: ModulationV1::DuoBinary,
+            pattern: PatternV1::Prbs { order: 7, seed: 17 },
+            timebase: TimebaseV1 {
+                sample_interval: Seconds(1.0e-12),
+                samples_per_ui: 2,
+                data_rate: Hertz(5.0e9),
+                nbits: 1_000,
+            },
+            channel: ChannelInputV1::ImpulseResponse(ChannelResponseV1 {
+                sample_interval: Seconds(1.0e-12),
+                impulse_response_volts_per_second: vec![1.0e12],
+                source_impedance: crate::Ohms(50.0),
+                load_impedance: crate::Ohms(50.0),
+            }),
+            tx: TxConfigV1::default(),
+            rx: RxConfigV1 {
+                native_ctle_enabled: false,
+                ctle: None,
+                ffe: FfeConfigV1::default(),
+                dfe_taps: 0,
+                dfe: Some(DfeConfigV1 {
+                    gain: 0.1,
+                    decision_scaler: Volts(0.5),
+                    n_ave: 4,
+                    delta_t: Seconds(1.0e-13),
+                    alpha: 0.01,
+                    n_lock_ave: 4,
+                    rel_lock_tol: 0.1,
+                    lock_sustain: 2,
+                    ideal: true,
+                    bandwidth: Hertz(12.0e9),
+                    use_agc: true,
+                    agc_n_ave: 4,
+                    tap_limits: None,
+                }),
+                viterbi_enabled: false,
+                viterbi: None,
+            },
+            analysis: AnalysisConfigV1 {
+                statistical_eye: None,
+                include_jitter: true,
+                include_bathtub: false,
+                ber_eye_bits: None,
+                jitter_eye_uis: None,
+                jitter_rel_thresh: None,
+            },
+            limits: ResourceLimitsV1::default(),
+            external_models: Vec::new(),
+            legacy_options: Default::default(),
+        }
+    }
+
+    #[test]
+    fn legacy_crossing_amplitude_requires_a_verified_dfe_scaler() {
+        let cancellation = NativeCancellationToken::default();
+        let mut missing_dfe = valid_legacy_crossing_input();
+        missing_dfe.rx.dfe = None;
+        assert_eq!(
+            simulate_native_v1_with_legacy_crossing_amplitude(&missing_dfe, &cancellation, 0.5,)
+                .unwrap_err(),
+            super::NativeSimulationError::Contract(ContractError::InvalidDfe)
+        );
+
+        let input = valid_legacy_crossing_input();
+        for invalid_scaler in [0.0, f64::NAN] {
+            assert_eq!(
+                simulate_native_v1_with_legacy_crossing_amplitude(
+                    &input,
+                    &cancellation,
+                    invalid_scaler,
+                )
+                .unwrap_err(),
+                super::NativeSimulationError::Contract(ContractError::InvalidDfe)
+            );
+        }
+
+        let mut mismatched_dfe = valid_legacy_crossing_input();
+        mismatched_dfe
+            .rx
+            .dfe
+            .as_mut()
+            .expect("test DFE")
+            .decision_scaler = Volts(0.75);
+        assert_eq!(
+            simulate_native_v1_with_legacy_crossing_amplitude(&mismatched_dfe, &cancellation, 0.5,)
+                .unwrap_err(),
+            super::NativeSimulationError::Contract(ContractError::InvalidDfe)
+        );
+    }
 
     #[test]
     fn linear_resample_uniform_has_bounded_endpoint_semantics() {
