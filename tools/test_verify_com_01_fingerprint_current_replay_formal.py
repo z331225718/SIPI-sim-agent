@@ -36,6 +36,8 @@ from verify_com_01_fingerprint_current_replay_formal import (  # noqa: E402
 import verify_com_01_fingerprint_current_replay_formal as formal_module  # noqa: E402
 from verify_com_01_fingerprint_current_replay import VerificationError  # noqa: E402
 
+FORMAL_GATE_COMMIT = "583d560ec0185c8b59cb63a497e6f8f679fdab51"
+
 
 def gate_fixture() -> dict[str, object]:
     return {
@@ -149,6 +151,7 @@ def _future_manifest_repo() -> tuple[Path, Path]:
     git = shutil.which("git.exe") or shutil.which("git")
     root = Path(tempfile.mkdtemp(prefix="com01-future-manifest-"))
     subprocess.run([git, "-c", "core.autocrlf=false", "clone", "--no-hardlinks", "--quiet", str(Path(__file__).resolve().parents[1]), str(root)], check=True)
+    subprocess.run([git, "-C", str(root), "checkout", "--detach", "--quiet", FORMAL_GATE_COMMIT], check=True)
     subprocess.run([git, "-C", str(root), "config", "core.autocrlf", "false"], check=True)
     subprocess.run([git, "-C", str(root), "config", "user.name", "future manifest test"], check=True)
     subprocess.run([git, "-C", str(root), "config", "user.email", "future-manifest@example.invalid"], check=True)
