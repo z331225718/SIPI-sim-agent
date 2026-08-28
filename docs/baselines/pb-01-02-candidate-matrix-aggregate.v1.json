@@ -1,0 +1,443 @@
+{
+  "blockers": [
+    "pb02_duo_binary_impulse:complete_metadata_drift",
+    "pb02_impulse_analytic_ctle:complete_array_payload_drift",
+    "pb02_impulse_analytic_ctle:complete_metadata_drift",
+    "pb02_impulse_analytic_ctle:local_ctle_impulse_extension_not_in_pinned_native_schema",
+    "pb02_impulse_jitter_bathtub_analysis:candidate_or_oracle_process_failed",
+    "pb02_impulse_jitter_bathtub_analysis:candidate_output_missing",
+    "pb02_impulse_jitter_bathtub_analysis:jitter_span_invalid_for_16_bit_prbs7_fixture",
+    "pb02_impulse_jitter_bathtub_analysis:oracle_output_missing",
+    "pb02_impulse_tx_rx_equalization:candidate_artifact_invalid",
+    "pb02_impulse_tx_rx_equalization:oracle_artifact_invalid",
+    "pb02_impulse_tx_rx_equalization:strict_native_npz_member_set_drift",
+    "pb02_nrz_impulse:complete_metadata_drift",
+    "pb02_pam4_impulse:complete_metadata_drift"
+  ],
+  "candidate": {
+    "archive_sha256": "97cbfeb61d94c7b473314e407286bde2391c6b83e59324d4faaa873ec41f8354",
+    "commit": "0d57b36f965588bed3393d2a0a529e4d573a493c",
+    "inventory_sha256": "2c24154c7b60d02e1f33755886cd7172bf6cda9637d3cc02c0711629cc94031f",
+    "scoped_inventory_sha256": "f309466c512186ac8caafea0b2f8f8a63fb857d3dc86423fb4f9e4bc94b6ab40",
+    "tree": "26f2390c90dd9f44753da27041e12b10b8186d55"
+  },
+  "cases": [
+    {
+      "blockers": [],
+      "complete_typed_output_parity": false,
+      "first_status": "passed",
+      "id": "pb01_duo_binary_analytic_line",
+      "lane": "PB-01",
+      "second_status": "passed",
+      "selected_array_parity": true,
+      "status": "passed"
+    },
+    {
+      "blockers": [
+        "complete_metadata_drift"
+      ],
+      "complete_typed_output_parity": false,
+      "first_status": "blocked",
+      "id": "pb02_nrz_impulse",
+      "lane": "PB-02",
+      "second_status": "blocked",
+      "selected_array_parity": true,
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "complete_metadata_drift"
+      ],
+      "complete_typed_output_parity": false,
+      "first_status": "blocked",
+      "id": "pb02_pam4_impulse",
+      "lane": "PB-02",
+      "second_status": "blocked",
+      "selected_array_parity": true,
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "complete_metadata_drift"
+      ],
+      "complete_typed_output_parity": false,
+      "first_status": "blocked",
+      "id": "pb02_duo_binary_impulse",
+      "lane": "PB-02",
+      "second_status": "blocked",
+      "selected_array_parity": true,
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "candidate_artifact_invalid",
+        "oracle_artifact_invalid",
+        "strict_native_npz_member_set_drift"
+      ],
+      "complete_typed_output_parity": false,
+      "first_status": "blocked",
+      "id": "pb02_impulse_tx_rx_equalization",
+      "lane": "PB-02",
+      "second_status": "blocked",
+      "selected_array_parity": false,
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "complete_array_payload_drift",
+        "complete_metadata_drift",
+        "local_ctle_impulse_extension_not_in_pinned_native_schema"
+      ],
+      "complete_typed_output_parity": false,
+      "first_status": "blocked",
+      "id": "pb02_impulse_analytic_ctle",
+      "lane": "PB-02",
+      "second_status": "blocked",
+      "selected_array_parity": false,
+      "status": "blocked"
+    },
+    {
+      "blockers": [
+        "candidate_or_oracle_process_failed",
+        "candidate_output_missing",
+        "jitter_span_invalid_for_16_bit_prbs7_fixture",
+        "oracle_output_missing"
+      ],
+      "complete_typed_output_parity": false,
+      "first_status": "blocked",
+      "id": "pb02_impulse_jitter_bathtub_analysis",
+      "lane": "PB-02",
+      "second_status": "blocked",
+      "selected_array_parity": false,
+      "status": "blocked"
+    }
+  ],
+  "claims": {
+    "global_branch_parity": false,
+    "pb01_duo_selected_array_parity": true,
+    "pb02_complete_typed_output_parity": false,
+    "product_capability_admission": false,
+    "release_acceptance": false,
+    "whole_payload_parity": false
+  },
+  "corpus": {
+    "archive_present": true,
+    "bytes": 5339,
+    "path": "docs/baselines/pb-01-02-portable-matrix-inputs.v1.json",
+    "sha256": "77d6db2f34de256bea69888122e86281ba578a71da1a1719b790f9b9ed332ddb"
+  },
+  "cross_run": {
+    "candidate_equal": true,
+    "case_projection_equal": true,
+    "challenge_equal": true,
+    "corpus_equal": true,
+    "fixtures_equal": true,
+    "harness_equal": true,
+    "nonces_distinct": true,
+    "report_sha256_distinct": true,
+    "run_ids_distinct": true,
+    "toolchain_equal": true,
+    "upstream_equal": true
+  },
+  "fixtures": {
+    "PB-01": {
+      "archive_present": true,
+      "bytes": 1171,
+      "path": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+      "sha256": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48"
+    },
+    "PB-02": {
+      "archive_present": true,
+      "bytes": 1245,
+      "path": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json",
+      "sha256": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13"
+    }
+  },
+  "non_claims": [
+    "This aggregate is a separate Stage-2 adapter for the candidate-matrix report contract.",
+    "PB-01 selected-array parity does not claim full PyBertData class-pickle or whole-branch parity.",
+    "PB-02 metadata, artifact, CTLE schema, and jitter-span blockers are preserved; no blocked case is promoted.",
+    "This aggregate is not a license decision, product capability admission, release approval, or global parity claim."
+  ],
+  "prep": {
+    "archive_bytes": 55685120,
+    "archive_sha256": "126923be0c75df882fd0050d000c0f98d81ae447afbc1f9eddbd5ae079b24e34",
+    "commit": "176956771a0d24255b427c0243d3dabc4e3fdeca",
+    "files": {
+      "docs/baselines/audits/2026-08-29-pb-01-02-candidate-matrix-prep.md": {
+        "blob": "bb508fabda1eea60e24052961a46b2eea020f194",
+        "bytes": 3037,
+        "sha256": "44d0965da1bd2c75b7a5aa1be0becbfc8c969e1552ea885bf5de82ad68b33b04"
+      },
+      "docs/baselines/pb-01-02-candidate-matrix-prep.v1.yaml": {
+        "blob": "4367c6a3e8b370ad52a49e8ead198a4b3af644c7",
+        "bytes": 14705,
+        "sha256": "8e237cca847e31584fb5053eb742b2058d5ea05501b68093e01a23675821adf3"
+      },
+      "tools/run_pb_01_02_candidate_matrix.py": {
+        "blob": "281caea1f57ff59961d0b8cd36695a5909a85679",
+        "bytes": 20077,
+        "sha256": "3eb706ea5e2de057fa3824d09675d6e63ca5cffdcdc63dd724ee5b0f079ada1d"
+      },
+      "tools/test_verify_pb_01_02_candidate_matrix_prep.py": {
+        "blob": "42b7e33e333c45d144e98e868670271c8a8043c2",
+        "bytes": 7140,
+        "sha256": "bef770a670abb134a85ac65f133cd0cdcc5c9e5240f06235bd3d727b41a30061"
+      },
+      "tools/verify_pb_01_02_candidate_matrix_prep.py": {
+        "blob": "9483d0df9a8a6555f55d1e24cb0f98a0939ce056",
+        "bytes": 42993,
+        "sha256": "1384ee198387fb7605ee56331bd466203e0bf83ace72cc23ae488140284918f3"
+      }
+    },
+    "parent": "2dea3bbe6039224704f1e07aebc3ebd6c178abed",
+    "tree": "bf91215d3783ba97c5035ed0eafad687ebb95f3f"
+  },
+  "reports": [
+    {
+      "challenge": {
+        "fresh_archive_replay": true,
+        "id": "pb-01-02-candidate-matrix-v1",
+        "nonce_required": true,
+        "report_sha256_required": true,
+        "run_count": 2,
+        "run_index": 1
+      },
+      "fresh_run_nonce": "98cadb2bad1f02fcbe9c3078a0f08d80166fd4abf94bcc2d0bea17cdb00c0336",
+      "path": "docs/baselines/pb-01-02-candidate-matrix-run-01.v1.json",
+      "run_id": "pb-01-02-candidate-run-01",
+      "sha256": "79f1afb739a4691e691dfc4ec01628129b3fa2ebbbbe5859416cc16b31585a72"
+    },
+    {
+      "challenge": {
+        "fresh_archive_replay": true,
+        "id": "pb-01-02-candidate-matrix-v1",
+        "nonce_required": true,
+        "report_sha256_required": true,
+        "run_count": 2,
+        "run_index": 2
+      },
+      "fresh_run_nonce": "c3dea0cc4b22fcb8f11a429f5834000613de0ac634e9c41d02724527f5ab561d",
+      "path": "docs/baselines/pb-01-02-candidate-matrix-run-02.v1.json",
+      "run_id": "pb-01-02-candidate-run-02",
+      "sha256": "eb33e774b72ec6561e9167eed58442bec6c72037c6de6cd07d0ce9ca0924c27f"
+    }
+  ],
+  "schema": "sipi.pb-01-02-candidate-matrix-aggregate.v1",
+  "status": "blocked",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 12814336,
+        "nlink": 14,
+        "nonlink": true,
+        "path": "cargo.exe",
+        "post_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "regular": true,
+        "sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 12814336,
+        "nlink": 14,
+        "nonlink": true,
+        "path": "cargo.exe",
+        "post_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "regular": true,
+        "sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "single_handle_read": true
+      },
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit": 0,
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "link": {
+      "executable": "link.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 3252576,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "link.exe",
+        "post_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "regular": true,
+        "sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 3252576,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "link.exe",
+        "post_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2533274790885540,
+          3252576,
+          1781618932471508600
+        ],
+        "regular": true,
+        "sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+        "single_handle_read": true
+      },
+      "file_sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+      "path_redacted": true,
+      "role": "link",
+      "version_exit": 0,
+      "version_sha256": "f5967e8fed8a0058b2813fa1c42f18645e258cb02d8817bef7760e09d0441412"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 12814336,
+        "nlink": 14,
+        "nonlink": true,
+        "path": "rustc.exe",
+        "post_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "regular": true,
+        "sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 12814336,
+        "nlink": 14,
+        "nonlink": true,
+        "path": "rustc.exe",
+        "post_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          2251799815186960,
+          12814336,
+          1784161187349523700
+        ],
+        "regular": true,
+        "sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "single_handle_read": true
+      },
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit": 0,
+      "version_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "timeout_seconds": 1200,
+    "uv": {
+      "executable": "uv.exe",
+      "file_custody_equal": true,
+      "file_custody_post": {
+        "bytes": 68317696,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "uv.exe",
+        "post_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "regular": true,
+        "sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "single_handle_read": true
+      },
+      "file_custody_pre": {
+        "bytes": 68317696,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "uv.exe",
+        "post_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "pre_identity": [
+          12437349290275704424,
+          1970324838144646,
+          68317696,
+          1781172244000000000
+        ],
+        "regular": true,
+        "sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "single_handle_read": true
+      },
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit": 0,
+      "version_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "inventory_sha256": "829d2d5428c12e6aba58f0aae0f2a5bc8427b54fc6310fb4c90049e2797f8855",
+    "scoped_inventory_sha256": "f2b48f2d796c0ddf0e7df9c6fbfd3bc031859944b58ace9b0505444cab8e66d5",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 1
+}
