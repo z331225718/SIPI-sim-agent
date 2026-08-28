@@ -1,0 +1,102 @@
+{
+  "aggregate": {
+    "path": "docs/baselines/com-02-04-result-surface-formal-aggregate.v1.json",
+    "sha256": "929cf75c338a6259d475387f06c19816b0119d0fa59c51fb5f2599bd6e8a3567"
+  },
+  "audit": {
+    "path": "docs/baselines/audits/2026-08-29-com-02-04-result-surface-formal.md",
+    "sha256": "7f4cc983f9e8a2a0e441176bed180a39837e3541986cc35494c1e009ea66e495"
+  },
+  "claims": {
+    "coordination_labels_are_not_execution_identity": true,
+    "fresh_nonce": true,
+    "full_report_hashes": true,
+    "port_order_result_wire": false,
+    "prep_source_inventory": true,
+    "upstream_numeric_parity": false
+  },
+  "gate": {
+    "commit": "e5d9bfe5fa946ee88b9eb06df1db3b574dd43c05",
+    "tools": [
+      {
+        "blob": "00f458af21e68f0eb474fdb9cb2b261a90da6142",
+        "bytes": 28282,
+        "path": "tools/aggregate_com_02_04_result_surface.py",
+        "sha256": "347faf25c63be1bfa73dd209f3135138876c5cde47fbd30e928eb46edd8be5f6"
+      },
+      {
+        "blob": "25943f09570a2ff17ececdb07f3f976e3b1be2f7",
+        "bytes": 64935,
+        "path": "tools/test_verify_com_02_04_result_surface_gate.py",
+        "sha256": "a0bd1fffaa977b98a2cc84d40516c91453cbc1c3427a1389920faac1b4c0c783"
+      },
+      {
+        "blob": "44c3809ff5f8b9f52cb93d87934abf48460016af",
+        "bytes": 12336,
+        "path": "tools/verify_com_02_04_result_surface_gate.py",
+        "sha256": "3b4e14c3f8fbdbaa83034c99877e23fff7dd04da12c07ff26b4d52dd59fa8637"
+      }
+    ],
+    "tree": "2906da5e5c7d6169ba1f01493e2d6a3231595aac"
+  },
+  "reports": [
+    {
+      "coordination_label_sha256": "62940bae93c0e6e0691ce5fe045b2b952a9b7348dd6601975852ad3031062bd7",
+      "path": "docs/baselines/com-02-result-surface-formal-run1.v1.json",
+      "record_label": "com02-formal-1",
+      "sha256": "2d2f126acd3f9661c21e391810e1120e08b45246fb4573ed6659f2fe5161f193"
+    },
+    {
+      "coordination_label_sha256": "573194e6b07f08de69133ba9041c73778ffef7b5ab1be374168ba66ee3e8d07e",
+      "path": "docs/baselines/com-02-result-surface-formal-run2.v1.json",
+      "record_label": "com02-formal-2",
+      "sha256": "f640c56d744433d06bd13260851f17cb577d55c9db77f1789b5eb3160c5ecb5a"
+    },
+    {
+      "coordination_label_sha256": "2e47a945d8bb4932aff2cf15530f586a2942cdf298cf549b756829b33864919c",
+      "path": "docs/baselines/com-04-result-surface-formal-run1.v1.json",
+      "record_label": "com04-formal-1",
+      "sha256": "b148db1625ccda6559a8a9c1c92c9c0ede7b4045c5de5830af54b6582e34dcd1"
+    },
+    {
+      "coordination_label_sha256": "f801ccbe9c1fe1d4578fc240b6041d1a106b3cbe727ec44a0208badc637136f7",
+      "path": "docs/baselines/com-04-result-surface-formal-run2.v1.json",
+      "record_label": "com04-formal-2",
+      "sha256": "def98099ba0b3a31e10909261a49742a34eb11692f6f177c641e5a161947e981"
+    }
+  ],
+  "schema": "sipi.com-02-04.result-surface-formal.v1",
+  "semantic_anchors": {
+    "portable_semantic_branches": [
+      "fd_to_td_json",
+      "mixed_mode_pn_skew",
+      "fext_next_waveform_inputs",
+      "equalization_apply",
+      "tdiln",
+      "search_nonmmse_no_rxffe",
+      "mmse_kkt_search",
+      "fvlms_rxffe_search",
+      "calibration_noise_controller",
+      "workbook_csv_mat_reuse",
+      "legacy_csv_projection"
+    ],
+    "semantic_payload_fields": [
+      "scenarios[].scenario",
+      "cases[].case_index",
+      "cases[].channels",
+      "cases[].metrics.COM_dB/VEC_dB/VEO_mV/sigma_N_V",
+      "cases[].metrics.FOM (portable search selection when requested)",
+      "cases[].metrics.available_signal_v/interference_noise_v/threshold_der/eye_opening_v",
+      "cases[].metrics.calibration_sigma_bn_v/calibration_sigma_ne_v/calibration_sigma_hp_v",
+      "cases[].diagnostics.channel_impulse",
+      "cases[].diagnostics.crosstalk_inputs",
+      "cases[].diagnostics.portable_branches",
+      "report_manifest"
+    ],
+    "unsupported_fail_closed": [
+      "matlab_only_reporting",
+      "wiener_hopf_source_unimplemented"
+    ]
+  },
+  "status": "passed_scoped"
+}

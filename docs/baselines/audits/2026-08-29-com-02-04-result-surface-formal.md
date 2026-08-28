@@ -1,0 +1,12 @@
+# COM-02/04 formal result-surface record
+
+GATE_COMMIT: e5d9bfe5fa946ee88b9eb06df1db3b574dd43c05
+FORMAL_STATUS: passed_scoped
+REPORT: docs/baselines/com-02-result-surface-formal-run1.v1.json 2d2f126acd3f9661c21e391810e1120e08b45246fb4573ed6659f2fe5161f193
+REPORT: docs/baselines/com-02-result-surface-formal-run2.v1.json f640c56d744433d06bd13260851f17cb577d55c9db77f1789b5eb3160c5ecb5a
+REPORT: docs/baselines/com-04-result-surface-formal-run1.v1.json b148db1625ccda6559a8a9c1c92c9c0ede7b4045c5de5830af54b6582e34dcd1
+REPORT: docs/baselines/com-04-result-surface-formal-run2.v1.json def98099ba0b3a31e10909261a49742a34eb11692f6f177c641e5a161947e981
+AGGREGATE: docs/baselines/com-02-04-result-surface-formal-aggregate.v1.json 929cf75c338a6259d475387f06c19816b0119d0fa59c51fb5f2599bd6e8a3567
+NO_UPSTREAM_NUMERIC_PARITY
+NO_PORT_ORDER_RESULT_WIRE
+COORDINATION_LABELS_ARE_NOT_EXECUTION_IDENTITY

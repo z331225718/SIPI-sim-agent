@@ -1,0 +1,104 @@
+{
+  "candidate": {
+    "archive_bytes": 54650880,
+    "archive_sha256": "3098bb432d8c00c4c65c058cf0f325172112de6c24fb5e55127688d8e147d990",
+    "commit": "af518684936f8656eda61288abe2647f7d909ea4",
+    "tree": "e49c50407557806c4addae103acbfd576b01527e"
+  },
+  "claims": {
+    "coordination_labels_are_not_execution_identity": true,
+    "fresh_nonce": true,
+    "full_report_hashes": true,
+    "port_order_result_wire": false,
+    "prep_source_inventory": true,
+    "upstream_numeric_parity": false
+  },
+  "formal_runs": [
+    {
+      "coordination_label_sha256": "62940bae93c0e6e0691ce5fe045b2b952a9b7348dd6601975852ad3031062bd7",
+      "fresh_index": 1,
+      "mode": "com-02",
+      "record_label": "com02-formal-1",
+      "report_sha256": "2d2f126acd3f9661c21e391810e1120e08b45246fb4573ed6659f2fe5161f193",
+      "source_nonce": "3d2bf808101ee64d8021e76d99a92364085789b09683560acdbc64feb821c41e",
+      "source_run_id": "com-02-v2-fresh-1-3d2bf808101ee64d8021e76d99a92364085789b09683560acdbc64feb821c41e"
+    },
+    {
+      "coordination_label_sha256": "573194e6b07f08de69133ba9041c73778ffef7b5ab1be374168ba66ee3e8d07e",
+      "fresh_index": 2,
+      "mode": "com-02",
+      "record_label": "com02-formal-2",
+      "report_sha256": "f640c56d744433d06bd13260851f17cb577d55c9db77f1789b5eb3160c5ecb5a",
+      "source_nonce": "a45a9828007eb1e2c0e583d9ac3f894fc831daf1e7a19f1ff2a8ca80a01f9450",
+      "source_run_id": "com-02-v2-fresh-2-a45a9828007eb1e2c0e583d9ac3f894fc831daf1e7a19f1ff2a8ca80a01f9450"
+    },
+    {
+      "coordination_label_sha256": "2e47a945d8bb4932aff2cf15530f586a2942cdf298cf549b756829b33864919c",
+      "fresh_index": 1,
+      "mode": "com-04",
+      "record_label": "com04-formal-1",
+      "report_sha256": "b148db1625ccda6559a8a9c1c92c9c0ede7b4045c5de5830af54b6582e34dcd1",
+      "source_nonce": "7662958c225b0bfa9f10fcfbfc80b3cf0a3016c483f6c6b4a65848cea7b087df",
+      "source_run_id": "com-04-v2-fresh-1-7662958c225b0bfa9f10fcfbfc80b3cf0a3016c483f6c6b4a65848cea7b087df"
+    },
+    {
+      "coordination_label_sha256": "f801ccbe9c1fe1d4578fc240b6041d1a106b3cbe727ec44a0208badc637136f7",
+      "fresh_index": 2,
+      "mode": "com-04",
+      "record_label": "com04-formal-2",
+      "report_sha256": "def98099ba0b3a31e10909261a49742a34eb11692f6f177c641e5a161947e981",
+      "source_nonce": "516926c20fef48fa22258fd578074eaae8fb66fc706f93bf12fda8109ddff963",
+      "source_run_id": "com-04-v2-fresh-2-516926c20fef48fa22258fd578074eaae8fb66fc706f93bf12fda8109ddff963"
+    }
+  ],
+  "prep": {
+    "blobs": {
+      "docs/baselines/audits/2026-08-29-com-02-04-result-surface.md": "d01e6db8f09d3c7894e4624013067ae28a73c36d",
+      "tools/com_direct_semantic_replay.py": "19bf336376fbb148f3136258bcbd356342e956d5",
+      "tools/com_direct_semantic_replay_v2.py": "d55c9c9d1e8381be3cac218b7cb38d5f45018a47",
+      "tools/test_com_direct_semantic_replay_prep.py": "4fcf50777afd67c89640a1f65ef45728bd48acc0"
+    },
+    "commit": "90dea971a1661cf6ae0b7f71aab12b84f6eb241c",
+    "tree": "e7eb1134f0061e586f117058d25a5298e2d7d799"
+  },
+  "schema": "sipi.com-02-04.result-surface-formal-aggregate.v1",
+  "semantic_anchors": {
+    "portable_semantic_branches": [
+      "fd_to_td_json",
+      "mixed_mode_pn_skew",
+      "fext_next_waveform_inputs",
+      "equalization_apply",
+      "tdiln",
+      "search_nonmmse_no_rxffe",
+      "mmse_kkt_search",
+      "fvlms_rxffe_search",
+      "calibration_noise_controller",
+      "workbook_csv_mat_reuse",
+      "legacy_csv_projection"
+    ],
+    "semantic_payload_fields": [
+      "scenarios[].scenario",
+      "cases[].case_index",
+      "cases[].channels",
+      "cases[].metrics.COM_dB/VEC_dB/VEO_mV/sigma_N_V",
+      "cases[].metrics.FOM (portable search selection when requested)",
+      "cases[].metrics.available_signal_v/interference_noise_v/threshold_der/eye_opening_v",
+      "cases[].metrics.calibration_sigma_bn_v/calibration_sigma_ne_v/calibration_sigma_hp_v",
+      "cases[].diagnostics.channel_impulse",
+      "cases[].diagnostics.crosstalk_inputs",
+      "cases[].diagnostics.portable_branches",
+      "report_manifest"
+    ],
+    "unsupported_fail_closed": [
+      "matlab_only_reporting",
+      "wiener_hopf_source_unimplemented"
+    ]
+  },
+  "status": "passed_scoped",
+  "upstream": {
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "mechanical_git_archive_sha256": "5f3f17e19edc07cf6498c9bfea20b8691082e2c05364b4462bc54df8549d0a04",
+    "report_declared_archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}
