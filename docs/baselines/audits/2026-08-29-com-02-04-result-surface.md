@@ -52,6 +52,42 @@ introduced.
 
 ## Formal replay status
 
+The existing semantic replay harness now carries the current canonical `f2`
+control instead of relying on the pre-admission fixture. Its existing `search`
+scenario requires a non-empty DFE vector from the real candidate winner and
+records it under `candidate_execution_observations`; this is not labelled as
+an upstream serialized result. The clean-archive wrapper also runs the focused
+trusted-workbook S4P permutation test
+`workbook_snp_port_order_is_applied_before_mixed_mode`. That observation has
+`serialized_result_field: null`, because the pinned upstream does not publish
+port order on its result wire.
+
+This is harness preparation only. The scenario count remains ten, no result
+field is invented, and no formal report is generated before the preparation
+commit. The v2 wrapper builds the production binary from candidate
+`af518684936f8656eda61288abe2647f7d909ea4`, while loading and hashing the
+semantic helper and thin runner from the separately reviewed harness prep.
+This prevents the production candidate's older helper from silently replacing
+the prepared corpus.
+
+The wrapper admits only the exact production archive identity (commit, tree,
+SHA-256, and byte count). Tar materialization accepts canonical regular files
+and directories only, with member, per-file, and total-byte budgets, and
+streams each member without `extractall`. Prep helper, thin runner, and wrapper
+are bounded regular non-link files contained in `tools`; each is read through
+one handle with pre/post identity checks and the executed/helper bytes are the
+hashed bytes. They are recorded as a prep source inventory, not a runtime
+execution binding: the helper is executed from its admitted snapshot, the
+thin runner is inventory-only and not executed, and the wrapper marks its own
+runtime identity unproven until a later formal Git-blob gate. Scenario
+execution and the focused exact Rust test have time and
+output limits, result JSON is bounded and identity checked, and DFE taps must
+be a non-empty bounded vector of finite non-boolean numbers. Mutation tests
+cover archive substitution, harness drift, special/oversized tar members,
+zero/ambiguous/multiple-test success text, invalid taps, timeout, and output
+overflow. Legacy CSV is also a bounded regular non-link input with pre/post
+identity checks and a required non-empty header.
+
 No fresh external replay or aggregate is claimed here: the existing formal
 v5 reports are bound to an immutable earlier candidate, while this production
 slice is still uncommitted. The owner must create the preparation commit before

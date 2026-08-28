@@ -11,14 +11,21 @@ import hashlib
 import json
 import math
 import os
+import stat
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
 
 UPSTREAM_COMMIT = "5272ffe74702cd585054d975559b06f8afae7b6e"
 UPSTREAM_TREE = "7094ab6e84989b218730c52432c70da10261f8ea"
+SCENARIO_TIMEOUT_SECONDS = 30
+MAX_SCENARIO_OUTPUT_BYTES = 4 * 1024 * 1024
+MAX_RESULT_JSON_BYTES = 16 * 1024 * 1024
+MAX_LEGACY_CSV_BYTES = 1024 * 1024
+MAX_DFE_TAPS = 256
 SOURCE_PATHS = {
     "com-02": [
         "src/agent_com/api.py",
@@ -94,6 +101,67 @@ def digest(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def bounded_regular_bytes(path: Path, limit: int) -> bytes:
+    before = path.stat(follow_symlinks=False)
+    if path.is_symlink() or not stat.S_ISREG(before.st_mode) or before.st_size > limit:
+        raise RuntimeError("bounded file admission failed")
+    with path.open("rb") as handle:
+        payload = handle.read(limit + 1)
+    if len(payload) > limit:
+        raise RuntimeError("bounded file budget exceeded")
+    after = path.stat(follow_symlinks=False)
+    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+        after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns
+    ):
+        raise RuntimeError("bounded file identity drift")
+    return payload
+
+
+def bounded_json(path: Path, limit: int) -> Any:
+    payload = bounded_regular_bytes(path, limit)
+    return json.loads(payload)
+
+
+def legacy_csv_projection(path: Path) -> dict[str, Any]:
+    legacy = bounded_regular_bytes(path, MAX_LEGACY_CSV_BYTES).decode("utf-8")
+    lines = legacy.splitlines()
+    if not lines or not lines[0]:
+        raise RuntimeError("legacy CSV must have a non-empty header")
+    return {
+        "column_count": len(lines[0].split(",")),
+        "header_sha256": digest(lines[0].encode()),
+        "row_count": max(0, len(lines) - 1),
+    }
+
+
+def run_scenario_bounded(command: list[str]):
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        process = subprocess.Popen(command, stdout=stdout, stderr=stderr)
+        deadline = time.monotonic() + SCENARIO_TIMEOUT_SECONDS
+        while process.poll() is None:
+            if time.monotonic() >= deadline:
+                process.kill()
+                process.wait()
+                raise RuntimeError("scenario subprocess timeout")
+            if stdout.tell() > MAX_SCENARIO_OUTPUT_BYTES or stderr.tell() > MAX_SCENARIO_OUTPUT_BYTES:
+                process.kill()
+                process.wait()
+                raise RuntimeError("scenario subprocess output budget exceeded")
+            time.sleep(0.01)
+        stdout.seek(0)
+        stderr.seek(0)
+        out = stdout.read(MAX_SCENARIO_OUTPUT_BYTES + 1)
+        err = stderr.read(MAX_SCENARIO_OUTPUT_BYTES + 1)
+        if len(out) > MAX_SCENARIO_OUTPUT_BYTES or len(err) > MAX_SCENARIO_OUTPUT_BYTES:
+            raise RuntimeError("scenario subprocess output budget exceeded")
+        return subprocess.CompletedProcess(
+            command,
+            process.returncode,
+            out.decode("utf-8", "replace"),
+            err.decode("utf-8", "replace"),
+        )
+
+
 def parameters() -> dict[str, Any]:
     return {
         "parameters": {
@@ -109,6 +177,7 @@ def parameters() -> dict[str, Any]:
             "sigma_N": 0.01,
             "A_DD": 0.4,
             "spec_ber": 1.0e-4,
+            "f2": 50.0e9,
         }
     }
 
@@ -506,7 +575,7 @@ def semantic_projection(result: dict[str, Any], workflow: list[str]) -> dict[str
             ],
             "calibration_noise": None,
         }
-    return {
+    projection = {
         "workflow": workflow,
         "case_index": case["case_index"],
         "channels": channels,
@@ -539,6 +608,26 @@ def semantic_projection(result: dict[str, Any], workflow: list[str]) -> dict[str
         "portable_branches": diagnostics.get("portable_branches", {}),
         "report_manifest": result.get("report_manifest"),
     }
+    search = diagnostics.get("portable_branches", {}).get("search")
+    if search is not None:
+        taps = search.get("dfe_taps")
+        if (
+            not isinstance(taps, list)
+            or not taps
+            or len(taps) > MAX_DFE_TAPS
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                for value in taps
+            )
+        ):
+            raise RuntimeError("candidate search winner did not publish DFE taps")
+        projection["candidate_execution_observations"] = {
+            "search_winner_dfe_taps": taps,
+            "result_path": "cases[].diagnostics.portable_branches.search.dfe_taps",
+        }
+    return projection
 
 
 def invoke_scenario(binary: Path, mode: str, root: Path, scenario: str) -> dict[str, Any]:
@@ -564,30 +653,18 @@ def invoke_scenario(binary: Path, mode: str, root: Path, scenario: str) -> dict[
         )
     if scenario == "base":
         command.append("--legacy-csv")
-    completed = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    completed = run_scenario_bounded(command)
     if completed.returncode != 0:
         raise RuntimeError(
             f"{mode}/{scenario} direct leaf failed: {completed.stderr.strip()}"
         )
     envelope = json.loads(completed.stdout)
     result_path = output / "result.json"
-    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result = bounded_json(result_path, MAX_RESULT_JSON_BYTES)
     semantic = semantic_projection(result, ["load_config", "run_com", "write_artifacts"])
     legacy_path = output / "legacy.csv"
     if legacy_path.is_file():
-        legacy = legacy_path.read_text(encoding="utf-8")
-        semantic["legacy_csv"] = {
-            "column_count": len(legacy.splitlines()[0].split(",")),
-            "header_sha256": digest(legacy.splitlines()[0].encode()),
-            "row_count": max(0, len(legacy.splitlines()) - 1),
-        }
+        semantic["legacy_csv"] = legacy_csv_projection(legacy_path)
     semantic["scenario"] = scenario
     return {
         "scenario": scenario,
