@@ -1,0 +1,1080 @@
+{
+  "baseline": {
+    "bytes": 13920,
+    "candidate_commit": "a804c844d88b6189dba36c4abc41d7d4828d0e5c",
+    "candidate_matrix": [
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "3fb616f560a06f4d"
+      },
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "bfb58d5e7e3717c8"
+      },
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "bfb58d5e7e3717c8"
+      },
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "3fb616f560a06f4e"
+      }
+    ],
+    "candidate_tree": "4bdf6691d3aa40dde2ab0712eaf71fda9b181b3a",
+    "git_blob": "448b3dc6318ce64750a5ea5ebd096934dfcdf490",
+    "path": "docs/baselines/as-03-numeric-checkpoint-run-01.json",
+    "prior_difference": {
+      "differences": [
+        {
+          "candidate_bits": "3fb616f560a06f4d",
+          "column": 0,
+          "component": "re",
+          "row": 0,
+          "ulp": 3,
+          "upstream_bits": "3fb616f560a06f4a"
+        },
+        {
+          "candidate_bits": "bfb58d5e7e3717c8",
+          "column": 1,
+          "component": "re",
+          "row": 0,
+          "ulp": 3,
+          "upstream_bits": "bfb58d5e7e3717c5"
+        },
+        {
+          "candidate_bits": "bfb58d5e7e3717c8",
+          "column": 0,
+          "component": "re",
+          "row": 1,
+          "ulp": 3,
+          "upstream_bits": "bfb58d5e7e3717c5"
+        },
+        {
+          "candidate_bits": "3fb616f560a06f4e",
+          "column": 1,
+          "component": "re",
+          "row": 1,
+          "ulp": 4,
+          "upstream_bits": "3fb616f560a06f4a"
+        }
+      ],
+      "differing_components": 4,
+      "max_ulp": 4
+    },
+    "schema": "sipi.as-03-numeric-physical-checkpoint.v1",
+    "sha256": "692014dba476bc50a390b46eeb1805324824a52e99c7726fa68fc2eba6270e24",
+    "status": "blocked_numeric_semantics",
+    "upstream_matrix": [
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "3fb616f560a06f4a"
+      },
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "bfb58d5e7e3717c5"
+      },
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "bfb58d5e7e3717c5"
+      },
+      {
+        "im_bits": "0000000000000000",
+        "re_bits": "3fb616f560a06f4a"
+      }
+    ]
+  },
+  "blockers": [
+    "blocked_numeric_semantics"
+  ],
+  "candidate": {
+    "archive": {
+      "bytes": 53186560,
+      "links_rejected": true,
+      "overlay": false,
+      "sha256": "41cdf0848e2d0f58a33b8a466e34adfab1568f9c26dcfe3936f65f8ddea24b7e"
+    },
+    "archive_post": [
+      {
+        "bytes": 84633,
+        "nlink": 1,
+        "path": "crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs",
+        "path_redacted": true,
+        "sha256": "0fb33edbff8a092c5d74a940135ec36452ef93ba0c4669a4ead96f7955645316"
+      },
+      {
+        "bytes": 43995,
+        "nlink": 1,
+        "path": "Cargo.lock",
+        "path_redacted": true,
+        "sha256": "a9dd3fb93ac427c6d6a04538cf38551a8d73bbe35bd4be17ba5e408da2280cbc"
+      },
+      {
+        "bytes": 109,
+        "nlink": 1,
+        "path": "rust-toolchain.toml",
+        "path_redacted": true,
+        "sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90"
+      }
+    ],
+    "archive_pre": [
+      {
+        "bytes": 84633,
+        "nlink": 1,
+        "path": "crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs",
+        "path_redacted": true,
+        "sha256": "0fb33edbff8a092c5d74a940135ec36452ef93ba0c4669a4ead96f7955645316"
+      },
+      {
+        "bytes": 43995,
+        "nlink": 1,
+        "path": "Cargo.lock",
+        "path_redacted": true,
+        "sha256": "a9dd3fb93ac427c6d6a04538cf38551a8d73bbe35bd4be17ba5e408da2280cbc"
+      },
+      {
+        "bytes": 109,
+        "nlink": 1,
+        "path": "rust-toolchain.toml",
+        "path_redacted": true,
+        "sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90"
+      }
+    ],
+    "archive_stable": true,
+    "binary_post": {
+      "bytes": 31036416,
+      "nlink": 1,
+      "path": "sipi_agent_spice_direct-7bf0a09485722722.exe",
+      "path_redacted": true,
+      "sha256": "fa0746beaaa2a3566390fe6793561d1a11bdfd36434b862288f9d0cb7782c502"
+    },
+    "binary_pre": {
+      "bytes": 31036416,
+      "nlink": 1,
+      "path": "sipi_agent_spice_direct-7bf0a09485722722.exe",
+      "path_redacted": true,
+      "sha256": "fa0746beaaa2a3566390fe6793561d1a11bdfd36434b862288f9d0cb7782c502"
+    },
+    "binary_stable": true,
+    "commit": "dadc9720d932f2e71886700d9112a12cd2a027d5",
+    "compiled_inputs_post": [
+      {
+        "bytes": 16923656,
+        "nlink": 1,
+        "path": "libfaer-0333e6b977f48d22.rlib",
+        "path_redacted": true,
+        "sha256": "1c734a60eff178c0ed1c0f9bfe31957cb3a6fd97b1f0c905c23d13e21a5b839d"
+      },
+      {
+        "bytes": 793164,
+        "nlink": 1,
+        "path": "libnum_complex-f211a4ffa2375172.rlib",
+        "path_redacted": true,
+        "sha256": "b805025308081694b6550cda758d369ceee0f1cd31c52341f027f852c34bf847"
+      }
+    ],
+    "compiled_inputs_pre": [
+      {
+        "bytes": 16923656,
+        "nlink": 1,
+        "path": "libfaer-0333e6b977f48d22.rlib",
+        "path_redacted": true,
+        "sha256": "1c734a60eff178c0ed1c0f9bfe31957cb3a6fd97b1f0c905c23d13e21a5b839d"
+      },
+      {
+        "bytes": 793164,
+        "nlink": 1,
+        "path": "libnum_complex-f211a4ffa2375172.rlib",
+        "path_redacted": true,
+        "sha256": "b805025308081694b6550cda758d369ceee0f1cd31c52341f027f852c34bf847"
+      }
+    ],
+    "compiled_inputs_stable": true,
+    "dependency_inventory_post": {
+      "bytes": 58886681,
+      "files": 3625,
+      "packages": 94,
+      "path_redacted": true,
+      "sha256": "f4f33c8caa289d323d4623d2aab0ad53a5762a00e100f79d6e3e10fbe7f5f0cd"
+    },
+    "dependency_inventory_pre": {
+      "bytes": 58886681,
+      "files": 3625,
+      "packages": 94,
+      "path_redacted": true,
+      "sha256": "f4f33c8caa289d323d4623d2aab0ad53a5762a00e100f79d6e3e10fbe7f5f0cd"
+    },
+    "dependency_inventory_stable": true,
+    "live_post": [
+      {
+        "bytes": 84633,
+        "nlink": 1,
+        "path": "crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs",
+        "path_redacted": true,
+        "sha256": "0fb33edbff8a092c5d74a940135ec36452ef93ba0c4669a4ead96f7955645316"
+      },
+      {
+        "bytes": 2225,
+        "nlink": 1,
+        "path": "crates/sipi-agent-spice-direct/NOTICE-SCIKIT-RF-AS-03-POWER-WAVE.txt",
+        "path_redacted": true,
+        "sha256": "975bdd37364b35c58034f6e0064f89ca4c59b0173733b08f62f079795edd0ea7"
+      },
+      {
+        "bytes": 3065,
+        "nlink": 1,
+        "path": "docs/baselines/as-03-power-wave-solve-source-map.v1.yaml",
+        "path_redacted": true,
+        "sha256": "96b61c0dbc1a31c30b51a2d8c37b43de05530fd421e9add0c1f708f5079bd6d1"
+      },
+      {
+        "bytes": 13920,
+        "nlink": 1,
+        "path": "docs/baselines/as-03-numeric-checkpoint-run-01.json",
+        "path_redacted": true,
+        "sha256": "692014dba476bc50a390b46eeb1805324824a52e99c7726fa68fc2eba6270e24"
+      },
+      {
+        "bytes": 43995,
+        "nlink": 1,
+        "path": "Cargo.lock",
+        "path_redacted": true,
+        "sha256": "a9dd3fb93ac427c6d6a04538cf38551a8d73bbe35bd4be17ba5e408da2280cbc"
+      },
+      {
+        "bytes": 109,
+        "nlink": 1,
+        "path": "rust-toolchain.toml",
+        "path_redacted": true,
+        "sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90"
+      }
+    ],
+    "live_pre": [
+      {
+        "bytes": 84633,
+        "nlink": 1,
+        "path": "crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs",
+        "path_redacted": true,
+        "sha256": "0fb33edbff8a092c5d74a940135ec36452ef93ba0c4669a4ead96f7955645316"
+      },
+      {
+        "bytes": 2225,
+        "nlink": 1,
+        "path": "crates/sipi-agent-spice-direct/NOTICE-SCIKIT-RF-AS-03-POWER-WAVE.txt",
+        "path_redacted": true,
+        "sha256": "975bdd37364b35c58034f6e0064f89ca4c59b0173733b08f62f079795edd0ea7"
+      },
+      {
+        "bytes": 3065,
+        "nlink": 1,
+        "path": "docs/baselines/as-03-power-wave-solve-source-map.v1.yaml",
+        "path_redacted": true,
+        "sha256": "96b61c0dbc1a31c30b51a2d8c37b43de05530fd421e9add0c1f708f5079bd6d1"
+      },
+      {
+        "bytes": 13920,
+        "nlink": 1,
+        "path": "docs/baselines/as-03-numeric-checkpoint-run-01.json",
+        "path_redacted": true,
+        "sha256": "692014dba476bc50a390b46eeb1805324824a52e99c7726fa68fc2eba6270e24"
+      },
+      {
+        "bytes": 43995,
+        "nlink": 1,
+        "path": "Cargo.lock",
+        "path_redacted": true,
+        "sha256": "a9dd3fb93ac427c6d6a04538cf38551a8d73bbe35bd4be17ba5e408da2280cbc"
+      },
+      {
+        "bytes": 109,
+        "nlink": 1,
+        "path": "rust-toolchain.toml",
+        "path_redacted": true,
+        "sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90"
+      }
+    ],
+    "sources": [
+      {
+        "bytes": 84633,
+        "git_blob": "66d0aa0d3aa4cf781b37c4be021256aae8df502c",
+        "path": "crates/sipi-agent-spice-direct/src/as03_fit_yparam.rs",
+        "sha256": "0fb33edbff8a092c5d74a940135ec36452ef93ba0c4669a4ead96f7955645316"
+      },
+      {
+        "bytes": 2225,
+        "git_blob": "c4c270f134b72e36b6ffba22a9eb38345bc53501",
+        "path": "crates/sipi-agent-spice-direct/NOTICE-SCIKIT-RF-AS-03-POWER-WAVE.txt",
+        "sha256": "975bdd37364b35c58034f6e0064f89ca4c59b0173733b08f62f079795edd0ea7"
+      },
+      {
+        "bytes": 3065,
+        "git_blob": "7d28ab77318a561b322466e697240f2f1c219715",
+        "path": "docs/baselines/as-03-power-wave-solve-source-map.v1.yaml",
+        "sha256": "96b61c0dbc1a31c30b51a2d8c37b43de05530fd421e9add0c1f708f5079bd6d1"
+      },
+      {
+        "bytes": 13920,
+        "git_blob": "448b3dc6318ce64750a5ea5ebd096934dfcdf490",
+        "path": "docs/baselines/as-03-numeric-checkpoint-run-01.json",
+        "sha256": "692014dba476bc50a390b46eeb1805324824a52e99c7726fa68fc2eba6270e24"
+      },
+      {
+        "bytes": 43995,
+        "git_blob": "30ab1e18a6c60e77fcdc1219f7ce28cbe1909288",
+        "path": "Cargo.lock",
+        "sha256": "a9dd3fb93ac427c6d6a04538cf38551a8d73bbe35bd4be17ba5e408da2280cbc"
+      },
+      {
+        "bytes": 109,
+        "git_blob": "119472b68e28c8cfc703e4e25f9b7ae3503c8b18",
+        "path": "rust-toolchain.toml",
+        "sha256": "3cc13c37191008eaab5490eea2136223fa1bc5b5d2aa9c74a199a0c0c854aa90"
+      }
+    ],
+    "stable": true,
+    "tree": "72c6888d9f5433abfb1523e774431231dcc86f5d"
+  },
+  "claims": {
+    "agent_spice_source_replay": false,
+    "clean_production_archive_execution": true,
+    "committed_real_checkpoint": true,
+    "committed_test_execution": true,
+    "complete_complex_checkpoint": false,
+    "numeric_parity": false,
+    "pinned_scikit_rf_leaf_execution": true,
+    "private_probe_injection": false,
+    "s_parameter_fit": false
+  },
+  "execution": {
+    "agent_spice_yparam_path_executed": false,
+    "candidate_build": {
+      "exit_code": 0,
+      "stderr_bytes": 3252,
+      "stderr_sha256": "8a827f45b282caeb7eaf782ab20212b674bd1e908920b2b86b215ba5e04a6e01",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stream_limit_bytes": 8388608
+    },
+    "candidate_test": {
+      "exit_code": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 199,
+      "stdout_sha256": "96bb391656f8a21d5f1cc722f9fa9268ac2011539496868bfeab5795572d72f2",
+      "stream_limit_bytes": 8388608
+    },
+    "candidate_test_name": "as03_fit_yparam::tests::power_wave_solve_has_stable_fixed_line_checkpoint",
+    "cargo_metadata": {
+      "exit_code": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 416517,
+      "stdout_sha256": "1f9b2d669bc8ba9e922cfe48281ecbbc56a0a2a96eeeb781da74c2b349ddccd1",
+      "stream_limit_bytes": 8388608
+    },
+    "independent_probe": {
+      "exit_code": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 270,
+      "stdout_sha256": "8c51eb5b7ae694ec2ff18d9a55e1a81b5f560b6222ef0ab286226eb8725f2a4e",
+      "stream_limit_bytes": 8388608
+    },
+    "independent_probe_build": {
+      "exit_code": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stream_limit_bytes": 8388608
+    },
+    "independent_probe_not_production_runtime": true,
+    "private_probe_injection": false,
+    "scikit_rf_leaf_probe": {
+      "exit_code": 0,
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 4149,
+      "stdout_sha256": "047c5f9fe1872ebb0eb9525787dd87b199a3c7356b6c71bd3e146a205fd16890",
+      "stream_limit_bytes": 8388608
+    }
+  },
+  "fixture": {
+    "bytes": 137,
+    "created": {
+      "basename": "fixture.s2p",
+      "bytes": 137,
+      "nlink": 1,
+      "path_redacted": true,
+      "sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70"
+    },
+    "kind": "fixed_touchstone_line_s2p_v1",
+    "sha256": "4da06c257a0f0108e4391d65f894b6bb0d62a24a8f00f82f0f0734e061f5de70"
+  },
+  "non_claims": [
+    "candidate_complete_complex_checkpoint",
+    "independent_probe_is_production_runtime",
+    "agent_spice_yparam_path_execution",
+    "numeric_parity",
+    "acceptance_tolerance",
+    "general_nudge_eig_equivalence",
+    "s_parameter_fit",
+    "AS-05_Xyce_XDM",
+    "release_acceptance"
+  ],
+  "nonce": "59f983a8f611e5938b2b7e54581fc8a873eec7043f93c8a22fa46b18ede17d24",
+  "numeric_change": {
+    "blocked_numeric_semantics": true,
+    "current": {
+      "committed_asserted_real_bits": [
+        "3fb616f560a06f4a",
+        "bfb58d5e7e3717c4",
+        "bfb58d5e7e3717c4",
+        "3fb616f560a06f49"
+      ],
+      "differences": [
+        {
+          "candidate_bits": "bfb58d5e7e3717c4",
+          "column": 1,
+          "component": "re",
+          "row": 0,
+          "ulp": 1,
+          "upstream_bits": "bfb58d5e7e3717c5"
+        },
+        {
+          "candidate_bits": "bfb58d5e7e3717c4",
+          "column": 0,
+          "component": "re",
+          "row": 1,
+          "ulp": 1,
+          "upstream_bits": "bfb58d5e7e3717c5"
+        },
+        {
+          "candidate_bits": "3fb616f560a06f49",
+          "column": 1,
+          "component": "re",
+          "row": 1,
+          "ulp": 1,
+          "upstream_bits": "3fb616f560a06f4a"
+        }
+      ],
+      "differing_components": 3,
+      "independent_complex_diagnostic": [
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "3fb616f560a06f4a"
+        },
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "bfb58d5e7e3717c4"
+        },
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "bfb58d5e7e3717c4"
+        },
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "3fb616f560a06f49"
+        }
+      ],
+      "max_ulp": 1,
+      "upstream_complex_matrix": [
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "3fb616f560a06f4a"
+        },
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "bfb58d5e7e3717c5"
+        },
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "bfb58d5e7e3717c5"
+        },
+        {
+          "im_bits": "0000000000000000",
+          "re_bits": "3fb616f560a06f4a"
+        }
+      ],
+      "upstream_real_bits": [
+        "3fb616f560a06f4a",
+        "bfb58d5e7e3717c5",
+        "bfb58d5e7e3717c5",
+        "3fb616f560a06f4a"
+      ]
+    },
+    "differing_components_change": "4_to_3",
+    "first_cell_exact": true,
+    "max_ulp_change": "4_to_1",
+    "numeric_parity": false,
+    "prior": {
+      "differing_components": 4,
+      "max_ulp": 4
+    }
+  },
+  "prep": {
+    "changed_paths": [
+      "tools/aggregate_as_03_power_wave_solve_replay.py",
+      "tools/run_as_03_power_wave_solve_replay.py",
+      "tools/test_verify_as_03_power_wave_solve_replay.py",
+      "tools/verify_as_03_power_wave_solve_replay.py"
+    ],
+    "commit": "e3b1d2dc482be64bff8a3f69f1fdf03eb0792d26",
+    "first_introduction": true,
+    "formal_artifacts_absent": true,
+    "live_post": [
+      {
+        "bytes": 75177,
+        "nlink": 1,
+        "path": "tools/run_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "59e87eb74530882962664737abdd9c8fca36c02c8553560045588fa10cb40775"
+      },
+      {
+        "bytes": 10814,
+        "nlink": 1,
+        "path": "tools/aggregate_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "45d6d4dc2cbb24bcf084e8db11f1c5886de63acc769f2bd9afa899c492c48cf3"
+      },
+      {
+        "bytes": 9527,
+        "nlink": 1,
+        "path": "tools/verify_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "9219ebb62f18cf2362884f65cabdb159eb0a95af6136a7f0dbde31751fd9a79c"
+      },
+      {
+        "bytes": 21311,
+        "nlink": 1,
+        "path": "tools/test_verify_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "2cb2f89e35c3f0e422229d4dd91e14c4462498b0d9a089b3320c93889cf6fa5f"
+      }
+    ],
+    "live_pre": [
+      {
+        "bytes": 75177,
+        "nlink": 1,
+        "path": "tools/run_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "59e87eb74530882962664737abdd9c8fca36c02c8553560045588fa10cb40775"
+      },
+      {
+        "bytes": 10814,
+        "nlink": 1,
+        "path": "tools/aggregate_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "45d6d4dc2cbb24bcf084e8db11f1c5886de63acc769f2bd9afa899c492c48cf3"
+      },
+      {
+        "bytes": 9527,
+        "nlink": 1,
+        "path": "tools/verify_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "9219ebb62f18cf2362884f65cabdb159eb0a95af6136a7f0dbde31751fd9a79c"
+      },
+      {
+        "bytes": 21311,
+        "nlink": 1,
+        "path": "tools/test_verify_as_03_power_wave_solve_replay.py",
+        "path_redacted": true,
+        "sha256": "2cb2f89e35c3f0e422229d4dd91e14c4462498b0d9a089b3320c93889cf6fa5f"
+      }
+    ],
+    "parent": "4042f0d9fdd0846e20ea95e8da7752812a4eea45",
+    "sources": [
+      {
+        "bytes": 75177,
+        "git_blob": "010e4eaa53a4dd8c179ca882cb15003a53a9091b",
+        "path": "tools/run_as_03_power_wave_solve_replay.py",
+        "sha256": "59e87eb74530882962664737abdd9c8fca36c02c8553560045588fa10cb40775"
+      },
+      {
+        "bytes": 10814,
+        "git_blob": "0a56b2acc6b11b35916ff4b22ff094a1ce210ef3",
+        "path": "tools/aggregate_as_03_power_wave_solve_replay.py",
+        "sha256": "45d6d4dc2cbb24bcf084e8db11f1c5886de63acc769f2bd9afa899c492c48cf3"
+      },
+      {
+        "bytes": 9527,
+        "git_blob": "5b2f5d38b2200b98fea8787c99ea04bacc6ce5dc",
+        "path": "tools/verify_as_03_power_wave_solve_replay.py",
+        "sha256": "9219ebb62f18cf2362884f65cabdb159eb0a95af6136a7f0dbde31751fd9a79c"
+      },
+      {
+        "bytes": 21311,
+        "git_blob": "58318badce95d1ae366ace63007c3ad956de7d58",
+        "path": "tools/test_verify_as_03_power_wave_solve_replay.py",
+        "sha256": "2cb2f89e35c3f0e422229d4dd91e14c4462498b0d9a089b3320c93889cf6fa5f"
+      }
+    ],
+    "stable": true,
+    "tree": "115cf9755bfd988bc4f72fd2a3123229d403669c"
+  },
+  "run_id": "as03-e3b-formal-01",
+  "schema": "sipi.as-03-power-wave-solve-replay.v1",
+  "scikit_rf": {
+    "archive": {
+      "bytes": 83476480,
+      "links_rejected": true,
+      "overlay": false,
+      "sha256": "71bcda90c74246abf34bfb8e9c908a50f5c6c782b982942ba952afa3383be4c7"
+    },
+    "commit": "bd651e923cac6020de49a096e1d7e9b5f949f884",
+    "executed_sources_post": {
+      "constants": {
+        "basename": "constants.py",
+        "bytes": 5529,
+        "path_redacted": true,
+        "relative_path": "skrf/constants.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "be3da422ceefb438b335f0e8dc0b8789a63bf2c6da2eec9ed7adbd52d7acfdf5",
+        "version": null
+      },
+      "mathFunctions": {
+        "basename": "mathFunctions.py",
+        "bytes": 32637,
+        "path_redacted": true,
+        "relative_path": "skrf/mathFunctions.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "7ff864b104b672ddcbd06b5fe7c6d6806040827b2d156732948d58a671010462",
+        "version": null
+      },
+      "network": {
+        "basename": "network.py",
+        "bytes": 291611,
+        "path_redacted": true,
+        "relative_path": "skrf/network.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "62d5bd5434eb4f2bb6fef2262dd02fac828f93b9742f7c900920fbf313c8b759",
+        "version": "2.0.1"
+      }
+    },
+    "executed_sources_pre": {
+      "constants": {
+        "basename": "constants.py",
+        "bytes": 5529,
+        "path_redacted": true,
+        "relative_path": "skrf/constants.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "be3da422ceefb438b335f0e8dc0b8789a63bf2c6da2eec9ed7adbd52d7acfdf5",
+        "version": null
+      },
+      "mathFunctions": {
+        "basename": "mathFunctions.py",
+        "bytes": 32637,
+        "path_redacted": true,
+        "relative_path": "skrf/mathFunctions.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "7ff864b104b672ddcbd06b5fe7c6d6806040827b2d156732948d58a671010462",
+        "version": null
+      },
+      "network": {
+        "basename": "network.py",
+        "bytes": 291611,
+        "path_redacted": true,
+        "relative_path": "skrf/network.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "62d5bd5434eb4f2bb6fef2262dd02fac828f93b9742f7c900920fbf313c8b759",
+        "version": "2.0.1"
+      }
+    },
+    "executed_sources_stable": true,
+    "sources": [
+      {
+        "bytes": 291611,
+        "git_blob": "be5a55e367628b888a39376b693e7a5368df45a9",
+        "path": "skrf/network.py",
+        "sha256": "62d5bd5434eb4f2bb6fef2262dd02fac828f93b9742f7c900920fbf313c8b759"
+      },
+      {
+        "bytes": 32637,
+        "git_blob": "ad356cd00d90799ed483d4efeff83bcffeb3674f",
+        "path": "skrf/mathFunctions.py",
+        "sha256": "7ff864b104b672ddcbd06b5fe7c6d6806040827b2d156732948d58a671010462"
+      },
+      {
+        "bytes": 5529,
+        "git_blob": "2064f8b734e449f214c63f7977d83031483c10ff",
+        "path": "skrf/constants.py",
+        "sha256": "be3da422ceefb438b335f0e8dc0b8789a63bf2c6da2eec9ed7adbd52d7acfdf5"
+      },
+      {
+        "bytes": 1553,
+        "git_blob": "ddfd40848d4b5d3e7c4e129f514e6d41c8322546",
+        "path": "LICENSE.txt",
+        "sha256": "299e52a519304ca8d51105cdc3d404c221d74e29f885555e06ab998868322025"
+      }
+    ],
+    "tree": "e01dc798d1ba119357cc41e96802ac9aca83b9bc"
+  },
+  "status": "blocked_numeric_semantics",
+  "toolchain": {
+    "environment": {
+      "cargo_home_explicit": true,
+      "cargo_home_path_redacted": true,
+      "cargo_incremental": false,
+      "cargo_locked": true,
+      "cargo_net_offline": true,
+      "cargo_profile": "test",
+      "linker_explicit": true,
+      "paths_redacted": true,
+      "rust_host": "x86_64-pc-windows-msvc",
+      "rustc_explicit": true,
+      "target_root_fresh": true,
+      "wrappers_cleared": true
+    },
+    "modules_post": {
+      "numpy": {
+        "basename": "__init__.py",
+        "bytes": 26470,
+        "path_redacted": true,
+        "relative_path": "Lib/site-packages/numpy/__init__.py",
+        "root_contained": true,
+        "root_role": "python_environment",
+        "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4",
+        "version": "2.5.1"
+      },
+      "numpy_linalg": {
+        "basename": "_umath_linalg.cp312-win_amd64.pyd",
+        "bytes": 112128,
+        "path_redacted": true,
+        "relative_path": "Lib/site-packages/numpy/linalg/_umath_linalg.cp312-win_amd64.pyd",
+        "root_contained": true,
+        "root_role": "python_environment",
+        "sha256": "99b8aabee0f2b5bb857cb2f15046680a40ed12cd39599a075cd0ae0d17dc1dc5",
+        "version": "0.1.5"
+      },
+      "scipy": {
+        "basename": "__init__.py",
+        "bytes": 4659,
+        "path_redacted": true,
+        "relative_path": "Lib/site-packages/scipy/__init__.py",
+        "root_contained": true,
+        "root_role": "python_environment",
+        "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f",
+        "version": "1.18.0"
+      },
+      "skrf": {
+        "basename": "__init__.py",
+        "bytes": 866,
+        "path_redacted": true,
+        "relative_path": "skrf/__init__.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "192dfb2497bfdd1022a2341419555a1164f4fbd623aa40f1ca6f7e06006b4bda",
+        "version": "2.0.1"
+      }
+    },
+    "modules_pre": {
+      "numpy": {
+        "basename": "__init__.py",
+        "bytes": 26470,
+        "path_redacted": true,
+        "relative_path": "Lib/site-packages/numpy/__init__.py",
+        "root_contained": true,
+        "root_role": "python_environment",
+        "sha256": "a6958cb364663b7acce81ccfd58eeb65a2b34d5376157f924777b97211a73be4",
+        "version": "2.5.1"
+      },
+      "numpy_linalg": {
+        "basename": "_umath_linalg.cp312-win_amd64.pyd",
+        "bytes": 112128,
+        "path_redacted": true,
+        "relative_path": "Lib/site-packages/numpy/linalg/_umath_linalg.cp312-win_amd64.pyd",
+        "root_contained": true,
+        "root_role": "python_environment",
+        "sha256": "99b8aabee0f2b5bb857cb2f15046680a40ed12cd39599a075cd0ae0d17dc1dc5",
+        "version": "0.1.5"
+      },
+      "scipy": {
+        "basename": "__init__.py",
+        "bytes": 4659,
+        "path_redacted": true,
+        "relative_path": "Lib/site-packages/scipy/__init__.py",
+        "root_contained": true,
+        "root_role": "python_environment",
+        "sha256": "a11ad8a1eaf423d32a0d3dd6c9be6c7be86068321f043dacd2d555a49418b92f",
+        "version": "1.18.0"
+      },
+      "skrf": {
+        "basename": "__init__.py",
+        "bytes": 866,
+        "path_redacted": true,
+        "relative_path": "skrf/__init__.py",
+        "root_contained": true,
+        "root_role": "scikit_rf_archive",
+        "sha256": "192dfb2497bfdd1022a2341419555a1164f4fbd623aa40f1ca6f7e06006b4bda",
+        "version": "2.0.1"
+      }
+    },
+    "modules_stable": true,
+    "post": {
+      "cargo": {
+        "basename": "cargo.exe",
+        "copy": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "cargo",
+        "source": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 14,
+          "path_redacted": true
+        },
+        "version_args": [
+          "-Vv"
+        ],
+        "version_exit": 0,
+        "version_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+      },
+      "git": {
+        "basename": "git.exe",
+        "copy": {
+          "bytes": 4422544,
+          "file_sha256": "cab4c4eea1d869cf9f7be73868dc9a90ad2df1b1b673e5f8c8714a576c25ea96",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "git",
+        "source": {
+          "bytes": 4422544,
+          "file_sha256": "cab4c4eea1d869cf9f7be73868dc9a90ad2df1b1b673e5f8c8714a576c25ea96",
+          "nlink": 4,
+          "path_redacted": true
+        },
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_sha256": "5c3cb4e67e4390d4c31533d4ba722036e0494abc4d77a48da2447699f81c574b"
+      },
+      "linker": {
+        "basename": "rust-lld.exe",
+        "copy": {
+          "bytes": 113417728,
+          "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "linker",
+        "source": {
+          "bytes": 113417728,
+          "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "version_args": [
+          "-flavor",
+          "link",
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_sha256": "e353b412ba14d1015ce70ef3faffcb4ce5f7de554bbfa5cf96caa9b3f0c86f85"
+      },
+      "python": {
+        "basename": "python.exe",
+        "copy": {
+          "bytes": 45568,
+          "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "python",
+        "source": {
+          "bytes": 45568,
+          "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+      },
+      "rustc": {
+        "basename": "rustc.exe",
+        "copy": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "rustc",
+        "source": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 14,
+          "path_redacted": true
+        },
+        "version_args": [
+          "-vV"
+        ],
+        "version_exit": 0,
+        "version_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+      }
+    },
+    "pre": {
+      "cargo": {
+        "basename": "cargo.exe",
+        "copy": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "cargo",
+        "source": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 14,
+          "path_redacted": true
+        },
+        "version_args": [
+          "-Vv"
+        ],
+        "version_exit": 0,
+        "version_sha256": "4e9216fb7cac2573c1a8d60be140200103a52ab9fd9415070d94a98b1ef5973a"
+      },
+      "git": {
+        "basename": "git.exe",
+        "copy": {
+          "bytes": 4422544,
+          "file_sha256": "cab4c4eea1d869cf9f7be73868dc9a90ad2df1b1b673e5f8c8714a576c25ea96",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "git",
+        "source": {
+          "bytes": 4422544,
+          "file_sha256": "cab4c4eea1d869cf9f7be73868dc9a90ad2df1b1b673e5f8c8714a576c25ea96",
+          "nlink": 4,
+          "path_redacted": true
+        },
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_sha256": "5c3cb4e67e4390d4c31533d4ba722036e0494abc4d77a48da2447699f81c574b"
+      },
+      "linker": {
+        "basename": "rust-lld.exe",
+        "copy": {
+          "bytes": 113417728,
+          "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "linker",
+        "source": {
+          "bytes": 113417728,
+          "file_sha256": "55bd23cee94c73c87de51106f60b63ad8981390aa7079c435c27fb5b04e283ad",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "version_args": [
+          "-flavor",
+          "link",
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_sha256": "e353b412ba14d1015ce70ef3faffcb4ce5f7de554bbfa5cf96caa9b3f0c86f85"
+      },
+      "python": {
+        "basename": "python.exe",
+        "copy": {
+          "bytes": 45568,
+          "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "python",
+        "source": {
+          "bytes": 45568,
+          "file_sha256": "6293eebb696b1ed1221e9681f75f7df97e0be89cd9028ccee3221ed5fc826ee5",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "version_args": [
+          "--version"
+        ],
+        "version_exit": 0,
+        "version_sha256": "63ec139701a7903093eaa52dcfbd3f9dfd8a551ca5d992c1a938ce365089c26a"
+      },
+      "rustc": {
+        "basename": "rustc.exe",
+        "copy": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 1,
+          "path_redacted": true
+        },
+        "path_redacted": true,
+        "role": "rustc",
+        "source": {
+          "bytes": 12814336,
+          "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+          "nlink": 14,
+          "path_redacted": true
+        },
+        "version_args": [
+          "-vV"
+        ],
+        "version_exit": 0,
+        "version_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+      }
+    },
+    "stable": true,
+    "timeout_seconds": 900
+  },
+  "upstream": {
+    "archive": {
+      "bytes": 15441920,
+      "links_rejected": true,
+      "overlay": false,
+      "sha256": "16ca6951932d66ae30e81cb83b4a6cbba1b67a0cf62c6a146cded40e7936a722"
+    },
+    "commit": "2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5",
+    "sources": [
+      {
+        "bytes": 30937,
+        "git_blob": "473746afe5efb3e5117c58b446e2a7ccb3ca8872",
+        "path": "src/agent_spice/sparam/yparam.py",
+        "sha256": "ca6ec999b93f78094c7ea58997676bd886130baf0bdaec04957c3c480ba5b713"
+      },
+      {
+        "bytes": 909,
+        "git_blob": "29006b652445c770df4a01027357117adf9c95ad",
+        "path": "pyproject.toml",
+        "sha256": "c0f8264a2de1375a4f40a8834173d49859dd9c4717d718fc5f622f1ea4f68c88"
+      },
+      {
+        "bytes": 1067,
+        "git_blob": "55aac2e4f8c36a978d315efb02815972579b8293",
+        "path": "LICENSE",
+        "sha256": "d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2"
+      }
+    ],
+    "tree": "b6bde97128030d6cea0d68b2f0a35d807be8c402"
+  },
+  "work_item": "AS-03"
+}

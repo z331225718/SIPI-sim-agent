@@ -1,0 +1,45 @@
+audit_binding:
+  bytes: 708
+  normalized_manifest_sha256: 207897f63d982b0da66d78b4b241af4f8388555a2712424f85bfc1fffc8646c6
+  path: docs/baselines/audits/2026-08-27-as-03-power-wave-solve-replay.md
+  sha256: 975fb511fe5e39062c4a2020417f9bf533891b743f4573801fcee8a105776aac
+claims:
+  acceptance_tolerance: false
+  agent_spice_yparam_path_execution: false
+  as05_xyce_xdm: false
+  complete_complex_checkpoint: false
+  numeric_parity: false
+  release_acceptance: false
+  s_parameter_fit: false
+evidence:
+  aggregate:
+    bytes: 16215
+    path: docs/baselines/as-03-power-wave-solve-replay-aggregate.v1.json
+    sha256: 2bb13ced4928997da795bb6135faf025b93f645c0c5b280c62ab1ec29910790d
+  reports:
+  - bytes: 35102
+    path: docs/baselines/as-03-power-wave-solve-replay-run-01.v1.json
+    sha256: bfbc9db4edabb08f37878c5a1fc5483418f2a2182a83017066298553e5c33448
+  - bytes: 35102
+    path: docs/baselines/as-03-power-wave-solve-replay-run-02.v1.json
+    sha256: 4f3bde37a5fb0d313f15d887dd66b7031edd1571ce55b7171772c1782d61098d
+formal_gate:
+  commit: dee6b1d0a62717b3b8e71fe00902bae01f03be1c
+  files:
+  - blob: 01a608a4515e2e00cdb9a27b1073899d188a95b1
+    bytes: 21143
+    path: tools/test_verify_as_03_power_wave_solve_replay_formal.py
+    sha256: 97cab88500671e3355e041ce2287ff2f81343be39f4d4987f2eec36e15635e00
+  - blob: d60d91a73fdbe1d1681bf9ac6b17532df3d9ca07
+    bytes: 26017
+    path: tools/verify_as_03_power_wave_solve_replay_formal.py
+    sha256: fcf83166c666d2f928f9c9cbf03159f799955e6fc8b166b3c933de82f8416b21
+  parent: 743c57d8d612643df7e116c6ee04c950cb370ff1
+  tree: 8ec2ff2ee840b2db0363a779bc70dd97960d4362
+schema: sipi.as-03-power-wave-solve-replay-formal.v1
+stage1_preparation:
+  commit: e3b1d2dc482be64bff8a3f69f1fdf03eb0792d26
+  parent: 4042f0d9fdd0846e20ea95e8da7752812a4eea45
+  tree: 115cf9755bfd988bc4f72fd2a3123229d403669c
+status: blocked_numeric_semantics
+version: 1
