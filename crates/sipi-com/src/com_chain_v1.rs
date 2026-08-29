@@ -12,9 +12,10 @@
 //! and every non-finite control is a hard error.
 
 use crate::build_noise_pdf_v1::{R480NoisePdfV1, build_r480_noise_pdf_v1};
+use crate::c2m_eye_v1::{C2mEyeErrorV1, calculate_c2m_vertical_eye_v1};
 use crate::com_metrics_v1::{ComMetricsV1, calculate_com_metrics_v1};
 use crate::combined_noise_pdf_v1::{CombinedNoisePdfV1, combine_r480_noise_pdf_v1};
-use crate::discrete_pdf_v1::PdfErrorV1;
+use crate::discrete_pdf_v1::{PdfErrorV1, normal_pdf_v1};
 use crate::equalizer_frontend_v1::{CursorSampleV1, EqualizerErrorV1, cursor_sample_index_v1};
 use crate::residual_channel_pdf_v1::{ResidualPdfResultV1, residual_channel_pdf_v1};
 
@@ -45,6 +46,11 @@ impl From<PdfErrorV1> for ComChainErrorV1 {
 }
 impl From<ComMetricsErrorV1> for ComChainErrorV1 {
     fn from(_: ComMetricsErrorV1) -> Self {
+        ComChainErrorV1::Metrics
+    }
+}
+impl From<C2mEyeErrorV1> for ComChainErrorV1 {
+    fn from(_: C2mEyeErrorV1) -> Self {
         ComChainErrorV1::Metrics
     }
 }
@@ -99,6 +105,15 @@ pub(crate) struct ComWinnerContextV1 {
     pub(crate) floating_dfe: bool,
     pub(crate) dfe_max_count: Option<i64>,
     pub(crate) sigma_n_v: f64,
+    pub(crate) c2m: Option<ComWinnerC2mContextV1>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ComWinnerC2mContextV1 {
+    pub(crate) samples_for_c2m: usize,
+    pub(crate) t_o_mui: f64,
+    pub(crate) histogram_window: String,
+    pub(crate) ql: f64,
 }
 
 impl ComChainControlsV1 {
@@ -313,7 +328,7 @@ pub(crate) fn run_com_chain_with_winner_v1(
         fext_pulses,
         next_pulses,
         &resolved,
-        Some(winner.cursor_index),
+        Some(winner),
     )
 }
 
@@ -322,7 +337,7 @@ fn run_com_chain_with_crosstalk_cursor_v1(
     fext_pulses: &[&[f64]],
     next_pulses: &[&[f64]],
     controls: &ComChainControlsV1,
-    forced_cursor_index: Option<usize>,
+    winner: Option<&ComWinnerContextV1>,
 ) -> Result<ComChainReportV1, ComChainErrorV1> {
     if pulse_response.is_empty() {
         return Err(ComChainErrorV1::EmptyPulse);
@@ -338,7 +353,7 @@ fn run_com_chain_with_crosstalk_cursor_v1(
             return Err(ComChainErrorV1::NonFinite);
         }
     }
-    let cursor = if let Some(index) = forced_cursor_index {
+    let cursor = if let Some(index) = winner.map(|value| value.cursor_index) {
         if index >= pulse_response.len() {
             return Err(ComChainErrorV1::Equalizer);
         }
@@ -449,14 +464,49 @@ fn run_com_chain_with_crosstalk_cursor_v1(
         .map(|index| combined.combined().x(index))
         .collect();
     let cdf = combined.combined().cdf();
+    let eye_opening_v = if let Some(c2m) = winner.and_then(|value| value.c2m.as_ref()) {
+        let noise_q = controls.bbn_q_factor.unwrap_or(noise.ber_q());
+        let ne_noise = normal_pdf_v1(controls.sigma_ne_v, noise_q, controls.bin_size)?;
+        let (top, bottom) = calculate_c2m_vertical_eye_v1(
+            pulse_response,
+            cursor_index,
+            controls.samples_per_ui,
+            c2m.samples_for_c2m,
+            controls.levels as usize,
+            controls.bin_size,
+            controls.r_lm_ohm,
+            controls.dfe_tap_count,
+            &controls.dfe_max,
+            &controls.dfe_min,
+            controls.dfe_step,
+            controls.sigma_rj_s,
+            controls.sigma_x,
+            controls.sigma_n_v,
+            noise.sigma_tx_v(),
+            noise.ber_q(),
+            &ne_noise,
+            noise.result().cci(),
+            controls.amplitude_dd_v,
+            controls.spec_ber,
+            c2m.t_o_mui,
+            &c2m.histogram_window,
+            c2m.ql,
+        )?;
+        Some(top.ok_or(ComChainErrorV1::Metrics)? - bottom.ok_or(ComChainErrorV1::Metrics)?)
+    } else {
+        controls.eye_opening_v
+    };
+    let t_o = winner
+        .and_then(|value| value.c2m.as_ref())
+        .map_or(controls.t_o_s, |value| value.t_o_mui / 1000.0);
     let metrics = calculate_com_metrics_v1(
         controls.available_signal_v,
         &support,
         &cdf,
         controls.spec_ber,
         controls.pass_threshold_db,
-        controls.t_o_s,
-        controls.eye_opening_v,
+        t_o,
+        eye_opening_v,
     )?;
     Ok(ComChainReportV1 {
         cursor,
@@ -579,6 +629,7 @@ mod tests {
             floating_dfe: true,
             dfe_max_count: Some(2),
             sigma_n_v: 0.01,
+            c2m: None,
         };
         let report = run_com_chain_with_winner_v1(&pulse64(), &[], &[], &controls(), &winner)
             .expect("winner chain");

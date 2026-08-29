@@ -209,7 +209,7 @@ pub fn execute_com_run_with_search_result_v2(
     dto: &ComParametersV1,
     winner: &SearchLoopResultWithWinnerV2,
 ) -> Result<ComRunResultEnvelopeV1, ComRunExecutionErrorV1> {
-    let pulse_response = winner.result().selected_pulse.as_slice();
+    let pulse_response = winner.final_pulse();
     execute_com_run_with_context_v1(
         request_bytes,
         pulse_response,

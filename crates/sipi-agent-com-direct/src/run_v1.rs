@@ -7,9 +7,16 @@
 //! PDF chain. Calibration, MMSE, and RxFFE publish their numeric payloads,
 //! rather than reducing those source branches to status-only diagnostics.
 
+use crate::fd_runtime_v1::{
+    FdRawNetworkSetV1, FdRawSdd21V1, FdRuntimeControlsV1, FdRuntimeDiagnosticsV1,
+    FdRuntimeMetricsV1, compose_fd_metrics_v1,
+};
+use crate::erl_tdr_v1::{
+    NORMAL_ERL_TDR_POLICY_V1, R480NormalErlResultV1, run_normal_erl_v1,
+};
 use crate::package_vtf_v1::{
-    reorder_s4p_samples_v1, s4p_package_dc_vtf_v1, s4p_package_vtf_v1,
-    validate_s4p_package_controls_v1,
+    assemble_r480_tdr_dd_network_v1, reorder_s4p_samples_v1, s4p_package_dc_vtf_v1,
+    s4p_package_vtf_v1, validate_s4p_package_controls_v1,
 };
 use crate::{
     ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1, config_validate_v1,
@@ -20,10 +27,12 @@ use sipi_com::{
     CalibrationErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, ComRunResultEnvelopeV1,
     CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
-    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithWinnerV2, TdFrequencyFillinV1,
-    XtalkChannelV1, apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
-    calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1,
-    execute_com_run_v1, execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
+    FourPortSMatrixV1, SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1,
+    SearchLoopResultWithWinnerV2, TdFrequencyFillinV1, XtalkChannelV1, apply_r480_equalization_v1,
+    apply_r480_pn_skew_v1, butterworth_filter_v1, calculate_r480_calibration_noise_v1,
+    calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, com_mixed_mode_v1,
+    execute_com_run_v1,
+    execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
     merge_com_parameters_v1, r480_tdiln_v1, raised_cosine_filter_v1, rectangular_pulse_response_v1,
     s21_to_impulse_dc_v1, sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1,
     search_mmse_candidates_v1, search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2, td_fd_fillin_v1,
@@ -230,6 +239,12 @@ struct ImpulseInputV1 {
     /// ACCM transfer produced only by the typed S4P package route.
     ac_common_mode_transfer: Option<Vec<Vec<Complex64>>>,
     ac_common_mode_frequency_hz: Option<Vec<f64>>,
+}
+
+#[derive(Clone, Debug)]
+struct OwnedRawSdd21V1 {
+    frequency_hz: Vec<f64>,
+    sdd21: Vec<Complex64>,
 }
 
 #[derive(Clone, Debug)]
@@ -508,7 +523,8 @@ fn workbook_package_cases_from_config_v1(
             ));
         }
     };
-    if selected.len() <= 1 {
+    let erl_only = workbook_truthy_v1(&loaded.values, &["ERL_ONLY"], "ERL_ONLY")?;
+    if selected.len() <= 1 && !erl_only {
         return Ok(None);
     }
     if selected.len() > MAX_CROSSTALK_CHANNELS_V1
@@ -521,12 +537,32 @@ fn workbook_package_cases_from_config_v1(
             limit: MAX_CROSSTALK_CHANNELS_V1 as u64,
         });
     }
+    // Snapshot every caller-supplied channel before fan-out.  The outer
+    // workbook loop stages each case independently, so retaining only the
+    // THRU source here would silently drop explicit FEXT/NEXT inputs.
     let source_bytes: Arc<[u8]> =
         Arc::from(bounded_read_v1(&request.pulse, MAX_IMPULSE_FILE_BYTES_V1)?);
-    validate_workbook_snapshot_budget_v1(source_bytes.len(), selected.len())?;
+    let fext = snapshot_package_channels_v1(&request.fext)?;
+    let next = snapshot_package_channels_v1(&request.next)?;
+    let total_snapshot_bytes = source_bytes
+        .len()
+        .checked_add(snapshot_channels_bytes_v1(&fext)?)
+        .ok_or_else(|| DirectRunErrorV1::InputLimit {
+            path: "workbook package-case S4P snapshots".to_owned(),
+            limit: MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1,
+        })?;
+    let total_snapshot_bytes = total_snapshot_bytes
+        .checked_add(snapshot_channels_bytes_v1(&next)?)
+        .ok_or_else(|| DirectRunErrorV1::InputLimit {
+            path: "workbook package-case S4P snapshots".to_owned(),
+            limit: MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1,
+        })?;
+    let case_count = if erl_only { 1 } else { selected.len() };
+    validate_workbook_snapshot_budget_v1(total_snapshot_bytes, case_count)?;
     let shared_document = Arc::new(loaded.document);
     let cases = selected
         .iter()
+        .take(case_count)
         .enumerate()
         .map(|(index, _)| PackageCaseV1 {
             identity: format!("workbook-case-{index}"),
@@ -540,8 +576,8 @@ fn workbook_package_cases_from_config_v1(
                 source_sha256: sha256_bytes_v1(&source_bytes),
                 source_kind: "workbook-s4p-source",
             },
-            fext: Vec::new(),
-            next: Vec::new(),
+            fext: fext.clone(),
+            next: next.clone(),
             trusted_workbook: true,
         })
         .collect();
@@ -630,6 +666,43 @@ fn load_channel_input_snapshot_v1(
     let loaded = load_channel_input_v1(&staged);
     let _ = fs::remove_file(&staged);
     Ok((loaded?, bytes))
+}
+
+fn snapshot_package_channels_v1(
+    paths: &[PathBuf],
+) -> Result<Vec<PackageChannelV1>, DirectRunErrorV1> {
+    paths
+        .iter()
+        .map(|path| {
+            let (loaded, source_bytes) = load_channel_input_snapshot_v1(path)?;
+            Ok(PackageChannelV1 {
+                values: loaded.values,
+                source: Some(path.clone()),
+                source_bytes: Some(Arc::from(source_bytes)),
+                already_pulse: loaded.already_pulse,
+                source_sha256: loaded.source_sha256,
+                source_kind: loaded.source_kind,
+            })
+        })
+        .collect()
+}
+
+fn snapshot_channels_bytes_v1(channels: &[PackageChannelV1]) -> Result<usize, DirectRunErrorV1> {
+    channels.iter().try_fold(0_usize, |total, channel| {
+        let bytes = channel
+            .source_bytes
+            .as_ref()
+            .ok_or_else(|| {
+                DirectRunErrorV1::Execution("package source snapshot is missing".to_owned())
+            })?
+            .len();
+        total
+            .checked_add(bytes)
+            .ok_or_else(|| DirectRunErrorV1::InputLimit {
+                path: "workbook package-case S4P snapshots".to_owned(),
+                limit: MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1,
+            })
+    })
 }
 
 fn stage_exact_input_v1(
@@ -850,6 +923,30 @@ fn run_package_cases_v1(
                 )
             }));
             published_cases.push(published);
+        }
+        let shared_normal_erl = published_cases
+            .first()
+            .and_then(|case| case.get("diagnostics"))
+            .and_then(|diagnostics| diagnostics.get("normal_erl"))
+            .filter(|value| !value.is_null())
+            .cloned();
+        if let Some(shared_normal_erl) = shared_normal_erl {
+            let shared_metrics = published_cases
+                .first()
+                .and_then(|case| case.get("metrics"))
+                .map(|metrics| {
+                    ["ERL", "ERL11", "ERL22"]
+                        .into_iter()
+                        .map(|key| (key, metrics.get(key).cloned().unwrap_or(Value::Null)))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            for case in published_cases.iter_mut().skip(1) {
+                for (key, value) in &shared_metrics {
+                    case["metrics"][*key] = value.clone();
+                }
+                case["diagnostics"]["normal_erl"] = shared_normal_erl.clone();
+            }
         }
         let first = first_report
             .ok_or_else(|| DirectRunErrorV1::Execution("empty package cases".to_owned()))?;
@@ -1155,6 +1252,21 @@ fn run_with_workflow_token_origin(
             }
         }
     }
+    if package_s4p {
+        // Package FEXT/NEXT inputs carry the exact VTF used by the r4.80
+        // search.  Flatten only those aggressor sidecars onto THRU's search
+        // input; their amplitudes are consumed by the FD crosstalk integral,
+        // while the already-scaled impulses below remain the final COM path.
+        let package_crosstalk = fext_inputs
+            .iter()
+            .chain(next_inputs.iter())
+            .filter_map(|input| input.td_crosstalk.clone())
+            .flatten()
+            .collect::<Vec<_>>();
+        if !package_crosstalk.is_empty() {
+            input_impulse.td_crosstalk = Some(package_crosstalk);
+        }
+    }
     if td_mode {
         input_impulse.td_crosstalk = Some(td_crosstalk_channels_v1(
             input_impulse.td_fillin.as_ref().ok_or_else(|| {
@@ -1230,6 +1342,37 @@ fn run_with_workflow_token_origin(
     input_impulse.ac_common_mode_transfer =
         (!ac_common_mode_transfers.is_empty()).then_some(ac_common_mode_transfers);
     input_impulse.ac_common_mode_frequency_hz = ac_common_mode_frequency_hz;
+    let fd_runtime = if package_s4p
+        && trusted_workbook
+        && workbook_bool_json_v1(&loaded.values, &["GET_FD"], "GET_FD")?
+            .as_bool()
+            .expect("workbook boolean helper")
+    {
+        Some(compose_workbook_fd_metrics_v1(
+            request,
+            &loaded.values,
+            resolved_package_case_index,
+        )?)
+    } else {
+        None
+    };
+    let normal_erl = if package_s4p
+        && trusted_workbook
+        && resolved_package_case_index == 0
+        && (workbook_truthy_v1(&loaded.values, &["ERL"], "ERL")?
+            || workbook_truthy_v1(&loaded.values, &["ERL_ONLY"], "ERL_ONLY")?)
+    {
+        let tdr_w_txpkg =
+            workbook_bool_json_v1(&loaded.values, &["TDR_W_TXPKG"], "TDR_W_TXPKG")?
+                .as_bool()
+                .expect("workbook boolean helper");
+        Some((
+            run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?,
+            tdr_w_txpkg,
+        ))
+    } else {
+        None
+    };
     let branches = portable_branch_result_with_sigma_v1(
         &document,
         &input_impulse,
@@ -1293,34 +1436,62 @@ fn run_with_workflow_token_origin(
     )
     .map_err(|error| DirectRunErrorV1::Parameters(format!("{error:?}")))?;
     let request_bytes = admission_request_bytes_v1(request, &controls)?;
-    let mut fext_pulse_values = fext_inputs
-        .iter()
-        .map(|input| {
-            if input.already_pulse {
-                Ok(input.values.clone())
-            } else {
-                rectangular_pulse_response_v1(&input.values, samples_per_ui)
-                    .map_err(|error| DirectRunErrorV1::Parameters(format!("FEXT pulse: {error:?}")))
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    fext_pulse_values.extend(branches.effective_fext_pulses.clone());
+    let selected_workbook_crosstalk = if trusted_workbook {
+        branches
+            .search_winner
+            .as_ref()
+            .map(|winner| {
+                selected_workbook_crosstalk_pulses_v1(
+                    &fext_inputs,
+                    &next_inputs,
+                    &loaded.values,
+                    winner,
+                )
+            })
+            .transpose()?
+    } else {
+        None
+    };
+    let fext_pulse_values = if let Some((fext, _)) = selected_workbook_crosstalk.as_ref() {
+        fext.clone()
+    } else if branches.effective_fext_pulses.is_empty() {
+        fext_inputs
+            .iter()
+            .map(|input| {
+                if input.already_pulse {
+                    Ok(input.values.clone())
+                } else {
+                    rectangular_pulse_response_v1(&input.values, samples_per_ui).map_err(|error| {
+                        DirectRunErrorV1::Parameters(format!("FEXT pulse: {error:?}"))
+                    })
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?
+    } else {
+        branches.effective_fext_pulses.clone()
+    };
     let fext_values = fext_pulse_values
         .iter()
         .map(Vec::as_slice)
         .collect::<Vec<_>>();
-    let mut next_pulse_values = next_inputs
-        .iter()
-        .map(|input| {
-            if input.already_pulse {
-                Ok(input.values.clone())
-            } else {
-                rectangular_pulse_response_v1(&input.values, samples_per_ui)
-                    .map_err(|error| DirectRunErrorV1::Parameters(format!("NEXT pulse: {error:?}")))
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    next_pulse_values.extend(branches.effective_next_pulses.clone());
+    let next_pulse_values = if let Some((_, next)) = selected_workbook_crosstalk.as_ref() {
+        next.clone()
+    } else if branches.effective_next_pulses.is_empty() {
+        next_inputs
+            .iter()
+            .map(|input| {
+                if input.already_pulse {
+                    Ok(input.values.clone())
+                } else {
+                    rectangular_pulse_response_v1(&input.values, samples_per_ui).map_err(|error| {
+                        DirectRunErrorV1::Parameters(format!("NEXT pulse: {error:?}"))
+                    })
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?
+    } else {
+        branches.effective_next_pulses.clone()
+    };
     let next_values = next_pulse_values
         .iter()
         .map(Vec::as_slice)
@@ -1375,6 +1546,12 @@ fn run_with_workflow_token_origin(
         branches.calibration_sigma_bn_v,
         branches.calibration_sigma_ne_v,
         branches.calibration_sigma_hp_v,
+        branches
+            .search_winner
+            .as_ref()
+            .map(SearchLoopResultWithWinnerV2::result),
+        fd_runtime.as_ref(),
+        normal_erl.as_ref(),
     );
     let artifacts = write_run_artifacts_internal_v1(
         &request.output_dir,
@@ -2291,6 +2468,16 @@ fn trusted_workbook_controls_v1(
             result.insert(canonical.to_owned(), exact(source_key, canonical)?);
         }
     }
+    let t_o_mui = workbook_fd_scalar_v1(source, &["T_O"], "T_O")?;
+    if t_o_mui < 0.0 {
+        return Err(DirectRunErrorV1::Parameters(
+            "trusted workbook T_O must define a non-negative mUI width".to_owned(),
+        ));
+    }
+    result.insert(
+        "t_o_s".to_owned(),
+        ResolvedDefaultV1::Scalar(t_o_mui / 1000.0),
+    );
     if source.contains_key("Floating_DFE") {
         let floating_dfe = match exact("Floating_DFE", "floating_dfe")? {
             ResolvedDefaultV1::Boolean(value) => value,
@@ -2392,6 +2579,128 @@ fn workbook_controls_from_search_v1(
         ));
     }
     trusted_workbook_controls_v1(values, branch, package_case_index)
+}
+
+fn workbook_selected_equalizer_value_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    index: i64,
+    label: &str,
+) -> Result<f64, DirectRunErrorV1> {
+    let candidates = workbook_fd_vector_v1(values, aliases, label)?;
+    if candidates.len() == 1 {
+        return Ok(candidates[0]);
+    }
+    let index = usize::try_from(index).map_err(|_| {
+        DirectRunErrorV1::Parameters(format!("workbook {label} selection is negative"))
+    })?;
+    candidates.get(index).copied().ok_or_else(|| {
+        DirectRunErrorV1::Parameters(format!(
+            "workbook {label} lacks selected equalizer index {index}"
+        ))
+    })
+}
+
+type SelectedCrosstalkPulsesV1 = (Vec<Vec<f64>>, Vec<Vec<f64>>);
+
+fn selected_workbook_crosstalk_pulses_v1(
+    fext_inputs: &[ImpulseInputV1],
+    next_inputs: &[ImpulseInputV1],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    winner: &SearchLoopResultWithWinnerV2,
+) -> Result<SelectedCrosstalkPulsesV1, DirectRunErrorV1> {
+    if fext_inputs.is_empty() && next_inputs.is_empty() {
+        return Ok((Vec::new(), Vec::new()));
+    }
+    let result = winner.result();
+    let mut unequalized = Vec::with_capacity(fext_inputs.len() + next_inputs.len());
+    let mut channel_types = Vec::with_capacity(unequalized.capacity());
+    for input in fext_inputs {
+        unequalized.push(input.values.clone());
+        channel_types.push("FEXT".to_owned());
+    }
+    for input in next_inputs {
+        unequalized.push(input.values.clone());
+        channel_types.push("NEXT".to_owned());
+    }
+    let ctle_type = workbook_control_json_v1(values, &["CTLE_type"], "CTLE_type")?
+        .as_str()
+        .ok_or_else(|| {
+            DirectRunErrorV1::Parameters("workbook CTLE_type must be a string".to_owned())
+        })?
+        .to_owned();
+    let mut high_pass_hz = None;
+    let mut high_pass_gain_db = None;
+    let mut high_pass_zero_hz = None;
+    let mut high_pass_pole_hz = None;
+    match ctle_type.as_str() {
+        "CL120d" => {
+            high_pass_hz = Some(workbook_selected_equalizer_value_v1(
+                values,
+                &["f_HP"],
+                result.high_pass_index,
+                "f_HP",
+            )?);
+            high_pass_gain_db = Some(result.high_pass_gain_db);
+        }
+        "CL120e" => {
+            high_pass_zero_hz = Some(workbook_selected_equalizer_value_v1(
+                values,
+                &["f_HP_Z"],
+                result.ctle_index,
+                "f_HP_Z",
+            )?);
+            high_pass_pole_hz = Some(workbook_selected_equalizer_value_v1(
+                values,
+                &["f_HP_P"],
+                result.ctle_index,
+                "f_HP_P",
+            )?);
+        }
+        _ => {}
+    }
+    let equalized = apply_r480_equalization_v1(
+        &unequalized,
+        &channel_types,
+        workbook_fd_scalar_v1(values, &["fb"], "fb")?,
+        workbook_fd_usize_v1(values, &["samples_per_ui"], "samples_per_ui")?,
+        &ctle_type,
+        workbook_selected_equalizer_value_v1(
+            values,
+            &["CTLE_fz"],
+            result.ctle_index,
+            "CTLE_fz",
+        )?,
+        workbook_selected_equalizer_value_v1(
+            values,
+            &["CTLE_fp1"],
+            result.ctle_index,
+            "CTLE_fp1",
+        )?,
+        workbook_selected_equalizer_value_v1(
+            values,
+            &["CTLE_fp2"],
+            result.ctle_index,
+            "CTLE_fp2",
+        )?,
+        result.ctle_gain_db,
+        &result.selected_tx_taps,
+        winner.selected_tx_ffe_precursor_count(),
+        high_pass_hz,
+        high_pass_gain_db,
+        high_pass_zero_hz,
+        high_pass_pole_hz,
+        None,
+        None,
+    )
+    .map_err(|error| {
+        DirectRunErrorV1::Unsupported(format!("selected workbook equalization: {error:?}"))
+    })?;
+    let pulses = equalized.pulse_responses();
+    Ok((
+        pulses[..fext_inputs.len()].to_vec(),
+        pulses[fext_inputs.len()..].to_vec(),
+    ))
 }
 
 fn required_usize_from_controls_v1(
@@ -5869,31 +6178,100 @@ fn workbook_bool_json_v1(
     )))
 }
 
-fn workbook_first_scalar_json_v1(
+fn workbook_truthy_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<bool, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, aliases, label)?;
+    if let Some(value) = value.as_bool() {
+        return Ok(value);
+    }
+    value
+        .as_f64()
+        .filter(|value| value.is_finite())
+        .map(|value| value != 0.0)
+        .ok_or_else(|| {
+            DirectRunErrorV1::Parameters(format!(
+                "workbook control {label} must have finite source truthiness"
+            ))
+        })
+}
+
+/// Convert a trusted workbook scalar/vector control to the vector shape used
+/// by the typed portable search consumer.  r4.80 keeps a number of workbook
+/// controls scalar until its internal size adjustment; the JSON/wire surface
+/// remains array-shaped, so this conversion belongs only in this source
+/// crosswalk.  Empty vectors are preserved for optional controls.
+fn workbook_numeric_vector_json_v1(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     aliases: &[&str],
     label: &str,
 ) -> Result<Value, DirectRunErrorV1> {
     let value = workbook_control_json_v1(values, aliases, label)?;
+    let items = match &value {
+        Value::Array(items) => items.clone(),
+        Value::Number(number) => vec![Value::Number(number.clone())],
+        _ => {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "workbook control {label} must be a scalar or numeric vector"
+            )));
+        }
+    };
+    for (index, item) in items.iter().enumerate() {
+        if item.as_f64().is_none_or(|number| !number.is_finite()) {
+            return Err(DirectRunErrorV1::Parameters(format!(
+                "workbook control {label}[{index}] must be finite"
+            )));
+        }
+    }
+    Ok(Value::Array(items))
+}
+
+/// Resolve the scalar first DFE bound consumed by the search loop.  MATLAB's
+/// r4.80 materializer intentionally leaves `bmax` empty when `N_b == 0`; in
+/// that case the typed no-DFE search value is the neutral zero, not an
+/// invented workbook bound.  A missing/empty bound remains an error for a
+/// nonzero DFE count.
+fn workbook_dfe_first_max_json_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+) -> Result<Value, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, &["bmax"], "bmax")?;
     if let Some(number) = value.as_f64()
         && number.is_finite()
     {
         return Ok(json!(number));
     }
     let Some(array) = value.as_array() else {
-        return Err(DirectRunErrorV1::Parameters(format!(
-            "workbook control {label} must be a scalar or non-empty vector"
-        )));
+        return Err(DirectRunErrorV1::Parameters(
+            "workbook control bmax must be a scalar or numeric vector".to_owned(),
+        ));
     };
+    if array.is_empty() {
+        let ndfe = workbook_control_json_v1(values, &["ndfe"], "ndfe")?
+            .as_f64()
+            .filter(|number| number.is_finite() && *number >= 0.0 && number.fract() == 0.0)
+            .ok_or_else(|| {
+                DirectRunErrorV1::Parameters(
+                    "workbook control ndfe must be a non-negative integer".to_owned(),
+                )
+            })?;
+        if ndfe == 0.0 {
+            return Ok(json!(0.0));
+        }
+        return Err(DirectRunErrorV1::Parameters(
+            "workbook control bmax must contain a finite scalar when ndfe is nonzero".to_owned(),
+        ));
+    }
     let first = array.first().and_then(Value::as_f64).ok_or_else(|| {
-        DirectRunErrorV1::Parameters(format!(
-            "workbook control {label} must contain a finite scalar"
-        ))
+        DirectRunErrorV1::Parameters(
+            "workbook control bmax must contain a finite scalar".to_owned(),
+        )
     })?;
     if !first.is_finite() {
-        return Err(DirectRunErrorV1::Parameters(format!(
-            "workbook control {label} must contain a finite scalar"
-        )));
+        return Err(DirectRunErrorV1::Parameters(
+            "workbook control bmax must contain a finite scalar".to_owned(),
+        ));
     }
     Ok(json!(first))
 }
@@ -5978,6 +6356,8 @@ fn materialize_workbook_search_v1(
     }
     let mut search = Map::new();
     let copy = |aliases: &[&str], label: &str| workbook_control_json_v1(values, aliases, label);
+    let copy_vector =
+        |aliases: &[&str], label: &str| workbook_numeric_vector_json_v1(values, aliases, label);
     for (key, aliases) in [
         ("samples_per_ui", &["samples_per_ui"][..]),
         ("fb_hz", &["fb"][..]),
@@ -6017,7 +6397,7 @@ fn materialize_workbook_search_v1(
     );
     search.insert(
         "dfe_first_max".to_owned(),
-        workbook_first_scalar_json_v1(values, &["bmax"], "bmax")?,
+        workbook_dfe_first_max_json_v1(values)?,
     );
     search.insert("frequency_hz".to_owned(), json!(frequency_hz));
     search.insert("noise_frequency_hz".to_owned(), json!(frequency_hz));
@@ -6029,19 +6409,19 @@ fn materialize_workbook_search_v1(
     search.insert(
         "tx_ffe_values".to_owned(),
         json!({
-            "tx_ffe_cm1_values": copy(&["tx_ffe_cm1_values"], "tx_ffe_cm1_values")?,
-            "tx_ffe_cm2_values": copy(&["tx_ffe_cm2_values"], "tx_ffe_cm2_values")?,
-            "tx_ffe_cm3_values": copy(&["tx_ffe_cm3_values"], "tx_ffe_cm3_values")?,
-            "tx_ffe_cp1_values": copy(&["tx_ffe_cp1_values"], "tx_ffe_cp1_values")?,
+            "tx_ffe_cm1_values": copy_vector(&["tx_ffe_cm1_values"], "tx_ffe_cm1_values")?,
+            "tx_ffe_cm2_values": copy_vector(&["tx_ffe_cm2_values"], "tx_ffe_cm2_values")?,
+            "tx_ffe_cm3_values": copy_vector(&["tx_ffe_cm3_values"], "tx_ffe_cm3_values")?,
+            "tx_ffe_cp1_values": copy_vector(&["tx_ffe_cp1_values"], "tx_ffe_cp1_values")?,
         }),
     );
     let ctle = json!({
-        "ctle_gdc_values": copy(&["ctle_gdc_values"], "ctle_gdc_values")?,
-        "ctle_fz": copy(&["CTLE_fz"], "CTLE_fz")?, "ctle_fp1": copy(&["CTLE_fp1"], "CTLE_fp1")?,
-        "ctle_fp2": copy(&["CTLE_fp2"], "CTLE_fp2")?, "ctle_type": copy(&["CTLE_type"], "CTLE_type")?,
-        "g_dc_hp_values": copy(&["g_DC_HP_values"], "g_DC_HP_values")?,
-        "f_hp": copy(&["f_HP"], "f_HP")?, "f_hp_z": copy(&["f_HP_Z"], "f_HP_Z")?,
-        "f_hp_p": copy(&["f_HP_P"], "f_HP_P")?,
+        "ctle_gdc_values": copy_vector(&["ctle_gdc_values"], "ctle_gdc_values")?,
+        "ctle_fz": copy_vector(&["CTLE_fz"], "CTLE_fz")?, "ctle_fp1": copy_vector(&["CTLE_fp1"], "CTLE_fp1")?,
+        "ctle_fp2": copy_vector(&["CTLE_fp2"], "CTLE_fp2")?, "ctle_type": copy(&["CTLE_type"], "CTLE_type")?,
+        "g_dc_hp_values": copy_vector(&["g_DC_HP_values"], "g_DC_HP_values")?,
+        "f_hp": copy_vector(&["f_HP"], "f_HP")?, "f_hp_z": copy_vector(&["f_HP_Z"], "f_HP_Z")?,
+        "f_hp_p": copy_vector(&["f_HP_P"], "f_HP_P")?,
     });
     search.insert("ctle".to_owned(), ctle.clone());
     let receiver = json!({
@@ -6049,7 +6429,7 @@ fn materialize_workbook_search_v1(
         "fb_bt_cutoff": copy(&["fb_BT_cutoff"], "fb_BT_cutoff")?, "fb_bw_cutoff": copy(&["fb_BW_cutoff"], "fb_BW_cutoff")?,
         "rc_start_hz": copy(&["RC_Start"], "RC_Start")?, "rc_end_hz": copy(&["RC_end"], "RC_end")?,
         "eta_0": copy(&["eta_0"], "eta_0")?, "accm_max_freq_hz": copy(&["ACCM_MAX_Freq"], "ACCM_MAX_Freq")?,
-        "ac_cm_rms": copy(&["AC_CM_RMS"], "AC_CM_RMS")?,
+        "ac_cm_rms": copy_vector(&["AC_CM_RMS"], "AC_CM_RMS")?,
         "ctle_gdc_values": ctle["ctle_gdc_values"].clone(), "ctle_fz": ctle["ctle_fz"].clone(),
         "ctle_fp1": ctle["ctle_fp1"].clone(), "ctle_fp2": ctle["ctle_fp2"].clone(),
         "ctle_type": ctle["ctle_type"].clone(), "f_hp": ctle["f_hp"].clone(),
@@ -6080,8 +6460,8 @@ fn materialize_workbook_search_v1(
             "n_bf": copy(&["N_bf"], "N_bf")?,
             "n_bg": copy(&["N_bg"], "N_bg")?,
             "bmaxg": copy(&["bmaxg"], "bmaxg")?,
-            "bmax": copy(&["bmax"], "bmax")?,
-            "bmin": copy(&["bmin"], "bmin")?,
+            "bmax": copy_vector(&["bmax"], "bmax")?,
+            "bmin": copy_vector(&["bmin"], "bmin")?,
         }),
     );
     let options_receiver = json!({
@@ -6096,7 +6476,7 @@ fn materialize_workbook_search_v1(
         "snr_txw_c0": workbook_bool_json_v1(values, &["SNR_TXwC0"], "SNR_TXwC0")?,
         "wc_portz": workbook_bool_json_v1(values, &["WC_PORTZ"], "WC_PORTZ")?,
         "tx_rd_sel": copy(&["Tx_rd_sel"], "Tx_rd_sel")?, "pkg_len_select": workbook_integer_vector_json_v1(values, &["pkg_len_select"], "pkg_len_select")?,
-        "sndr": copy(&["SNDR"], "SNDR")?, "limit_jitter_contrib_to_dfe_span": workbook_bool_json_v1(values, &["LIMIT_JITTER_CONTRIB_TO_DFE_SPAN"], "LIMIT_JITTER_CONTRIB_TO_DFE_SPAN")?,
+        "sndr": copy_vector(&["SNDR"], "SNDR")?, "limit_jitter_contrib_to_dfe_span": workbook_bool_json_v1(values, &["LIMIT_JITTER_CONTRIB_TO_DFE_SPAN"], "LIMIT_JITTER_CONTRIB_TO_DFE_SPAN")?,
         "force_pdf_bin_size": workbook_bool_json_v1(values, &["force_pdf_bin_size"], "force_pdf_bin_size")?,
         "bin_size": copy(&["BinSize"], "BinSize")?, "force_bbn_q_factor": workbook_bool_json_v1(values, &["force_BBN_Q_factor"], "force_BBN_Q_factor")?,
         "bbn_q_factor": copy(&["BBN_Q_factor"], "BBN_Q_factor")?, "histogram_window_weight": copy(&["Histogram_Window_Weight"], "Histogram_Window_Weight")?,
@@ -6168,6 +6548,232 @@ fn apply_package_channel_amplitude_v1(
         *value = scaled;
     }
     Ok(())
+}
+
+fn workbook_fd_scalar_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<f64, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, aliases, label)?;
+    let scalar = value
+        .as_f64()
+        .or_else(|| {
+            value
+                .as_array()
+                .filter(|items| items.len() == 1)
+                .and_then(|items| items[0].as_f64())
+        })
+        .ok_or_else(|| {
+            DirectRunErrorV1::Parameters(format!(
+                "workbook FD control {label} must be a scalar"
+            ))
+        })?;
+    if !scalar.is_finite() {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "workbook FD control {label} must be finite"
+        )));
+    }
+    Ok(scalar)
+}
+
+fn workbook_fd_vector_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Vec<f64>, DirectRunErrorV1> {
+    let value = workbook_control_json_v1(values, aliases, label)?;
+    let vector = if let Some(scalar) = value.as_f64() {
+        vec![scalar]
+    } else {
+        value
+            .as_array()
+            .ok_or_else(|| {
+                DirectRunErrorV1::Parameters(format!(
+                    "workbook FD control {label} must be numeric"
+                ))
+            })?
+            .iter()
+            .map(|item| {
+                item.as_f64().ok_or_else(|| {
+                    DirectRunErrorV1::Parameters(format!(
+                        "workbook FD control {label} must be numeric"
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?
+    };
+    if vector.iter().any(|value| !value.is_finite()) {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "workbook FD control {label} must be finite"
+        )));
+    }
+    Ok(vector)
+}
+
+fn workbook_fd_usize_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<usize, DirectRunErrorV1> {
+    let value = workbook_fd_scalar_v1(values, aliases, label)?;
+    if value < 0.0 || value.fract() != 0.0 || value > usize::MAX as f64 {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "workbook FD control {label} must be a non-negative integer"
+        )));
+    }
+    Ok(value as usize)
+}
+
+fn workbook_fd_usize_vector_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    aliases: &[&str],
+    label: &str,
+) -> Result<Vec<usize>, DirectRunErrorV1> {
+    workbook_fd_vector_v1(values, aliases, label)?
+        .into_iter()
+        .map(|value| {
+            if value < 0.0 || value.fract() != 0.0 || value > usize::MAX as f64 {
+                return Err(DirectRunErrorV1::Parameters(format!(
+                    "workbook FD control {label} must contain non-negative integers"
+                )));
+            }
+            Ok(value as usize)
+        })
+        .collect()
+}
+
+fn load_reordered_s4p_samples_v1(
+    path: &Path,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    trusted_workbook: bool,
+) -> Result<(Vec<f64>, Vec<FourPortSMatrixV1>), DirectRunErrorV1> {
+    let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
+    let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, touchstone_limits_v1()?)
+        .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
+    let frequency_hz = parsed
+        .rows()
+        .iter()
+        .map(|row| row.frequency_hz())
+        .collect::<Vec<_>>();
+    let samples = parsed
+        .rows()
+        .iter()
+        .map(|row| {
+            let source = row.matrix();
+            let zero = Complex64::try_new(0.0, 0.0)
+                .map_err(|_| DirectRunErrorV1::Touchstone("invalid zero S4P sample".to_owned()))?;
+            let mut matrix = [[zero; 4]; 4];
+            for (output, line) in matrix.iter_mut().enumerate() {
+                for (incident, value) in line.iter_mut().enumerate() {
+                    *value = source.at(output, incident).ok_or_else(|| {
+                        DirectRunErrorV1::Touchstone("S4P matrix index".to_owned())
+                    })?;
+                }
+            }
+            Ok(matrix)
+        })
+        .collect::<Result<Vec<_>, DirectRunErrorV1>>()?;
+    let samples = reorder_s4p_samples_v1(&samples, values, trusted_workbook)?;
+    Ok((frequency_hz, samples))
+}
+
+fn load_raw_sdd21_v1(
+    path: &Path,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    trusted_workbook: bool,
+) -> Result<OwnedRawSdd21V1, DirectRunErrorV1> {
+    let (frequency_hz, samples) = load_reordered_s4p_samples_v1(path, values, trusted_workbook)?;
+    let sdd21 = samples
+        .iter()
+        .map(com_mixed_mode_v1)
+        .map(|sample| sample[3][1])
+        .collect::<Vec<_>>();
+    Ok(OwnedRawSdd21V1 {
+        frequency_hz,
+        sdd21,
+    })
+}
+
+fn compose_workbook_fd_metrics_v1(
+    request: &DirectRunRequestV1,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    package_case_index: usize,
+) -> Result<(FdRuntimeMetricsV1, FdRuntimeDiagnosticsV1), DirectRunErrorV1> {
+    let thru = load_raw_sdd21_v1(&request.pulse, values, true)?;
+    let fext = request
+        .fext
+        .iter()
+        .map(|path| load_raw_sdd21_v1(path, values, true))
+        .collect::<Result<Vec<_>, _>>()?;
+    let next = request
+        .next
+        .iter()
+        .map(|path| load_raw_sdd21_v1(path, values, true))
+        .collect::<Result<Vec<_>, _>>()?;
+    let fext_refs = fext
+        .iter()
+        .map(|network| FdRawSdd21V1 {
+            frequency_hz: &network.frequency_hz,
+            sdd21: &network.sdd21,
+        })
+        .collect::<Vec<_>>();
+    let next_refs = next
+        .iter()
+        .map(|network| FdRawSdd21V1 {
+            frequency_hz: &network.frequency_hz,
+            sdd21: &network.sdd21,
+        })
+        .collect::<Vec<_>>();
+    let a_icn_fext = workbook_fd_vector_v1(values, &["a_icn_fext"], "a_icn_fext")?;
+    let a_icn_next = workbook_fd_vector_v1(values, &["a_icn_next"], "a_icn_next")?;
+    let pkg_len_select =
+        workbook_fd_usize_vector_v1(values, &["pkg_len_select"], "pkg_len_select")?;
+    let controls = FdRuntimeControlsV1 {
+        f1_hz: workbook_fd_scalar_v1(values, &["f1"], "f1")?,
+        f2_hz: workbook_fd_scalar_v1(values, &["f2"], "f2")?,
+        baud_hz: workbook_fd_scalar_v1(values, &["fb"], "fb")?,
+        samples_per_ui: workbook_fd_usize_v1(
+            values,
+            &["samples_per_ui"],
+            "samples_per_ui",
+        )?,
+        sample_dt_s: workbook_fd_scalar_v1(values, &["sample_dt"], "sample_dt")?,
+        f_v: workbook_fd_scalar_v1(values, &["f_v"], "f_v")?,
+        f_r: workbook_fd_scalar_v1(values, &["f_r"], "f_r")?,
+        a_icn_fext_v: &a_icn_fext,
+        a_icn_next_v: &a_icn_next,
+        wc_portz: workbook_bool_json_v1(values, &["WC_PORTZ"], "WC_PORTZ")?
+            .as_bool()
+            .expect("workbook boolean helper"),
+        tx_rd_sel: workbook_fd_usize_v1(values, &["Tx_rd_sel"], "Tx_rd_sel")?,
+        pkg_len_select: &pkg_len_select,
+        package_case_index,
+    };
+    compose_fd_metrics_v1(
+        &FdRawNetworkSetV1 {
+            thru: FdRawSdd21V1 {
+                frequency_hz: &thru.frequency_hz,
+                sdd21: &thru.sdd21,
+            },
+            fext: &fext_refs,
+            next: &next_refs,
+        },
+        &controls,
+    )
+    .map_err(|error| DirectRunErrorV1::Parameters(format!("workbook FD metrics: {error}")))
+}
+
+fn run_workbook_normal_erl_v1(
+    path: &Path,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+) -> Result<R480NormalErlResultV1, DirectRunErrorV1> {
+    let (frequency_hz, samples) = load_reordered_s4p_samples_v1(path, values, true)?;
+    // Pinned `_normal_tdr_erl_metrics` is run-scoped and always uses the first
+    // package selection.  The outer package fan-out copies this result to all
+    // published cases rather than recomputing it per case.
+    let network = assemble_r480_tdr_dd_network_v1(&frequency_hz, &samples, values, 0)?;
+    run_normal_erl_v1(&network, values)
 }
 
 fn load_s4p_package_impulse_v1(
@@ -6282,6 +6888,15 @@ fn load_s4p_package_impulse_v1(
     let ac_common_mode_frequency_hz = ac_common_mode_transfer
         .as_ref()
         .map(|_| frequency_hz.clone());
+    // The r4.80 search consumes the package-adjusted, receiver-filtered VTF
+    // for each aggressor and applies the role amplitude inside the crosstalk
+    // power integral.  Keep that unscaled FD response alongside the scaled
+    // TD impulse; THRU is intentionally not an aggressor channel.
+    let td_crosstalk = match channel_type {
+        "FEXT" | "NEXT" => Some(vec![(channel_type.to_owned(), vtf, amplitude)]),
+        "THRU" => None,
+        _ => unreachable!("S4P package role validated above"),
+    };
     Ok(ImpulseInputV1 {
         values: impulse,
         erl_values: None,
@@ -6299,7 +6914,7 @@ fn load_s4p_package_impulse_v1(
         causality_iterations: Some(result.causality_iterations),
         td_fillin: None,
         td_pulse: None,
-        td_crosstalk: None,
+        td_crosstalk,
         ac_common_mode_transfer,
         ac_common_mode_frequency_hz,
     })
@@ -6642,7 +7257,41 @@ fn result_value_v1(
     calibration_sigma_bn_v: Option<f64>,
     calibration_sigma_ne_v: Option<f64>,
     calibration_sigma_hp_v: Option<f64>,
+    search_result: Option<&SearchLoopResultWithMetricsV1>,
+    fd_runtime: Option<&(FdRuntimeMetricsV1, FdRuntimeDiagnosticsV1)>,
+    normal_erl: Option<&(R480NormalErlResultV1, bool)>,
 ) -> Value {
+    let peak_interference_millivolts = envelope.interference_noise_v().map(|value| value * 1000.0);
+    let fd_metrics = fd_runtime.map(|value| &value.0);
+    let fd_diagnostics = fd_runtime.map(|value| &value.1);
+    let normal_erl_result = normal_erl.map(|value| &value.0);
+    let normal_erl_selected_port = normal_erl.map(|(result, tdr_w_txpkg)| {
+        if *tdr_w_txpkg || result.ports[1].erl_db < result.ports[0].erl_db {
+            1
+        } else {
+            0
+        }
+    });
+    let normal_erl_selected = normal_erl_selected_port
+        .and_then(|port| normal_erl_result.map(|result| &result.ports[port]));
+    let normal_erl_db = normal_erl_selected.map(|port| {
+        metric_db_value_v1(port.erl_db).expect("normal ERL leaf rejects NaN")
+    });
+    let normal_erl11_db = normal_erl_result.map(|result| {
+        metric_db_value_v1(result.ports[0].erl_db).expect("normal ERL leaf rejects NaN")
+    });
+    let normal_erl22_db = normal_erl_result.map(|result| {
+        metric_db_value_v1(result.ports[1].erl_db).expect("normal ERL leaf rejects NaN")
+    });
+    let source_metric_surface = json!({
+        "CTLE_DC_gain_dB": search_result.map(|result| result.ctle_gain_db),
+        "g_DC_HP": search_result.map(|result| result.high_pass_gain_db),
+        "itick": search_result.map(|result| result.itick),
+        "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": peak_interference_millivolts,
+        "ICN_mV": fd_metrics.map(|metrics| metrics.icn_mv),
+        "IL_dB_channel_only_at_Fnq": fd_metrics.map(|metrics| metrics.il_db_channel_only_at_fnq),
+        "fitted_IL_dB_at_Fnq": fd_metrics.map(|metrics| metrics.fitted_il_db_at_fnq),
+    });
     let mut fext_manifest = fext_inputs
         .iter()
         .map(channel_input_value_v1)
@@ -6683,13 +7332,21 @@ fn result_value_v1(
             },
             "metrics": {
                 "FOM": selected_fom_db,
-                "ERL": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db")),
-                "ERL11": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db")),
+                "ICN_mV": fd_metrics.map(|metrics| metrics.icn_mv),
+                "IL_dB_channel_only_at_Fnq": fd_metrics.map(|metrics| metrics.il_db_channel_only_at_fnq),
+                "fitted_IL_dB_at_Fnq": fd_metrics.map(|metrics| metrics.fitted_il_db_at_fnq),
+                "FOM_ILD": fd_metrics.map(|metrics| metrics.fom_ild),
+                "MDFEXT_ICN_92_47_mV": fd_metrics.map(|metrics| metrics.fext_icn_mv),
+                "MDNEXT_ICN_92_46_mV": fd_metrics.map(|metrics| metrics.next_icn_mv),
+                "ERL": normal_erl_db.as_ref().or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db"))),
+                "ERL11": normal_erl11_db.as_ref().or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db"))),
+                "ERL22": normal_erl22_db.as_ref(),
                 "ERL_RMS": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_rms_db")),
                 "ERL_phase_index": portable_diagnostics.get("erl_only").and_then(|value| value.get("phase_index")),
                 "COM_dB": envelope.com_db(),
                 "VEC_dB": envelope.vec_db(),
                 "VEO_mV": envelope.veo_mv(),
+                "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": peak_interference_millivolts,
                 "sigma_N_V": envelope.sigma_n_v(),
                 "available_signal_v": envelope.available_signal_v(),
                 "interference_noise_v": envelope.interference_noise_v(),
@@ -6698,6 +7355,9 @@ fn result_value_v1(
                 "calibration_sigma_bn_v": calibration_sigma_bn_v,
                 "calibration_sigma_ne_v": calibration_sigma_ne_v,
                 "calibration_sigma_hp_v": calibration_sigma_hp_v,
+                "CTLE_DC_gain_dB": search_result.map(|result| result.ctle_gain_db),
+                "g_DC_HP": search_result.map(|result| result.high_pass_gain_db),
+                "itick": search_result.map(|result| result.itick),
                 "impulse_sample_count": impulse.values.len(),
                 "impulse_first_sample": impulse.values.first().copied(),
                 "impulse_last_sample": impulse.values.last().copied(),
@@ -6740,6 +7400,38 @@ fn result_value_v1(
                         "source_kind": "rectangular-pulse-response"
                     })).collect::<Vec<_>>(),
                 },
+                "source_metric_surface": source_metric_surface,
+                "fd_metrics": fd_diagnostics.map(|diagnostics| json!({
+                    "source": "raw_mixed_mode_sdd21",
+                    "s_parameter_model_fit": false,
+                    "transition_cutoff_hz": diagnostics.transition_cutoff_hz,
+                    "receiver_cutoff_hz": diagnostics.receiver_cutoff_hz,
+                    "integration_start_index": diagnostics.integration_start_index,
+                    "integration_end_index": diagnostics.integration_end_index,
+                    "fext_aggressor_count": diagnostics.fext_aggressor_count,
+                    "next_aggressor_count": diagnostics.next_aggressor_count,
+                    "selected_fext_amplitudes_v": diagnostics.selected_fext_amplitudes_v,
+                    "selected_next_amplitudes_v": diagnostics.selected_next_amplitudes_v,
+                })),
+                "normal_erl": normal_erl_result.map(|result| json!({
+                    "source": NORMAL_ERL_TDR_POLICY_V1,
+                    "s_parameter_model_fit": false,
+                    "selected_port": normal_erl_selected_port.map(|port| port + 1),
+                    "tfx_s": result.tfx_s,
+                    "input_is_ideal_match": result.input_is_ideal_match,
+                    "ports": result.ports.iter().map(|port| json!({
+                        "port": port.port,
+                        "phase_index": port.phase_index,
+                        "erl_db": metric_db_value_v1(port.erl_db).expect("normal ERL leaf rejects NaN"),
+                        "erl_rms_db": metric_db_value_v1(port.erl_rms_db).expect("normal ERL leaf rejects NaN"),
+                        "avg_port_impedance_ohm": port.avg_port_impedance_ohm,
+                        "sample_count": port.time_s.len(),
+                        "time_sha256": sha256_f64_v1(&port.time_s),
+                        "impedance_sha256": sha256_f64_v1(&port.impedance_ohm),
+                        "ptdr_sha256": sha256_f64_v1(&port.ptdr),
+                        "gated_sha256": sha256_f64_v1(&port.gated),
+                    })).collect::<Vec<_>>(),
+                })),
                 "portable_branches": portable_diagnostics
             },
             "warnings": []
@@ -7696,6 +8388,67 @@ mod tests {
             search["options"]["candidate"]["pkg_len_select"],
             json!([1, 2])
         );
+
+        // TP0V materialization has no DFE taps and keeps several workbook
+        // controls scalar.  The source crosswalk must preserve the empty
+        // DFE vectors while presenting scalar controls in the array shape
+        // consumed by the typed search loop.
+        let mut tp0v_values = values.clone();
+        tp0v_values.insert("ndfe".to_owned(), scalar(0.0));
+        tp0v_values.insert("bmax".to_owned(), ResolvedDefaultV1::Empty);
+        tp0v_values.insert("bmin".to_owned(), ResolvedDefaultV1::Empty);
+        for key in [
+            "tx_ffe_cm1_values",
+            "tx_ffe_cm2_values",
+            "tx_ffe_cm3_values",
+            "tx_ffe_cp1_values",
+            "ctle_gdc_values",
+            "CTLE_fz",
+            "CTLE_fp1",
+            "CTLE_fp2",
+            "g_DC_HP_values",
+            "f_HP",
+            "AC_CM_RMS",
+            "SNDR",
+        ] {
+            tp0v_values.insert(key.to_owned(), scalar(0.0));
+        }
+        let mut tp0v_document = json!({"materialized": {"parameters": {}, "options": {}}});
+        materialize_workbook_search_v1(&mut tp0v_document, &tp0v_values, &[1.0e9, 2.0e9])
+            .expect("TP0V source-derived workbook crosswalk");
+        let tp0v_search = &tp0v_document["portable"]["search"];
+        assert_eq!(tp0v_search["dfe_first_max"].as_f64(), Some(0.0));
+        assert_eq!(tp0v_search["candidate"]["bmax"], json!([]));
+        assert_eq!(tp0v_search["candidate"]["bmin"], json!([]));
+        for key in [
+            "tx_ffe_cm1_values",
+            "tx_ffe_cm2_values",
+            "tx_ffe_cm3_values",
+            "tx_ffe_cp1_values",
+        ] {
+            assert_eq!(tp0v_search["tx_ffe_values"][key], json!([0]));
+        }
+        for key in [
+            "ctle_gdc_values",
+            "ctle_fz",
+            "ctle_fp1",
+            "ctle_fp2",
+            "g_dc_hp_values",
+            "f_hp",
+        ] {
+            assert_eq!(tp0v_search["ctle"][key], json!([0]));
+        }
+        assert_eq!(tp0v_search["receiver"]["ac_cm_rms"], json!([0]));
+        assert_eq!(tp0v_search["options"]["candidate"]["sndr"], json!([0]));
+
+        let mut invalid_tp0v = tp0v_values.clone();
+        invalid_tp0v.insert("ndfe".to_owned(), scalar(1.0));
+        let mut invalid_document = json!({"materialized": {"parameters": {}, "options": {}}});
+        let error =
+            materialize_workbook_search_v1(&mut invalid_document, &invalid_tp0v, &[1.0e9, 2.0e9])
+                .expect_err("nonzero DFE count cannot use an empty bmax");
+        assert!(error.to_string().contains("ndfe is nonzero"));
+
         let mut missing_gain = document.clone();
         missing_gain["portable"]["search"]["ctle"]
             .as_object_mut()
@@ -7839,8 +8592,43 @@ mod tests {
             false,
         )
         .expect("S4P impulse");
+        assert!(probe.td_crosstalk.is_none(), "THRU is not an aggressor");
         let probe_pulse = rectangular_pulse_response_v1(&probe.values, 8).unwrap();
         assert!(probe_pulse.iter().any(|value| *value > 0.1));
+        let fext_probe = load_s4p_package_impulse_v1(
+            &s4p,
+            &loaded.values,
+            &loaded.document,
+            "FEXT",
+            None,
+            false,
+        )
+        .expect("FEXT S4P impulse");
+        let fext_search_channel = fext_probe
+            .td_crosstalk
+            .as_ref()
+            .and_then(|channels| channels.first())
+            .expect("FEXT search sidecar");
+        assert_eq!(fext_search_channel.0, "FEXT");
+        assert_eq!(fext_search_channel.1.len(), parsed_rows);
+        assert_eq!(fext_search_channel.2, 0.2);
+        let next_probe = load_s4p_package_impulse_v1(
+            &s4p,
+            &loaded.values,
+            &loaded.document,
+            "NEXT",
+            None,
+            false,
+        )
+        .expect("NEXT S4P impulse");
+        let next_search_channel = next_probe
+            .td_crosstalk
+            .as_ref()
+            .and_then(|channels| channels.first())
+            .expect("NEXT search sidecar");
+        assert_eq!(next_search_channel.0, "NEXT");
+        assert_eq!(next_search_channel.1.len(), parsed_rows);
+        assert_eq!(next_search_channel.2, 0.3);
         let report = run_com_v1(&request).expect("typed public S4P workflow");
         assert_no_search_dfe_publication(&report.result);
         let case = &report.result["cases"][0];
@@ -8130,6 +8918,52 @@ mod tests {
         assert_eq!(channel.source_sha256, original_sha);
         assert_eq!(loaded.source_sha256, original_sha);
         assert_eq!(loaded.values, vec![0.0, 1.0, 0.0, 0.0]);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn workbook_channel_snapshot_fanout_preserves_fext_next_after_source_mutation() {
+        let root = temp_root("workbook-channel-fanout-snapshot");
+        let fext_path = root.join("fext.json");
+        let next_path = root.join("next.json");
+        let original_fext = br#"{"impulse":[0.11,0.22,0.33]}"#;
+        let original_next = br#"{"impulse":[-0.41,-0.52,-0.63]}"#;
+        fs::write(&fext_path, original_fext).unwrap();
+        fs::write(&next_path, original_next).unwrap();
+        let mut request = DirectRunRequestV1::new(
+            root.join("workbook.xlsx"),
+            root.join("thru.s4p"),
+            root.join("out"),
+        );
+        request.fext.push(fext_path.clone());
+        request.next.push(next_path.clone());
+
+        // Snapshot once per caller path, before the workbook cases fan out.
+        let fext = snapshot_package_channels_v1(&request.fext).expect("FEXT snapshot");
+        let next = snapshot_package_channels_v1(&request.next).expect("NEXT snapshot");
+        assert_eq!(fext.len(), 1);
+        assert_eq!(next.len(), 1);
+        assert_eq!(fext[0].source_sha256, sha256_bytes_v1(original_fext));
+        assert_eq!(next[0].source_sha256, sha256_bytes_v1(original_next));
+
+        fs::write(&fext_path, br#"{"impulse":[9.0,9.0,9.0]}"#).unwrap();
+        fs::write(&next_path, br#"{"impulse":[8.0,8.0,8.0]}"#).unwrap();
+        for case_index in 0..2 {
+            let case_root = root.join(format!("case-{case_index}"));
+            fs::create_dir_all(&case_root).unwrap();
+            let staged_fext = stage_package_channel_v1(&case_root, "fext", 0, &fext[0]).unwrap();
+            let staged_next = stage_package_channel_v1(&case_root, "next", 0, &next[0]).unwrap();
+            assert_eq!(fs::read(&staged_fext).unwrap(), original_fext);
+            assert_eq!(fs::read(&staged_next).unwrap(), original_next);
+            assert_eq!(
+                load_channel_input_v1(&staged_fext).unwrap().values,
+                vec![0.11, 0.22, 0.33]
+            );
+            assert_eq!(
+                load_channel_input_v1(&staged_next).unwrap().values,
+                vec![-0.41, -0.52, -0.63]
+            );
+        }
         let _ = fs::remove_dir_all(root);
     }
 
@@ -8638,6 +9472,14 @@ mod tests {
             .collect::<Vec<_>>();
         let fext = thru.iter().map(|value| value * 0.2).collect::<Vec<_>>();
         let next = thru.iter().map(|value| value * 0.1).collect::<Vec<_>>();
+        let fext_path = root.join("fext.f64le");
+        fs::write(
+            &fext_path,
+            fext.iter()
+                .flat_map(|value| value.to_le_bytes())
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
         values["portable"] = json!({
             "equalization": {
                 "channel_types": ["THRU", "FEXT", "NEXT"],
@@ -8654,20 +9496,20 @@ mod tests {
             }
         });
         fs::write(&config, serde_json::to_vec(&values).unwrap()).unwrap();
-        let report = run_com_v1(&DirectRunRequestV1::new(
-            &config,
-            &pulse,
-            root.join("equalized"),
-        ));
+        let mut request = DirectRunRequestV1::new(&config, &pulse, root.join("equalized"));
+        request.fext.push(fext_path);
+        let report = run_com_v1(&request);
         let report = report.expect("multi-channel equalization run");
         assert_eq!(
             report.result["cases"][0]["diagnostics"]["crosstalk_inputs"]["integrated_into_metrics"],
             true
         );
-        assert!(
+        assert_eq!(
             report.result["cases"][0]["diagnostics"]["com_execution"]["fext_selected_phases"]
                 .as_array()
-                .is_some_and(|values| !values.is_empty())
+                .map(Vec::len),
+            Some(1),
+            "the transformed FEXT channel replaces its source instead of being counted twice"
         );
         assert!(
             report.result["cases"][0]["diagnostics"]["com_execution"]["next_selected_phases"]
@@ -8675,7 +9517,7 @@ mod tests {
                 .is_some_and(|values| !values.is_empty())
         );
         assert_eq!(
-            report.result["cases"][0]["diagnostics"]["crosstalk_inputs"]["fext"][0]["source_kind"],
+            report.result["cases"][0]["diagnostics"]["crosstalk_inputs"]["fext"][1]["source_kind"],
             "equalized-channel-impulse"
         );
         assert_eq!(
@@ -8954,6 +9796,26 @@ mod tests {
             report.result["cases"][0]["metrics"]["FOM"],
             search["fom_db"]
         );
+        let metrics = &report.result["cases"][0]["metrics"];
+        let source_metric_surface =
+            &report.result["cases"][0]["diagnostics"]["source_metric_surface"];
+        for key in ["CTLE_DC_gain_dB", "g_DC_HP", "itick"] {
+            assert_eq!(metrics[key], source_metric_surface[key]);
+            assert!(metrics[key].is_number(), "search metric {key}");
+        }
+        assert_eq!(
+            metrics["Peak_ISI_XTK_and_Noise_interference_at_BER_mV"],
+            source_metric_surface["Peak_ISI_XTK_and_Noise_interference_at_BER_mV"]
+        );
+        assert_eq!(
+            metrics["Peak_ISI_XTK_and_Noise_interference_at_BER_mV"]
+                .as_f64()
+                .expect("peak metric"),
+            metrics["interference_noise_v"]
+                .as_f64()
+                .expect("interference voltage")
+                * 1000.0
+        );
         let channel_pulse = &report.result["cases"][0]["diagnostics"]["channel_pulse"];
         assert_eq!(
             channel_pulse["sample_count"], search["selected_pulse_sample_count"],
@@ -9047,6 +9909,7 @@ mod tests {
             ResolvedDefaultV1::Boolean(true),
         );
         workbook_values.insert("Floating_DFE".to_owned(), ResolvedDefaultV1::Boolean(true));
+        workbook_values.insert("T_O".to_owned(), ResolvedDefaultV1::Scalar(0.0));
         workbook_values.insert(
             "force_pdf_bin_size".to_owned(),
             ResolvedDefaultV1::Boolean(false),
@@ -9089,6 +9952,10 @@ mod tests {
         assert_eq!(
             workbook_sidecar.get("floating_dfe"),
             Some(&ResolvedDefaultV1::Scalar(1.0))
+        );
+        assert_eq!(
+            workbook_sidecar.get("t_o_s"),
+            Some(&ResolvedDefaultV1::Scalar(0.0))
         );
         assert!(!workbook_sidecar.contains_key("do_white_noise"));
         let consumed_keys = workbook_sidecar.keys().cloned().collect::<Vec<_>>();

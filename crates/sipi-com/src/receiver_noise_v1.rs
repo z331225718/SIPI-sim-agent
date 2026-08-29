@@ -477,10 +477,7 @@ mod tests {
             ),
             Err(NoiseErrorV1::AccmRequiresChannel)
         );
-        let transfer = vec![
-            Complex64::try_new(1.0, 0.0).unwrap();
-            frequency.len()
-        ];
+        let transfer = vec![Complex64::try_new(1.0, 0.0).unwrap(); frequency.len()];
         let with_accm = receiver_noise_v1(
             &frequency,
             0,

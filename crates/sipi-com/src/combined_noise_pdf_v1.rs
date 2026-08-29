@@ -29,6 +29,10 @@ impl CombinedNoisePdfV1 {
     pub fn peak_interference_v(&self) -> f64 {
         self.peak_interference_v
     }
+
+    pub(crate) fn cci(&self) -> &DiscretePdfV1 {
+        &self.cci
+    }
 }
 
 /// Port the ordered Create_Noise_PDF combination through Eq. 93A-45.

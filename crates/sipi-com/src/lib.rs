@@ -46,6 +46,7 @@ mod equalization_apply_v1;
 mod equalizer_frontend_v1;
 mod erf_v1;
 mod eye_contour_v1;
+mod fd_metrics_v1;
 mod fd_to_td_v1;
 mod horizontal_margin_v1;
 mod ingest_v1;
@@ -182,6 +183,11 @@ pub use erf_v1::{ERF_POLICY_V1, erf_v1, erfcinv_v1, erfinv_v1};
 pub use eye_contour_v1::{
     EYE_CONTOUR_POLICY_V1, EyeContourErrorV1, EyeContourV1, EyeGridV1, TimeColumnContourV1,
     statistical_eye_contour_v1,
+};
+pub use fd_metrics_v1::{
+    FD_METRICS_POLICY_V1, FdIcnAggressorV1, FdIcnMetricsV1, FdLossMetricsV1, FdMetricsErrorV1,
+    fd_loss_metrics_v1, fit_insertion_loss_v1, icn_rms_v1, power_weight_function_v1,
+    r480_fd_icn_metrics_v1,
 };
 pub use fd_to_td_v1::{
     FD_TO_TD_POLICY_V1, FdToTdErrorV1, FdToTdOptionsV1, ImpulseResultV1, MAX_FD_TO_TD_BINS_V1,

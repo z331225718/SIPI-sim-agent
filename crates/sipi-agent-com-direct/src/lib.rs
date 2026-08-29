@@ -19,6 +19,8 @@ use std::path::Path;
 
 mod config_preflight_v1;
 mod config_validate_v1;
+mod erl_tdr_v1;
+mod fd_runtime_v1;
 mod package_vtf_v1;
 mod run_v1;
 

@@ -17,12 +17,13 @@ use crate::candidate_eval_v1::{
     evaluate_candidate_v1,
 };
 use crate::candidate_helpers_v1::CandidateErrorV1;
-use crate::com_chain_v1::ComWinnerContextV1;
+use crate::com_chain_v1::{ComWinnerC2mContextV1, ComWinnerContextV1};
 use crate::crosstalk_noise_v1::{XtalkChannelV1, XtalkErrorV1, XtalkParamsV1, crosstalk_noise_v1};
 use crate::dfe_v1::DfeErrorV1;
 use crate::discrete_pdf_v1::PdfErrorV1;
 use crate::equalizer_frontend_v1::{EqualizerErrorV1, cursor_sample_index_v1};
 use crate::receiver_noise_v1::{ReceiverNoiseOptionsV1, ReceiverNoiseParamsV1, receiver_noise_v1};
+use crate::rx_ffe_v1::{RxFfeErrorV1, apply_rx_ffe_v1};
 use crate::search_support_v1::{
     CtleParamsV1, SearchErrorV1, apply_ctle_candidate_v1, ctle_frequency_response_with_gdc_v1,
     high_pass_candidates_v1, qualified_ctle_pair_v1,
@@ -80,6 +81,11 @@ impl From<CandidateEvalErrorV1> for SearchLoopErrorV1 {
 }
 impl From<EqualizerErrorV1> for SearchLoopErrorV1 {
     fn from(_: EqualizerErrorV1) -> Self {
+        SearchLoopErrorV1::Equalizer
+    }
+}
+impl From<RxFfeErrorV1> for SearchLoopErrorV1 {
+    fn from(_: RxFfeErrorV1) -> Self {
         SearchLoopErrorV1::Equalizer
     }
 }
@@ -417,7 +423,11 @@ pub struct SearchLoopResultV1 {
 pub struct SearchLoopResultWithMetricsV1 {
     pub fom_db: f64,
     pub ctle_index: i64,
+    /// CTLE gain selected by the same candidate as `ctle_index`.
+    pub ctle_gain_db: f64,
     pub high_pass_index: i64,
+    /// High-pass gain selected by the same candidate as `high_pass_index`.
+    pub high_pass_gain_db: f64,
     pub tx_grid_index: i64,
     pub cursor_index: usize,
     pub sigma_tx_v: f64,
@@ -427,6 +437,8 @@ pub struct SearchLoopResultWithMetricsV1 {
     pub sigma_n_v: f64,
     pub sigma_ne_v: f64,
     pub h_j: Vec<f64>,
+    /// Sample timing adjustment selected by the winning candidate.
+    pub itick: i64,
 }
 
 impl SearchLoopResultWithMetricsV1 {
@@ -454,6 +466,8 @@ impl SearchLoopResultWithMetricsV1 {
 pub struct SearchLoopResultWithWinnerV2 {
     result: SearchLoopResultWithMetricsV1,
     winner: ComWinnerContextV1,
+    tx_ffe_precursor_count: usize,
+    final_pulse: Vec<f64>,
 }
 
 impl SearchLoopResultWithWinnerV2 {
@@ -467,8 +481,16 @@ impl SearchLoopResultWithWinnerV2 {
         &self.winner.dfe_taps
     }
 
+    pub fn selected_tx_ffe_precursor_count(&self) -> usize {
+        self.tx_ffe_precursor_count
+    }
+
     pub(crate) fn winner(&self) -> &ComWinnerContextV1 {
         &self.winner
+    }
+
+    pub(crate) fn final_pulse(&self) -> &[f64] {
+        &self.final_pulse
     }
 }
 
@@ -831,7 +853,9 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                                 result: SearchLoopResultWithMetricsV1 {
                                     fom_db: cand.fom_db,
                                     ctle_index: ctle_index as i64,
+                                    ctle_gain_db: cand.ctle_gain_db,
                                     high_pass_index: high_pass_index as i64,
+                                    high_pass_gain_db: cand.high_pass_gain_db,
                                     tx_grid_index: candidate_index as i64,
                                     cursor_index: cand.cursor_index,
                                     sigma_tx_v: cand.sigma_tx_v,
@@ -841,6 +865,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                                     sigma_n_v: cand.sigma_n_v,
                                     sigma_ne_v: cand.sigma_ne_v,
                                     h_j: cand.h_j.clone(),
+                                    itick: cand.itick,
                                 },
                                 winner: ComWinnerContextV1 {
                                     cursor_index: cand.cursor_index,
@@ -854,7 +879,20 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                                         .floating_dfe
                                         .then_some(cand.dfe_max.len() as i64),
                                     sigma_n_v: cand.sigma_n_v,
+                                    c2m: (full.candidate.t_o != 0.0).then(|| {
+                                        ComWinnerC2mContextV1 {
+                                            samples_for_c2m: full.candidate.samples_for_c2m,
+                                            t_o_mui: full.candidate.t_o,
+                                            histogram_window: options
+                                                .candidate
+                                                .histogram_window_weight
+                                                .clone(),
+                                            ql: full.candidate.ql,
+                                        }
+                                    }),
                                 },
+                                tx_ffe_precursor_count: grid.precursor_count(),
+                                final_pulse: cand.sbr.clone(),
                             });
                         }
                     }
@@ -862,7 +900,36 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
             }
         }
     }
-    best_result.ok_or(SearchLoopErrorV1::NoCandidate)
+    let mut best = best_result.ok_or(SearchLoopErrorV1::NoCandidate)?;
+    if full.candidate.t_o != 0.0
+        && full.candidate.min_veo_test == 0.0
+        && full.candidate.floating_dfe
+    {
+        let required = best.result.selected_pulse.len();
+        if unequalized_impulse.len() > required {
+            return Err(SearchLoopErrorV1::Input);
+        }
+        let mut padded = unequalized_impulse.to_vec();
+        padded.resize(required, 0.0);
+        let equalized = apply_ctle_candidate_v1(
+            &padded,
+            full.fb,
+            spu,
+            best.result.ctle_index as usize,
+            best.result.ctle_gain_db,
+            best.result.high_pass_index as usize,
+            best.result.high_pass_gain_db,
+            &full.ctle,
+        )?;
+        let pulse = rectangular_pulse_response_v1(&equalized, spu)?;
+        best.final_pulse = apply_rx_ffe_v1(
+            &best.result.selected_tx_taps,
+            grid.precursor_count(),
+            spu,
+            &pulse,
+        )?;
+    }
+    Ok(best)
 }
 
 #[cfg(test)]
@@ -875,7 +942,9 @@ mod tests {
             result: SearchLoopResultWithMetricsV1 {
                 fom_db: 1.0,
                 ctle_index: 0,
+                ctle_gain_db: 2.5,
                 high_pass_index: 0,
+                high_pass_gain_db: -1.25,
                 tx_grid_index: 0,
                 cursor_index: 1,
                 sigma_tx_v: 0.0,
@@ -885,6 +954,7 @@ mod tests {
                 sigma_n_v: 0.0,
                 sigma_ne_v: 0.0,
                 h_j: vec![0.0],
+                itick: -2,
             },
             winner: ComWinnerContextV1 {
                 cursor_index: 1,
@@ -895,7 +965,10 @@ mod tests {
                 floating_dfe,
                 dfe_max_count: floating_dfe.then_some(tap_count as i64),
                 sigma_n_v: 0.0,
+                c2m: None,
             },
+            tx_ffe_precursor_count: 0,
+            final_pulse: vec![0.0, 1.0, 0.0],
         }
     }
 
@@ -905,6 +978,9 @@ mod tests {
             let result = winner_with_dfe(taps.clone(), floating);
             assert_eq!(result.selected_dfe_taps(), taps);
             assert_eq!(result.winner().dfe_taps, taps);
+            assert_eq!(result.result().ctle_gain_db, 2.5);
+            assert_eq!(result.result().high_pass_gain_db, -1.25);
+            assert_eq!(result.result().itick, -2);
         }
     }
 
@@ -1154,6 +1230,29 @@ mod tests {
                 histogram_window_weight: "rectangle".into(),
             },
         };
+        let winner = search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
+            &imp,
+            &freq,
+            &freq,
+            &freq,
+            &[],
+            |_, _, _| 0.0,
+            None,
+            None,
+            false,
+            &[],
+            0,
+            &[0.0],
+            &full,
+            &opts,
+        )
+        .expect("composite winner");
+        let metrics = winner.result();
+        assert_eq!(metrics.ctle_gain_db, 6.0);
+        assert_eq!(metrics.high_pass_gain_db, 0.0);
+        assert_eq!(metrics.itick, 1);
+        assert_eq!(winner.final_pulse(), metrics.selected_pulse);
+
         let result = search_r480_nonmmse_no_xtalk_v1(
             &imp,
             &freq,
@@ -1170,6 +1269,7 @@ mod tests {
         );
         let result = result.expect("composite result");
         assert!(result.fom_db > 0.0, "fom should be positive");
+
         assert!(
             (result.cursor_index as i64 - 56).abs() <= 1,
             "cursor near 56, got {}",

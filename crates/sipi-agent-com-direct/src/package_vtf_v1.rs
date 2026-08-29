@@ -61,6 +61,119 @@ impl TwoPort {
     }
 }
 
+/// The differential network consumed by the normal (non-ERL-only) TDR path.
+///
+/// The source keeps the raw DD reflection at port 1 even when `SHOW_BRD` or
+/// `TDR_W_TXPKG` changes the network used for the other three entries.  The
+/// raw SDD12 trace is retained as well because `AUTO_TFX` estimates the
+/// receiver fixture delay from that pre-assembly channel trace.  This type is
+/// crate-private on purpose: it is an internal hand-off between the package
+/// assembler and the normal ERL leaf, not a second public S-parameter API.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct R480TdrDdNetworkV1 {
+    pub(crate) frequency_hz: Vec<f64>,
+    pub(crate) s11: Vec<Complex64>,
+    pub(crate) s12: Vec<Complex64>,
+    pub(crate) s21: Vec<Complex64>,
+    pub(crate) s22: Vec<Complex64>,
+    pub(crate) raw_sdd12: Vec<Complex64>,
+}
+
+impl R480TdrDdNetworkV1 {
+    fn from_parts(
+        frequency_hz: &[f64],
+        network: TwoPort,
+        raw_sdd12: Vec<Complex64>,
+    ) -> Result<Self, DirectRunErrorV1> {
+        if frequency_hz.len() != raw_sdd12.len() || frequency_hz.len() != network.s11.len() {
+            return Err(DirectRunErrorV1::Parameters(
+                "normal TDR network vectors are not aligned".to_owned(),
+            ));
+        }
+        Ok(Self {
+            frequency_hz: frequency_hz.to_vec(),
+            s11: network.s11,
+            s12: network.s12,
+            s21: network.s21,
+            s22: network.s22,
+            raw_sdd12,
+        })
+    }
+}
+
+/// Assemble the raw DD network used by r4.80 `get_TDR`/`process_sxp`.
+///
+/// This is intentionally not the normal package VTF route.  The source
+/// first extracts raw SDD, optionally adds the board when `SHOW_BRD` is set,
+/// and only then (when `TDR_W_TXPKG` is set) prepends the selected TX package
+/// and applies the differential source load.  Finally it restores the raw
+/// pre-board SDD11 at port 1.  No kappa scaling or S-parameter fitting is
+/// performed here.
+pub(crate) fn assemble_r480_tdr_dd_network_v1(
+    frequency_hz: &[f64],
+    samples: &[FourPortSMatrixV1],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    package_case_index: usize,
+) -> Result<R480TdrDdNetworkV1, DirectRunErrorV1> {
+    validate_s4p_axis_v1(frequency_hz, samples)?;
+    let mixed = samples.iter().map(com_mixed_mode_v1).collect::<Vec<_>>();
+    let original = TwoPort::new(
+        mixed.iter().map(|sample| sample[1][1]).collect(),
+        mixed.iter().map(|sample| sample[1][3]).collect(),
+        mixed.iter().map(|sample| sample[3][1]).collect(),
+        mixed.iter().map(|sample| sample[3][3]).collect(),
+    )?;
+    let raw_sdd12 = original.s12.clone();
+    let component_frequency = frequency_hz
+        .iter()
+        .map(|frequency| frequency.max(f64::EPSILON))
+        .collect::<Vec<_>>();
+    let show_board = boolean(values, &["SHOW_BRD", "show_brd"])?.unwrap_or(false);
+    let channel = if show_board {
+        let include_pcb = scalar(values, &["include_pcb", "INCLUDE_PCB"])?.unwrap_or(0.0);
+        if !matches!(include_pcb, 0.0 | 1.0 | 2.0) {
+            return Err(DirectRunErrorV1::Parameters(
+                "SHOW_BRD include_pcb must be exactly 0, 1, or 2".to_owned(),
+            ));
+        }
+        if include_pcb == 0.0 {
+            original.clone()
+        } else {
+            add_board_v1(
+                original.clone(),
+                &component_frequency,
+                "THRU",
+                include_pcb as u8,
+                values,
+            )?
+        }
+    } else {
+        original.clone()
+    };
+    let with_tx_package = boolean(values, &["TDR_W_TXPKG", "tdr_w_txpkg"])?.unwrap_or(false);
+    let assembled = if !with_tx_package {
+        channel
+    } else {
+        let selected = selected_case(values, package_case_index)?;
+        let tx_package = full_package_mode_v1(
+            "TX",
+            &component_frequency,
+            "THRU",
+            selected,
+            values,
+            true,
+            false,
+        )?;
+        let cascaded = combine(&tx_package, &channel)?;
+        let r_diepad = vector_required(values, &["R_diepad", "r_diepad"], 2)?;
+        let loaded = source_load_v1(cascaded, 2.0 * r_diepad[0])?;
+        // process_sxp restores sdd11_orig here, rather than the reflection
+        // of the optional board network or of the TX package cascade.
+        TwoPort::new(original.s11.clone(), loaded.s12, loaded.s21, loaded.s22)?
+    };
+    R480TdrDdNetworkV1::from_parts(frequency_hz, assembled, raw_sdd12)
+}
+
 pub(crate) fn s4p_package_vtf_v1(
     frequency_hz: &[f64],
     samples: &[FourPortSMatrixV1],
@@ -918,6 +1031,75 @@ fn combine(first: &TwoPort, second: &TwoPort) -> Result<TwoPort, DirectRunErrorV
         )?);
     }
     TwoPort::new(out.0, out.1, out.2, out.3)
+}
+
+/// Cascade the source-load adjustment used by normal r4.80 TDR.
+///
+/// Differential TDR uses a 100 ohm reference.  A source resistance above the
+/// reference is represented as a series element; a lower resistance is
+/// represented as the equivalent shunt element.  Keeping this as a two-port
+/// cascade, rather than altering S11/S21 directly, preserves the same order
+/// of operations as the source `SL` helper.
+fn source_load_v1(
+    channel: TwoPort,
+    source_resistance_ohm: f64,
+) -> Result<TwoPort, DirectRunErrorV1> {
+    const ZREF_OHM: f64 = 100.0;
+    if !(source_resistance_ohm.is_finite() && source_resistance_ohm > 0.0) {
+        return Err(DirectRunErrorV1::Parameters(
+            "TDR source resistance must be finite and positive".to_owned(),
+        ));
+    }
+    if source_resistance_ohm == ZREF_OHM {
+        return Ok(channel);
+    }
+    let (s11, s21) = if source_resistance_ohm > ZREF_OHM {
+        let series = source_resistance_ohm - ZREF_OHM;
+        let denominator = series + 2.0 * ZREF_OHM;
+        if !(denominator.is_finite() && denominator > 0.0) {
+            return Err(DirectRunErrorV1::Parameters(
+                "TDR source-load series denominator is invalid".to_owned(),
+            ));
+        }
+        (series / denominator, 2.0 * ZREF_OHM / denominator)
+    } else {
+        let parallel = source_resistance_ohm * ZREF_OHM / (ZREF_OHM - source_resistance_ohm);
+        let denominator = ZREF_OHM / parallel + 2.0;
+        if !(parallel.is_finite() && parallel > 0.0 && denominator.is_finite() && denominator > 0.0)
+        {
+            return Err(DirectRunErrorV1::Parameters(
+                "TDR source-load shunt denominator is invalid".to_owned(),
+            ));
+        }
+        (-ZREF_OHM / (parallel * denominator), 2.0 / denominator)
+    };
+    let source = TwoPort::new(
+        vec![
+            Complex64::try_new(s11, 0.0).map_err(|_| {
+                DirectRunErrorV1::Parameters("non-finite TDR source-load S11".to_owned())
+            })?;
+            channel.s11.len()
+        ],
+        vec![
+            Complex64::try_new(s21, 0.0).map_err(|_| {
+                DirectRunErrorV1::Parameters("non-finite TDR source-load S21".to_owned())
+            })?;
+            channel.s11.len()
+        ],
+        vec![
+            Complex64::try_new(s21, 0.0).map_err(|_| {
+                DirectRunErrorV1::Parameters("non-finite TDR source-load S21".to_owned())
+            })?;
+            channel.s11.len()
+        ],
+        vec![
+            Complex64::try_new(s11, 0.0).map_err(|_| {
+                DirectRunErrorV1::Parameters("non-finite TDR source-load S22".to_owned())
+            })?;
+            channel.s11.len()
+        ],
+    )?;
+    combine(&source, &channel)
 }
 
 fn full_package_mode_v1(
@@ -2144,5 +2326,69 @@ mod tests {
             assert_eq!(result.len(), frequency.len());
             assert!(result.iter().all(|value| finite(*value)));
         }
+    }
+
+    #[test]
+    fn normal_tdr_assembly_retains_raw_dd_channel_and_sdd12() {
+        let frequency = vec![0.0, 1.0e9, 2.0e9];
+        let mut samples = vec![[[c(0.0, 0.0); 4]; 4]; 3];
+        for (index, sample) in samples.iter_mut().enumerate() {
+            sample[0][2] = c(0.5 + index as f64 * 0.01, 0.0);
+            sample[2][0] = c(0.7, 0.0);
+            sample[1][3] = c(0.1, 0.0);
+            sample[3][1] = c(0.2, 0.0);
+        }
+        let config = values();
+        let mixed = samples.iter().map(com_mixed_mode_v1).collect::<Vec<_>>();
+        let assembled =
+            assemble_r480_tdr_dd_network_v1(&frequency, &samples, &config, 0).expect("assembly");
+        let expected_s11 = mixed.iter().map(|sample| sample[1][1]).collect::<Vec<_>>();
+        let expected_s12 = mixed.iter().map(|sample| sample[1][3]).collect::<Vec<_>>();
+        let expected_s21 = mixed.iter().map(|sample| sample[3][1]).collect::<Vec<_>>();
+        let expected_s22 = mixed.iter().map(|sample| sample[3][3]).collect::<Vec<_>>();
+        assert_eq!(assembled.s11, expected_s11);
+        assert_eq!(assembled.s12, expected_s12);
+        assert_eq!(assembled.s21, expected_s21);
+        assert_eq!(assembled.s22, expected_s22);
+        assert_eq!(assembled.raw_sdd12, expected_s12);
+    }
+
+    #[test]
+    fn normal_tdr_tx_package_restores_preassembly_sdd11() {
+        let frequency = vec![0.0, 1.0e9, 2.0e9];
+        let mut samples = vec![[[c(0.0, 0.0); 4]; 4]; 3];
+        for sample in &mut samples {
+            sample[0][0] = c(0.4, 0.0);
+            sample[1][1] = c(0.3, 0.0);
+            sample[2][2] = c(0.2, 0.0);
+            sample[3][3] = c(0.1, 0.0);
+            sample[2][0] = c(0.7, 0.0);
+            sample[0][2] = c(0.7, 0.0);
+        }
+        let mut config = values();
+        config.insert("TDR_W_TXPKG".to_owned(), ResolvedDefaultV1::Boolean(true));
+        let mixed = samples.iter().map(com_mixed_mode_v1).collect::<Vec<_>>();
+        let raw_s11 = mixed.iter().map(|sample| sample[1][1]).collect::<Vec<_>>();
+        let assembled =
+            assemble_r480_tdr_dd_network_v1(&frequency, &samples, &config, 0).expect("assembly");
+        assert_eq!(assembled.s11, raw_s11);
+    }
+
+    #[test]
+    fn source_load_identity_and_nonidentity_are_explicit() {
+        let n = 3;
+        let channel = TwoPort::new(
+            vec![c(0.1, 0.0); n],
+            vec![c(0.2, 0.0); n],
+            vec![c(0.3, 0.0); n],
+            vec![c(0.4, 0.0); n],
+        )
+        .expect("channel");
+        let identity = source_load_v1(channel.clone(), 100.0).expect("identity load");
+        assert_eq!(identity.s11, channel.s11);
+        assert_eq!(identity.s21, channel.s21);
+        let changed = source_load_v1(channel, 110.0).expect("series load");
+        assert_ne!(changed.s11, vec![c(0.1, 0.0); n]);
+        assert_ne!(changed.s21, vec![c(0.3, 0.0); n]);
     }
 }

@@ -38,6 +38,7 @@ engine, and proprietary golden data remain external blockers.
 | `src/agent_com/equalization/dfe.py` | search DFE clipping and bounds | `a930579b8b71490735c128452f326ecbd94b4b40` | 9190 | `4b9802b343e62b16d9e43341925d92b8e26fd172eb282a36bdaeed1d9019c853` | MIT |
 | `src/agent_com/signal/filters.py` | receiver filter primitives used by search | `3c43bf74124fb9264576566841facc5b5259ccd7` | 4734 | `79b3218a1315b53ae0e7e518a43d62e043658c105a7022a0fa868d0b34cb74b6` | MIT |
 | `src/agent_com/noise/discrete_pdf.py` | sampled/residual/noise PDF and FEXT/NEXT convolution semantics | `a13466bac4359ea1e3a29f1391604c474f2c46ca` | 23992 | `5bf331e0e515a014fa5f4d938ffe137ac1bf34c97280a19f32455b75d13e485e` | MIT |
+| `src/agent_com/metrics/c2m.py` | final C2M vertical-eye reduction for nonzero `T_O` | `00c911bf4046fc1928cb2c35ebfec99877df465c` | 26089 | `52d8ad927a4f2a8c318fdd8f9171ea0ef8b2b789b75d9df54ce0c214591dd2f4` | MIT |
 | `src/agent_com/metrics/com.py` | COM metric payload names and values | `c1c2d976615806910d3e9dab221641c318c4297a` | 2932 | `46727c06b46d4cb91b330bf5b26ea269d882050cf809c3c946fc2ad37b8920ea` | MIT |
 | `src/agent_com/metrics/tdiln.py` | TDILN metric branch (complex IL fit + pulse/PDF report) | `53aacf1c15b57cf314f0e7db5148884bf7afe3c2` | 7068 | `d0465246f6fd5d22d5978f5cdf2a78f7fccdfbfdd7ad0676092b4494d3698873` | MIT |
 | `src/agent_com/runtime.py` | provenance, warnings, and run lifecycle | `89a1866b7d81a25653bcc9ef69adaf91fbf46cb1` | 6077 | `490a02e5bbb9af30278445b8f964a9d04d617ddf20c1773a5cd51a4b1ec5fd42` | MIT |
@@ -80,6 +81,17 @@ padding offset, and does not reselect the peak or accept a public
 `cursor_index` control. This is a focused
 runtime correction for the COM/sigma divergence; it does not alter the search
 FOM, add a public control, fit S-parameters, or create a second channel path.
+
+For the pinned C2M final-report branch, the opaque winner also owns a separate
+final THRU pulse. It equals the selected search pulse except when source
+controls simultaneously require nonzero `T_O`, zero `Min_VEO_Test`, and
+floating DFE. In that branch the already-converted, already-truncated THRU
+impulse is zero-padded to the selected SBR length and the winning CTLE,
+high-pass, and TX-FFE settings are reapplied once, matching
+`_orchestration.py::_full_tail_c2m_thru_pulse`. The final COM chain reuses the
+existing `calculate_c2m_vertical_eye_v1` port and the winner's DFE/noise state;
+the selected search pulse and FOM remain unchanged. This does not reread S4P,
+perform another FD-to-TD conversion, or fit an S-parameter model.
 
 Package scope is deliberately split: the selector above is reachable by the
 existing SNDR search consumers. The direct S4P route admits the typed
