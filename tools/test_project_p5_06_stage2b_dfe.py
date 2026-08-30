@@ -5,6 +5,7 @@ import unittest
 try:
     from .project_p5_06_stage2b_dfe import (
         INAPPLICABLE_REASON,
+        align_raw_rust_dfe_cases,
         compare_projected_dfe_cases,
         dfe_raw_receipts_equal,
         project_matlab_summary,
@@ -15,6 +16,7 @@ try:
 except ImportError:
     from project_p5_06_stage2b_dfe import (
         INAPPLICABLE_REASON,
+        align_raw_rust_dfe_cases,
         compare_projected_dfe_cases,
         dfe_raw_receipts_equal,
         project_matlab_summary,
@@ -84,6 +86,15 @@ class DfeProjectionTests(unittest.TestCase):
             "values": [0.25, -0.0],
             "raw_f64_sha256": digest([0.25, -0.0]),
         }])
+
+    def test_raw_rust_projection_requires_source_shape_only_at_join(self):
+        source = project_matlab_summary(source_summary())
+        raw = project_rust_result_raw(rust_result())
+        joined = align_raw_rust_dfe_cases(raw, source)
+        self.assertEqual(joined[0]["dfe_taps"]["shape"], [2, 1])
+        raw[0]["raw_f64_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "receipt"):
+            align_raw_rust_dfe_cases(raw, source)
 
     def test_empty_dfe_is_a_valid_checkpoint(self):
         source = project_matlab_summary(source_summary(source_case(values=(), shape=[0, 0])))

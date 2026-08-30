@@ -141,15 +141,33 @@ def project_rust_result(document: Any, source_cases: Any) -> list[dict[str, Any]
     """Project Rust diagnostics against source-native DFE shapes only."""
     source_cases = validate_projected_dfe_cases(source_cases, "MATLAB")
     raw_cases = project_rust_result_raw(document)
-    if len(raw_cases) != len(source_cases):
+    return align_raw_rust_dfe_cases(raw_cases, source_cases)
+
+
+def align_raw_rust_dfe_cases(raw_cases: Any, source_cases: Any) -> list[dict[str, Any]]:
+    """Apply source-native shapes to an already validated raw Rust record."""
+    source_cases = validate_projected_dfe_cases(source_cases, "MATLAB")
+    if not isinstance(raw_cases, list) or len(raw_cases) != len(source_cases):
         raise ValueError("Rust DFE eligible case count drift")
+    validated_raw = []
+    for index, raw in enumerate(raw_cases):
+        if not isinstance(raw, dict) or set(raw) != {"case_index", "final_scalar_metrics", "values", "raw_f64_sha256"} or raw["case_index"] != index:
+            raise ValueError("Rust raw DFE case schema drift")
+        values = [_finite(value, f"Rust raw case {index}.DFE[{tap_index}]") for tap_index, value in enumerate(raw["values"])] if isinstance(raw["values"], list) else None
+        if values is None or raw["raw_f64_sha256"] != _digest_f64(values):
+            raise ValueError("Rust raw DFE receipt drift")
+        validated_raw.append({
+            "case_index": index,
+            "final_scalar_metrics": _scalar_surface(raw["final_scalar_metrics"], f"Rust raw case {index}", False),
+            "values": values,
+        })
     return [
         {
             "case_index": index,
             "final_scalar_metrics": raw["final_scalar_metrics"],
             "dfe_taps": _rust_dfe(raw["values"], source["dfe_taps"]["shape"], f"Rust case {index}"),
         }
-        for index, (raw, source) in enumerate(zip(raw_cases, source_cases, strict=True))
+        for index, (raw, source) in enumerate(zip(validated_raw, source_cases, strict=True))
     ]
 
 
