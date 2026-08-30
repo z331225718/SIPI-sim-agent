@@ -69,6 +69,11 @@ checkpoint = struct('class', 'double', 'shape', double(size(value)), 'value_coun
     'axis_origin_ui', 1, 'axis_step_ui', 1, 'unit', 'ratio', ...
     'encoding', 'ieee754_f64_little_endian_column_major', 'raw_f64_sha256', sha256_bytes(typecast(value(:), 'uint8')));
 checkpoint.column_major_values = num2cell(column_major);
+% jsonencode may shorten decimal literals.  Keep the exact MATLAB doubles as
+% a transport receipt so the Python projector never reconstructs them from
+% presentation decimals.
+raw_bytes = typecast(value(:), 'uint8');
+checkpoint.raw_f64_le_hex = lower(reshape(dec2hex(raw_bytes, 2).', 1, []));
 end
 
 function value = scalar_value(number)

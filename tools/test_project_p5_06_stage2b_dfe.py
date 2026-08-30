@@ -1,4 +1,5 @@
 import hashlib
+import math
 import struct
 import unittest
 
@@ -30,10 +31,14 @@ def digest(values):
     return hashlib.sha256(b"".join(struct.pack("<d", value) for value in values)).hexdigest()
 
 
-def source_case(values=(0.25, -0.0), shape=None):
+def raw_hex(values):
+    return b"".join(struct.pack("<d", value) for value in values).hex()
+
+
+def source_case(values=(0.25, -0.0), shape=None, *, lossless=False, presentation_values=None):
     if shape is None:
         shape = [len(values), 1]
-    return {
+    result = {
         "case_index": 1,
         "applicable": True,
         "final_scalar_metrics": {"COM_dB": {"kind": "finite", "value": -12.0}},
@@ -48,9 +53,12 @@ def source_case(values=(0.25, -0.0), shape=None):
             "unit": "ratio",
             "encoding": "ieee754_f64_little_endian_column_major",
             "raw_f64_sha256": digest(values),
-            "column_major_values": list(values),
+            "column_major_values": list(values) if presentation_values is None else list(presentation_values),
         },
     }
+    if lossless:
+        result["dfe_taps"]["raw_f64_le_hex"] = raw_hex(values)
+    return result
 
 
 def source_summary(case=None):
@@ -71,6 +79,18 @@ class DfeProjectionTests(unittest.TestCase):
         source = project_matlab_summary(source_summary())
         self.assertEqual(source[0]["dfe_taps"]["shape"], [2, 1])
         self.assertEqual(source[0]["dfe_taps"]["raw_f64_sha256"], digest([0.25, -0.0]))
+
+    def test_lossless_source_bytes_preserve_values_jsonencode_can_round(self):
+        precise = math.nextafter(0.826025066208136, math.inf)
+        source = project_matlab_summary(source_summary(source_case(
+            values=(precise,), lossless=True, presentation_values=(0.826025066208136,),
+        )), require_lossless=True)
+        self.assertEqual(source[0]["dfe_taps"]["values"], [precise])
+        self.assertEqual(source[0]["dfe_taps"]["raw_f64_sha256"], digest([precise]))
+
+    def test_current_runner_requires_lossless_source_bytes(self):
+        with self.assertRaisesRegex(ValueError, "lossless raw bytes missing"):
+            project_matlab_summary(source_summary(), require_lossless=True)
 
     def test_rust_uses_source_native_column_shape(self):
         source = project_matlab_summary(source_summary())

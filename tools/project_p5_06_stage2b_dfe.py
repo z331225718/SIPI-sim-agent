@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 import struct
 from typing import Any
 
@@ -19,11 +20,12 @@ except ImportError:
     from project_p5_06_stage2a_txle import FINITE_TOLERANCE, SCALAR_METRICS
 
 
-DFE_KEYS = {
+DFE_LEGACY_KEYS = {
     "class", "shape", "value_count", "storage_order", "semantic_axis",
     "axis_origin_ui", "axis_step_ui", "unit", "encoding",
     "raw_f64_sha256", "column_major_values",
 }
+DFE_LOSSLESS_KEYS = DFE_LEGACY_KEYS | {"raw_f64_le_hex"}
 DFE_METADATA = {
     "class": "double",
     "storage_order": "matlab_column_major",
@@ -81,9 +83,12 @@ def _scalar_surface(values: Any, label: str, source: bool) -> dict[str, float | 
     }
 
 
-def _source_dfe(value: Any, label: str) -> dict[str, Any]:
-    if not isinstance(value, dict) or set(value) != DFE_KEYS:
+def _source_dfe(value: Any, label: str, require_lossless: bool) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) not in (DFE_LEGACY_KEYS, DFE_LOSSLESS_KEYS):
         raise ValueError(f"{label} DFE schema drift")
+    has_lossless = set(value) == DFE_LOSSLESS_KEYS
+    if require_lossless and not has_lossless:
+        raise ValueError(f"{label} DFE lossless raw bytes missing")
     for key, expected in DFE_METADATA.items():
         if value.get(key) != expected:
             raise ValueError(f"{label} DFE {key} drift")
@@ -97,10 +102,21 @@ def _source_dfe(value: Any, label: str) -> dict[str, Any]:
     count = int(shape[0]) * int(shape[1])
     if not isinstance(values, list) or len(values) != count or value["value_count"] != count:
         raise ValueError(f"{label} DFE shape/value count drift")
-    projected = [_finite(item, f"{label}.DFE[{index}]") for index, item in enumerate(values)]
     receipt = value["raw_f64_sha256"]
-    if not isinstance(receipt, str) or len(receipt) != 64 or receipt != _digest_f64(projected):
+    if not isinstance(receipt, str) or re.fullmatch(r"[0-9a-f]{64}", receipt) is None:
         raise ValueError(f"{label} DFE raw digest drift")
+    if has_lossless:
+        raw_hex = value["raw_f64_le_hex"]
+        if not isinstance(raw_hex, str) or re.fullmatch(rf"[0-9a-f]{{{count * 16}}}", raw_hex) is None:
+            raise ValueError(f"{label} DFE lossless raw bytes drift")
+        raw_bytes = bytes.fromhex(raw_hex)
+        projected = list(struct.unpack(f"<{count}d", raw_bytes)) if count else []
+        if any(not math.isfinite(item) for item in projected) or hashlib.sha256(raw_bytes).hexdigest() != receipt:
+            raise ValueError(f"{label} DFE raw digest drift")
+    else:
+        projected = [_finite(item, f"{label}.DFE[{index}]") for index, item in enumerate(values)]
+        if receipt != _digest_f64(projected):
+            raise ValueError(f"{label} DFE raw digest drift")
     return {"shape": [int(shape[0]), int(shape[1])], "values": projected, "raw_f64_sha256": receipt}
 
 
@@ -113,7 +129,7 @@ def _rust_dfe(value: Any, source_shape: list[int], label: str) -> dict[str, Any]
     return {"shape": source_shape, "values": projected, "raw_f64_sha256": _digest_f64(projected)}
 
 
-def project_matlab_summary(document: Any) -> list[dict[str, Any]]:
+def project_matlab_summary(document: Any, *, require_lossless: bool = False) -> list[dict[str, Any]]:
     if not isinstance(document, dict) or document.get("schema_version") != 1 or document.get("diagnostic_only") is not True:
         raise ValueError("MATLAB DFE checkpoint summary schema drift")
     cases = document.get("case_checkpoints")
@@ -132,7 +148,7 @@ def project_matlab_summary(document: Any) -> list[dict[str, Any]]:
         projected.append({
             "case_index": len(projected),
             "final_scalar_metrics": _scalar_surface(item["final_scalar_metrics"], f"MATLAB case {expected_index}", True),
-            "dfe_taps": _source_dfe(item["dfe_taps"], f"MATLAB case {expected_index}"),
+            "dfe_taps": _source_dfe(item["dfe_taps"], f"MATLAB case {expected_index}", require_lossless),
         })
     return projected
 

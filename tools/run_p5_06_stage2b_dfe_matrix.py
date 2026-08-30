@@ -341,7 +341,7 @@ def main() -> int:
             summary = json.loads(summary_path.read_text(encoding="utf-8")) if run.returncode == 0 and summary_path.is_file() and worker_result.is_file() else None
             if summary is not None and summary.get("matlab_release") != "2024b":
                 raise RuntimeError("MATLAB Engine did not report R2024b")
-            checkpoints = project_matlab_summary(summary) if summary is not None else []
+            checkpoints = project_matlab_summary(summary, require_lossless=True) if summary is not None else []
             scope = dfe_scope(summary, checkpoints, "case_checkpoints", "MATLAB") if summary is not None else None
             metrics = [item["final_scalar_metrics"] for item in checkpoints]
             materialization = {"comparison": "bound_by_current_stage1_v4_scalar_replay"}
