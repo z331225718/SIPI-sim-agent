@@ -47,6 +47,15 @@ def source_case(values=(1.0,)):
     }
 
 
+def source_inapplicable_case():
+    return {
+        "case_index": 1,
+        "applicable": False,
+        "final_scalar_metrics": {"ERL": {"kind": "inf"}},
+        "txle_taps": {"reason": "source_TXLE_taps_missing"},
+    }
+
+
 def source_summary(values=(1.0,)):
     return {"schema_version": 1, "diagnostic_only": True, "case_count": 1, "case_checkpoints": [source_case(values)]}
 
@@ -98,6 +107,46 @@ class TxleProjectionTests(unittest.TestCase):
     def test_rust_missing_search_checkpoint_is_rejected(self):
         document = rust_result()
         del document["cases"][0]["diagnostics"]["portable_branches"]["search"]
+        with self.assertRaisesRegex(ValueError, "search checkpoint"):
+            project_rust_result(document)
+
+    def test_explicit_erl_only_cases_are_outside_txle_scope(self):
+        source = {
+            "schema_version": 1,
+            "diagnostic_only": True,
+            "case_count": 1,
+            "case_checkpoints": [source_inapplicable_case()],
+        }
+        rust = {
+            "cases": [{
+                "case_index": 0,
+                "metrics": {"ERL": "+Inf"},
+                "diagnostics": {"normal_erl": {"source": "bounded-erl-only"}},
+            }]
+        }
+        self.assertEqual(project_matlab_summary(source), [])
+        self.assertEqual(project_rust_result(rust), [])
+        self.assertEqual(compare_txle_checkpoint_surface(source, rust), [])
+
+    def test_inapplicable_source_reason_is_fail_closed(self):
+        document = {
+            "schema_version": 1,
+            "diagnostic_only": True,
+            "case_count": 1,
+            "case_checkpoints": [source_inapplicable_case()],
+        }
+        document["case_checkpoints"][0]["txle_taps"] = {"reason": "anything_else"}
+        with self.assertRaisesRegex(ValueError, "inapplicable TXLE reason"):
+            project_matlab_summary(document)
+
+    def test_rust_erl_metric_without_normal_erl_is_rejected(self):
+        document = {
+            "cases": [{
+                "case_index": 0,
+                "metrics": {"ERL": "+Inf"},
+                "diagnostics": {},
+            }]
+        }
         with self.assertRaisesRegex(ValueError, "search checkpoint"):
             project_rust_result(document)
 

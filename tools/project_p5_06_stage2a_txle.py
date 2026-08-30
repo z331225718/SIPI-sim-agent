@@ -149,10 +149,17 @@ def project_matlab_summary(document: Any) -> list[dict[str, Any]]:
     for expected_index, item in enumerate(cases):
         if not isinstance(item, dict) or set(item) != {"case_index", "applicable", "final_scalar_metrics", "txle_taps"}:
             raise ValueError("MATLAB TXLE checkpoint case schema drift")
-        if item["case_index"] != expected_index + 1 or item["applicable"] is not True:
+        if item["case_index"] != expected_index + 1 or not isinstance(item["applicable"], bool):
             raise ValueError("MATLAB TXLE checkpoint applicability drift")
+        if item["applicable"] is False:
+            # The source harness explicitly marks ERL-only returns, which have
+            # no output_args.TXLE_taps.  They are outside Stage 2a's declared
+            # eligible surface rather than a missing TXLE checkpoint.
+            if item["txle_taps"] != {"reason": "source_TXLE_taps_missing"}:
+                raise ValueError("MATLAB inapplicable TXLE reason drift")
+            continue
         projected.append({
-            "case_index": expected_index,
+            "case_index": len(projected),
             "final_scalar_metrics": _scalar_surface(item["final_scalar_metrics"], f"MATLAB case {expected_index}", True),
             "txle_taps": _source_txle(item["txle_taps"], f"MATLAB case {expected_index}"),
         })
@@ -171,13 +178,18 @@ def project_rust_result(document: Any) -> list[dict[str, Any]]:
         if not isinstance(diagnostics, dict):
             raise ValueError("Rust result diagnostics missing")
         branches = diagnostics.get("portable_branches")
-        if not isinstance(branches, dict) or not isinstance(branches.get("search"), dict):
-            raise ValueError("Rust result source-compatible search checkpoint missing")
         metrics = item.get("metrics")
         if not isinstance(metrics, dict):
             raise ValueError("Rust result metrics missing")
+        if not isinstance(branches, dict) or not isinstance(branches.get("search"), dict):
+            # Match only the source's ERL_ONLY early-return shape.  A generic
+            # missing search checkpoint remains a hard failure, so this cannot
+            # mask an eligible COM search regression.
+            if set(metrics) != {"ERL"} or not isinstance(diagnostics.get("normal_erl"), dict):
+                raise ValueError("Rust result source-compatible search checkpoint missing")
+            continue
         projected.append({
-            "case_index": expected_index,
+            "case_index": len(projected),
             "final_scalar_metrics": _scalar_surface(metrics, f"Rust case {expected_index}", False),
             "txle_taps": _rust_txle(branches["search"].get("selected_tx_taps"), f"Rust case {expected_index}"),
         })
