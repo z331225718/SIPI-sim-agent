@@ -32,10 +32,10 @@ except ImportError:
 
 
 CANDIDATE = (
-    "04a8b72454812c7dd8a342207901174b9915efe6",
-    "c31c62898fcd490963e8aa95fcd04a0226280dcb",
-    "d1983412d074eb6648b715d0b99fb6dac904ab8d84fac7504fdb5ec80f6fb730",
-    56985600,
+    "117855c93ec703693413fa36cc0c6a66014ff37d",
+    "acfb8c254a4a6c300e8c4c7efbbe65e68f55936f",
+    "7c4100fcbfc3e84b24a05fea97d304160f6022b0add4d73042124e580a0e4be4",
+    57036800,
 )
 SCHEMA = "sipi.p5-06.stage2a-txle-checkpoint-run.v1"
 TIMING_SCOPE = "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
