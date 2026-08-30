@@ -1,0 +1,70 @@
+schema: sipi.p5-06.stage2a-txle-checkpoint-prep.v1
+status: preparation_only_pending_immutable_replay
+parent_scalar_acceptance:
+  manifest: docs/baselines/p5-06-original13-rust-matlab-r2024b-acceptance.v1.yaml
+  status: accepted_stage1_scalar_surface
+candidate:
+  commit: 04a8b72454812c7dd8a342207901174b9915efe6
+  tree: c31c62898fcd490963e8aa95fcd04a0226280dcb
+  role: source-compatible-TXLE-shape-fix
+source:
+  implementation: agent-com-r4.80
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  result_assignment:
+    path: matlab_src/com_ieee8023_480.m
+    line: 2549
+    expression: output_args.TXLE_taps=fom_result.txffe
+  dynamic_shape_rule:
+    path: matlab_src/com_ieee8023_480.m
+    lines: [6965, 7013]
+    expression: txffe_matrix=[precursor_matrix txffe_cursor_vector postcursor_matrix]
+scope:
+  checkpoint: source-visible-TXLE_taps-only
+  eligible_cases: COM cases where source returns TXLE_taps and Rust publishes an existing search winner
+  excluded:
+  - DFE_taps_until_source_axis_and_shape_are_independently_bound
+  - impulse_waveforms
+  - spectrum_payloads
+  - full_MATLAB_result_graph
+  - new_product_API_or_runtime_instrumentation
+wire_contract:
+  class: double
+  shape: exact_source_row_vector
+  storage_order: matlab_column_major
+  semantic_axis: tap_order_pre_to_cursor_to_post
+  unit: ratio
+  encoding: ieee754_f64_little_endian_column_major
+  raw_f64_digest: exact
+  alignment_resample_crop: forbidden
+  TXFFE_zero_placeholder_suppression: required
+scalar_guard:
+  source_and_checkpoint_harness_share_one_core_invocation: true
+  source_final_scalar_metric_set: exact_stage1_subset_per_case
+  rust_final_scalar_metric_set: exact_source_set_per_case
+  finite_absolute_tolerance: 1.0e-09
+  special_values: exact_token_match
+  paired_scalar_harness_equivalence_required_before_acceptance: true
+replay_requirements:
+  candidate_archive_commit_tree_sha256_bytes: required
+  upstream_archive_commit_tree_sha256_bytes: required
+  fresh_matlab_runs: 2
+  fresh_rust_runs: 2
+  distinct_roots_run_ids_nonces_and_report_sha256: true
+  original13_matrix: 13_workbooks_28_cases
+  matlab_release: R2024b
+  tool_harnesses:
+  - tools/sipi_com_txle_checkpoint_oracle_v1.m
+  - tools/project_p5_06_stage2a_txle.py
+  - tools/test_project_p5_06_stage2a_txle.py
+claims:
+  acceptance: false
+  stage2a_txle_parity: false
+  p5_06_closed: false
+  release: false
+non_claims:
+- no_full_result_graph_parity
+- no_DFE_parity
+- no_waveform_or_spectrum_parity
+- no_s_parameter_fit
+- no_change_to_stage1_accepted_candidate
