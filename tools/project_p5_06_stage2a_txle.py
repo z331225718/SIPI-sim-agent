@@ -68,8 +68,15 @@ def _scalar(value: Any, label: str) -> float | str:
         if math.isfinite(number):
             return number
         return "+Inf" if number > 0 else "-Inf" if number < 0 else "NaN"
-    if value in ("+Inf", "-Inf", "NaN"):
-        return value
+    if isinstance(value, str):
+        token = {
+            "inf": "+Inf",
+            "+inf": "+Inf",
+            "-inf": "-Inf",
+            "nan": "NaN",
+        }.get(value.casefold())
+        if token is not None:
+            return token
     raise ValueError(f"{label} has an unsupported scalar token")
 
 

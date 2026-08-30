@@ -109,6 +109,8 @@ class TxleProjectionTests(unittest.TestCase):
         self.assertEqual(compare_txle_checkpoint_surface(document, candidate), [])
         candidate["cases"][0]["metrics"] = {"ERL": "-Inf"}
         self.assertEqual(compare_txle_checkpoint_surface(document, candidate), ["case 0: ERL special scalar differs"])
+        candidate["cases"][0]["metrics"] = {"ERL": "inf"}
+        self.assertEqual(compare_txle_checkpoint_surface(document, candidate), [])
 
     def test_unknown_source_scalar_is_rejected(self):
         document = source_summary()
