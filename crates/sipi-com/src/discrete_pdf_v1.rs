@@ -6,6 +6,9 @@
 //! single-bin shortcuts. The combined noise PDF composition
 //! (combine_r480_noise_pdf) is a separate stage.
 
+use rustfft::FftPlanner;
+use rustfft::num_complex::Complex;
+
 /// A normalized discrete probability density over uniform bins.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiscretePdfV1 {
@@ -167,6 +170,124 @@ pub fn convolve_v1(
     )
 }
 
+/// Bounded C2M-search convolution backend.
+///
+/// R4.80 switches its exhaustive candidate evaluation to a sparse/FFT full
+/// convolution path.  Keep the public report-PDF primitive above on its
+/// direct, source-order implementation; this helper is deliberately only for
+/// the private C2M candidate loop, where dense O(n*m) work dominates runtime.
+pub(crate) fn convolve_c2m_accelerated_v1(
+    left: &DiscretePdfV1,
+    right: &DiscretePdfV1,
+) -> Result<DiscretePdfV1, PdfErrorV1> {
+    if left.bin_size != right.bin_size {
+        return Err(PdfErrorV1::ConvolveBinMismatch);
+    }
+    let left_single =
+        left.probability.len() == 1 && left.probability[0] == 1.0 && left.min_bin == 0;
+    let right_single =
+        right.probability.len() == 1 && right.probability[0] == 1.0 && right.min_bin == 0;
+    if left_single || right_single {
+        let (other, single_min) = if left_single {
+            (right, left.min_bin)
+        } else {
+            (left, right.min_bin)
+        };
+        return DiscretePdfV1::try_new(
+            other.bin_size,
+            matlab_round(other.min_bin as f64 + single_min as f64),
+            other.probability.clone(),
+        );
+    }
+    let result = if let Some(indices) = sparse_indices_at_most_four(&right.probability) {
+        if indices.len()
+            <= sparse_indices_at_most_four(&left.probability).map_or(usize::MAX, |v| v.len())
+        {
+            sparse_full_convolution(&left.probability, &right.probability, &indices)
+        } else if let Some(indices) = sparse_indices_at_most_four(&left.probability) {
+            sparse_full_convolution(&right.probability, &left.probability, &indices)
+        } else {
+            fft_full_convolution(&left.probability, &right.probability)?
+        }
+    } else if let Some(indices) = sparse_indices_at_most_four(&left.probability) {
+        sparse_full_convolution(&right.probability, &left.probability, &indices)
+    } else {
+        fft_full_convolution(&left.probability, &right.probability)?
+    };
+    DiscretePdfV1::try_new(
+        left.bin_size,
+        matlab_round(left.min_bin as f64 + right.min_bin as f64),
+        result,
+    )
+}
+
+fn sparse_indices_at_most_four(values: &[f64]) -> Option<Vec<usize>> {
+    let indices: Vec<usize> = values
+        .iter()
+        .enumerate()
+        .filter_map(|(index, value)| (*value != 0.0).then_some(index))
+        .collect();
+    (indices.len() <= 4).then_some(indices)
+}
+
+fn sparse_full_convolution(dense: &[f64], sparse: &[f64], indices: &[usize]) -> Vec<f64> {
+    let mut result = vec![0.0; dense.len() + sparse.len() - 1];
+    for &index in indices {
+        let mass = sparse[index];
+        for (out, value) in result[index..index + dense.len()].iter_mut().zip(dense) {
+            *out += mass * value;
+        }
+    }
+    result
+}
+
+fn fft_full_convolution(left: &[f64], right: &[f64]) -> Result<Vec<f64>, PdfErrorV1> {
+    let output_len = left
+        .len()
+        .checked_add(right.len())
+        .and_then(|size| size.checked_sub(1))
+        .ok_or(PdfErrorV1::InvalidPdf)?;
+    let fft_len = output_len
+        .checked_next_power_of_two()
+        .ok_or(PdfErrorV1::InvalidPdf)?;
+    let mut left_fft = vec![Complex::new(0.0, 0.0); fft_len];
+    let mut right_fft = vec![Complex::new(0.0, 0.0); fft_len];
+    for (target, value) in left_fft.iter_mut().zip(left) {
+        target.re = *value;
+    }
+    for (target, value) in right_fft.iter_mut().zip(right) {
+        target.re = *value;
+    }
+    let mut planner = FftPlanner::<f64>::new();
+    planner.plan_fft_forward(fft_len).process(&mut left_fft);
+    planner.plan_fft_forward(fft_len).process(&mut right_fft);
+    for (left_value, right_value) in left_fft.iter_mut().zip(right_fft) {
+        *left_value *= right_value;
+    }
+    planner.plan_fft_inverse(fft_len).process(&mut left_fft);
+    let scale = 1.0 / fft_len as f64;
+    let mut negative_mass = 0.0;
+    let mut result = Vec::with_capacity(output_len);
+    for value in left_fft.into_iter().take(output_len) {
+        let real = value.re * scale;
+        if !real.is_finite() {
+            return Err(PdfErrorV1::InvalidPdf);
+        }
+        if real < 0.0 {
+            negative_mass -= real;
+            result.push(0.0);
+        } else {
+            result.push(real);
+        }
+    }
+    // Match the pinned sparse/FFT path: a material negative lobe is not a
+    // valid PDF, while sub-ULP roundoff is clamped before normalization.
+    if negative_mass > 1e-12 {
+        return Err(PdfErrorV1::InvalidPdf);
+    }
+    Ok(result)
+}
+
 /// Explicit scope policy of the discrete PDF stage core.
 pub const DISCRETE_PDF_POLICY_V1: &str = "sipi.p5-04d.discrete-pdf-v1.normal-convolve-quantile";
 
@@ -217,6 +338,28 @@ mod tests {
         let result = convolve_v1(&a, &b).expect("convolution");
         assert_eq!(result.probability().len(), 1);
         assert!((result.x(0) - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn c2m_accelerated_sparse_and_fft_backends_match_direct_pdf() {
+        let dense =
+            DiscretePdfV1::try_new(1.0, -2, vec![0.05, 0.2, 0.3, 0.25, 0.2]).expect("dense");
+        let sparse =
+            DiscretePdfV1::try_new(1.0, -1, vec![0.5, 0.0, 0.25, 0.0, 0.25]).expect("sparse");
+        let direct = convolve_v1(&dense, &sparse).expect("direct sparse");
+        let accelerated = convolve_c2m_accelerated_v1(&dense, &sparse).expect("accelerated sparse");
+        assert_eq!(direct.min_bin(), accelerated.min_bin());
+        for (expected, actual) in direct.probability().iter().zip(accelerated.probability()) {
+            assert!((expected - actual).abs() < 1e-15);
+        }
+
+        let other = DiscretePdfV1::try_new(1.0, 1, vec![0.1, 0.15, 0.2, 0.25, 0.3]).expect("other");
+        let direct = convolve_v1(&dense, &other).expect("direct fft");
+        let accelerated = convolve_c2m_accelerated_v1(&dense, &other).expect("accelerated fft");
+        assert_eq!(direct.min_bin(), accelerated.min_bin());
+        for (expected, actual) in direct.probability().iter().zip(accelerated.probability()) {
+            assert!((expected - actual).abs() < 1e-12);
+        }
     }
 
     #[test]

@@ -8,7 +8,9 @@
 //! remain separate scopes.
 
 use crate::dfe_v1::clip_dfe_v1;
-use crate::discrete_pdf_v1::{DiscretePdfV1, PdfErrorV1, convolve_v1, normal_pdf_v1};
+use crate::discrete_pdf_v1::{
+    DiscretePdfV1, PdfErrorV1, convolve_c2m_accelerated_v1, normal_pdf_v1,
+};
 use crate::sampled_signal_pdf_v1::sampled_signal_pdf_v1;
 
 /// Explicit scope policy of the C2M vertical-eye primitive.
@@ -290,7 +292,8 @@ fn signal_level_pdf_data(
     signal_scale_v: f64,
     symbol_levels: &[f64],
 ) -> Result<SignalLevelPdfData, C2mEyeErrorV1> {
-    let shared = convolve_v1(self_pdf, cci_pdf)?.convolve_inner(noise_pdf)?;
+    let shared = convolve_c2m_accelerated_v1(self_pdf, cci_pdf)?;
+    let shared = convolve_c2m_accelerated_v1(&shared, noise_pdf)?;
     let bin_size = shared.bin_size();
     let total: f64 = shared.probability().iter().sum();
     let probability: Vec<f64> = shared.probability().iter().map(|v| v / total).collect();
@@ -543,7 +546,7 @@ pub fn calculate_c2m_vertical_eye_v1(
         let column: Vec<f64> = (0..shifted_residual.len())
             .map(|r| shifted_residual[r][phase_position])
             .collect();
-        let self_pdf = sampled_signal_pdf_v1(&column, levels as u32, bin_size, false)
+        let self_pdf = sampled_signal_pdf_v1(&column, levels as u32, bin_size, true)
             .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
         let jitter_norm: f64 = rj
             .jitter
@@ -560,9 +563,10 @@ pub fn calculate_c2m_vertical_eye_v1(
         let dual_dirac_values: Vec<f64> = (0..rj.jitter.len())
             .map(|r| amplitude_dd_v * rj.jitter[r][phase_position])
             .collect();
-        let dual_dirac = sampled_signal_pdf_v1(&dual_dirac_values, levels as u32, bin_size, false)
+        let dual_dirac = sampled_signal_pdf_v1(&dual_dirac_values, levels as u32, bin_size, true)
             .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
-        let noise = convolve_v1(&convolve_v1(&gaussian, ne_noise_pdf)?, &dual_dirac)?;
+        let gaussian = convolve_c2m_accelerated_v1(&gaussian, ne_noise_pdf)?;
+        let noise = convolve_c2m_accelerated_v1(&gaussian, &dual_dirac)?;
         let phase_abs = phase_indices[phase_position];
         let data = signal_level_pdf_data(
             &self_pdf,
@@ -582,15 +586,6 @@ pub fn calculate_c2m_vertical_eye_v1(
         ql,
         spec_ber,
     )
-}
-
-trait ConvolveExt {
-    fn convolve_inner(&self, other: &DiscretePdfV1) -> Result<DiscretePdfV1, PdfErrorV1>;
-}
-impl ConvolveExt for DiscretePdfV1 {
-    fn convolve_inner(&self, other: &DiscretePdfV1) -> Result<DiscretePdfV1, PdfErrorV1> {
-        convolve_v1(self, other)
-    }
 }
 
 #[cfg(test)]
