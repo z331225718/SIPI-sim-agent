@@ -201,6 +201,7 @@ impl std::error::Error for DirectRunErrorV1 {}
 #[derive(Clone, Debug)]
 struct LoadedConfigV1 {
     values: BTreeMap<String, ResolvedDefaultV1>,
+    txffe_decimal_colon_lexemes: BTreeMap<String, String>,
     source_sha256: String,
     profile: String,
     document: Value,
@@ -586,7 +587,12 @@ fn workbook_package_cases_from_config_v1(
     {
         let source_sha256 = sha256_bytes_v1(&source_bytes);
         let frequency_hz = s4p_frequency_axis_v1(&request.pulse, &source_sha256)?;
-        materialize_workbook_search_v1(&mut shared_document, &loaded.values, &frequency_hz)?;
+        materialize_workbook_search_v1(
+            &mut shared_document,
+            &loaded.values,
+            &loaded.txffe_decimal_colon_lexemes,
+            &frequency_hz,
+        )?;
     }
     let cases = selected
         .iter()
@@ -1164,7 +1170,12 @@ fn run_with_workflow_token_origin(
         let bytes = bounded_read_v1(&request.pulse, MAX_IMPULSE_FILE_BYTES_V1)?;
         let source_sha256 = sha256_bytes_v1(&bytes);
         let frequency_hz = s4p_frequency_axis_v1(&request.pulse, &source_sha256)?;
-        materialize_workbook_search_v1(&mut document, &loaded.values, &frequency_hz)?;
+        materialize_workbook_search_v1(
+            &mut document,
+            &loaded.values,
+            &loaded.txffe_decimal_colon_lexemes,
+            &frequency_hz,
+        )?;
         if let Some(case_index) = package_case_index {
             document["portable"]["search"]["package_case_index"] = json!(case_index);
         }
@@ -2080,6 +2091,7 @@ fn load_config_v1_with_origin(
         }
         return Ok(LoadedConfigV1 {
             values,
+            txffe_decimal_colon_lexemes: BTreeMap::new(),
             source_sha256,
             profile: request.profile.clone(),
             document,
@@ -2102,6 +2114,7 @@ fn load_config_v1_with_origin(
     let values = parameter_map_from_materialized_v1(&report)?;
     Ok(LoadedConfigV1 {
         values,
+        txffe_decimal_colon_lexemes: report.txffe_decimal_colon_lexemes_v1().clone(),
         source_sha256,
         profile: request.profile.clone(),
         document,
@@ -6380,6 +6393,162 @@ fn workbook_numeric_vector_json_v1(
     Ok(Value::Array(items))
 }
 
+const MAX_TXFFE_DECIMAL_COLON_TOKEN_BYTES_V1: usize = 64;
+const MAX_TXFFE_DECIMAL_COLON_SCALE_V1: u32 = 18;
+const MAX_TXFFE_DECIMAL_COLON_POINTS_V1: usize = 4096;
+
+#[derive(Clone, Copy)]
+struct TxffeExactDecimalV1 {
+    mantissa: i128,
+    scale: u32,
+}
+
+/// The MATLAB r4.80 dynamic-TXFFE path evaluates the raw workbook string,
+/// while the pinned Python materializer has already expanded it using binary
+/// arithmetic. This runtime-only parser is deliberately limited to a bounded
+/// `start:step:end` decimal literal; all other controls retain the Python
+/// materialized vector.
+fn workbook_txffe_vector_json_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    lexemes: &BTreeMap<String, String>,
+    key: &str,
+) -> Result<Value, DirectRunErrorV1> {
+    let fallback = workbook_numeric_vector_json_v1(values, &[key], key)?;
+    let Some(lexeme) = lexemes.get(key) else {
+        return Ok(fallback);
+    };
+    let values = txffe_decimal_colon_v1(lexeme).map_err(|message| {
+        DirectRunErrorV1::Parameters(format!(
+            "trusted workbook {key} MATLAB decimal colon: {message}"
+        ))
+    })?;
+    let expected = fallback.as_array().ok_or_else(|| {
+        DirectRunErrorV1::Parameters(format!("workbook control {key} must be array-shaped"))
+    })?;
+    if values.len() != expected.len() {
+        return Err(DirectRunErrorV1::Parameters(format!(
+            "trusted workbook {key} MATLAB decimal colon length conflicts with materialized vector"
+        )));
+    }
+    Ok(json!(values))
+}
+
+fn txffe_decimal_colon_v1(lexeme: &str) -> Result<Vec<f64>, &'static str> {
+    if lexeme.len() > MAX_TXFFE_DECIMAL_COLON_TOKEN_BYTES_V1 {
+        return Err("literal exceeds byte budget");
+    }
+    let lexeme = lexeme.trim();
+    let lexeme = if lexeme.starts_with('[') && lexeme.ends_with(']') {
+        &lexeme[1..lexeme.len() - 1]
+    } else {
+        lexeme
+    };
+    let parts = lexeme.split(':').map(str::trim).collect::<Vec<_>>();
+    if parts.len() != 3 {
+        return Err("requires exactly start:step:end decimal tokens");
+    }
+    let start = parse_txffe_exact_decimal_v1(parts[0])?;
+    let step = parse_txffe_exact_decimal_v1(parts[1])?;
+    let end = parse_txffe_exact_decimal_v1(parts[2])?;
+    let scale = start.scale.max(step.scale).max(end.scale);
+    let normalize = |value: TxffeExactDecimalV1| -> Option<i128> {
+        value
+            .mantissa
+            .checked_mul(10_i128.checked_pow(scale.checked_sub(value.scale)?)?)
+    };
+    let start = normalize(start).ok_or("decimal scaling overflow")?;
+    let step = normalize(step).ok_or("decimal scaling overflow")?;
+    let end = normalize(end).ok_or("decimal scaling overflow")?;
+    if step == 0 {
+        return Err("zero step is invalid");
+    }
+    let delta = end.checked_sub(start).ok_or("decimal range overflow")?;
+    if (delta.is_positive() && step.is_negative()) || (delta.is_negative() && step.is_positive()) {
+        return Err("step points away from end");
+    }
+    let count = delta
+        .unsigned_abs()
+        .checked_div(step.unsigned_abs())
+        .and_then(|count| count.checked_add(1))
+        .and_then(|count| usize::try_from(count).ok())
+        .ok_or("decimal range count overflow")?;
+    if count > MAX_TXFFE_DECIMAL_COLON_POINTS_V1 {
+        return Err("decimal range exceeds point budget");
+    }
+    let mut values = Vec::with_capacity(count);
+    for index in 0..count {
+        let scaled = start
+            .checked_add(
+                step.checked_mul(index as i128)
+                    .ok_or("decimal range overflow")?,
+            )
+            .ok_or("decimal range overflow")?;
+        let text = format_txffe_exact_decimal_v1(scaled, scale)?;
+        let value = text
+            .parse::<f64>()
+            .map_err(|_| "decimal conversion failed")?;
+        if !value.is_finite() {
+            return Err("decimal conversion is not finite");
+        }
+        values.push(value);
+    }
+    Ok(values)
+}
+
+fn parse_txffe_exact_decimal_v1(token: &str) -> Result<TxffeExactDecimalV1, &'static str> {
+    if token.is_empty() || token.len() > MAX_TXFFE_DECIMAL_COLON_TOKEN_BYTES_V1 {
+        return Err("invalid decimal token");
+    }
+    let (negative, unsigned) = match token.as_bytes().first() {
+        Some(b'-') => (true, &token[1..]),
+        Some(b'+') => (false, &token[1..]),
+        _ => (false, token),
+    };
+    let mut pieces = unsigned.split('.');
+    let whole = pieces.next().ok_or("invalid decimal token")?;
+    let fraction = pieces.next().unwrap_or_default();
+    if pieces.next().is_some()
+        || (whole.is_empty() && fraction.is_empty())
+        || !whole.bytes().all(|byte| byte.is_ascii_digit())
+        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
+        || fraction.len() > MAX_TXFFE_DECIMAL_COLON_SCALE_V1 as usize
+    {
+        return Err("requires a plain finite decimal token");
+    }
+    let digits = format!("{whole}{fraction}");
+    let magnitude = digits
+        .parse::<i128>()
+        .map_err(|_| "decimal token overflow")?;
+    Ok(TxffeExactDecimalV1 {
+        mantissa: if negative { -magnitude } else { magnitude },
+        scale: fraction.len() as u32,
+    })
+}
+
+fn format_txffe_exact_decimal_v1(value: i128, scale: u32) -> Result<String, &'static str> {
+    if value == 0 {
+        return Ok("0".to_owned());
+    }
+    let magnitude = value.unsigned_abs();
+    if scale == 0 {
+        return Ok(if value.is_negative() {
+            format!("-{magnitude}")
+        } else {
+            magnitude.to_string()
+        });
+    }
+    let divisor = 10_u128
+        .checked_pow(scale)
+        .ok_or("decimal scaling overflow")?;
+    let whole = magnitude / divisor;
+    let fraction = magnitude % divisor;
+    let mut text = format!("{whole}.{fraction:0width$}", width = scale as usize);
+    if value.is_negative() {
+        text.insert(0, '-');
+    }
+    Ok(text)
+}
+
 /// Resolve the scalar first DFE bound consumed by the search loop.  MATLAB's
 /// r4.80 materializer intentionally leaves `bmax` empty when `N_b == 0`; in
 /// that case the typed no-DFE search value is the neutral zero, not an
@@ -6493,6 +6662,7 @@ fn s4p_frequency_axis_v1(path: &Path, expected_sha256: &str) -> Result<Vec<f64>,
 fn materialize_workbook_search_v1(
     document: &mut Value,
     values: &BTreeMap<String, ResolvedDefaultV1>,
+    txffe_decimal_colon_lexemes: &BTreeMap<String, String>,
     frequency_hz: &[f64],
 ) -> Result<(), DirectRunErrorV1> {
     let root = document.as_object_mut().ok_or_else(|| {
@@ -6561,10 +6731,10 @@ fn materialize_workbook_search_v1(
     search.insert(
         "tx_ffe_values".to_owned(),
         json!({
-            "tx_ffe_cm1_values": copy_vector(&["tx_ffe_cm1_values"], "tx_ffe_cm1_values")?,
-            "tx_ffe_cm2_values": copy_vector(&["tx_ffe_cm2_values"], "tx_ffe_cm2_values")?,
-            "tx_ffe_cm3_values": copy_vector(&["tx_ffe_cm3_values"], "tx_ffe_cm3_values")?,
-            "tx_ffe_cp1_values": copy_vector(&["tx_ffe_cp1_values"], "tx_ffe_cp1_values")?,
+            "tx_ffe_cm1_values": workbook_txffe_vector_json_v1(values, txffe_decimal_colon_lexemes, "tx_ffe_cm1_values")?,
+            "tx_ffe_cm2_values": workbook_txffe_vector_json_v1(values, txffe_decimal_colon_lexemes, "tx_ffe_cm2_values")?,
+            "tx_ffe_cm3_values": workbook_txffe_vector_json_v1(values, txffe_decimal_colon_lexemes, "tx_ffe_cm3_values")?,
+            "tx_ffe_cp1_values": workbook_txffe_vector_json_v1(values, txffe_decimal_colon_lexemes, "tx_ffe_cp1_values")?,
         }),
     );
     let ctle = json!({
@@ -8535,7 +8705,7 @@ mod tests {
         );
 
         let mut document = json!({"materialized": {"parameters": {}, "options": {}}});
-        materialize_workbook_search_v1(&mut document, &values, &[1.0e9, 2.0e9])
+        materialize_workbook_search_v1(&mut document, &values, &BTreeMap::new(), &[1.0e9, 2.0e9])
             .expect("source-derived workbook crosswalk");
         let search = &document["portable"]["search"];
         assert_eq!(search["dfe_first_max"], 0.65);
@@ -8580,8 +8750,13 @@ mod tests {
             tp0v_values.insert(key.to_owned(), scalar(0.0));
         }
         let mut tp0v_document = json!({"materialized": {"parameters": {}, "options": {}}});
-        materialize_workbook_search_v1(&mut tp0v_document, &tp0v_values, &[1.0e9, 2.0e9])
-            .expect("TP0V source-derived workbook crosswalk");
+        materialize_workbook_search_v1(
+            &mut tp0v_document,
+            &tp0v_values,
+            &BTreeMap::new(),
+            &[1.0e9, 2.0e9],
+        )
+        .expect("TP0V source-derived workbook crosswalk");
         let tp0v_search = &tp0v_document["portable"]["search"];
         assert_eq!(tp0v_search["dfe_first_max"].as_f64(), Some(0.0));
         assert_eq!(tp0v_search["candidate"]["bmax"], json!([]));
@@ -8610,9 +8785,13 @@ mod tests {
         let mut invalid_tp0v = tp0v_values.clone();
         invalid_tp0v.insert("ndfe".to_owned(), scalar(1.0));
         let mut invalid_document = json!({"materialized": {"parameters": {}, "options": {}}});
-        let error =
-            materialize_workbook_search_v1(&mut invalid_document, &invalid_tp0v, &[1.0e9, 2.0e9])
-                .expect_err("nonzero DFE count cannot use an empty bmax");
+        let error = materialize_workbook_search_v1(
+            &mut invalid_document,
+            &invalid_tp0v,
+            &BTreeMap::new(),
+            &[1.0e9, 2.0e9],
+        )
+        .expect_err("nonzero DFE count cannot use an empty bmax");
         assert!(error.to_string().contains("ndfe is nonzero"));
 
         let mut missing_gain = document.clone();
@@ -8920,6 +9099,37 @@ mod tests {
         );
         assert!(report.result["provenance"]["package_cases"]["count"].is_number());
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn trusted_txffe_decimal_colon_preserves_matlab_grid_bits() {
+        let expanded = txffe_decimal_colon_v1("[-.34:.02:0]").expect("MATLAB decimal colon");
+        assert_eq!(expanded.len(), 18);
+        assert_eq!(expanded[13].to_bits(), (-0.08_f64).to_bits());
+        assert_eq!(expanded[11].to_bits(), (-0.12_f64).to_bits());
+        assert_eq!(expanded[17].to_bits(), 0.0_f64.to_bits());
+
+        let values = BTreeMap::from([(
+            "tx_ffe_cm1_values".to_owned(),
+            ResolvedDefaultV1::Vector(vec![0.0; 18]),
+        )]);
+        let lexemes = BTreeMap::from([(
+            "tx_ffe_cm1_values".to_owned(),
+            "[-.34:.02:0]".to_owned(),
+        )]);
+        let projected = workbook_txffe_vector_json_v1(&values, &lexemes, "tx_ffe_cm1_values")
+            .expect("runtime sidecar projection");
+        assert_eq!(
+            projected[13].as_f64().map(f64::to_bits),
+            Some((-0.08_f64).to_bits())
+        );
+    }
+
+    #[test]
+    fn trusted_txffe_decimal_colon_rejects_non_literal_and_unsafe_ranges() {
+        for input in ["-.34:0:0", "0:-.02:.34", "ones(1,2):.02:0", "0:.1:999"] {
+            assert!(txffe_decimal_colon_v1(input).is_err(), "{input}");
+        }
     }
 
     #[test]

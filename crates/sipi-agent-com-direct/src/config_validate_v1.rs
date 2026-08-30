@@ -131,6 +131,11 @@ impl ConfigValidateErrorV1 {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConfigValidateReportV1 {
     value: Value,
+    // Trusted-workbook runtime-only lexical custody for the four dynamic TX
+    // FFE cells. It is deliberately excluded from the public report and its
+    // materialized fingerprint: COM-01 retains the pinned Python
+    // materializer, while the direct MATLAB runtime has a narrower eval path.
+    txffe_decimal_colon_lexemes: BTreeMap<String, String>,
 }
 
 impl ConfigValidateReportV1 {
@@ -144,6 +149,10 @@ impl ConfigValidateReportV1 {
 
     pub fn to_pretty_json(&self) -> String {
         serde_json::to_string_pretty(&self.value).expect("report value is JSON")
+    }
+
+    pub(crate) fn txffe_decimal_colon_lexemes_v1(&self) -> &BTreeMap<String, String> {
+        &self.txffe_decimal_colon_lexemes
     }
 }
 
@@ -246,6 +255,7 @@ pub fn config_validate_v1(
     let settings = load_settings(&request.config)?;
     let (main_rows, packages, package) = split_packages(&settings, &profile)?;
     validate_package_references(&main_rows, &packages)?;
+    let txffe_decimal_colon_lexemes = trusted_txffe_decimal_colon_lexemes_v1(&main_rows)?;
     let materialized = materialize_r480(&schema, &main_rows, &packages, &overrides, &profile)?;
     validate_output_budget(&materialized.parameters, &materialized.options)?;
     let source_sha256 = sha256_file(&request.config)?;
@@ -291,10 +301,14 @@ pub fn config_validate_v1(
                     &registry,
                 ),
             }),
+            txffe_decimal_colon_lexemes,
         });
     }
     if request.json {
-        return Ok(ConfigValidateReportV1 { value: summary });
+        return Ok(ConfigValidateReportV1 {
+            value: summary,
+            txffe_decimal_colon_lexemes: BTreeMap::new(),
+        });
     }
     let config = summary
         .get("config")
@@ -304,6 +318,7 @@ pub fn config_validate_v1(
         value: json!({
             "text": format!("valid: {config} ({parameters} parameters, {options} options)"),
         }),
+        txffe_decimal_colon_lexemes: BTreeMap::new(),
     })
 }
 
@@ -1367,6 +1382,33 @@ fn lookup_source_cell<'a>(
         .get(column_index + 1)
         .map(Some)
         .ok_or_else(|| ConfigValidateErrorV1::Workbook(format!("{key}: right-hand value")))
+}
+
+/// Preserve only the source lexemes that MATLAB's dynamic TX FFE runtime
+/// evaluates independently of the pinned Python materializer.  This sidecar
+/// never crosses the public config-validate JSON or fingerprint boundary.
+fn trusted_txffe_decimal_colon_lexemes_v1(
+    rows: &[Vec<sipi_com::RawCellV1>],
+) -> Result<BTreeMap<String, String>, ConfigValidateErrorV1> {
+    const FIELDS: [(&str, &str); 4] = [
+        ("c(-1)", "tx_ffe_cm1_values"),
+        ("c(-2)", "tx_ffe_cm2_values"),
+        ("c(-3)", "tx_ffe_cm3_values"),
+        ("c(1)", "tx_ffe_cp1_values"),
+    ];
+    let mut lexemes = BTreeMap::new();
+    for (source_key, runtime_key) in FIELDS {
+        let Some(cell) = lookup_source_cell(rows, source_key)? else {
+            continue;
+        };
+        let CellValueV1::String(text) = cell.value() else {
+            continue;
+        };
+        if text.contains(':') {
+            lexemes.insert(runtime_key.to_owned(), text.clone());
+        }
+    }
+    Ok(lexemes)
 }
 
 fn cell_value(value: &CellValueV1) -> Result<ResolvedDefaultV1, ConfigValidateErrorV1> {
