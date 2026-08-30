@@ -1,0 +1,91 @@
+schema: sipi.p5-06.original13-rust-matlab-current-acceptance.v1
+status: accepted_stage1_final_scalar_and_per_workbook_performance
+supersedes:
+  prior_candidate: 0e72786cc3b5624591b22fe2ccb5474b08ac8e5a
+  prior_acceptance: docs/baselines/p5-06-original13-rust-matlab-r2024b-acceptance.v1.yaml
+  kind: additive_current_candidate_replay
+scope:
+  candidate:
+    commit: 83e9cb6c264ca728d4147d8e4b19d75ee3c01ec5
+    tree: 49dbc479a42a7cdbe068a624e28e7582b0795269
+    archive_bytes: 57098240
+    archive_sha256: a3004fb29ef29439684af10f2c4fd58bf742f59d54fc8299a3a5cc02f86645ab
+  upstream:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  matlab_release: R2024b
+  thread_policy:
+    matlab: python_engine_per_workbook_noFigureWindows_singleCompThread
+    rust_rayon_num_threads: 16
+  matrix:
+    workbooks: 13
+    package_cases: 28
+    scalar_slots: 303
+    channels: [THRU, FEXT, NEXT]
+  timing_scope: model-subprocess-only:engine-start-run-quit-or-rust-run-write
+  timing_clock: perf_counter_ns
+reports:
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-rust-01.v4.json
+    engine: rust
+    bytes: 27726
+    sha256: 9fbeefd8bba577b1ed3d429aa3bfa795245c363cfaeb0427cd5e8422b383f465
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-rust-02.v4.json
+    engine: rust
+    bytes: 27726
+    sha256: b9f1a6b6c015b9d283bd6e140f6ed697969a0911c826dda5543816131eb905c3
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-matlab-01.v4.json
+    engine: matlab
+    bytes: 34137
+    sha256: 357575dd6e28e7364d6355e39cfc09d90b10cb3c4b50fca9b9b21d3180c9a80d
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-matlab-02.v4.json
+    engine: matlab
+    bytes: 34137
+    sha256: bec702ad5621499dabe1223b56c057865b64e69bceeae42b0d5f56927429710f
+aggregate:
+  path: docs/baselines/p5-06-original13-rust-matlab-r2024b-aggregate.v4.json
+  bytes: 7943
+  sha256: 4625f3565b8923010d517bced33d3442b636acd44518fddeb1e1b03634dcf18b
+gate_tools:
+  runner:
+    path: tools/run_p5_06_original13_fresh_matrix_v4.py
+    bytes: 15333
+    sha256: 7846e9d4d858e0e3dfea2decf7b1580b483c48da7d8de88eedcf94ad610302c2
+  verifier:
+    path: tools/verify_p5_06_original13_fresh_matrix_v4.py
+    bytes: 9377
+    sha256: a527d33951f3a9638ce6853284c69daa7b56900168e3706253fd81e9215b28c5
+  aggregate:
+    path: tools/aggregate_p5_06_original13_fresh_matrix_v4.py
+    bytes: 6950
+    sha256: 7922f785ee8991ab0fb4f1491eaaa23fe71f1886242acd8440a9418c3ea7cb72
+  tests:
+    path: tools/test_verify_p5_06_original13_fresh_matrix_v4.py
+    bytes: 6675
+    sha256: 282ce3985e741dfcd0deacc5700522dc729aaa100989e5367d1fd6bd3c2780cd
+gates:
+  matlab_repeat_absolute_tolerance: 1.0e-12
+  rust_repeat_exact: true
+  rust_vs_matlab_absolute_tolerance: 1.0e-09
+  infinity_same_sign_same_position: true
+  per_workbook_rust_not_slower: true
+  total_rust_not_slower: true
+  s_parameter_fit: false
+  one_final_fd_to_td_impulse: true
+performance:
+  matlab_best_total_wall_ns: 1566705146200
+  rust_worst_total_wall_ns: 149717611300
+  slowest_c2m_workbook_index: 2
+  matlab_best_c2m_wall_ns: 664010123700
+  rust_worst_c2m_wall_ns: 82535442400
+claims:
+  p5_06s_stage1_scalar_acceptance: true
+  p5_06s_per_workbook_performance_acceptance: true
+  release: false
+  array_acceptance: false
+  p5_06_main_closed: false
+non_claims:
+  - no_single_thread_algorithm_comparison
+  - no_array_or_checkpoint_acceptance
+  - no_warning_or_full_surface_acceptance_beyond_303_scalar_slots
+  - no_ieee_certification
+  - no_release
