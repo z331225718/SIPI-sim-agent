@@ -141,9 +141,8 @@ def tool_receipt(path,role):
 def matlab_receipt(path,python):
     if not path.is_file(): raise RuntimeError("MATLAB missing")
     with tempfile.TemporaryDirectory(prefix="sipi-matlab-pref-") as preference_dir:
-        env=os.environ.copy();env["PYTHONPATH"]=str(path.parent.parent/"extern/engines/python/dist");env["MATLAB_PREFDIR"]=preference_dir;env["MW_DISABLE_CONNECTOR"]="1"
-        script="import matlab.engine;e=matlab.engine.start_matlab('-noFigureWindows -singleCompThread');print(e.version());e.quit()"
-        run=bounded([str(python),"-c",script],path.parent,120,env)
+        env=os.environ.copy();env["MATLAB_PREFDIR"]=preference_dir;env["MW_DISABLE_CONNECTOR"]="1"
+        run=bounded([str(path),"-batch","disp(version('-release')); disp(version)"],path.parent,120,env)
     if run.returncode: raise RuntimeError("MATLAB identity failed")
     return {"role":"matlab","executable":path.name,"file_sha256":digest(path),"version_sha256":hashlib.sha256(run.stdout+run.stderr).hexdigest(),"path_redacted":True,"release":"R2026a"}
 def configs(root):
