@@ -1,0 +1,61 @@
+schema: sipi.p5-06.original13-rust-matlab-acceptance.v1
+status: accepted_stage1_final_scalar_and_per_workbook_performance
+scope:
+  candidate:
+    commit: 0e72786cc3b5624591b22fe2ccb5474b08ac8e5a
+    tree: 9b6c8fe794b0e839bac9c79e6c67b152dff4ec9d
+    archive_bytes: 56832000
+    archive_sha256: 405592bbe16d275d0a8fdf74e3835dd15b997b7c3252e77779c500726f313a8e
+  upstream:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  matlab_release: R2024b
+  matrix:
+    workbooks: 13
+    package_cases: 28
+    scalar_slots: 303
+    channels: [THRU, FEXT, NEXT]
+  timing_scope: model-subprocess-only:engine-start-run-quit-or-rust-run-write
+  timing_clock: perf_counter_ns
+reports:
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-rust-01.v3.json
+    engine: rust
+    bytes: 27582
+    sha256: 699ebda99f4d1ae119f39fc7a6bc648fe5c75c1cb6f63c4419042daf067747bd
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-rust-02.v3.json
+    engine: rust
+    bytes: 27583
+    sha256: 780f51dd6201b6703bf7d8a60668c16c3fc952235ee87a838d3fd23c7b67be3d
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-matlab-01.v3.json
+    engine: matlab
+    bytes: 33989
+    sha256: d2c626bf08d9b36214074ab8489edac0146e4f833c49305dd46d5e308452b8f3
+  - path: docs/baselines/p5-06-original13-rust-matlab-r2024b-matlab-02.v3.json
+    engine: matlab
+    bytes: 33989
+    sha256: 5b37bcec620cc5d731795efd71175c5e92d091de2831ecb1b8d0bc57217af801
+aggregate:
+  path: docs/baselines/p5-06-original13-rust-matlab-r2024b-aggregate.v3.json
+  bytes: 7945
+  sha256: e67547e078ee4860f7b3b2732ae45e003c06fd9925094f33080b7f0991c48d1e
+gates:
+  matlab_repeat_absolute_tolerance: 1.0e-12
+  rust_repeat_exact: true
+  rust_vs_matlab_absolute_tolerance: 1.0e-09
+  infinity_same_sign_same_position: true
+  per_workbook_rust_not_slower: true
+  total_rust_not_slower: true
+  s_parameter_fit: false
+  one_final_fd_to_td_impulse: true
+claims:
+  p5_06s_stage1_scalar_acceptance: true
+  p5_06s_per_workbook_performance_acceptance: true
+  release: false
+  array_acceptance: false
+  p5_06_main_closed: false
+non_claims:
+  - no_array_or_checkpoint_acceptance
+  - no_instrumented_uninstrumented_equivalence_claim
+  - no_warning_or_full_surface_acceptance_beyond_303_scalar_slots
+  - no_ieee_certification
+  - no_release

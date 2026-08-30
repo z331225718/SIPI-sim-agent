@@ -1,0 +1,223 @@
+{
+  "claims": {
+    "array_acceptance": false,
+    "one_final_fd_to_td_impulse": true,
+    "performance_acceptance": true,
+    "release": false,
+    "s_parameter_fit": false,
+    "stage1_scalar_acceptance": true
+  },
+  "gate_tools": {
+    "aggregate": {
+      "bytes": 6950,
+      "path": "tools/aggregate_p5_06_original13_fresh_matrix_v3.py",
+      "sha256": "2bf89976f30597b3b05099842f70b48cc6bcf6a55ba749ba54aaab1d0db8f65f"
+    },
+    "verifier": {
+      "bytes": 9178,
+      "path": "tools/verify_p5_06_original13_fresh_matrix_v3.py",
+      "sha256": "72b95c2e056704a0b2c2dc70e6ad049eadde4f5beb0c27b0d57cd8b39a716f7c"
+    }
+  },
+  "gates": {
+    "matlab_repeat_1e_12": true,
+    "per_workbook_rust_not_slower": true,
+    "rust_repeat_exact": true,
+    "rust_vs_matlab_1e_9": true,
+    "total_rust_not_slower": true
+  },
+  "host_fingerprint": "81557d95222882672d4d58c86bd291e620540a02bd6f850a2b87ed900fc88f10",
+  "matrix": {
+    "case_count": 28,
+    "scalar_slot_count": 303,
+    "workbook_count": 13
+  },
+  "performance": {
+    "matlab_best_total_wall_ns": 1596535819900,
+    "per_workbook": [
+      {
+        "matlab_best_wall_ns": 22215903000,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 749658300,
+        "workbook_index": 0
+      },
+      {
+        "matlab_best_wall_ns": 28127481400,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 1731230500,
+        "workbook_index": 1
+      },
+      {
+        "matlab_best_wall_ns": 673880908400,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 466931151300,
+        "workbook_index": 2
+      },
+      {
+        "matlab_best_wall_ns": 15147294400,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 182338300,
+        "workbook_index": 3
+      },
+      {
+        "matlab_best_wall_ns": 15590149100,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 173360800,
+        "workbook_index": 4
+      },
+      {
+        "matlab_best_wall_ns": 15160524800,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 172330000,
+        "workbook_index": 5
+      },
+      {
+        "matlab_best_wall_ns": 33644599300,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 4170428900,
+        "workbook_index": 6
+      },
+      {
+        "matlab_best_wall_ns": 33040830800,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 2792711200,
+        "workbook_index": 7
+      },
+      {
+        "matlab_best_wall_ns": 146448363700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12872035600,
+        "workbook_index": 8
+      },
+      {
+        "matlab_best_wall_ns": 144438882100,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12270342100,
+        "workbook_index": 9
+      },
+      {
+        "matlab_best_wall_ns": 139462255200,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12550314500,
+        "workbook_index": 10
+      },
+      {
+        "matlab_best_wall_ns": 94937374600,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12782674500,
+        "workbook_index": 11
+      },
+      {
+        "matlab_best_wall_ns": 232612337600,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 11234120500,
+        "workbook_index": 12
+      }
+    ],
+    "rust_worst_total_wall_ns": 533598380900
+  },
+  "runs": [
+    {
+      "engine": "matlab",
+      "nonce": "00d2e9bd9f9354eb4bef23adf10237b8bc43e4394c43a280345469b5fafde34c",
+      "report_sha256": "d2c626bf08d9b36214074ab8489edac0146e4f833c49305dd46d5e308452b8f3",
+      "root_id": "cc1a423f73038aea7812066f9a588b9ac27fe6e4be31c5e423a117a6f1525d6f",
+      "run_id": "original13-v3-matlab-00d2e9bd9f9354eb4bef23adf10237b8bc43e4394c43a280345469b5fafde34c"
+    },
+    {
+      "engine": "matlab",
+      "nonce": "f32e624300a235bcc310dd14a8fa71fda44535f72af626cff958c9a413ebcefa",
+      "report_sha256": "5b37bcec620cc5d731795efd71175c5e92d091de2831ecb1b8d0bc57217af801",
+      "root_id": "d02951d06b6b09b5bf9311ec0b77a30d7e616be7e5a7d27e874c122deb80433e",
+      "run_id": "original13-v3-matlab-f32e624300a235bcc310dd14a8fa71fda44535f72af626cff958c9a413ebcefa"
+    },
+    {
+      "engine": "rust",
+      "nonce": "dc4eb8ad975bb3f75efe6cc4fda3856132145bf3bfffd8e6c7b73fcbcd52e123",
+      "report_sha256": "699ebda99f4d1ae119f39fc7a6bc648fe5c75c1cb6f63c4419042daf067747bd",
+      "root_id": "01d4d996b032e6cbef9fd4073c8a9b830c012da7b79d7c5cd49618978299af27",
+      "run_id": "original13-v3-rust-dc4eb8ad975bb3f75efe6cc4fda3856132145bf3bfffd8e6c7b73fcbcd52e123"
+    },
+    {
+      "engine": "rust",
+      "nonce": "fe498bd0385145e8a6ffe5cd61e6a66adf8ddaa2fc7166dade2399ad00bfa09d",
+      "report_sha256": "780f51dd6201b6703bf7d8a60668c16c3fc952235ee87a838d3fd23c7b67be3d",
+      "root_id": "b9787b862f956fabafb01477a0ee4a7e3d813bbe5467ea8f8a4e1ee1539a78a4",
+      "run_id": "original13-v3-rust-fe498bd0385145e8a6ffe5cd61e6a66adf8ddaa2fc7166dade2399ad00bfa09d"
+    }
+  ],
+  "schema": "sipi.p5-06.original13-fresh-aggregate.v3",
+  "source": {
+    "candidate": {
+      "archive_bytes": 56832000,
+      "archive_sha256": "405592bbe16d275d0a8fdf74e3835dd15b997b7c3252e77779c500726f313a8e",
+      "commit": "0e72786cc3b5624591b22fe2ccb5474b08ac8e5a",
+      "tree": "9b6c8fe794b0e839bac9c79e6c67b152dff4ec9d"
+    },
+    "gate_tools": {
+      "matlab_harness": {
+        "bytes": 4644,
+        "path": "tools/sipi_com_final_surface_oracle_v3.m",
+        "sha256": "5f2325766f089f9cf19aed4fcff753864dc7fa72ec0e2cb83860eb753d3a7494"
+      },
+      "runner": {
+        "bytes": 14919,
+        "path": "tools/run_p5_06_original13_fresh_matrix_v3.py",
+        "sha256": "daa037b4b739408063ac423319f00f16bf7a597602f4fade5cdef6b17948494f"
+      },
+      "worker": {
+        "bytes": 23483,
+        "path": "tools/run_p5_06_original13_fresh_matrix.py",
+        "sha256": "4d921a7a374d61a613f0e2b8bcf6669ed8408c5100101252bebe5e60ee78d3ae"
+      }
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_sha256": "536624a00003544be3a7a5bb0d22893dc5b696c802ca6b3a5efd00abf53e3a50"
+      },
+      "matlab": {
+        "executable": "matlab.exe",
+        "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+        "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+        "path_redacted": true,
+        "release": "R2024b",
+        "role": "matlab",
+        "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca"
+      },
+      "python": {
+        "executable": "python.exe",
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb"
+      },
+      "uv": {
+        "executable": "uv.exe",
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "upstream": {
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    }
+  },
+  "status": "accepted_stage1",
+  "timing_clock": "perf_counter_ns",
+  "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
+}

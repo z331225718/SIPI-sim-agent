@@ -1,6 +1,6 @@
 # P5-06 original-13 Rust-vs-MATLAB acceptance reclassification
 
-Status: `pending_fresh_rust_vs_matlab_original_config_matrix`.
+Status: superseded for stage 1 by `p5-06-original13-rust-matlab-r2024b-acceptance.v1.yaml`.
 
 ## Decision
 
@@ -31,10 +31,10 @@ final results to an uninstrumented run. Arrays require pre-frozen per-array
 tolerances and exact shape, dtype, order and axis; alignment, resampling and
 cropping are forbidden. No public API is added for evidence.
 
-Formal custody later requires two independent MATLAB runs and two independent
-Rust runs with separate roots, run IDs, nonces and report hashes, plus immutable
-candidate commit/tree/archive. Assets remain external and are represented only
-by repository-relative path, bytes and SHA-256.
+Formal custody has now been satisfied by two independent MATLAB runs and two
+independent Rust runs, with separate roots, run IDs, nonces and report hashes,
+plus immutable candidate commit/tree/archive. Assets remain external and are
+represented only by repository-relative path, bytes and SHA-256.
 
 S-parameter fitting remains forbidden. Channel conversion remains one final
 FD-to-TD impulse.

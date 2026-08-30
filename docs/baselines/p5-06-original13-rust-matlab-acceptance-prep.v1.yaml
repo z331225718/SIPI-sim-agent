@@ -1,5 +1,5 @@
 schema: sipi.p5-06.original13-rust-matlab-acceptance-prep.v1
-status: pending_fresh_rust_vs_matlab_original_config_matrix
+status: stage1_accepted_by_p5_06_original13_rust_matlab_r2024b_acceptance_v1
 supersession:
   kind: additive_reclassification
   historical_items_immutable:
@@ -23,10 +23,10 @@ corpus_inventory:
     stage1: fresh_matlab_twice_and_rust_twice_final_public_surface
     stage2: diagnostic_unset_array_tolerances
   claims:
-    acceptance: false
-    fresh_replay_executed: false
+    acceptance: true
+    fresh_replay_executed: true
     release: false
-    rust_matlab_parity: false
+    rust_matlab_parity: true
   custody:
     distinct_roots: true
     fresh_nonce_and_run_id: true
@@ -180,7 +180,7 @@ stage1_contract:
   infinity: same_sign_same_position_only
   nan: fail_by_default; case+field allowlist requires two fresh MATLAB reproductions
   historical_benchmark_authority: corpus_schema_precedent_only
-  acceptance_ready: false
+  acceptance_ready: true
 stage2_checkpoint_contract:
   status: diagnostic_hash_bound_not_acceptance
   instrumented_uninstrumented_final_surface_equivalence_required: true
@@ -202,9 +202,6 @@ custody:
   absolute_paths_forbidden: true
   xlsx_s4p_bytes_copied_into_repo: false
 non_claims:
-- no_fresh_matlab_replay_yet
-- no_fresh_rust_replay_yet
-- no_rust_matlab_parity
 - no_historical_python_pass_as_rust_acceptance
 - no_td_iln_requirement
 - no_array_acceptance
