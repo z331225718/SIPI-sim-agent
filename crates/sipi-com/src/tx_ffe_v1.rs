@@ -2,7 +2,7 @@
 //! `equalization/tx_ffe.py`).
 //!
 //! Ported from agent-com (MIT source, P5-04j source map): full grid
-//! matrix (first column varies slowest), dynamic tx_ffe grid build with
+//! matrix (first column varies slowest), r4.80 dynamic TX-FFE grid build with
 //! cursor = 1 - sum(|taps|) filtering, strict first-maximum candidate
 //! reductions, and the final FOM tracker coordinate selection with
 //! C-order unravel semantics.
@@ -44,10 +44,14 @@ impl TxFfeGridV1 {
     ) -> Result<Self, TxFfeErrorV1> {
         let rows = noncursor_taps.len();
         let columns = noncursor_taps.first().map(|row| row.len()).unwrap_or(0);
+        let emitted_tap_width = taps.first().map(|row| row.len()).unwrap_or(0);
         if cursor.len() != rows
             || taps.len() != rows
             || source_indices.len() != rows
-            || taps.iter().any(|row| row.len() != columns + 1)
+            || (rows > 0
+                && (emitted_tap_width == 0
+                    || precursor_count >= emitted_tap_width
+                    || taps.iter().any(|row| row.len() != emitted_tap_width)))
             || source_indices.iter().any(|row| row.len() != columns)
             || noncursor_taps.iter().any(|row| row.len() != columns)
         {
@@ -192,6 +196,14 @@ pub fn build_txffe_grid_v1(
         .iter()
         .map(|field| values.get(field).cloned().unwrap_or_default())
         .collect();
+    // R4.80 builds the candidate cursor from every declared TX-FFE field,
+    // then removes leading one-element zero precursors and trailing inactive
+    // zero postcursors from the emitted FFE vector.  Keeping those placeholders
+    // in Rust made an all-zero workbook appear as `[0, 0, 0, 1, 0]` while the
+    // source returns the one-tap vector `[1]`.  The selected waveform is the
+    // same, but the source-visible TXLE_taps shape is not.
+    let (active_precursors, active_postcursors) =
+        source_active_tap_indices_v1(&columns, precursor_numbers.len());
     let mut grid = full_grid_matrix_v1(&columns)?;
     let mut indices: Vec<Vec<i64>> = {
         let index_columns: Vec<Vec<f64>> = columns
@@ -231,18 +243,57 @@ pub fn build_txffe_grid_v1(
         indices = Vec::new();
         cursor = Vec::new();
     }
-    // taps = [grid[:, :len(cm)], cursor[:, None], grid[:, len(cm):]]
+    // The source's `txffe_matrix` is the selected active precursors, the
+    // calculated cursor, and its contiguous selected postcursor range.
     let taps: Vec<Vec<f64>> = grid
         .iter()
         .zip(cursor.iter())
         .map(|(row, cursor_value)| {
-            let mut taps_row = row[..precursor_numbers.len()].to_vec();
+            let mut taps_row = active_precursors
+                .iter()
+                .map(|index| row[*index])
+                .collect::<Vec<_>>();
             taps_row.push(*cursor_value);
-            taps_row.extend_from_slice(&row[precursor_numbers.len()..]);
+            taps_row.extend(active_postcursors.iter().map(|index| row[*index]));
             taps_row
         })
         .collect();
-    TxFfeGridV1::try_new(grid, cursor, taps, indices, precursor_numbers.len())
+    TxFfeGridV1::try_new(grid, cursor, taps, indices, active_precursors.len())
+}
+
+/// Match r4.80's source-order zero-placeholder suppression for its emitted
+/// `txffe_matrix`.  The full grid still retains all declared columns because
+/// it supplies candidate indices and cursor calculation; only the effective
+/// FFE vector follows this selection rule.
+fn source_active_tap_indices_v1(
+    columns: &[Vec<f64>],
+    precursor_count: usize,
+) -> (Vec<usize>, Vec<usize>) {
+    let mut active_precursors = Vec::new();
+    let mut first_postcursor = None;
+    let mut last_postcursor = None;
+    let mut automatic_counting = false;
+
+    for (index, values) in columns.iter().enumerate() {
+        let single_zero = values.len() == 1 && values[0] == 0.0;
+        if !automatic_counting && single_zero {
+            continue;
+        }
+        if index < precursor_count {
+            automatic_counting = true;
+            active_precursors.push(index);
+        } else {
+            automatic_counting = false;
+            first_postcursor.get_or_insert(index);
+            last_postcursor = Some(index);
+        }
+    }
+
+    let active_postcursors = match (first_postcursor, last_postcursor) {
+        (Some(first), Some(last)) => (first..=last).collect(),
+        _ => Vec::new(),
+    };
+    (active_precursors, active_postcursors)
 }
 
 /// Port of `first_strict_best`: tie retains the first candidate.
@@ -381,6 +432,35 @@ mod tests {
         assert_eq!(grid.taps().len(), 2);
         assert_eq!(grid.taps()[0], vec![0.1, 0.85, 0.05]);
         assert_eq!(grid.taps()[1], vec![-0.2, 0.75, 0.05]);
+        assert_eq!(grid.precursor_count(), 1);
+    }
+
+    #[test]
+    fn source_zero_placeholders_do_not_expand_emitted_taps() {
+        let mut values = BTreeMap::new();
+        values.insert("tx_ffe_cm1_values".to_string(), vec![0.0]);
+        values.insert("tx_ffe_cm2_values".to_string(), vec![0.0]);
+        values.insert("tx_ffe_cm3_values".to_string(), vec![0.0]);
+        values.insert("tx_ffe_cp1_values".to_string(), vec![0.0]);
+        let grid = build_txffe_grid_v1(&values, 0.0, false).expect("grid");
+        // Dynamic-TXFFE r4.80 suppresses these single-zero placeholders in
+        // output_args.TXLE_taps while retaining their zero contribution to c0.
+        assert_eq!(grid.taps(), &[vec![1.0]]);
+        assert_eq!(grid.precursor_count(), 0);
+    }
+
+    #[test]
+    fn source_selection_keeps_active_order_and_contiguous_postcursor_range() {
+        let mut values = BTreeMap::new();
+        values.insert("tx_ffe_cm1_values".to_string(), vec![0.2]);
+        values.insert("tx_ffe_cm2_values".to_string(), vec![0.0]);
+        values.insert("tx_ffe_cm3_values".to_string(), vec![0.0]);
+        values.insert("tx_ffe_cp1_values".to_string(), vec![0.0]);
+        values.insert("tx_ffe_cp2_values".to_string(), vec![0.1]);
+        let grid = build_txffe_grid_v1(&values, 0.0, false).expect("grid");
+        // `cm1` starts the active precursor span; the source keeps the first
+        // postcursor placeholder through the later active `cp2`.
+        assert_eq!(grid.taps(), &[vec![0.2, 0.7, 0.0, 0.1]]);
         assert_eq!(grid.precursor_count(), 1);
     }
 
