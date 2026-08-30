@@ -465,6 +465,22 @@ mod tests {
     }
 
     #[test]
+    fn source_dynamic_sweeps_retain_zero_endpoints_as_real_candidates() {
+        let mut values = BTreeMap::new();
+        // The 120g C2M workbook uses multi-value sweeps whose final endpoint
+        // is zero.  Unlike a one-element `[0]` placeholder, each column is a
+        // real source candidate and must remain in the emitted TXLE vector.
+        values.insert("tx_ffe_cm1_values".to_string(), vec![-0.34, 0.0]);
+        values.insert("tx_ffe_cm2_values".to_string(), vec![0.0, 0.02]);
+        values.insert("tx_ffe_cm3_values".to_string(), vec![-0.06, 0.0]);
+        values.insert("tx_ffe_cp1_values".to_string(), vec![-0.2, 0.0]);
+        let grid = build_txffe_grid_v1(&values, 0.0, false).expect("grid");
+        assert_eq!(grid.taps().len(), 16);
+        assert!(grid.taps().iter().all(|taps| taps.len() == 5));
+        assert_eq!(grid.precursor_count(), 3);
+    }
+
+    #[test]
     fn grid_build_retain_invalid() {
         let mut values = BTreeMap::new();
         values.insert("tx_ffe_cm1_values".to_string(), vec![0.9]);
