@@ -4,7 +4,7 @@ Inputs must be separately materialized immutable archives. The report never
 serializes host paths or external asset bytes.
 """
 from __future__ import annotations
-import argparse, hashlib, json, math, os, secrets, subprocess, sys, tarfile, tempfile, time
+import argparse, hashlib, json, math, os, re, secrets, subprocess, sys, tarfile, tempfile, time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -102,9 +102,19 @@ def flatten_numeric_sweep(value,name):
         return result
     if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value):raise ValueError(f"{name} sweep must contain finite numeric values")
     return [float(value)]
-def worker_environment(upstream_root,matlab):
+def worker_environment(upstream_root,engine_site):
     preference_dir=upstream_root.parent/f"{upstream_root.name}-matlab-pref";preference_dir.mkdir()
-    env=os.environ.copy();env["PYTHONDONTWRITEBYTECODE"]="1";env["PYTHONPATH"]=os.pathsep.join((str(upstream_root/"src"),str(matlab.parent.parent/"extern/engines/python/dist")));env["MATLAB_PREFDIR"]=str(preference_dir);env["MW_DISABLE_CONNECTOR"]="1";return env
+    env=os.environ.copy();env["PYTHONDONTWRITEBYTECODE"]="1";env["PYTHONPATH"]=os.pathsep.join((str(engine_site),str(upstream_root/"src")));env["MATLAB_PREFDIR"]=str(preference_dir);env["MW_DISABLE_CONNECTOR"]="1";return env
+def prepare_matlab_engine(worker_python,uv,matlab,root):
+    source=matlab.parent.parent/"extern/engines/python";build=root/"matlab-engine-build";engine_site=build/"lib"
+    if not (source/"setup.py").is_file(): raise RuntimeError("MATLAB Engine source missing")
+    if not (engine_site/"matlab/engine/_arch.txt").is_file():
+        bootstrap=bounded([str(uv),"pip","install","--offline","--python",str(worker_python),"setuptools","wheel"],root,120)
+        if bootstrap.returncode: raise RuntimeError("MATLAB Engine build bootstrap failed")
+        env=os.environ.copy();env.pop("PYTHONPATH",None)
+        run=bounded([str(worker_python),"setup.py","build","--build-base",str(build)],source,180,env)
+        if run.returncode: raise RuntimeError("MATLAB Engine build failed: "+run.stderr[-2000:].decode("utf-8","replace"))
+    return engine_site
 def engine_worker(spec_path):
     import numpy as np
     from scipy.io import savemat
@@ -144,7 +154,10 @@ def matlab_receipt(path,python):
         env=os.environ.copy();env["MATLAB_PREFDIR"]=preference_dir;env["MW_DISABLE_CONNECTOR"]="1"
         run=bounded([str(path),"-batch","disp(version('-release')); disp(version)"],path.parent,120,env)
     if run.returncode: raise RuntimeError("MATLAB identity failed")
-    return {"role":"matlab","executable":path.name,"file_sha256":digest(path),"version_sha256":hashlib.sha256(run.stdout+run.stderr).hexdigest(),"path_redacted":True,"release":"R2026a"}
+    match=re.search(r"\bR\d{4}[ab]\b",run.stdout.decode("utf-8","replace"))
+    if match is None: raise RuntimeError("MATLAB release receipt malformed")
+    release=match.group(0)
+    return {"role":"matlab","executable":path.name,"file_sha256":digest(path),"version_sha256":hashlib.sha256(run.stdout+run.stderr).hexdigest(),"path_redacted":True,"release":release}
 def configs(root):
     paths=[root/path for path in CONFIG_PATHS]
     if any(not path.is_file() for path in paths): raise RuntimeError("exact workbook corpus missing")
@@ -162,7 +175,7 @@ def matlab_metrics(case_dir):
 def rust_metrics(result): return [{name:decode(value) for name,value in item.get("metrics",{}).items() if name in METRICS} for item in result.get("cases",[])]
 def matlab_string(path): return str(Path(path).resolve()).replace("'", "''")
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--engine",choices=("matlab","rust"),required=True);p.add_argument("--upstream-archive",type=Path,required=True);p.add_argument("--candidate-archive",type=Path,required=True);p.add_argument("--output-root",type=Path,required=True);p.add_argument("--report",type=Path,required=True);p.add_argument("--cargo",type=Path,required=True);p.add_argument("--rustc",type=Path,required=True);p.add_argument("--uv",type=Path,required=True);p.add_argument("--matlab",type=Path,required=True);p.add_argument("--python",type=Path,required=True);p.add_argument("--only");p.add_argument("--timeout",type=int,default=1800);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument("--engine",choices=("matlab","rust"),required=True);p.add_argument("--upstream-archive",type=Path,required=True);p.add_argument("--candidate-archive",type=Path,required=True);p.add_argument("--output-root",type=Path,required=True);p.add_argument("--report",type=Path,required=True);p.add_argument("--cargo",type=Path,required=True);p.add_argument("--rustc",type=Path,required=True);p.add_argument("--uv",type=Path,required=True);p.add_argument("--matlab",type=Path,required=True);p.add_argument("--python",type=Path,required=True);p.add_argument("--only");p.add_argument("--only-index",type=int);p.add_argument("--timeout",type=int,default=1800);a=p.parse_args()
     if a.report.exists(): raise FileExistsError(a.report)
     for archive,identity in ((a.upstream_archive,UPSTREAM),(a.candidate_archive,CANDIDATE)):
         if not archive.is_file() or archive.stat().st_size!=identity[3] or digest(archive)!=identity[2]: raise RuntimeError("archive identity drift")
@@ -183,7 +196,14 @@ def main():
     sync=bounded([str(a.uv),"sync","--frozen","--offline","--no-install-project","--python",str(a.python)],probe,300,uv_env)
     worker_python=python_env/"Scripts/python.exe"
     if sync.returncode or not worker_python.is_file():raise RuntimeError("pinned Python environment failed")
-    all_configs=configs(probe);selected_indices=[i for i,x in enumerate(all_configs) if not a.only or a.only.casefold() in x.name.casefold()]
+    engine_site=prepare_matlab_engine(worker_python,a.uv,a.matlab,root) if a.engine=="matlab" else None
+    if a.only is not None and a.only_index is not None: raise RuntimeError("--only and --only-index are mutually exclusive")
+    all_configs=configs(probe)
+    if a.only_index is not None:
+        if not 0 <= a.only_index < len(all_configs): raise RuntimeError("--only-index is outside the original-13 corpus")
+        selected_indices=[a.only_index]
+    else:
+        selected_indices=[i for i,x in enumerate(all_configs) if not a.only or a.only.casefold() in x.name.casefold()]
     if not selected_indices: raise RuntimeError("empty selection")
     expected_channels=[{"role":role,"path":path,"bytes":size,"sha256":sha} for role,path,size,sha in CHANNELS]
     for item in expected_channels:
@@ -206,7 +226,7 @@ def main():
         else:
             out=case_root/"matlab";out.mkdir();spec_path=case_root/"engine-spec.json";worker_result=case_root/"engine-result.json";mat=case_root/"parameter.mat"
             spec={"upstream":str(upstream_root),"config":str(config),"mat":str(mat),"output":str(out),"channels":[str(x[1]) for x in chan],"worker_result":str(worker_result),"run_nonce":nonce};spec_path.write_text(json.dumps(spec),encoding="utf-8")
-            worker_env=worker_environment(upstream_root,a.matlab)
+            worker_env=worker_environment(upstream_root,engine_site)
             run=bounded([str(worker_python),str(Path(__file__).resolve()),"--engine-worker",str(spec_path)],case_root,a.timeout,worker_env); metrics=matlab_metrics(out) if run.returncode==0 and (out/"summary.json").is_file() and worker_result.is_file() else []
             status="passed" if run.returncode==0 and metrics else "matlab_failed"; detail_sha=hashlib.sha256(run.stdout+run.stderr).hexdigest()
             config_materialization={"comparison":"worker_failed"}
