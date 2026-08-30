@@ -9133,6 +9133,26 @@ mod tests {
     }
 
     #[test]
+    fn trusted_txffe_decimal_colon_covers_original13_workbook_forms() {
+        for (literal, count, first, last) in [
+            ("[-.34:.02:0]", 18, -0.34_f64, 0.0_f64),
+            ("[0:.02:.12]", 7, 0.0, 0.12),
+            ("[-.06:.02: 0]", 4, -0.06, 0.0),
+            ("[-.2:.05:0]", 5, -0.2, 0.0),
+            ("[-.3:.02:0]", 16, -0.3, 0.0),
+            ("[0:.01:.1]", 11, 0.0, 0.1),
+            ("[0:.05:.15]", 4, 0.0, 0.15),
+            ("[-.2:.02:0]", 11, -0.2, 0.0),
+            ("[-.1:.02:0]", 6, -0.1, 0.0),
+        ] {
+            let values = txffe_decimal_colon_v1(literal).expect(literal);
+            assert_eq!(values.len(), count, "{literal}");
+            assert_eq!(values.first().copied().map(f64::to_bits), Some(first.to_bits()));
+            assert_eq!(values.last().copied().map(f64::to_bits), Some(last.to_bits()));
+        }
+    }
+
+    #[test]
     fn package_fd_to_td_requires_resolved_workbook_controls() {
         let mut values = BTreeMap::new();
         for (key, value) in [

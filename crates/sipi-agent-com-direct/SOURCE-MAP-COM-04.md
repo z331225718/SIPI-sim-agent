@@ -62,3 +62,14 @@ SHA-256 `42568dce88669a1b443b7402561b731f4c41293284cd836ed673b8143a21f0fc`).
 Its only public function raises `UnsupportedPathError` because r4.80 has no
 Wiener-Hopf implementation; the public API rejects that request rather than
 inventing a solver.
+
+For trusted workbook runs only, the dynamic-TXFFE lookup in the separately
+authorized MATLAB source `matlab_src/com_ieee8023_480.m:10494-10515`
+(raw SHA-256 `642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad`)
+uses `eval` on a string cell. `run_v1.rs` preserves only the four dynamic
+tap-cell lexemes (`c(-1)`, `c(-2)`, `c(-3)`, `c(1)`) privately and accepts a
+bounded plain decimal `start:step:end` grid at that direct-runtime boundary.
+It does not change the public COM-01 Python-compatible materialization JSON
+or fingerprint, does not extend JSON/override inputs, and rejects any other
+expression. This narrow rule exists because the Python materializer's binary
+range arithmetic is not raw-f64 identical to the MATLAB runtime grid.
