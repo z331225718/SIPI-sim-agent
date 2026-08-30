@@ -73,3 +73,12 @@ It does not change the public COM-01 Python-compatible materialization JSON
 or fingerprint, does not extend JSON/override inputs, and rejects any other
 expression. This narrow rule exists because the Python materializer's binary
 range arithmetic is not raw-f64 identical to the MATLAB runtime grid.
+
+The separate external-only Stage 2b DFE observation reads no source payload
+into the product. It binds the same MATLAB source object's public assignment
+`output_args.DFE_taps=fom_result.DFE_taps` at line 2555, its relative winner
+assignment `result.DFE_taps = best_dfetaps` at line 8063, and the postcursor
+sample construction at line 7534. The observation carries the source-native
+MATLAB vector shape and column-major f64 receipt; Rust continues to expose its
+existing private winner diagnostic only. It does not add a public COM API or
+claim DFE parity until the independent replay gate is complete.
