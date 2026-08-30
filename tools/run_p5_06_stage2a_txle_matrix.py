@@ -126,6 +126,24 @@ def matlab_metrics(summary: dict) -> list[dict]:
     return values
 
 
+def txle_scope(document: dict, checkpoints: list[dict], cases_key: str, label: str) -> dict[str, int]:
+    """Account for every bounded source result without widening Stage 2a.
+
+    The projector has already fail-closed each inapplicable ERL-only case.
+    This helper merely keeps those declared exclusions visible in the replay
+    record, instead of treating an empty eligible set as a failed process.
+    """
+    cases = document.get(cases_key)
+    if not isinstance(cases, list) or not cases:
+        raise ValueError(f"{label} result has no bounded cases")
+    if len(checkpoints) > len(cases):
+        raise ValueError(f"{label} TXLE checkpoint count exceeds result cases")
+    return {
+        "eligible_case_count": len(checkpoints),
+        "inapplicable_erl_only_case_count": len(cases) - len(checkpoints),
+    }
+
+
 def txle_engine_worker(spec_path: str) -> None:
     """Materialize one workbook and invoke only the bounded TXLE harness."""
     import numpy as np
@@ -290,6 +308,7 @@ def main() -> int:
             result_path = output / "result.json"
             result = json.loads(result_path.read_text(encoding="utf-8")) if run.returncode == 0 and result_path.is_file() else None
             checkpoints = project_rust_result(result) if result is not None else []
+            scope = txle_scope(result, checkpoints, "cases", "Rust") if result is not None else None
             metrics = [item["final_scalar_metrics"] for item in checkpoints]
             materialization = {"comparison": "not_run_for_rust_result_replay"}
         else:
@@ -316,6 +335,7 @@ def main() -> int:
             if summary is not None and summary.get("matlab_release") != "2024b":
                 raise RuntimeError("MATLAB Engine did not report R2024b")
             checkpoints = project_matlab_summary(summary) if summary is not None else []
+            scope = txle_scope(summary, checkpoints, "case_checkpoints", "MATLAB") if summary is not None else None
             metrics = [item["final_scalar_metrics"] for item in checkpoints]
             materialization = {"comparison": "worker_failed"}
             if worker_result.is_file():
@@ -337,7 +357,7 @@ def main() -> int:
             if materialization.get("comparison") == "drift":
                 run = type("Run", (), {"returncode": 1, "stderr": b"config materialization drift", "timed_out": False})()
         source_unchanged = inventory(upstream) == before
-        status = "passed" if run.returncode == 0 and checkpoints and source_unchanged and materialization.get("comparison") != "drift" else "failed"
+        status = "passed" if run.returncode == 0 and scope is not None and source_unchanged and materialization.get("comparison") != "drift" else "failed"
         size, sha = before[relative_config]
         records.append({
             "workbook_index": index, "workbook": {"path": relative_config, "bytes": size, "sha256": sha},
@@ -345,7 +365,7 @@ def main() -> int:
             "execution_wall_ns": execution_wall_ns, "timing_scope": TIMING_SCOPE,
             "detail_sha256": hashlib.sha256(run.stderr).hexdigest(), "source_inventory_unchanged": source_unchanged,
             "config_materialization": materialization, "case_count": len(checkpoints), "metrics": metrics,
-            "txle_checkpoints": checkpoints,
+            "txle_checkpoints": checkpoints, "txle_scope": scope,
         })
     if inventory(source) != source_before:
         raise RuntimeError("upstream preparation archive drift")

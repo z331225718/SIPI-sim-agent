@@ -10,6 +10,7 @@ try:
         project_rust_result,
         validate_projected_txle_cases,
     )
+    from .run_p5_06_stage2a_txle_matrix import txle_scope
 except ImportError:
     from project_p5_06_stage2a_txle import (
         compare_projected_txle_cases,
@@ -18,6 +19,7 @@ except ImportError:
         project_rust_result,
         validate_projected_txle_cases,
     )
+    from run_p5_06_stage2a_txle_matrix import txle_scope
 
 
 def digest(values):
@@ -149,6 +151,23 @@ class TxleProjectionTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "search checkpoint"):
             project_rust_result(document)
+
+    def test_replay_scope_accounts_for_explicitly_inapplicable_erl_only_case(self):
+        source = {
+            "schema_version": 1,
+            "diagnostic_only": True,
+            "case_count": 1,
+            "case_checkpoints": [source_inapplicable_case()],
+        }
+        projected = project_matlab_summary(source)
+        self.assertEqual(
+            txle_scope(source, projected, "case_checkpoints", "MATLAB"),
+            {"eligible_case_count": 0, "inapplicable_erl_only_case_count": 1},
+        )
+
+    def test_replay_scope_rejects_empty_case_set(self):
+        with self.assertRaisesRegex(ValueError, "no bounded cases"):
+            txle_scope({"cases": []}, [], "cases", "Rust")
 
     def test_special_scalar_tokens_must_match(self):
         document = source_summary()
