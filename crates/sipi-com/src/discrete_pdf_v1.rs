@@ -6,8 +6,18 @@
 //! single-bin shortcuts. The combined noise PDF composition
 //! (combine_r480_noise_pdf) is a separate stage.
 
+use std::cell::RefCell;
+
 use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
+
+thread_local! {
+    // The exhaustive C2M search repeatedly uses only a handful of support
+    // lengths.  Retaining RustFFT's per-thread plan cache avoids rebuilding
+    // twiddle tables for every viable TX-FFE candidate without introducing
+    // cross-run mutable state.
+    static C2M_FFT_PLANNER: RefCell<FftPlanner<f64>> = RefCell::new(FftPlanner::new());
+}
 
 /// A normalized discrete probability density over uniform bins.
 #[derive(Clone, Debug, PartialEq)]
@@ -258,13 +268,19 @@ fn fft_full_convolution(left: &[f64], right: &[f64]) -> Result<Vec<f64>, PdfErro
     for (target, value) in right_fft.iter_mut().zip(right) {
         target.re = *value;
     }
-    let mut planner = FftPlanner::<f64>::new();
-    planner.plan_fft_forward(fft_len).process(&mut left_fft);
-    planner.plan_fft_forward(fft_len).process(&mut right_fft);
+    let (forward, inverse) = C2M_FFT_PLANNER.with(|planner| {
+        let mut planner = planner.borrow_mut();
+        (
+            planner.plan_fft_forward(fft_len),
+            planner.plan_fft_inverse(fft_len),
+        )
+    });
+    forward.process(&mut left_fft);
+    forward.process(&mut right_fft);
     for (left_value, right_value) in left_fft.iter_mut().zip(right_fft) {
         *left_value *= right_value;
     }
-    planner.plan_fft_inverse(fft_len).process(&mut left_fft);
+    inverse.process(&mut left_fft);
     let scale = 1.0 / fft_len as f64;
     let mut negative_mass = 0.0;
     let mut result = Vec::with_capacity(output_len);
