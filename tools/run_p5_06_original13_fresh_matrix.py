@@ -123,11 +123,13 @@ def engine_worker(spec_path):
             parameter[row_index,column_index]=value;slots.append({"row":row_index,"column":column_index,"kind":kind,"value":value})
     logical={"shape":[len(rows),columns],"slots":slots};savemat(mat,{"parameter":parameter},do_compression=False,oned_as="row")
     materialized=ComConfig.from_xlsx(config).materialize();raw={"parameters":dict(materialized.parameters),"options":dict(materialized.options)};pinned=runtime_projection(raw,_IMPLEMENTED_PARAMETERS,_IMPLEMENTED_OPTIONS)
+    harness=Path(__file__).with_name("sipi_com_final_surface_oracle_v3.m")
+    if not harness.is_file(): raise RuntimeError("final-surface MATLAB harness missing")
     engine=matlab.engine.start_matlab("-noFigureWindows -singleCompThread")
     try:
         engine.cd(str(output.parent),nargout=0)
-        engine.addpath(str(Path(spec["upstream"])/"tools/matlab_oracle"),nargout=0)
-        engine.run_com_oracle(spec["upstream"],str(mat),str(output),float(26560000000),float(1),float(1),*spec["channels"],nargout=0)
+        engine.addpath(str(harness.parent),nargout=0)
+        engine.sipi_com_final_surface_oracle_v3(spec["upstream"],str(mat),str(output),float(1),float(1),spec["run_nonce"],*spec["channels"],nargout=0)
     finally:engine.quit()
     result={"parameter_shape":logical["shape"],"parameter_slot_digest":hashlib.sha256(canonical(logical)).hexdigest(),"parameter_mat_bytes":mat.stat().st_size,"parameter_mat_sha256":digest(mat),"projection_parameters":sorted(_IMPLEMENTED_PARAMETERS),"projection_options":sorted(_IMPLEMENTED_OPTIONS),"pinned_materialized":pinned,"pinned_materialized_sha256":hashlib.sha256(canonical(pinned)).hexdigest()}
     Path(spec["worker_result"]).write_text(json.dumps(result,sort_keys=True),encoding="utf-8")
@@ -204,7 +206,7 @@ def main():
             config_materialization={"comparison":"not_run_for_rust_result_replay"}
         else:
             out=case_root/"matlab";out.mkdir();spec_path=case_root/"engine-spec.json";worker_result=case_root/"engine-result.json";mat=case_root/"parameter.mat"
-            spec={"upstream":str(upstream_root),"config":str(config),"mat":str(mat),"output":str(out),"channels":[str(x[1]) for x in chan],"worker_result":str(worker_result)};spec_path.write_text(json.dumps(spec),encoding="utf-8")
+            spec={"upstream":str(upstream_root),"config":str(config),"mat":str(mat),"output":str(out),"channels":[str(x[1]) for x in chan],"worker_result":str(worker_result),"run_nonce":nonce};spec_path.write_text(json.dumps(spec),encoding="utf-8")
             worker_env=worker_environment(upstream_root,a.matlab)
             run=bounded([str(worker_python),str(Path(__file__).resolve()),"--engine-worker",str(spec_path)],case_root,a.timeout,worker_env); metrics=matlab_metrics(out) if run.returncode==0 and (out/"summary.json").is_file() and worker_result.is_file() else []
             status="passed" if run.returncode==0 and metrics else "matlab_failed"; detail_sha=hashlib.sha256(run.stdout+run.stderr).hexdigest()

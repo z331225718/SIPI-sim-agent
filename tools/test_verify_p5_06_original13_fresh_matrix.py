@@ -37,6 +37,18 @@ class Tests(unittest.TestCase):
             self.assertNotEqual(Path(env["MATLAB_PREFDIR"]).parent,source)
             subprocess.run([sys.executable,"-c","import pkg"],env=env,check=True,capture_output=True)
             self.assertEqual(inventory(source/"src"),before)
+    def test_final_surface_matlab_harness_is_scalar_only_and_staged(self):
+        harness=Path(__file__).with_name("sipi_com_final_surface_oracle_v3.m").read_text(encoding="ascii")
+        runner=Path(__file__).with_name("run_p5_06_original13_fresh_matrix.py").read_text(encoding="utf-8")
+        self.assertIn("'oracle_entered'",harness)
+        self.assertIn("'core_returned'",harness)
+        self.assertIn("'summary_written'",harness)
+        self.assertIn("'oracle_exception'",harness)
+        self.assertIn("final_scalar_metrics(results)",harness)
+        self.assertNotIn("matlab_oracle.mat",harness)
+        self.assertNotIn("save(",harness)
+        self.assertIn("sipi_com_final_surface_oracle_v3",runner)
+        self.assertIn('"run_nonce":nonce',runner)
     def test_runtime_projection_excludes_report_metadata_and_normalizes_sweeps(self):
         document={"parameters":{"CTLE_fp1":[[21.25]],"f_HP_P":[[]],"consumed":2.0,"report":3.0},"options":{"BREAD_CRUMBS":1.0,"DEBUG":1.0}}
         projected=runtime_projection(document,{"CTLE_fp1","f_HP_P","consumed"},{"DEBUG"})
