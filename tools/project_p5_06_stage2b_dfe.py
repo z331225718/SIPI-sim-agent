@@ -188,6 +188,20 @@ def validate_projected_dfe_cases(cases: Any, label: str) -> list[dict[str, Any]]
     return validated
 
 
+def dfe_raw_receipts_equal(source_cases: Any, rust_cases: Any) -> bool:
+    """Report raw receipt identity without mistaking it for numeric parity."""
+    source_cases = validate_projected_dfe_cases(source_cases, "MATLAB")
+    rust_cases = validate_projected_dfe_cases(rust_cases, "Rust")
+    return len(source_cases) == len(rust_cases) and all(
+        source["dfe_taps"]["raw_f64_sha256"] == candidate["dfe_taps"]["raw_f64_sha256"]
+        for source, candidate in zip(source_cases, rust_cases, strict=True)
+    )
+
+
+def _same_signed_zero(left: float, right: float) -> bool:
+    return struct.pack("<d", left) == struct.pack("<d", right)
+
+
 def compare_projected_dfe_cases(source_cases: Any, rust_cases: Any, finite_tolerance: float = FINITE_TOLERANCE) -> list[str]:
     if not math.isfinite(finite_tolerance) or finite_tolerance < 0:
         raise ValueError("finite tolerance must be nonnegative and finite")
@@ -198,8 +212,16 @@ def compare_projected_dfe_cases(source_cases: Any, rust_cases: Any, finite_toler
     mismatches = []
     for source, candidate in zip(source_cases, rust_cases, strict=True):
         index = source["case_index"]
-        if source["dfe_taps"] != candidate["dfe_taps"]:
-            mismatches.append(f"case {index}: DFE checkpoint differs")
+        source_taps = source["dfe_taps"]
+        candidate_taps = candidate["dfe_taps"]
+        if source_taps["shape"] != candidate_taps["shape"]:
+            mismatches.append(f"case {index}: DFE shape differs")
+        else:
+            for tap_index, (left, right) in enumerate(zip(source_taps["values"], candidate_taps["values"], strict=True)):
+                if left == 0.0 and right == 0.0 and not _same_signed_zero(left, right):
+                    mismatches.append(f"case {index}: DFE[{tap_index}] signed zero differs")
+                elif abs(left - right) > finite_tolerance:
+                    mismatches.append(f"case {index}: DFE[{tap_index}] differs")
         if set(source["final_scalar_metrics"]) != set(candidate["final_scalar_metrics"]):
             mismatches.append(f"case {index}: scalar field set differs")
             continue

@@ -6,6 +6,7 @@ try:
     from .project_p5_06_stage2b_dfe import (
         INAPPLICABLE_REASON,
         compare_projected_dfe_cases,
+        dfe_raw_receipts_equal,
         project_matlab_summary,
         project_rust_result,
         validate_projected_dfe_cases,
@@ -14,6 +15,7 @@ except ImportError:
     from project_p5_06_stage2b_dfe import (
         INAPPLICABLE_REASON,
         compare_projected_dfe_cases,
+        dfe_raw_receipts_equal,
         project_matlab_summary,
         project_rust_result,
         validate_projected_dfe_cases,
@@ -114,9 +116,20 @@ class DfeProjectionTests(unittest.TestCase):
         rust = project_rust_result(rust_result(), source)
         rust[0]["dfe_taps"]["values"].reverse()
         rust[0]["dfe_taps"]["raw_f64_sha256"] = digest(rust[0]["dfe_taps"]["values"])
-        self.assertEqual(compare_projected_dfe_cases(source, rust), ["case 0: DFE checkpoint differs"])
+        self.assertEqual(compare_projected_dfe_cases(source, rust), ["case 0: DFE[0] differs", "case 0: DFE[1] differs"])
         rust[0]["dfe_taps"]["shape"] = [1, 2]
-        self.assertEqual(compare_projected_dfe_cases(source, rust), ["case 0: DFE checkpoint differs"])
+        self.assertEqual(compare_projected_dfe_cases(source, rust), ["case 0: DFE shape differs"])
+
+    def test_numeric_tolerance_is_separate_from_raw_receipt_identity(self):
+        source = project_matlab_summary(source_summary())
+        rust = project_rust_result(rust_result((0.25 + 2e-14, -0.0)), source)
+        self.assertFalse(dfe_raw_receipts_equal(source, rust))
+        self.assertEqual(compare_projected_dfe_cases(source, rust), [])
+
+    def test_signed_zero_difference_is_not_hidden_by_numeric_tolerance(self):
+        source = project_matlab_summary(source_summary())
+        rust = project_rust_result(rust_result((0.25, 0.0)), source)
+        self.assertEqual(compare_projected_dfe_cases(source, rust), ["case 0: DFE[1] signed zero differs"])
 
     def test_digest_mutation_is_rejected(self):
         source = project_matlab_summary(source_summary())

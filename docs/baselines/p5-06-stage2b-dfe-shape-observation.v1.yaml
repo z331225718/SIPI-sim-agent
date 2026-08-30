@@ -1,0 +1,74 @@
+schema: sipi.p5-06.stage2b-dfe-shape-observation.v1
+status: observed_numeric_subset_not_acceptance
+purpose: >
+  Freeze one source-native DFE checkpoint shape/axis observation before any
+  Stage 2b matrix acceptance. This is a bounded MATLAB-to-Rust comparison
+  probe, not a full result graph, certificate, release claim, or tolerance
+  selection by itself.
+source:
+  upstream:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  matlab:
+    path: matlab_src/com_ieee8023_480.m
+    output_assignment_line: 2555
+    winner_assignment_line: 8063
+    postcursor_sampling_line: 7534
+    output_assignment: output_args.DFE_taps=fom_result.DFE_taps
+    winner_assignment: result.DFE_taps = best_dfetaps; %relative
+candidate:
+  commit: fe5227f7622ac1b7ee439381755af4716d0846d4
+  tree: 25be6af1e7e3694aba30a70c124b4dc50ed808b7
+  archive_sha256: b649679cf0af7958f9a238631bc37bc96b86906f398067dee93361a1e6d87718
+  archive_bytes: 57047040
+probe:
+  workbook:
+    original13_index: 2
+    path: matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx
+    bytes: 63311
+    sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+  matlab:
+    release: R2024b
+    report_sha256: 5ee12c13ee52b255ee0074cad05aa5abb986a596a247d63a0a9d6011d6e0ce41
+    report_bytes: 4675
+    eligible_case_count: 2
+  rust:
+    original13_report_sha256: 471ed4f615fc91634c871da71fe3a3fa55c0916ea206baab21753eee0f019c0b
+    case_result_sha256: ce58279cad29b171d4ca70faa41a35084d90a1e70aca48b3e3d5984d228a286f
+    case_result_bytes: 27701
+observed_contract:
+  source_native_shape: [4, 1]
+  class: double
+  storage_order: matlab_column_major
+  semantic_axis: postcursor_ui_offsets_from_winner_cursor
+  axis_origin_ui: 1
+  axis_step_ui: 1
+  unit: ratio
+  encoding: ieee754_f64_little_endian_column_major
+  count: 4
+comparison:
+  shape_order_axis_exact: true
+  finite_value_absolute_tolerance: 1.0e-9
+  signed_zero_exact: true
+  raw_f64_receipt_captured: true
+  raw_f64_receipt_equal: false
+  finite_value_comparison: passed
+  raw_receipt_note: >
+    The two selected winners have same shape/order and values within the
+    already frozen Stage 1 finite tolerance, but neither raw f64 receipt is
+    identical. The mismatch remains visible and is not promoted to an exact
+    bit-parity claim.
+claims:
+  dfe_shape_axis_observed: true
+  bounded_numeric_comparison: true
+  dfe_acceptance: false
+  full_matrix_replay: false
+  raw_bit_parity: false
+  p5_06_closed: false
+  release: false
+non_claims:
+  - no_full_result_graph_parity
+  - no_floating_dfe_or_empty_dfe_coverage
+  - no_current_stage1_scalar_acceptance_rebinding
+  - no_array_alignment_resampling_or_cropping
+  - no_s_parameter_fit
