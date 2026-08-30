@@ -480,7 +480,12 @@ pub fn calculate_c2m_vertical_eye_v1(
     if t_o_mui == 0.0 {
         return Ok((None, None));
     }
-    let pulse: Vec<f64> = pulse_response.to_vec();
+    // This function is called for every viable TX-FFE candidate.  The
+    // residual/jitter helpers are read-only, so copying the complete pulse
+    // here only adds allocation and memory traffic to the search hot path.
+    // Borrow it through the full calculation instead; the source semantics
+    // are unchanged because no helper mutates the response.
+    let pulse = pulse_response;
     if samples_per_ui < 1
         || samples_for_c2m < 2
         || levels < 2
@@ -512,7 +517,7 @@ pub fn calculate_c2m_vertical_eye_v1(
     let stop = center + span;
     let phase_indices: Vec<i64> = (start as i64..=stop as i64).collect();
     let rj = c2m_residual_and_jitter(
-        &pulse,
+        pulse,
         cursor_index,
         samples_per_ui,
         samples_for_c2m,
