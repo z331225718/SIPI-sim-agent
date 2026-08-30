@@ -69,16 +69,6 @@ fn argmax_first(values: &[f64]) -> usize {
     best
 }
 
-fn argmin_first(values: &[f64]) -> usize {
-    let mut best = 0usize;
-    for index in 1..values.len() {
-        if values[index] < values[best] {
-            best = index;
-        }
-    }
-    best
-}
-
 /// Port of `cursor_sample_index` (zero-based indices; MM / Mod-MM CDR).
 pub fn cursor_sample_index_v1(
     sbr: &[f64],
@@ -102,53 +92,50 @@ pub fn cursor_sample_index_v1(
     let peak_index = peak_start + argmax_first(&pulse[peak_start..stop]);
     let maximum = pulse[peak_index];
     let search_start = peak_index.saturating_sub(4 * samples_per_ui);
-    let mut rising: Vec<usize> = Vec::new();
+    // The legacy code retains every crossing before choosing the final one.
+    // Only that final index participates in the result, so retain it directly
+    // instead of allocating four short vectors for every grid candidate.
+    let mut last_rising = None;
     let window = &pulse[search_start..=peak_index];
     for index in 1..window.len() {
         let before = sign(window[index - 1] - 0.01 * maximum);
         let after = sign(window[index] - 0.01 * maximum);
         if after - before >= 1.0 {
-            rising.push(search_start + index - 1);
+            last_rising = Some(search_start + index - 1);
         }
     }
-    if rising.is_empty() {
+    let Some(zero_crossing) = last_rising else {
         return Ok(CursorSampleV1 {
             cursor_index: None,
             no_zero_crossing: true,
             peak_index: peak_index as i64,
             zero_crossing_index: None,
         });
-    }
-    let zero_crossing = rising[rising.len() - 1];
-    let offsets: Vec<usize> = (0..(2 * samples_per_ui + 1)).collect();
-    let sample_points: Vec<usize> = offsets
-        .iter()
-        .map(|offset| zero_crossing + offset)
-        .collect();
-    let last = *sample_points.last().expect("points");
-    if last + samples_per_ui >= pulse.len() || sample_points[0] < samples_per_ui {
+    };
+    let last = zero_crossing + 2 * samples_per_ui;
+    if last + samples_per_ui >= pulse.len() || zero_crossing < samples_per_ui {
         return Err(EqualizerErrorV1::CursorMmRange);
     }
-    let metric: Vec<f64> = if cdr == "Mod-MM" {
-        sample_points
-            .iter()
-            .map(|point| {
-                let far = pulse[point + samples_per_ui];
-                let near = pulse[*point];
-                (far - dfe_first_max * near).abs()
-            })
-            .collect()
-    } else {
-        sample_points
-            .iter()
-            .map(|point| {
-                let past = pulse[*point - samples_per_ui];
-                let far = pulse[point + samples_per_ui] - dfe_first_max * pulse[*point];
-                (past - far.max(0.0)).abs()
-            })
-            .collect()
+    let metric_at = |point: usize| {
+        if cdr == "Mod-MM" {
+            let far = pulse[point + samples_per_ui];
+            let near = pulse[point];
+            (far - dfe_first_max * near).abs()
+        } else {
+            let past = pulse[point - samples_per_ui];
+            let far = pulse[point + samples_per_ui] - dfe_first_max * pulse[point];
+            (past - far.max(0.0)).abs()
+        }
     };
-    let selected = zero_crossing + argmin_first(&metric);
+    let mut selected = zero_crossing;
+    let mut selected_metric = metric_at(selected);
+    for point in (zero_crossing + 1)..=last {
+        let metric = metric_at(point);
+        if metric < selected_metric {
+            selected = point;
+            selected_metric = metric;
+        }
+    }
     Ok(CursorSampleV1 {
         cursor_index: Some(selected as i64),
         no_zero_crossing: false,
