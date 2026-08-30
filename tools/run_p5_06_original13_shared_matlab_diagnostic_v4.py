@@ -64,6 +64,25 @@ def make_parameter(config: Path, parameter: Path) -> None:
     savemat(parameter, {"parameter": values}, do_compression=False, oned_as="row")
 
 
+def materialized_projection(config: Path) -> tuple[object, str, list[str], list[str]]:
+    from agent_com.config import ComConfig
+    from agent_com.config.consumption import _IMPLEMENTED_OPTIONS, _IMPLEMENTED_PARAMETERS
+    from run_p5_06_original13_fresh_matrix import canonical, runtime_projection
+
+    materialized = ComConfig.from_xlsx(config).materialize()
+    projection = runtime_projection(
+        {"parameters": dict(materialized.parameters), "options": dict(materialized.options)},
+        _IMPLEMENTED_PARAMETERS,
+        _IMPLEMENTED_OPTIONS,
+    )
+    return (
+        projection,
+        hashlib.sha256(canonical(projection)).hexdigest(),
+        sorted(_IMPLEMENTED_PARAMETERS),
+        sorted(_IMPLEMENTED_OPTIONS),
+    )
+
+
 def worker(manifest_path: Path) -> int:
     import matlab.engine
 
@@ -71,6 +90,20 @@ def worker(manifest_path: Path) -> int:
     root = Path(manifest["root"])
     source = Path(manifest["source"])
     nonce = manifest["nonce"]
+    case_nonces = manifest.get("case_nonces") or [nonce] * len(CONFIG_PATHS)
+    if (
+        not isinstance(case_nonces, list)
+        or len(case_nonces) != len(CONFIG_PATHS)
+        or any(not isinstance(value, str) or len(value) != 64 for value in case_nonces)
+    ):
+        raise RuntimeError("invalid case nonce sequence")
+    execution_order = manifest.get("execution_order") or list(range(len(CONFIG_PATHS)))
+    if (
+        not isinstance(execution_order, list)
+        or any(type(index) is not int for index in execution_order)
+        or sorted(execution_order) != list(range(len(CONFIG_PATHS)))
+    ):
+        raise RuntimeError("invalid execution order")
     harness = Path(manifest["harness"])
     cases: list[dict[str, object]] = []
     session = {
@@ -91,26 +124,30 @@ def worker(manifest_path: Path) -> int:
         if os.path.normcase(str(resolved)) != os.path.normcase(expected):
             raise RuntimeError("pinned MATLAB source resolution drift")
         session["source_resolved"] = True
-        for index, relative in enumerate(CONFIG_PATHS):
+        for index in execution_order:
+            relative = CONFIG_PATHS[index]
+            case_nonce = case_nonces[index]
             case_root = root / f"case-{index:02d}"
             output = case_root / "matlab"
             case_root.mkdir(parents=True)
             parameter = case_root / "parameter.mat"
-            make_parameter(source / relative, parameter)
+            config = source / relative
+            make_parameter(config, parameter)
+            projection, projection_sha256, projection_parameters, projection_options = materialized_projection(config)
             engine.cd(str(case_root), nargout=0)
             try:
                 engine.sipi_com_final_surface_oracle_v3(
-                    str(source), str(parameter), str(output), 1.0, 1.0, nonce,
+                    str(source), str(parameter), str(output), 1.0, 1.0, case_nonce,
                     *[str(source / path) for _role, path, _bytes, _sha in CHANNELS], nargout=0,
                 )
-                current_stage = stage(output / "stage.json", nonce)
+                current_stage = stage(output / "stage.json", case_nonce)
                 summary = output / "summary.json"
                 if current_stage != "summary_written" or not summary.is_file():
                     raise RuntimeError("summary stage missing after MATLAB return")
                 metrics = matlab_metrics(output)
-                cases.append({"workbook_index": index, "status": "engine_call_returned", "stage": current_stage, "summary_sha256": digest(summary), "case_count": len(metrics), "metrics": metrics})
+                cases.append({"workbook_index": index, "case_nonce": case_nonce, "status": "engine_call_returned", "stage": current_stage, "summary_sha256": digest(summary), "case_count": len(metrics), "metrics": metrics, "pinned_materialized": projection, "pinned_materialized_sha256": projection_sha256, "projection_parameters": projection_parameters, "projection_options": projection_options})
             except Exception as error:
-                cases.append({"workbook_index": index, "status": "engine_call_failed", "stage": stage(output / "stage.json", nonce), "error_type": type(error).__name__})
+                cases.append({"workbook_index": index, "case_nonce": case_nonce, "status": "engine_call_failed", "stage": stage(output / "stage.json", case_nonce), "error_type": type(error).__name__})
                 break
         session["all_cases_returned"] = len(cases) == len(CONFIG_PATHS) and all(case["status"] == "engine_call_returned" for case in cases)
     except Exception as error:
@@ -124,10 +161,12 @@ def worker(manifest_path: Path) -> int:
         except Exception as error:
             session["shutdown_error_type"] = type(error).__name__
         session["source_inventory_unchanged"] = inventory(source) == source_before
+    cases.sort(key=lambda case: case["workbook_index"])
     result = {
         "schema": "sipi.p5-06.original13.shared-matlab-diagnostic.v4",
         "nonce": nonce,
         "session": session,
+        "execution_order": execution_order,
         "cases": cases,
     }
     write_json(Path(manifest["result"]), result)
