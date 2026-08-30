@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import copy
+import os
 import sys
+import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from observe_com_r480_matlab_runner import EXPRESSION, PROBE_ID, SCHEMA, TIMEOUT_SECONDS, _sha256, validate_report
+from observe_com_r480_matlab_runner import EXPRESSION, PROBE_ID, SCHEMA, TIMEOUT_SECONDS, _sha256, probe, validate_report
 
 
 def valid_report() -> dict:
@@ -47,6 +50,28 @@ class MatlabRunnerProbeTests(unittest.TestCase):
         invalid["result"]["license_runtime_observation"] = "success"
         with self.assertRaisesRegex(RuntimeError, "result_identity_invalid"):
             validate_report(invalid)
+
+    @unittest.skipUnless(os.name == "nt", "Windows MATLAB runner")
+    def test_probe_disables_connector_in_isolated_profile(self) -> None:
+        class Process:
+            returncode = 0
+
+            def communicate(self, timeout):
+                return (b"SIPI_MATLAB_PROBE|release=R2026a|version=26.1.0|platform=PCWIN64\n", b"")
+
+            def poll(self):
+                return 0
+
+        with tempfile.TemporaryDirectory() as raw_temp:
+            executable = Path(raw_temp) / "matlab.exe"
+            executable.write_bytes(b"matlab")
+            with mock.patch("observe_com_r480_matlab_runner.subprocess.Popen", return_value=Process()) as popen:
+                report = probe(executable)
+        environment = popen.call_args.kwargs["env"]
+        self.assertEqual(environment["MW_DISABLE_CONNECTOR"], "1")
+        self.assertEqual(environment["MATLABPATH"], "")
+        self.assertTrue(environment["MATLAB_PREFDIR"].endswith("prefdir"))
+        self.assertTrue(report["result"]["sentinel_observed"])
 
 
 if __name__ == "__main__":

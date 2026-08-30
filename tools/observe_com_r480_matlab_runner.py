@@ -74,6 +74,9 @@ def probe(executable: Path) -> dict:
         environment = os.environ.copy()
         environment["MATLABPATH"] = ""
         environment["MATLAB_PREFDIR"] = str(prefdir)
+        # R2026a may fault during shutdown while its desktop connector restores
+        # state from a shared profile. The probe has no connector dependency.
+        environment["MW_DISABLE_CONNECTOR"] = "1"
         creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
         process = subprocess.Popen(
             [str(executable), "-batch", EXPRESSION],

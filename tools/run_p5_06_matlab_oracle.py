@@ -11,6 +11,7 @@ custody. No product code is involved.
 from __future__ import annotations
 
 import hashlib
+import os
 import shutil
 import subprocess
 import sys
@@ -83,7 +84,21 @@ def main() -> int:
             "'" + matlab_string(fixture_dir / "next.s4p") + "');"
         )
         command = [str(Path(str(materials["matlab-r2024b"]["path"]).replace("/", "\\"))), "-batch", expression]
-        completed = subprocess.run(command, cwd=str(COM_REPO), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=2400)
+        environment = os.environ.copy()
+        environment["MATLABPATH"] = ""
+        environment["MATLAB_PREFDIR"] = str(custody / "matlab-pref")
+        environment["MW_DISABLE_CONNECTOR"] = "1"
+        (custody / "matlab-pref").mkdir()
+        completed = subprocess.run(
+            command,
+            cwd=str(COM_REPO),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=2400,
+            env=environment,
+        )
         if completed.returncode != 0:
             raise SystemExit("matlab failed rc=" + str(completed.returncode) + " tail=" + (completed.stdout + completed.stderr)[-1500:])
         output_hashes = {
