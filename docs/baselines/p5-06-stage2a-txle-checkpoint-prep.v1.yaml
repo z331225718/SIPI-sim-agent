@@ -57,6 +57,7 @@ replay_requirements:
   - tools/sipi_com_txle_checkpoint_oracle_v1.m
   - tools/project_p5_06_stage2a_txle.py
   - tools/test_project_p5_06_stage2a_txle.py
+  - tools/run_p5_06_stage2a_txle_matrix.py
 claims:
   acceptance: false
   stage2a_txle_parity: false

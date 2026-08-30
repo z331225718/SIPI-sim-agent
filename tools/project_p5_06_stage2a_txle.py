@@ -177,10 +177,10 @@ def project_rust_result(document: Any) -> list[dict[str, Any]]:
     return projected
 
 
-def compare_txle_checkpoint_surface(matlab: Any, rust: Any) -> list[str]:
-    """Return exact shape/digest and bounded scalar mismatches for one run pair."""
-    source_cases = project_matlab_summary(matlab)
-    rust_cases = project_rust_result(rust)
+def compare_projected_txle_cases(source_cases: Any, rust_cases: Any) -> list[str]:
+    """Compare already-validated checkpoint projections without altering them."""
+    if not isinstance(source_cases, list) or not isinstance(rust_cases, list):
+        raise ValueError("projected TXLE cases must be lists")
     if len(source_cases) != len(rust_cases):
         return [f"case count: MATLAB={len(source_cases)} Rust={len(rust_cases)}"]
     mismatches: list[str] = []
@@ -201,3 +201,8 @@ def compare_txle_checkpoint_surface(matlab: Any, rust: Any) -> list[str]:
             elif abs(left - right) > FINITE_TOLERANCE:
                 mismatches.append(f"case {index}: {name} differs")
     return mismatches
+
+
+def compare_txle_checkpoint_surface(matlab: Any, rust: Any) -> list[str]:
+    """Return exact shape/digest and bounded scalar mismatches for one run pair."""
+    return compare_projected_txle_cases(project_matlab_summary(matlab), project_rust_result(rust))
