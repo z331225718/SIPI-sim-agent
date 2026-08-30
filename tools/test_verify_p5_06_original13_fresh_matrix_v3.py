@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 from tools.run_p5_06_original13_fresh_matrix import CHANNELS, CONFIG_PATHS, METRICS, UPSTREAM
-from tools.run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RECEIPT, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
+from tools.run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RECEIPT, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity, metric_values
 from tools.verify_p5_06_original13_fresh_matrix import WORKBOOKS
 from tools.verify_p5_06_original13_fresh_matrix_v3 import VerificationError, verify
 
@@ -66,6 +66,10 @@ def report(engine: str, nonce: str, duration: int = 100) -> dict:
 
 
 class V3Tests(unittest.TestCase):
+    def test_rust_special_metric_strings_are_canonicalized(self):
+        values = metric_values({"cases": [{"metrics": {"ERL": "inf", "COM_dB": 1.0}}, {"metrics": {"ERL": "-INF"}}, {"metrics": {"ERL": "NaN"}}]})
+        self.assertEqual(values, [{"ERL": "+Inf", "COM_dB": 1.0}, {"ERL": "-Inf"}, {"ERL": "NaN"}])
+
     def test_valid_full_matrix(self):
         self.assertTrue(verify(report("matlab", "0" * 64)))
 

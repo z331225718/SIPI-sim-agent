@@ -81,9 +81,24 @@ def require_matlab_r2024b(path: Path) -> dict[str, object]:
     return dict(MATLAB_RECEIPT)
 
 
+def normalize_metric_value(value: object) -> object:
+    if isinstance(value, str):
+        return {
+            "inf": "+Inf",
+            "+inf": "+Inf",
+            "-inf": "-Inf",
+            "nan": "NaN",
+        }.get(value.casefold(), value)
+    return value
+
+
 def metric_values(result: dict) -> list[dict]:
     return [
-        {name: value for name, value in item.get("metrics", {}).items() if name in METRICS}
+        {
+            name: normalize_metric_value(value)
+            for name, value in item.get("metrics", {}).items()
+            if name in METRICS
+        }
         for item in result.get("cases", [])
     ]
 
