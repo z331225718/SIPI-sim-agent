@@ -31,10 +31,10 @@ except ImportError:
 
 
 CANDIDATE = (
-    "20e1f132a7b3840860270f34f9825bc07d174e63",
-    "e1e7291dd3a985610f4198137c4ecde02a6d6466",
-    "403050f1a56cb37669cc91c5a6f7d0bb279905c48f2c0f3b77f7c43729bbb3e1",
-    56791040,
+    "0e72786cc3b5624591b22fe2ccb5474b08ac8e5a",
+    "9b6c8fe794b0e839bac9c79e6c67b152dff4ec9d",
+    "405592bbe16d275d0a8fdf74e3835dd15b997b7c3252e77779c500726f313a8e",
+    56832000,
 )
 SCHEMA = "sipi.p5-06.original13-fresh-run.v3"
 TIMING_SCOPE = "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
