@@ -9,6 +9,7 @@ try:
         dfe_raw_receipts_equal,
         project_matlab_summary,
         project_rust_result,
+        project_rust_result_raw,
         validate_projected_dfe_cases,
     )
 except ImportError:
@@ -18,6 +19,7 @@ except ImportError:
         dfe_raw_receipts_equal,
         project_matlab_summary,
         project_rust_result,
+        project_rust_result_raw,
         validate_projected_dfe_cases,
     )
 
@@ -73,6 +75,15 @@ class DfeProjectionTests(unittest.TestCase):
         rust = project_rust_result(rust_result(), source)
         self.assertEqual(rust[0]["dfe_taps"], source[0]["dfe_taps"])
         self.assertEqual(compare_projected_dfe_cases(source, rust), [])
+
+    def test_raw_rust_projection_does_not_assign_source_shape(self):
+        raw = project_rust_result_raw(rust_result())
+        self.assertEqual(raw, [{
+            "case_index": 0,
+            "final_scalar_metrics": {"COM_dB": -12.0},
+            "values": [0.25, -0.0],
+            "raw_f64_sha256": digest([0.25, -0.0]),
+        }])
 
     def test_empty_dfe_is_a_valid_checkpoint(self):
         source = project_matlab_summary(source_summary(source_case(values=(), shape=[0, 0])))

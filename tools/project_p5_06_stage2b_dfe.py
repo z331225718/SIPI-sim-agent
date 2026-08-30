@@ -140,9 +140,30 @@ def project_matlab_summary(document: Any) -> list[dict[str, Any]]:
 def project_rust_result(document: Any, source_cases: Any) -> list[dict[str, Any]]:
     """Project Rust diagnostics against source-native DFE shapes only."""
     source_cases = validate_projected_dfe_cases(source_cases, "MATLAB")
+    raw_cases = project_rust_result_raw(document)
+    if len(raw_cases) != len(source_cases):
+        raise ValueError("Rust DFE eligible case count drift")
+    return [
+        {
+            "case_index": index,
+            "final_scalar_metrics": raw["final_scalar_metrics"],
+            "dfe_taps": _rust_dfe(raw["values"], source["dfe_taps"]["shape"], f"Rust case {index}"),
+        }
+        for index, (raw, source) in enumerate(zip(raw_cases, source_cases, strict=True))
+    ]
+
+
+def project_rust_result_raw(document: Any) -> list[dict[str, Any]]:
+    """Project the source-independent Rust DFE payload for a replay record.
+
+    Rust diagnostics are a one-dimensional typed sequence; only the MATLAB
+    source invocation can establish its native matrix shape.  Keeping this
+    raw projection separate lets independently produced reports be joined by
+    the aggregate without assigning an oracle shape during the Rust run.
+    """
     if not isinstance(document, dict) or not isinstance(document.get("cases"), list):
         raise ValueError("Rust result schema drift")
-    projected = []
+    projected: list[dict[str, Any]] = []
     for expected_index, item in enumerate(document["cases"]):
         if not isinstance(item, dict) or item.get("case_index") != expected_index:
             raise ValueError("Rust result case order drift")
@@ -155,16 +176,17 @@ def project_rust_result(document: Any, source_cases: Any) -> list[dict[str, Any]
             if set(metrics) != {"ERL"} or not isinstance(diagnostics.get("normal_erl"), dict):
                 raise ValueError("Rust result source-compatible DFE checkpoint missing")
             continue
-        if len(projected) >= len(source_cases):
-            raise ValueError("Rust DFE applicable case count drift")
         search = branches["search"]
+        values = search.get("dfe_taps")
+        if not isinstance(values, list):
+            raise ValueError(f"Rust case {expected_index} selected DFE taps missing")
+        values = [_finite(value, f"Rust case {expected_index}.DFE[{index}]") for index, value in enumerate(values)]
         projected.append({
             "case_index": len(projected),
             "final_scalar_metrics": _scalar_surface(metrics, f"Rust case {expected_index}", False),
-            "dfe_taps": _rust_dfe(search.get("dfe_taps"), source_cases[len(projected)]["dfe_taps"]["shape"], f"Rust case {expected_index}"),
+            "values": values,
+            "raw_f64_sha256": _digest_f64(values),
         })
-    if len(projected) != len(source_cases):
-        raise ValueError("Rust DFE eligible case count drift")
     return projected
 
 
