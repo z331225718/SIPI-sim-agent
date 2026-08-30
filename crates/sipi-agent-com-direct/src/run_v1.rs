@@ -215,6 +215,15 @@ enum ConfigOriginV1 {
     TrustedWorkbook,
 }
 
+/// The upstream workbook runner exits after normal TDR/ERL when `ERL_ONLY`
+/// is set.  This is deliberately separate from the public JSON ERL-only
+/// branch: it is an orchestration rule of trusted workbook materialization.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TrustedWorkbookRunModeV1 {
+    FullCom,
+    ErlOnly,
+}
+
 #[derive(Clone, Debug)]
 struct ImpulseInputV1 {
     values: Vec<f64>,
@@ -1066,6 +1075,7 @@ fn run_with_workflow_token_origin(
     } else {
         false
     };
+    let workbook_run_mode = trusted_workbook_run_mode_v1(&loaded.values, trusted_workbook, td_mode)?;
     if td_mode {
         let baud_hz = required_td_scalar_alias_v1(&loaded.values, &["fb", "baud_hz"], "fb")?;
         reject_td_transformed_channel_v1(&document)?;
@@ -1089,8 +1099,14 @@ fn run_with_workflow_token_origin(
         .and_then(|value| value.to_str())
         .is_some_and(|value| value.eq_ignore_ascii_case("s4p"));
     let package_s4p = is_s4p && s4p_fd_route_v1(&loaded.values)?;
+    if workbook_run_mode == TrustedWorkbookRunModeV1::ErlOnly && !package_s4p {
+        return Err(DirectRunErrorV1::Unsupported(
+            "trusted workbook ERL_ONLY requires the admitted S4P package route".to_owned(),
+        ));
+    }
     if package_s4p
         && trusted_workbook
+        && workbook_run_mode == TrustedWorkbookRunModeV1::FullCom
         && document
             .get("portable")
             .and_then(Value::as_object)
@@ -1105,7 +1121,29 @@ fn run_with_workflow_token_origin(
             document["portable"]["search"]["package_case_index"] = json!(case_index);
         }
     }
-    let mut input_impulse = if package_s4p {
+    let mut input_impulse = if workbook_run_mode == TrustedWorkbookRunModeV1::ErlOnly {
+        // ERL-only owns its own raw S4P-to-TDR projection.  Do not construct
+        // the ordinary package VTF/FD-to-TD impulse just to populate a COM
+        // result that upstream never executes.
+        let source = bounded_read_v1(&request.pulse, MAX_IMPULSE_FILE_BYTES_V1)?;
+        ImpulseInputV1 {
+            values: Vec::new(),
+            erl_values: None,
+            erl_time_s: None,
+            source_sha256: sha256_bytes_v1(&source),
+            sample_interval_s: None,
+            source_kind: "touchstone-four-port-normal-erl",
+            already_pulse: false,
+            causality_correction_db: None,
+            truncation_db: None,
+            causality_iterations: None,
+            td_fillin: None,
+            td_pulse: None,
+            td_crosstalk: None,
+            ac_common_mode_transfer: None,
+            ac_common_mode_frequency_hz: None,
+        }
+    } else if package_s4p {
         load_s4p_package_impulse_v1(
             &request.pulse,
             &loaded.values,
@@ -1123,6 +1161,73 @@ fn run_with_workflow_token_origin(
     } else {
         load_impulse_v1(&request.pulse)?
     };
+    if workbook_run_mode == TrustedWorkbookRunModeV1::ErlOnly {
+        let tdr_w_txpkg = workbook_bool_json_v1(
+            &loaded.values,
+            &["TDR_W_TXPKG"],
+            "TDR_W_TXPKG",
+        )?
+        .as_bool()
+        .expect("workbook boolean helper");
+        let normal_erl = (run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?, tdr_w_txpkg);
+        let selected_port = if tdr_w_txpkg || normal_erl.0.ports[1].erl_db < normal_erl.0.ports[0].erl_db {
+            1
+        } else {
+            0
+        };
+        let selected_erl_db = normal_erl.0.ports[selected_port].erl_db;
+        let erl_metric = metric_db_value_v1(selected_erl_db)?;
+        let envelope = sipi_com::erl_only_envelope_v1(&sipi_com::ErlOnlyMetricsV1 {
+            erl_db: selected_erl_db,
+            erl11_db: normal_erl.0.ports[0].erl_db,
+            erl_rms_db: normal_erl.0.ports[0].erl_rms_db,
+            phase_index: normal_erl.0.ports[0].phase_index,
+        })
+        .map_err(|error| DirectRunErrorV1::Parameters(error.to_owned()))?;
+        let mut result = result_value_v1(
+            request,
+            &loaded,
+            &input_impulse,
+            &[],
+            &[],
+            &[],
+            &[],
+            &envelope,
+            &json!({}),
+            &[],
+            &[],
+            &[],
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(&normal_erl),
+        );
+        let normal_erl_diagnostics = result["cases"][0]["diagnostics"]["normal_erl"].clone();
+        result["cases"][0]["metrics"] = json!({
+            "ERL": erl_metric,
+        });
+        result["cases"][0]["diagnostics"] = json!({
+            "normal_erl": normal_erl_diagnostics,
+        });
+        let artifacts = write_run_artifacts_internal_v1(
+            &request.output_dir,
+            &result,
+            request.overwrite,
+            request.legacy_csv,
+        )?;
+        return Ok(DirectRunReportV1 {
+            schema,
+            workflow: vec!["load_config", "run_normal_erl", "write_artifacts"],
+            result,
+            artifacts,
+            impulse_sample_count: input_impulse.values.len(),
+            impulse_sha256: sha256_f64_v1(&input_impulse.values),
+            config_sha256: loaded.source_sha256,
+        });
+    }
     if td_mode
         && input_impulse.td_fillin.is_some()
         && document
@@ -6198,6 +6303,21 @@ fn workbook_truthy_v1(
         })
 }
 
+fn trusted_workbook_run_mode_v1(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    trusted_workbook: bool,
+    td_mode: bool,
+) -> Result<TrustedWorkbookRunModeV1, DirectRunErrorV1> {
+    if !trusted_workbook || td_mode {
+        return Ok(TrustedWorkbookRunModeV1::FullCom);
+    }
+    if workbook_truthy_v1(values, &["ERL_ONLY"], "ERL_ONLY")? {
+        Ok(TrustedWorkbookRunModeV1::ErlOnly)
+    } else {
+        Ok(TrustedWorkbookRunModeV1::FullCom)
+    }
+}
+
 /// Convert a trusted workbook scalar/vector control to the vector shape used
 /// by the typed portable search consumer.  r4.80 keeps a number of workbook
 /// controls scalar until its internal size adjustment; the JSON/wire surface
@@ -7992,6 +8112,29 @@ mod tests {
             })
             .flat_map(f64::to_le_bytes)
             .collect()
+    }
+
+    #[test]
+    fn trusted_workbook_erl_only_mode_respects_tdmode_priority() {
+        let mut values = BTreeMap::new();
+        values.insert("ERL_ONLY".to_owned(), ResolvedDefaultV1::Boolean(true));
+        assert_eq!(
+            trusted_workbook_run_mode_v1(&values, true, false).expect("ERL-only mode"),
+            TrustedWorkbookRunModeV1::ErlOnly
+        );
+        assert_eq!(
+            trusted_workbook_run_mode_v1(&values, true, true).expect("TDMODE wins"),
+            TrustedWorkbookRunModeV1::FullCom
+        );
+        assert_eq!(
+            trusted_workbook_run_mode_v1(&values, false, false).expect("JSON stays full"),
+            TrustedWorkbookRunModeV1::FullCom
+        );
+        values.insert("ERL_ONLY".to_owned(), ResolvedDefaultV1::Scalar(0.0));
+        assert_eq!(
+            trusted_workbook_run_mode_v1(&values, true, false).expect("false ERL-only"),
+            TrustedWorkbookRunModeV1::FullCom
+        );
     }
 
     #[test]
