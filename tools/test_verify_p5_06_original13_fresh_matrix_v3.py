@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 from tools.run_p5_06_original13_fresh_matrix import CHANNELS, CONFIG_PATHS, METRICS, UPSTREAM
-from tools.run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
+from tools.run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RECEIPT, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
 from tools.verify_p5_06_original13_fresh_matrix import WORKBOOKS
 from tools.verify_p5_06_original13_fresh_matrix_v3 import VerificationError, verify
 
@@ -17,7 +17,7 @@ def receipt(role: str) -> dict:
     value = "1" * 64
     output = {"role": role, "executable": f"{role}.exe", "file_sha256": value, "version_sha256": value, "path_redacted": True}
     if role == "matlab":
-        output.update({"executable": "matlab.exe", "release": MATLAB_RELEASE, "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread"})
+        output = dict(MATLAB_RECEIPT)
     return output
 
 

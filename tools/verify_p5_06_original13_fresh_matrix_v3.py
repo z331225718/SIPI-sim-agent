@@ -8,11 +8,11 @@ from pathlib import Path
 
 try:
     from .run_p5_06_original13_fresh_matrix import CHANNELS, CONFIG_PATHS, METRICS, UPSTREAM, digest
-    from .run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
+    from .run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RECEIPT, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
     from .verify_p5_06_original13_fresh_matrix import WORKBOOKS
 except ImportError:
     from run_p5_06_original13_fresh_matrix import CHANNELS, CONFIG_PATHS, METRICS, UPSTREAM, digest
-    from run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
+    from run_p5_06_original13_fresh_matrix_v3 import CANDIDATE, HARNESS, MATLAB_RECEIPT, MATLAB_RELEASE, SCHEMA, TIMING_SCOPE, WORKER, file_identity
     from verify_p5_06_original13_fresh_matrix import WORKBOOKS
 
 
@@ -88,6 +88,7 @@ def verify(report: object) -> bool:
     require(isinstance(source["toolchain"], dict) and set(source["toolchain"]) == {"cargo", "rustc", "uv", "matlab", "python"}, "toolchain")
     for role, receipt in source["toolchain"].items():
         tool_receipt(receipt, role)
+    require(source["toolchain"]["matlab"] == MATLAB_RECEIPT, "MATLAB receipt")
     require(source["gate_tools"] == {"runner": file_identity(Path(__file__).with_name("run_p5_06_original13_fresh_matrix_v3.py")), "worker": file_identity(WORKER), "matlab_harness": file_identity(HARNESS)}, "gate tools")
 
     expected_channels = [{"role": role, "path": path, "bytes": size, "sha256": sha} for role, path, size, sha in CHANNELS]

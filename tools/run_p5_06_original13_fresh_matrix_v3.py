@@ -19,13 +19,13 @@ from pathlib import Path
 try:
     from .run_p5_06_original13_fresh_matrix import (
         ADAPTER, CHANNELS, CONFIG_PATHS, METRICS, PROJECTION_SOURCES, UPSTREAM, bounded, canonical, digest,
-        first_difference, inventory, materialize, matlab_receipt, prepare_matlab_engine, runtime_projection,
+        first_difference, inventory, materialize, prepare_matlab_engine, runtime_projection,
         tool_receipt, worker_environment,
     )
 except ImportError:
     from run_p5_06_original13_fresh_matrix import (
         ADAPTER, CHANNELS, CONFIG_PATHS, METRICS, PROJECTION_SOURCES, UPSTREAM, bounded, canonical, digest,
-        first_difference, inventory, materialize, matlab_receipt, prepare_matlab_engine, runtime_projection,
+        first_difference, inventory, materialize, prepare_matlab_engine, runtime_projection,
         tool_receipt, worker_environment,
     )
 
@@ -39,6 +39,13 @@ CANDIDATE = (
 SCHEMA = "sipi.p5-06.original13-fresh-run.v3"
 TIMING_SCOPE = "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
 MATLAB_RELEASE = "R2024b"
+MATLAB_RECEIPT = {
+    "role": "matlab", "executable": "matlab.exe",
+    "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+    "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca",
+    "path_redacted": True, "release": MATLAB_RELEASE,
+    "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+}
 WORKER = Path(__file__).with_name("run_p5_06_original13_fresh_matrix.py")
 HARNESS = Path(__file__).with_name("sipi_com_final_surface_oracle_v3.m")
 
@@ -68,6 +75,12 @@ def host_fingerprint() -> str:
     return hashlib.sha256(canonical(value)).hexdigest()
 
 
+def require_matlab_r2024b(path: Path) -> dict[str, object]:
+    if not path.is_file() or path.name != "matlab.exe" or digest(path) != MATLAB_RECEIPT["file_sha256"]:
+        raise RuntimeError("MATLAB R2024b executable identity drift")
+    return dict(MATLAB_RECEIPT)
+
+
 def metric_values(result: dict) -> list[dict]:
     return [
         {name: value for name, value in item.get("metrics", {}).items() if name in METRICS}
@@ -75,8 +88,7 @@ def metric_values(result: dict) -> list[dict]:
     ]
 
 
-def matlab_metrics(case_dir: Path) -> list[dict]:
-    summary = json.loads((case_dir / "summary.json").read_text(encoding="utf-8"))
+def matlab_metrics(summary: dict) -> list[dict]:
     items = summary.get("case_metrics", [])
     if not isinstance(items, list):
         items = [items]
@@ -174,12 +186,9 @@ def main() -> int:
         "cargo": tool_receipt(args.cargo, "cargo"),
         "rustc": tool_receipt(args.rustc, "rustc"),
         "uv": tool_receipt(args.uv, "uv"),
-        "matlab": matlab_receipt(args.matlab, args.python),
+        "matlab": require_matlab_r2024b(args.matlab),
         "python": tool_receipt(args.python, "python"),
     }
-    if toolchain["matlab"].get("release") != MATLAB_RELEASE:
-        raise RuntimeError("R2024b is required for this acceptance runner")
-    toolchain["matlab"]["launch_mode"] = "python_engine_per_workbook_noFigureWindows_singleCompThread"
     nonce = secrets.token_hex(32)
     root_id = secrets.token_hex(32)
     records = []
@@ -223,7 +232,11 @@ def main() -> int:
                 worker_environment(upstream, engine_site),
             )
             execution_wall_ns = time.perf_counter_ns() - timing_start
-            metrics = matlab_metrics(output) if run.returncode == 0 and (output / "summary.json").is_file() and worker_result.is_file() else []
+            summary_path = output / "summary.json"
+            summary = json.loads(summary_path.read_text(encoding="utf-8")) if run.returncode == 0 and summary_path.is_file() and worker_result.is_file() else None
+            if summary is not None and summary.get("matlab_release") != "2024b":
+                raise RuntimeError("MATLAB Engine did not report R2024b")
+            metrics = matlab_metrics(summary) if summary is not None else []
             materialization = {"comparison": "worker_failed"}
             if worker_result.is_file():
                 worker = json.loads(worker_result.read_text(encoding="utf-8"))
