@@ -11,6 +11,10 @@
 
 use std::collections::BTreeMap;
 
+use faer::linalg::matmul::matmul;
+use faer::{Accum, Mat, Par};
+use rayon::prelude::*;
+
 use crate::c2m_eye_v1::C2mEyeErrorV1;
 use crate::candidate_eval_v1::{
     CandidateEvalErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, NonMmseSearchResultV1,
@@ -18,7 +22,10 @@ use crate::candidate_eval_v1::{
 };
 use crate::candidate_helpers_v1::CandidateErrorV1;
 use crate::com_chain_v1::{ComWinnerC2mContextV1, ComWinnerContextV1};
-use crate::crosstalk_noise_v1::{XtalkChannelV1, XtalkErrorV1, XtalkParamsV1, crosstalk_noise_v1};
+use crate::crosstalk_noise_v1::{
+    XtalkChannelV1, XtalkErrorV1, XtalkParamsV1, crosstalk_noise_v1, prepare_crosstalk_noise_v1,
+    tx_filter_magnitude_v1,
+};
 use crate::dfe_v1::DfeErrorV1;
 use crate::discrete_pdf_v1::PdfErrorV1;
 use crate::equalizer_frontend_v1::{EqualizerErrorV1, cursor_sample_index_v1};
@@ -33,6 +40,7 @@ use sipi_types::Complex64;
 
 /// Explicit scope policy of the search loop stage.
 pub const SEARCH_LOOP_POLICY_V1: &str = "sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe";
+const MAX_TX_CROSSTALK_MAGNITUDE_CACHE_ELEMENTS_V1: usize = 64 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SearchLoopErrorV1 {
@@ -179,6 +187,107 @@ pub fn shift_matrix(
         out.push(col);
     }
     out
+}
+
+/// Computes a whole eligible TX-FFE grid against one shifted pulse in one
+/// bounded dense multiply.  This is deliberately restricted to the ordinary
+/// full-grid, zero-offset sweep: local-search ordering and multi-offset
+/// sweeps retain the scalar path below.
+fn tx_ffe_sbr_matrix_v1(
+    shifted: &[Vec<f64>],
+    grid: &TxFfeGridV1,
+    eligible_indices: &[usize],
+) -> Mat<f64> {
+    let samples = shifted[0].len();
+    let taps = shifted.len();
+    let shifted_matrix = Mat::from_fn(samples, taps, |sample, tap| shifted[tap][sample]);
+    let tap_matrix = Mat::from_fn(taps, eligible_indices.len(), |tap, candidate| {
+        grid.taps()[eligible_indices[candidate]][tap]
+    });
+    let mut output = Mat::zeros(samples, eligible_indices.len());
+    // The output is sample-major by column, so each following candidate
+    // evaluation borrows a contiguous waveform without another allocation.
+    matmul(
+        &mut output,
+        Accum::Replace,
+        &shifted_matrix,
+        &tap_matrix,
+        1.0,
+        Par::rayon(0),
+    );
+    output
+}
+
+/// Evaluates one candidate from the batched ordinary-grid fast path.  Its
+/// result is independent of the rest of the grid except for the supplied
+/// rejection bound, so callers may evaluate stable contiguous chunks in
+/// parallel and replay the strict first-winner reduction afterwards.
+#[allow(clippy::too_many_arguments)]
+fn evaluate_batched_grid_candidate_v1(
+    waveform: &[f64],
+    best_fom: Option<f64>,
+    candidate_index: usize,
+    ctle_index: usize,
+    ctle_gain_db: f64,
+    high_pass_index: usize,
+    high_pass_gain_db: f64,
+    grid: &TxFfeGridV1,
+    samples_per_ui: usize,
+    dfe_first_max: f64,
+    cdr: &str,
+    peak_start: usize,
+    peak_stop: usize,
+    ts_anchor: i64,
+    sigma_n: f64,
+    sigma_ne: f64,
+    sigma_xt: f64,
+    candidate_parameters: &CandidateEvalParamsV1,
+    candidate_options: &CandidateEvalOptionsV1,
+    package_case_index: usize,
+) -> Result<Option<NonMmseSearchResultV1>, SearchLoopErrorV1> {
+    let sample = cursor_sample_index_v1(
+        waveform,
+        samples_per_ui,
+        dfe_first_max,
+        cdr,
+        peak_start,
+        Some(peak_stop),
+    )?;
+    let Some(sample_cursor) = sample.cursor_index() else {
+        return Ok(None);
+    };
+    if sample.no_zero_crossing() {
+        return Ok(None);
+    }
+    let cursor_index = anchored_cursor(
+        sample_cursor,
+        sample.peak_index(),
+        ts_anchor,
+        waveform,
+        samples_per_ui,
+    )?;
+    evaluate_candidate_v1(
+        waveform,
+        best_fom,
+        cursor_index as usize,
+        ctle_index as i64,
+        ctle_gain_db,
+        high_pass_index as i64,
+        high_pass_gain_db,
+        &grid.taps()[candidate_index],
+        grid.precursor_count(),
+        candidate_index as i64,
+        &grid.source_indices()[candidate_index],
+        sigma_n,
+        sigma_ne,
+        sigma_xt,
+        candidate_parameters,
+        candidate_options,
+        package_case_index,
+        0,
+        false,
+    )
+    .map_err(SearchLoopErrorV1::from)
 }
 
 /// Port of _skip_local_search.
@@ -643,6 +752,23 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
         peak_window_pulse.is_some(),
     )?;
     let tap_count = grid.taps()[0].len();
+    // TX-FFE frequency magnitude is invariant across CTLE/high-pass pairs.
+    // Bound this optional cache so unusually large caller grids keep the
+    // established streaming evaluator rather than reserving host memory.
+    let tx_crosstalk_magnitudes = (!td_crosstalk_outer_product && !crosstalk.is_empty())
+        .then(|| {
+            grid.taps()
+                .len()
+                .checked_mul(crosstalk_frequency_hz.len())
+                .filter(|elements| *elements <= MAX_TX_CROSSTALK_MAGNITUDE_CACHE_ELEMENTS_V1)
+                .map(|_| {
+                    grid.taps()
+                        .par_iter()
+                        .map(|taps| tx_filter_magnitude_v1(crosstalk_frequency_hz, taps, full.fb))
+                        .collect::<Vec<_>>()
+                })
+        })
+        .flatten();
     let sample_offsets = r480_sample_offsets(&full.ts_sample_adj_range, &options.ts_srch_mode)?;
     let middle = options.ts_srch_mode.eq_ignore_ascii_case("middle");
     let gdc_values = &full.ctle.ctle_gdc_values;
@@ -726,6 +852,27 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                     &full.ctle,
                 )?
             };
+            let xtalk_parameters = XtalkParamsV1 {
+                fb: full.fb,
+                f2: full.f2,
+                sigma_x: full.candidate.sigma_x,
+            };
+            // The channel/CTLE side of the FD crosstalk integral is invariant
+            // over TX-FFE candidates.  Prepare it only for this CTLE/HP pair;
+            // TDMODE keeps its separately certified outer-product path.
+            let prepared_crosstalk = (!td_crosstalk_outer_product)
+                .then(|| {
+                    prepare_crosstalk_noise_v1(
+                        crosstalk_frequency_hz,
+                        &h_ctf_crosstalk,
+                        crosstalk,
+                        &xtalk_parameters,
+                        None,
+                        None,
+                    )
+                })
+                .transpose()?
+                .flatten();
             let sigma_ne = calibration_sigma_ne_v.unwrap_or_else(|| {
                 calibration_noise(ctle_index, high_pass_index, high_pass_gain_db)
             });
@@ -746,24 +893,164 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
             let pulse = rectangular_pulse_response_v1(&ctle_impulse, spu)?;
             let shifted = shift_matrix(&pulse, grid.precursor_count(), spu, tap_count);
             let n_samples = shifted.iter().map(|col| col.len()).next().unwrap_or(0);
-            for candidate_index in 0..grid.taps().len() {
+            // The broad, ordinary workbook sweep has neither local-search
+            // dependency nor multiple sample offsets.  Keep its candidate
+            // order but form all eligible SBRs with a SIMD/parallel GEMM;
+            // the scalar path remains the semantic reference for the two
+            // order-sensitive modes.
+            let batched_indices =
+                (full.local_search <= 0.0 && !middle && sample_offsets.len() == 1).then(|| {
+                    (0..grid.taps().len())
+                        .filter(|&index| grid.cursor()[index] >= full.tx_ffe_c0_min)
+                        .collect::<Vec<_>>()
+                });
+            let batched_sbr = batched_indices
+                .as_deref()
+                .filter(|indices| !indices.is_empty())
+                .map(|indices| tx_ffe_sbr_matrix_v1(&shifted, &grid, indices));
+            if let (Some(indices), Some(sbr_matrix), Some(prepared)) = (
+                batched_indices.as_deref(),
+                batched_sbr.as_ref(),
+                prepared_crosstalk.as_ref(),
+            ) {
+                // Each chunk computes a local strict winner from the same
+                // incoming bound.  Reducing chunks back in source order with
+                // the same strict `>` rule yields the scalar grid's winner,
+                // while allowing the independent candidate work to occupy
+                // the host cores.
+                let chunk_winners: Result<Vec<_>, SearchLoopErrorV1> = indices
+                    .par_chunks(64)
+                    .enumerate()
+                    .map(|(chunk_index, chunk)| {
+                        let mut chunk_best = best_fom;
+                        let mut winner = None;
+                        for (offset, &candidate_index) in chunk.iter().enumerate() {
+                            let taps = &grid.taps()[candidate_index];
+                            let sigma_xt = tx_crosstalk_magnitudes
+                                .as_ref()
+                                .map(|magnitudes| {
+                                    prepared
+                                        .evaluate_with_tx_magnitude(&magnitudes[candidate_index])
+                                })
+                                .unwrap_or_else(|| prepared.evaluate(taps))?;
+                            let candidate = evaluate_batched_grid_candidate_v1(
+                                sbr_matrix.col_as_slice(chunk_index * 64 + offset),
+                                chunk_best,
+                                candidate_index,
+                                ctle_index,
+                                ctle_gain_db,
+                                high_pass_index,
+                                high_pass_gain_db,
+                                &grid,
+                                spu,
+                                full.dfe_first_max,
+                                &options.cdr,
+                                peak_start,
+                                peak_stop,
+                                full.ts_anchor,
+                                sigma_n,
+                                sigma_ne,
+                                sigma_xt,
+                                &full.candidate,
+                                &options.candidate,
+                                package_case_index,
+                            )?;
+                            if let Some(candidate) = candidate
+                                && (chunk_best.is_none() || candidate.fom_db > chunk_best.unwrap())
+                            {
+                                chunk_best = Some(candidate.fom_db);
+                                winner = Some(candidate);
+                            }
+                        }
+                        Ok(winner)
+                    })
+                    .collect();
+                for candidate in chunk_winners?.into_iter().flatten() {
+                    if best_fom.is_none() || candidate.fom_db > best_fom.unwrap() {
+                        best_fom = Some(candidate.fom_db);
+                        best_indices = Some(candidate.tx_source_indices.clone());
+                        best_high_pass = Some(high_pass_index as i64);
+                        best_result = Some(SearchLoopResultWithWinnerV2 {
+                            result: SearchLoopResultWithMetricsV1 {
+                                fom_db: candidate.fom_db,
+                                ctle_index: ctle_index as i64,
+                                ctle_gain_db: candidate.ctle_gain_db,
+                                high_pass_index: high_pass_index as i64,
+                                high_pass_gain_db: candidate.high_pass_gain_db,
+                                tx_grid_index: candidate.tx_grid_index,
+                                cursor_index: candidate.cursor_index,
+                                sigma_tx_v: candidate.sigma_tx_v,
+                                selected_pulse: candidate.sbr.clone(),
+                                selected_tx_taps: candidate.tx_ffe_taps.clone(),
+                                available_signal_v: candidate.available_signal_v,
+                                sigma_n_v: candidate.sigma_n_v,
+                                sigma_ne_v: candidate.sigma_ne_v,
+                                h_j: candidate.h_j.clone(),
+                                itick: candidate.itick,
+                            },
+                            winner: ComWinnerContextV1 {
+                                cursor_index: candidate.cursor_index,
+                                dfe_taps: candidate.dfe_taps.clone(),
+                                dfe_max: candidate.dfe_max.clone(),
+                                dfe_min: candidate.dfe_min.clone(),
+                                dfe_step: full.candidate.dfe_delta,
+                                floating_dfe: full.candidate.floating_dfe,
+                                dfe_max_count: full
+                                    .candidate
+                                    .floating_dfe
+                                    .then_some(candidate.dfe_max.len() as i64),
+                                sigma_n_v: candidate.sigma_n_v,
+                                c2m: (full.candidate.t_o != 0.0).then(|| ComWinnerC2mContextV1 {
+                                    samples_for_c2m: full.candidate.samples_for_c2m,
+                                    t_o_mui: full.candidate.t_o,
+                                    histogram_window: options
+                                        .candidate
+                                        .histogram_window_weight
+                                        .clone(),
+                                    ql: full.candidate.ql,
+                                }),
+                            },
+                            tx_ffe_precursor_count: grid.precursor_count(),
+                            final_pulse: candidate.sbr,
+                        });
+                    }
+                }
+                continue;
+            }
+            // The candidate waveform is scratch space until a strict winner
+            // is promoted by `evaluate_candidate_v1`.  Reuse it across the
+            // TX-FFE grid so the search preserves order/ties without making
+            // one full allocation per candidate.
+            let mut sbr = vec![0.0f64; n_samples.max(shifted[0].len())];
+            let candidate_count = batched_indices
+                .as_ref()
+                .map_or_else(|| grid.taps().len(), Vec::len);
+            for candidate_position in 0..candidate_count {
+                let candidate_index = batched_indices
+                    .as_ref()
+                    .map_or(candidate_position, |indices| indices[candidate_position]);
                 let taps = &grid.taps()[candidate_index];
                 if grid.cursor()[candidate_index] < full.tx_ffe_c0_min {
                     continue;
                 }
-                let current = grid.source_indices()[candidate_index].clone();
-                if skip_local_search(&current, best_indices.as_deref(), &sweep, full.local_search) {
+                let current = &grid.source_indices()[candidate_index];
+                if skip_local_search(current, best_indices.as_deref(), &sweep, full.local_search) {
                     continue;
                 }
-                let mut sbr = vec![0.0f64; n_samples.max(shifted[0].len())];
-                for c in 0..tap_count {
-                    let col = &shifted[c];
-                    for r in 0..sbr.len() {
-                        sbr[r] += col[r] * taps[c];
+                let waveform = if let Some(batched_sbr) = batched_sbr.as_ref() {
+                    batched_sbr.col_as_slice(candidate_position)
+                } else {
+                    sbr.fill(0.0);
+                    for c in 0..tap_count {
+                        let col = &shifted[c];
+                        for r in 0..sbr.len() {
+                            sbr[r] += col[r] * taps[c];
+                        }
                     }
-                }
+                    &sbr
+                };
                 let sample = cursor_sample_index_v1(
-                    &sbr,
+                    waveform,
                     spu,
                     full.dfe_first_max,
                     &options.cdr,
@@ -777,23 +1064,28 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                     sample.cursor_index().unwrap(),
                     sample.peak_index(),
                     full.ts_anchor,
-                    &sbr,
+                    waveform,
                     spu,
                 )?;
-                let sigma_xt = crosstalk_noise_v1(
-                    crosstalk_frequency_hz,
-                    &h_ctf_crosstalk,
-                    taps,
-                    crosstalk,
-                    &XtalkParamsV1 {
-                        fb: full.fb,
-                        f2: full.f2,
-                        sigma_x: full.candidate.sigma_x,
-                    },
-                    td_crosstalk_outer_product,
-                    None,
-                    None,
-                )?;
+                let sigma_xt = if let Some(prepared) = prepared_crosstalk.as_ref() {
+                    tx_crosstalk_magnitudes
+                        .as_ref()
+                        .map(|magnitudes| {
+                            prepared.evaluate_with_tx_magnitude(&magnitudes[candidate_index])
+                        })
+                        .unwrap_or_else(|| prepared.evaluate(taps))?
+                } else {
+                    crosstalk_noise_v1(
+                        crosstalk_frequency_hz,
+                        &h_ctf_crosstalk,
+                        taps,
+                        crosstalk,
+                        &xtalk_parameters,
+                        td_crosstalk_outer_product,
+                        None,
+                        None,
+                    )?
+                };
                 let mut best_pos_fom = f64::NEG_INFINITY;
                 let mut best_neg_fom = f64::NEG_INFINITY;
                 let mut best_pos_tick: Option<i64> = None;
@@ -814,7 +1106,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                         }
                     }
                     let candidate = evaluate_candidate_v1(
-                        &sbr,
+                        waveform,
                         best_fom,
                         (cursor_index + itick) as usize,
                         ctle_index as i64,
@@ -824,7 +1116,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                         taps,
                         grid.precursor_count(),
                         candidate_index as i64,
-                        &current,
+                        current,
                         sigma_n,
                         sigma_ne,
                         sigma_xt,
@@ -1059,6 +1351,36 @@ mod tests {
         // roll by (0-1)*1 = -1: np.roll(pulse,-1) = [2,3,4,1]
         assert_eq!(m[0][0], 2.0);
         assert_eq!(m[0][3], 1.0);
+    }
+
+    #[test]
+    fn batched_txffe_sbr_matches_scalar_columns() {
+        let shifted = vec![
+            vec![1.0, -2.0, 3.0, -4.0, 5.0],
+            vec![0.5, 1.5, -2.5, 3.5, -4.5],
+            vec![-1.0, 0.25, 0.75, -1.25, 1.5],
+        ];
+        let grid = TxFfeGridV1::try_new(
+            vec![vec![0.1, -0.2], vec![0.3, -0.4]],
+            vec![0.7, 0.6],
+            vec![vec![0.1, 0.7, -0.2], vec![0.3, 0.6, -0.4]],
+            vec![vec![0, 0], vec![0, 1]],
+            1,
+        )
+        .expect("grid");
+        let output = tx_ffe_sbr_matrix_v1(&shifted, &grid, &[1, 0]);
+        for (column, &candidate) in [1usize, 0].iter().enumerate() {
+            let expected: Vec<f64> = (0..shifted[0].len())
+                .map(|sample| {
+                    (0..shifted.len())
+                        .map(|tap| shifted[tap][sample] * grid.taps()[candidate][tap])
+                        .sum()
+                })
+                .collect();
+            for (actual, expected) in output.col_as_slice(column).iter().zip(expected) {
+                assert!((actual - expected).abs() <= 1e-14);
+            }
+        }
     }
 
     #[test]

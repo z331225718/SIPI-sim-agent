@@ -129,6 +129,19 @@ fn l2_norm(values: &[f64]) -> f64 {
     values.iter().map(|v| v * v).sum::<f64>().sqrt()
 }
 
+fn accumulate_squared_strided(
+    mut sum: f64,
+    values: &[f64],
+    start: usize,
+    stop: usize,
+    stride: usize,
+) -> f64 {
+    for value in values[start..stop].iter().step_by(stride) {
+        sum += value * value;
+    }
+    sum
+}
+
 /// Port of _c2m_candidate_fom (C2M vertical-eye FOM replacement).
 #[allow(clippy::too_many_arguments)]
 pub fn c2m_candidate_fom_v1(
@@ -222,38 +235,38 @@ pub fn evaluate_candidate_v1(
     if cursor_index < samples_per_ui || cursor_index >= sbr.len() || sbr[cursor_index] <= 0.0 {
         return Ok(None);
     }
-    let mut padded: Vec<f64> = sbr.to_vec();
     let unbounded_ndfe: i64 = if parameters.floating_dfe {
         parameters.n_bmax
     } else {
         parameters.ndfe
     };
     let required = cursor_index + samples_per_ui * (unbounded_ndfe as usize + 1) + 1;
-    if padded.len() < required {
-        padded.resize(required, 0.0);
-    }
+    // Most workbook candidates already span the required DFE tail.  Preserve
+    // the legacy zero-padding path exactly when it is needed, but otherwise
+    // borrow the scratch waveform until a candidate actually wins.
+    let padded_storage = (sbr.len() < required).then(|| {
+        let mut values = sbr.to_vec();
+        values.resize(required, 0.0);
+        values
+    });
+    let padded = padded_storage.as_deref().unwrap_or(sbr);
     let cursor = padded[cursor_index];
     let available_signal = parameters.r_lm * cursor / (parameters.levels as f64 - 1.0);
     if available_signal <= 0.0 {
         return Ok(None);
     }
-    let mut precursors: Vec<f64> = Vec::new();
-    let mut i = cursor_index;
-    while i >= samples_per_ui {
-        i -= samples_per_ui;
-        precursors.push(padded[i]);
-    }
-    precursors.reverse();
     let far_start = cursor_index + samples_per_ui * (unbounded_ndfe as usize + 1);
-    let far: Vec<f64> = padded
-        .iter()
-        .skip(far_start)
-        .step_by(samples_per_ui)
-        .copied()
-        .collect();
-    let mut concat_0: Vec<f64> = precursors.clone();
-    concat_0.extend_from_slice(&far);
-    let sigma_ignore_dfe = parameters.sigma_x * l2_norm(&concat_0);
+    let precursor_start = cursor_index % samples_per_ui;
+    let precursor_squared =
+        accumulate_squared_strided(0.0, padded, precursor_start, cursor_index, samples_per_ui);
+    let ignore_dfe_squared = accumulate_squared_strided(
+        precursor_squared,
+        padded,
+        far_start,
+        padded.len(),
+        samples_per_ui,
+    );
+    let sigma_ignore_dfe = parameters.sigma_x * ignore_dfe_squared.sqrt();
     if cannot_improve_fom_v1(available_signal, sigma_ignore_dfe, best_fom_db) {
         return Ok(None);
     }
@@ -269,7 +282,7 @@ pub fn evaluate_candidate_v1(
         bmaxg: parameters.bmaxg,
     };
     let (ndfe, mut dfe_max, mut dfe_min, floating_locations) =
-        dfe_candidate_bounds_v1(&padded, cursor_index, samples_per_ui, &dfe_params)?;
+        dfe_candidate_bounds_v1(padded, cursor_index, samples_per_ui, &dfe_params)?;
 
     let dfe_values: Vec<f64> = padded
         [cursor_index + samples_per_ui..cursor_index + samples_per_ui * (ndfe as usize + 1)]
@@ -308,16 +321,18 @@ pub fn evaluate_candidate_v1(
         .zip(cancelled.iter())
         .map(|(a, b)| a - b)
         .collect();
-    let mut concat_1: Vec<f64> = precursors.clone();
-    concat_1.extend_from_slice(&excess);
-    concat_1.extend_from_slice(&far);
-    let sigma_isi = parameters.sigma_x * l2_norm(&concat_1);
+    let isi_squared = excess
+        .iter()
+        .fold(precursor_squared, |sum, value| sum + value * value);
+    let isi_squared =
+        accumulate_squared_strided(isi_squared, padded, far_start, padded.len(), samples_per_ui);
+    let sigma_isi = parameters.sigma_x * isi_squared.sqrt();
     if cannot_improve_fom_v1(available_signal, sigma_isi, best_fom_db) {
         return Ok(None);
     }
 
     let sigma_j = jitter_sigma_v1(
-        &padded,
+        padded,
         cursor_index,
         samples_per_ui,
         parameters.a_dd,
@@ -357,7 +372,7 @@ pub fn evaluate_candidate_v1(
             return Ok(None);
         }
         match c2m_candidate_fom_v1(
-            &padded,
+            padded,
             cursor_index,
             available_signal,
             sigma_n_v,
@@ -376,7 +391,7 @@ pub fn evaluate_candidate_v1(
         return Ok(None);
     }
     let h_j = jitter_response_v1(
-        &padded,
+        padded,
         cursor_index,
         samples_per_ui,
         ndfe,
@@ -392,7 +407,7 @@ pub fn evaluate_candidate_v1(
         tx_ffe_taps: tx_taps.to_vec(),
         tx_ffe_precursor_count: precursor_count,
         cursor_index,
-        sbr: padded,
+        sbr: padded.to_vec(),
         dfe_taps: cancelled.iter().map(|v| v / cursor).collect(),
         dfe_max,
         dfe_min,

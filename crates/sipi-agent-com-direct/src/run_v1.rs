@@ -19,6 +19,7 @@ use crate::package_vtf_v1::{
 use crate::{
     ConfigValidateErrorV1, ConfigValidateReportV1, ConfigValidateRequestV1, config_validate_v1,
 };
+use rayon::prelude::*;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 use sipi_com::{
@@ -565,15 +566,46 @@ fn workbook_package_cases_from_config_v1(
         })?;
     let case_count = if erl_only { 1 } else { selected.len() };
     validate_workbook_snapshot_budget_v1(total_snapshot_bytes, case_count)?;
-    let shared_document = Arc::new(loaded.document);
+    // Workbook search materialization depends only on the shared workbook
+    // controls and the exact THRU S4P frequency axis.  Performing it once
+    // here avoids rebuilding the same typed search JSON for every selected
+    // package case; each case receives its own immutable clone below only to
+    // bind the source package index.
+    let mut shared_document = loaded.document;
+    let source_is_s4p = request
+        .pulse
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case("s4p"));
+    let td_mode = workbook_truthy_v1(&loaded.values, &["TDMODE"], "TDMODE")?;
+    let run_mode = trusted_workbook_run_mode_v1(&loaded.values, true, td_mode)?;
+    if !erl_only
+        && source_is_s4p
+        && run_mode == TrustedWorkbookRunModeV1::FullCom
+        && s4p_fd_route_v1(&loaded.values)?
+    {
+        let source_sha256 = sha256_bytes_v1(&source_bytes);
+        let frequency_hz = s4p_frequency_axis_v1(&request.pulse, &source_sha256)?;
+        materialize_workbook_search_v1(&mut shared_document, &loaded.values, &frequency_hz)?;
+    }
     let cases = selected
         .iter()
         .take(case_count)
         .enumerate()
-        .map(|(index, _)| PackageCaseV1 {
+        .map(|(index, _)| {
+            let mut document = shared_document.clone();
+            if let Some(search) = document
+                .get_mut("portable")
+                .and_then(Value::as_object_mut)
+                .and_then(|portable| portable.get_mut("search"))
+                .and_then(Value::as_object_mut)
+            {
+                search.insert("package_case_index".to_owned(), json!(index));
+            }
+            PackageCaseV1 {
             identity: format!("workbook-case-{index}"),
             calibration_identity: format!("workbook-case-{index}:calibration"),
-            document: shared_document.clone(),
+            document: Arc::new(document),
             pulse: PackageChannelV1 {
                 values: Vec::new(),
                 source: Some(request.pulse.clone()),
@@ -585,6 +617,7 @@ fn workbook_package_cases_from_config_v1(
             fext: fext.clone(),
             next: next.clone(),
             trusted_workbook: true,
+        }
         })
         .collect();
     Ok(Some(cases))
@@ -798,33 +831,50 @@ fn run_package_cases_v1(
     let mut published_cases = Vec::with_capacity(cases.len());
     let mut case_manifests = Vec::with_capacity(cases.len());
     let mut first_report = None;
-    let outcome = (|| {
-        for (index, case) in cases.iter().enumerate() {
-            let case_root = root.join(format!("case-{index}"));
-            fs::create_dir_all(&case_root)
-                .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
-            let config_path = case_root.join("config.json");
-            let pulse_path = stage_package_channel_v1(&case_root, "thru", 0, &case.pulse)?;
-            fs::write(
-                &config_path,
-                serde_json::to_vec(case.document.as_ref())
-                    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?,
-            )
+    // Stage all case-local inputs before invoking COM.  The staged requests
+    // are immutable and write to disjoint roots, so their expensive numeric
+    // runs can share the global worker pool without changing publication
+    // order or the first-case ERL projection below.
+    let mut staged_children = Vec::with_capacity(cases.len());
+    for (index, case) in cases.iter().enumerate() {
+        let case_root = root.join(format!("case-{index}"));
+        fs::create_dir_all(&case_root)
             .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
-            let mut child =
-                DirectRunRequestV1::new(&config_path, &pulse_path, case_root.join("artifacts"));
-            child.calibration_noise = calibration_snapshot.as_ref().map(|value| value.0.clone());
-            child.fext = Vec::with_capacity(case.fext.len());
-            for (channel, source) in case.fext.iter().enumerate() {
-                let path = stage_package_channel_v1(&case_root, "fext", channel, source)?;
-                child.fext.push(path);
-            }
-            child.next = Vec::with_capacity(case.next.len());
-            for (channel, source) in case.next.iter().enumerate() {
-                let path = stage_package_channel_v1(&case_root, "next", channel, source)?;
-                child.next.push(path);
-            }
-            let report = run_with_package_case_token(&child, schema, index, case.trusted_workbook)?;
+        let config_path = case_root.join("config.json");
+        let pulse_path = stage_package_channel_v1(&case_root, "thru", 0, &case.pulse)?;
+        fs::write(
+            &config_path,
+            serde_json::to_vec(case.document.as_ref())
+                .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?,
+        )
+        .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+        let mut child =
+            DirectRunRequestV1::new(&config_path, &pulse_path, case_root.join("artifacts"));
+        child.calibration_noise = calibration_snapshot.as_ref().map(|value| value.0.clone());
+        child.fext = Vec::with_capacity(case.fext.len());
+        for (channel, source) in case.fext.iter().enumerate() {
+            child
+                .fext
+                .push(stage_package_channel_v1(&case_root, "fext", channel, source)?);
+        }
+        child.next = Vec::with_capacity(case.next.len());
+        for (channel, source) in case.next.iter().enumerate() {
+            child
+                .next
+                .push(stage_package_channel_v1(&case_root, "next", channel, source)?);
+        }
+        staged_children.push(child);
+    }
+    let reports: Result<Vec<_>, DirectRunErrorV1> = staged_children
+        .par_iter()
+        .enumerate()
+        .map(|(index, child)| {
+            run_with_package_case_token(child, schema, index, cases[index].trusted_workbook)
+        })
+        .collect();
+    let reports = reports?;
+    let outcome = (|| {
+        for ((index, case), report) in cases.iter().enumerate().zip(reports) {
             if first_report.is_none() {
                 first_report = Some(report.clone());
             }

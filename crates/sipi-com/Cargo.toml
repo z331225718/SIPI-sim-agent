@@ -10,7 +10,9 @@ description = "Clean-room portable Rust stages for the R480 COM surface."
 [dependencies]
 serde_json = "1"
 flate2 = "1"
+faer = { version = "0.24.4", default-features = false, features = ["std", "linalg", "rayon"] }
 quick-xml = "0.37"
+rayon = "1"
 rustfft = "6.4.1"
 sipi-types = { path = "../sipi-types" }
 sipi-artifacts = { path = "../sipi-artifacts" }

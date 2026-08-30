@@ -12,6 +12,7 @@ description = "Lane-local direct ports of the pinned Agent-COM compare, run, and
 [dependencies]
 flate2 = "1"
 quick-xml = "0.37"
+rayon = "1"
 sipi-channel = { path = "../sipi-channel" }
 sipi-com = { path = "../sipi-com" }
 sipi-types = { path = "../sipi-types" }

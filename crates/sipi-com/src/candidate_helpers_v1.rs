@@ -158,7 +158,6 @@ pub fn jitter_response_v1(
     limit_to_dfe_span: bool,
     num_ui: Option<usize>,
 ) -> Result<Vec<f64>, CandidateErrorV1> {
-    let values: Vec<f64> = sbr.to_vec();
     let result: Vec<f64> = if limit_to_dfe_span {
         if dfe_tap_count < 0 {
             return Err(CandidateErrorV1::JitterDfeSpan);
@@ -168,11 +167,11 @@ pub fn jitter_response_v1(
         for offset in -1i64..=dfe_tap_count {
             let early_index = cursor_index as i64 - 1 + samples_per_ui as i64 * offset;
             let late_index = cursor_index as i64 + 1 + samples_per_ui as i64 * offset;
-            if early_index < 0 || late_index >= values.len() as i64 {
+            if early_index < 0 || late_index >= sbr.len() as i64 {
                 return Err(CandidateErrorV1::JitterDfeSpan);
             }
-            early.push(values[early_index as usize]);
-            late.push(values[late_index as usize]);
+            early.push(sbr[early_index as usize]);
+            late.push(sbr[late_index as usize]);
         }
         early
             .iter()
@@ -186,13 +185,13 @@ pub fn jitter_response_v1(
         }
         let early_start = sampling_offset - 2;
         let late_start = sampling_offset;
-        let early: Vec<f64> = values
+        let early: Vec<f64> = sbr
             .iter()
             .skip(early_start)
             .step_by(samples_per_ui)
             .copied()
             .collect();
-        let late: Vec<f64> = values
+        let late: Vec<f64> = sbr
             .iter()
             .skip(late_start)
             .step_by(samples_per_ui)

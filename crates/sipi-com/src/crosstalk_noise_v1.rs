@@ -54,8 +54,211 @@ pub struct XtalkParamsV1 {
 /// One crosstalk channel: role (FEXT/NEXT), response, amplitude.
 pub type XtalkChannelV1 = (String, Vec<Complex64>, f64);
 
+/// Invocation-local data that is invariant over the TX-FFE grid for one
+/// CTLE/high-pass candidate.  It deliberately owns all inputs it reuses, so
+/// no state can escape a single search invocation or be shared across runs.
+#[derive(Clone, Debug)]
+pub(crate) struct PreparedCrosstalkNoiseV1 {
+    frequency_hz: Vec<f64>,
+    fb_hz: f64,
+    f2_hz: f64,
+    sigma_x: f64,
+    sinc: Vec<f64>,
+    rx_magnitude: Vec<f64>,
+    fext_channel_power: Vec<(Vec<f64>, f64)>,
+    next_power: f64,
+    index_f2: usize,
+}
+
 fn magnitude(value: Complex64) -> f64 {
     value.real().hypot(value.imaginary())
+}
+
+pub(crate) fn prepare_crosstalk_noise_v1(
+    frequency: &[f64],
+    h_ctf: &[Complex64],
+    channels: &[XtalkChannelV1],
+    parameters: &XtalkParamsV1,
+    rx_ffe_taps: Option<&[f64]>,
+    rx_ffe_precursor_count: Option<usize>,
+) -> Result<Option<PreparedCrosstalkNoiseV1>, XtalkErrorV1> {
+    if channels.is_empty() {
+        return Ok(None);
+    }
+    validate_crosstalk_inputs_v1(frequency, h_ctf, channels, parameters)?;
+    let index_f2 = frequency.partition_point(|value| *value <= parameters.fb);
+    if index_f2 == 0 {
+        return Ok(None);
+    }
+    if frequency.len() < 11 {
+        return Err(XtalkErrorV1::FrequencyTooShort);
+    }
+    let h_rx_ffe = receiver_response_v1(
+        frequency,
+        rx_ffe_taps,
+        rx_ffe_precursor_count,
+        parameters.fb,
+    )?;
+    let sinc = frequency
+        .iter()
+        .map(|value| sinc_v1(*value, parameters.fb))
+        .collect::<Vec<_>>();
+    let rx_magnitude = h_rx_ffe.into_iter().map(magnitude).collect::<Vec<_>>();
+    let scale = 2.0 * (frequency[10] - frequency[9]) / parameters.f2;
+    let mut fext_channel_power = Vec::new();
+    let mut next_power = 0.0;
+    for (role, response, amplitude) in channels {
+        let channel_power = response
+            .iter()
+            .zip(h_ctf)
+            .map(|(response, h_ctf)| {
+                let product = complex_mul(*response, *h_ctf);
+                let magnitude = magnitude(product);
+                magnitude * magnitude
+            })
+            .collect::<Vec<_>>();
+        match role.as_str() {
+            "FEXT" => fext_channel_power.push((channel_power, *amplitude)),
+            "NEXT" => {
+                let mut sum = 0.0;
+                for index in 0..index_f2 {
+                    let weight = sinc[index] * sinc[index] * rx_magnitude[index];
+                    sum += weight * channel_power[index];
+                }
+                next_power += scale * amplitude * amplitude * sum;
+            }
+            _ => return Err(XtalkErrorV1::UnsupportedRole),
+        }
+    }
+    Ok(Some(PreparedCrosstalkNoiseV1 {
+        frequency_hz: frequency.to_vec(),
+        fb_hz: parameters.fb,
+        f2_hz: parameters.f2,
+        sigma_x: parameters.sigma_x,
+        sinc,
+        rx_magnitude,
+        fext_channel_power,
+        next_power,
+        index_f2,
+    }))
+}
+
+impl PreparedCrosstalkNoiseV1 {
+    pub(crate) fn evaluate(&self, taps: &[f64]) -> Result<f64, XtalkErrorV1> {
+        let tx_magnitude = tx_filter_magnitude_v1(&self.frequency_hz, taps, self.fb_hz);
+        self.evaluate_with_tx_magnitude(&tx_magnitude)
+    }
+
+    /// Reuses a caller-owned TX response that was prepared once for a stable
+    /// TX-FFE grid.  The response is independent of CTLE/high-pass and of
+    /// package-case noise, while this object retains the pair-local channel
+    /// side of the integral.
+    pub(crate) fn evaluate_with_tx_magnitude(
+        &self,
+        tx_magnitude: &[f64],
+    ) -> Result<f64, XtalkErrorV1> {
+        if tx_magnitude.len() != self.frequency_hz.len()
+            || tx_magnitude
+                .iter()
+                .any(|value| !value.is_finite() || *value < 0.0)
+        {
+            return Err(XtalkErrorV1::AxisMismatch);
+        }
+        let scale = 2.0 * (self.frequency_hz[10] - self.frequency_hz[9]) / self.f2_hz;
+        let mut fext_power = 0.0;
+        for (channel_power, amplitude) in &self.fext_channel_power {
+            let mut sum = 0.0;
+            for index in 0..self.index_f2 {
+                let weight = self.sinc[index]
+                    * self.sinc[index]
+                    * tx_magnitude[index]
+                    * self.rx_magnitude[index];
+                sum += weight * channel_power[index];
+            }
+            fext_power += scale * amplitude * amplitude * sum;
+        }
+        Ok((fext_power + self.next_power).sqrt() * self.sigma_x)
+    }
+}
+
+fn validate_crosstalk_inputs_v1(
+    frequency: &[f64],
+    h_ctf: &[Complex64],
+    channels: &[XtalkChannelV1],
+    parameters: &XtalkParamsV1,
+) -> Result<(), XtalkErrorV1> {
+    if !parameters.fb.is_finite()
+        || parameters.fb <= 0.0
+        || !parameters.f2.is_finite()
+        || parameters.f2 <= 0.0
+        || !parameters.sigma_x.is_finite()
+        || parameters.sigma_x < 0.0
+    {
+        return Err(XtalkErrorV1::InvalidControls);
+    }
+    if channels.len() > MAX_TD_CROSSTALK_CHANNELS_V1 {
+        return Err(XtalkErrorV1::Oversize);
+    }
+    if frequency.len() != h_ctf.len()
+        || channels
+            .iter()
+            .any(|(_, response, _)| response.len() != frequency.len())
+    {
+        return Err(XtalkErrorV1::AxisMismatch);
+    }
+    Ok(())
+}
+
+fn sinc_v1(frequency_hz: f64, fb_hz: f64) -> f64 {
+    let angle = std::f64::consts::PI * frequency_hz / fb_hz;
+    if angle == 0.0 {
+        1.0
+    } else {
+        angle.sin() / angle
+    }
+}
+
+fn receiver_response_v1(
+    frequency: &[f64],
+    rx_ffe_taps: Option<&[f64]>,
+    rx_ffe_precursor_count: Option<usize>,
+    fb_hz: f64,
+) -> Result<Vec<Complex64>, XtalkErrorV1> {
+    match (rx_ffe_taps, rx_ffe_precursor_count) {
+        (None, None) => Ok(vec![
+            Complex64::try_new(1.0, 0.0).expect("complex");
+            frequency.len()
+        ]),
+        (Some(taps), Some(precursor_count)) => {
+            rx_ffe_frequency_response_v1(frequency, taps, precursor_count, fb_hz)
+                .map_err(Into::into)
+        }
+        _ => Err(XtalkErrorV1::RxFfePairing),
+    }
+}
+
+pub(crate) fn tx_filter_magnitude_v1(frequency: &[f64], taps: &[f64], fb_hz: f64) -> Vec<f64> {
+    let main_index = argmax_first(taps);
+    frequency
+        .iter()
+        .map(|value| {
+            let mut filter = Complex64::try_new(0.0, 0.0).expect("complex");
+            for (index, coefficient) in taps.iter().enumerate() {
+                if *coefficient == 0.0 {
+                    continue;
+                }
+                let shift = index as i64 - main_index as i64;
+                let angle = -2.0 * std::f64::consts::PI * shift as f64 * value / fb_hz;
+                let term = Complex64::try_new(angle.cos(), angle.sin()).expect("complex");
+                filter = complex_add(
+                    filter,
+                    Complex64::try_new(*coefficient * term.real(), *coefficient * term.imaginary())
+                        .expect("complex"),
+                );
+            }
+            magnitude(filter)
+        })
+        .collect()
 }
 
 /// Port of `_crosstalk_noise` (frequency-domain integration).
@@ -385,6 +588,60 @@ mod tests {
         )
         .expect("noise");
         assert!(noise.is_finite() && noise > 0.0);
+    }
+
+    #[test]
+    fn prepared_noise_matches_legacy_bit_exactly() {
+        let frequency: Vec<f64> = (0..32).map(|index| index as f64 * 1e9).collect();
+        let h_ctf: Vec<Complex64> = frequency
+            .iter()
+            .map(|value| complex(1.0, value * 1e-11))
+            .collect();
+        let channels = vec![
+            (
+                "FEXT".to_string(),
+                frequency
+                    .iter()
+                    .map(|value| complex(0.5 * value.cos(), 0.0))
+                    .collect(),
+                0.5,
+            ),
+            (
+                "NEXT".to_string(),
+                frequency
+                    .iter()
+                    .map(|value| complex(0.3 * value.sin(), 0.0))
+                    .collect(),
+                0.4,
+            ),
+        ];
+        let parameters = XtalkParamsV1 {
+            fb: 26.5625e9,
+            f2: 26.5625e9,
+            sigma_x: 0.03,
+        };
+        let taps = [0.5, 1.0, -0.25];
+        let legacy = crosstalk_noise_v1(
+            &frequency,
+            &h_ctf,
+            &taps,
+            &channels,
+            &parameters,
+            false,
+            None,
+            None,
+        )
+        .expect("legacy");
+        let prepared =
+            prepare_crosstalk_noise_v1(&frequency, &h_ctf, &channels, &parameters, None, None)
+                .expect("prepare")
+                .expect("nonempty");
+        let direct = prepared.evaluate(&taps).expect("prepared");
+        let precomputed = prepared
+            .evaluate_with_tx_magnitude(&tx_filter_magnitude_v1(&frequency, &taps, parameters.fb))
+            .expect("precomputed");
+        assert_eq!(direct.to_bits(), legacy.to_bits());
+        assert_eq!(precomputed.to_bits(), legacy.to_bits());
     }
 
     #[test]

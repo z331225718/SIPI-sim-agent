@@ -88,7 +88,10 @@ pub fn cursor_sample_index_v1(
     peak_start: usize,
     peak_stop: Option<usize>,
 ) -> Result<CursorSampleV1, EqualizerErrorV1> {
-    let pulse: Vec<f64> = sbr.to_vec();
+    // This runs in the inner equalizer-search loop.  The cursor calculation
+    // is read-only, so borrowing the candidate waveform avoids a full-size
+    // allocation per grid point without changing index or tie semantics.
+    let pulse = sbr;
     if samples_per_ui < 1 || pulse.is_empty() || peak_start >= pulse.len() {
         return Err(EqualizerErrorV1::InvalidCursorControls);
     }
