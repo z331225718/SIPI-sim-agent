@@ -213,14 +213,14 @@ pub(crate) fn convolve_c2m_accelerated_v1(
         if indices.len()
             <= sparse_indices_at_most_four(&left.probability).map_or(usize::MAX, |v| v.len())
         {
-            sparse_full_convolution(&left.probability, &right.probability, &indices)
+            sparse_full_convolution(&left.probability, &right.probability, indices.as_slice())
         } else if let Some(indices) = sparse_indices_at_most_four(&left.probability) {
-            sparse_full_convolution(&right.probability, &left.probability, &indices)
+            sparse_full_convolution(&right.probability, &left.probability, indices.as_slice())
         } else {
             fft_full_convolution(&left.probability, &right.probability)?
         }
     } else if let Some(indices) = sparse_indices_at_most_four(&left.probability) {
-        sparse_full_convolution(&right.probability, &left.probability, &indices)
+        sparse_full_convolution(&right.probability, &left.probability, indices.as_slice())
     } else {
         fft_full_convolution(&left.probability, &right.probability)?
     };
@@ -231,13 +231,40 @@ pub(crate) fn convolve_c2m_accelerated_v1(
     )
 }
 
-fn sparse_indices_at_most_four(values: &[f64]) -> Option<Vec<usize>> {
-    let indices: Vec<usize> = values
-        .iter()
-        .enumerate()
-        .filter_map(|(index, value)| (*value != 0.0).then_some(index))
-        .collect();
-    (indices.len() <= 4).then_some(indices)
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct SparseIndicesAtMostFour {
+    indices: [usize; 4],
+    len: usize,
+}
+
+impl SparseIndicesAtMostFour {
+    fn len(self) -> usize {
+        self.len
+    }
+
+    fn as_slice(&self) -> &[usize] {
+        &self.indices[..self.len]
+    }
+}
+
+fn sparse_indices_at_most_four(values: &[f64]) -> Option<SparseIndicesAtMostFour> {
+    let mut sparse = SparseIndicesAtMostFour {
+        indices: [0; 4],
+        len: 0,
+    };
+    for (index, value) in values.iter().enumerate() {
+        // Preserve the source backend's exact `value != 0.0` classification:
+        // notably, -0.0 is a zero-mass bin.  Dense PDFs stop at the fifth
+        // nonzero rather than allocating and scanning their whole support.
+        if *value != 0.0 {
+            if sparse.len == sparse.indices.len() {
+                return None;
+            }
+            sparse.indices[sparse.len] = index;
+            sparse.len += 1;
+        }
+    }
+    Some(sparse)
 }
 
 fn sparse_full_convolution(dense: &[f64], sparse: &[f64], indices: &[usize]) -> Vec<f64> {
@@ -311,6 +338,41 @@ pub const DISCRETE_PDF_POLICY_V1: &str = "sipi.p5-04d.discrete-pdf-v1.normal-con
 mod tests {
     use super::*;
 
+    fn legacy_sparse_indices(values: &[f64]) -> Option<Vec<usize>> {
+        let indices: Vec<usize> = values
+            .iter()
+            .enumerate()
+            .filter_map(|(index, value)| (*value != 0.0).then_some(index))
+            .collect();
+        (indices.len() <= 4).then_some(indices)
+    }
+
+    fn legacy_accelerated_convolution(
+        left: &DiscretePdfV1,
+        right: &DiscretePdfV1,
+    ) -> Result<DiscretePdfV1, PdfErrorV1> {
+        let result = if let Some(indices) = legacy_sparse_indices(&right.probability) {
+            if indices.len()
+                <= legacy_sparse_indices(&left.probability).map_or(usize::MAX, |v| v.len())
+            {
+                sparse_full_convolution(&left.probability, &right.probability, &indices)
+            } else if let Some(indices) = legacy_sparse_indices(&left.probability) {
+                sparse_full_convolution(&right.probability, &left.probability, &indices)
+            } else {
+                fft_full_convolution(&left.probability, &right.probability)?
+            }
+        } else if let Some(indices) = legacy_sparse_indices(&left.probability) {
+            sparse_full_convolution(&right.probability, &left.probability, &indices)
+        } else {
+            fft_full_convolution(&left.probability, &right.probability)?
+        };
+        DiscretePdfV1::try_new(
+            left.bin_size,
+            matlab_round(left.min_bin as f64 + right.min_bin as f64),
+            result,
+        )
+    }
+
     #[test]
     fn normal_pdf_is_symmetric_and_normalized() {
         let pdf = normal_pdf_v1(0.01, 3.0, 1e-4).expect("pdf");
@@ -375,6 +437,61 @@ mod tests {
         assert_eq!(direct.min_bin(), accelerated.min_bin());
         for (expected, actual) in direct.probability().iter().zip(accelerated.probability()) {
             assert!((expected - actual).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn sparse_classifier_preserves_zero_limit_order_and_negative_zero() {
+        for (values, expected) in [
+            (vec![0.0], Some(Vec::new())),
+            (vec![1.0], Some(vec![0])),
+            (
+                vec![1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 4.0],
+                Some(vec![0, 2, 4, 6]),
+            ),
+            (vec![0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 4.0, 5.0], None),
+            (vec![-0.0, 0.0, 1.0, -0.0, 2.0], Some(vec![2, 4])),
+        ] {
+            let actual =
+                sparse_indices_at_most_four(&values).map(|indices| indices.as_slice().to_vec());
+            assert_eq!(actual, expected, "classification drift for {values:?}");
+        }
+    }
+
+    #[test]
+    fn c2m_sparse_classifier_fast_path_is_bitwise_legacy_equivalent() {
+        let cases = [
+            (
+                DiscretePdfV1::try_new(1.0, -3, vec![0.1, 0.2, 0.3, 0.4]).expect("dense"),
+                DiscretePdfV1::try_new(1.0, 1, vec![0.25, 0.0, 0.25, 0.0, 0.5]).expect("sparse"),
+            ),
+            (
+                DiscretePdfV1::try_new(1.0, 0, vec![0.4, 0.0, 0.0, 0.6]).expect("left sparse"),
+                DiscretePdfV1::try_new(1.0, 0, vec![0.1, 0.2, 0.3, 0.25, 0.15])
+                    .expect("right dense"),
+            ),
+            (
+                DiscretePdfV1::try_new(1.0, -1, vec![0.5, 0.0, 0.5]).expect("left equal sparse"),
+                DiscretePdfV1::try_new(1.0, 2, vec![0.0, 0.5, 0.0, 0.5])
+                    .expect("right equal sparse"),
+            ),
+        ];
+        for (left, right) in cases {
+            let legacy = legacy_accelerated_convolution(&left, &right).expect("legacy result");
+            let actual = convolve_c2m_accelerated_v1(&left, &right).expect("fast result");
+            assert_eq!(legacy.min_bin(), actual.min_bin());
+            assert_eq!(
+                legacy
+                    .probability()
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+                actual
+                    .probability()
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+            );
         }
     }
 
