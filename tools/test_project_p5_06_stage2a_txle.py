@@ -4,15 +4,19 @@ import unittest
 
 try:
     from .project_p5_06_stage2a_txle import (
+        compare_projected_txle_cases,
         compare_txle_checkpoint_surface,
         project_matlab_summary,
         project_rust_result,
+        validate_projected_txle_cases,
     )
 except ImportError:
     from project_p5_06_stage2a_txle import (
+        compare_projected_txle_cases,
         compare_txle_checkpoint_surface,
         project_matlab_summary,
         project_rust_result,
+        validate_projected_txle_cases,
     )
 
 
@@ -111,6 +115,21 @@ class TxleProjectionTests(unittest.TestCase):
         document["case_checkpoints"][0]["final_scalar_metrics"]["not_a_metric"] = source_scalar(1.0)
         with self.assertRaisesRegex(ValueError, "scalar surface"):
             project_matlab_summary(document)
+
+    def test_projected_report_digest_is_revalidated(self):
+        projected = project_matlab_summary(source_summary())
+        projected[0]["txle_taps"]["raw_f64_sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "digest"):
+            validate_projected_txle_cases(projected, "report")
+
+    def test_projected_comparison_honors_explicit_tolerance(self):
+        source = project_matlab_summary(source_summary())
+        candidate = project_rust_result(rust_result())
+        candidate[0]["final_scalar_metrics"]["COM_dB"] += 2e-12
+        self.assertEqual(
+            compare_projected_txle_cases(source, candidate, finite_tolerance=1e-12),
+            ["case 0: COM_dB differs"],
+        )
 
 
 if __name__ == "__main__":

@@ -177,10 +177,38 @@ def project_rust_result(document: Any) -> list[dict[str, Any]]:
     return projected
 
 
-def compare_projected_txle_cases(source_cases: Any, rust_cases: Any) -> list[str]:
+def validate_projected_txle_cases(cases: Any, label: str) -> list[dict[str, Any]]:
+    """Fail closed on an already-projected report surface before aggregation."""
+    if not isinstance(cases, list):
+        raise ValueError(f"{label} projected TXLE cases must be a list")
+    validated = []
+    for expected_index, case in enumerate(cases):
+        if not isinstance(case, dict) or set(case) != {"case_index", "final_scalar_metrics", "txle_taps"}:
+            raise ValueError(f"{label} projected case schema drift")
+        if case["case_index"] != expected_index:
+            raise ValueError(f"{label} projected case order drift")
+        taps = case["txle_taps"]
+        if not isinstance(taps, dict) or set(taps) != {"shape", "values", "raw_f64_sha256"}:
+            raise ValueError(f"{label} projected TXLE schema drift")
+        values = taps["values"]
+        if taps.get("shape") != [1, len(values)] or not isinstance(values, list):
+            raise ValueError(f"{label} projected TXLE shape drift")
+        values = [_finite(value, f"{label}.TXLE[{index}]") for index, value in enumerate(values)]
+        if not values or taps.get("raw_f64_sha256") != _digest_f64(values):
+            raise ValueError(f"{label} projected TXLE digest drift")
+        scalars = _scalar_surface(case["final_scalar_metrics"], f"{label} projected scalars", False)
+        validated.append({"case_index": expected_index, "final_scalar_metrics": scalars, "txle_taps": {"shape": [1, len(values)], "values": values, "raw_f64_sha256": _digest_f64(values)}})
+    return validated
+
+
+def compare_projected_txle_cases(
+    source_cases: Any, rust_cases: Any, finite_tolerance: float = FINITE_TOLERANCE
+) -> list[str]:
     """Compare already-validated checkpoint projections without altering them."""
-    if not isinstance(source_cases, list) or not isinstance(rust_cases, list):
-        raise ValueError("projected TXLE cases must be lists")
+    if not math.isfinite(finite_tolerance) or finite_tolerance < 0:
+        raise ValueError("finite tolerance must be nonnegative and finite")
+    source_cases = validate_projected_txle_cases(source_cases, "MATLAB")
+    rust_cases = validate_projected_txle_cases(rust_cases, "Rust")
     if len(source_cases) != len(rust_cases):
         return [f"case count: MATLAB={len(source_cases)} Rust={len(rust_cases)}"]
     mismatches: list[str] = []
@@ -198,7 +226,7 @@ def compare_projected_txle_cases(source_cases: Any, rust_cases: Any) -> list[str
             if isinstance(left, str) or isinstance(right, str):
                 if left != right:
                     mismatches.append(f"case {index}: {name} special scalar differs")
-            elif abs(left - right) > FINITE_TOLERANCE:
+            elif abs(left - right) > finite_tolerance:
                 mismatches.append(f"case {index}: {name} differs")
     return mismatches
 
