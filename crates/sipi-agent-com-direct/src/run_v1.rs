@@ -7,12 +7,10 @@
 //! PDF chain. Calibration, MMSE, and RxFFE publish their numeric payloads,
 //! rather than reducing those source branches to status-only diagnostics.
 
+use crate::erl_tdr_v1::{NORMAL_ERL_TDR_POLICY_V1, R480NormalErlResultV1, run_normal_erl_v1};
 use crate::fd_runtime_v1::{
     FdRawNetworkSetV1, FdRawSdd21V1, FdRuntimeControlsV1, FdRuntimeDiagnosticsV1,
     FdRuntimeMetricsV1, compose_fd_metrics_v1,
-};
-use crate::erl_tdr_v1::{
-    NORMAL_ERL_TDR_POLICY_V1, R480NormalErlResultV1, run_normal_erl_v1,
 };
 use crate::package_vtf_v1::{
     assemble_r480_tdr_dd_network_v1, reorder_s4p_samples_v1, s4p_package_dc_vtf_v1,
@@ -25,13 +23,12 @@ use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 use sipi_com::{
     CalibrationErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, ComRunResultEnvelopeV1,
-    CtleParamsV1, FdToTdOptionsV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
+    CtleParamsV1, FdToTdOptionsV1, FourPortSMatrixV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
-    FourPortSMatrixV1, SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1,
+    SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1,
     SearchLoopResultWithWinnerV2, TdFrequencyFillinV1, XtalkChannelV1, apply_r480_equalization_v1,
     apply_r480_pn_skew_v1, butterworth_filter_v1, calculate_r480_calibration_noise_v1,
-    calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, com_mixed_mode_v1,
-    execute_com_run_v1,
+    calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, com_mixed_mode_v1, execute_com_run_v1,
     execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
     merge_com_parameters_v1, r480_tdiln_v1, raised_cosine_filter_v1, rectangular_pulse_response_v1,
     s21_to_impulse_dc_v1, sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1,
@@ -1075,7 +1072,8 @@ fn run_with_workflow_token_origin(
     } else {
         false
     };
-    let workbook_run_mode = trusted_workbook_run_mode_v1(&loaded.values, trusted_workbook, td_mode)?;
+    let workbook_run_mode =
+        trusted_workbook_run_mode_v1(&loaded.values, trusted_workbook, td_mode)?;
     if td_mode {
         let baud_hz = required_td_scalar_alias_v1(&loaded.values, &["fb", "baud_hz"], "fb")?;
         reject_td_transformed_channel_v1(&document)?;
@@ -1162,19 +1160,19 @@ fn run_with_workflow_token_origin(
         load_impulse_v1(&request.pulse)?
     };
     if workbook_run_mode == TrustedWorkbookRunModeV1::ErlOnly {
-        let tdr_w_txpkg = workbook_bool_json_v1(
-            &loaded.values,
-            &["TDR_W_TXPKG"],
-            "TDR_W_TXPKG",
-        )?
-        .as_bool()
-        .expect("workbook boolean helper");
-        let normal_erl = (run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?, tdr_w_txpkg);
-        let selected_port = if tdr_w_txpkg || normal_erl.0.ports[1].erl_db < normal_erl.0.ports[0].erl_db {
-            1
-        } else {
-            0
-        };
+        let tdr_w_txpkg = workbook_bool_json_v1(&loaded.values, &["TDR_W_TXPKG"], "TDR_W_TXPKG")?
+            .as_bool()
+            .expect("workbook boolean helper");
+        let normal_erl = (
+            run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?,
+            tdr_w_txpkg,
+        );
+        let selected_port =
+            if tdr_w_txpkg || normal_erl.0.ports[1].erl_db < normal_erl.0.ports[0].erl_db {
+                1
+            } else {
+                0
+            };
         let selected_erl_db = normal_erl.0.ports[selected_port].erl_db;
         let erl_metric = metric_db_value_v1(selected_erl_db)?;
         let envelope = sipi_com::erl_only_envelope_v1(&sipi_com::ErlOnlyMetricsV1 {
@@ -1467,10 +1465,9 @@ fn run_with_workflow_token_origin(
         && (workbook_truthy_v1(&loaded.values, &["ERL"], "ERL")?
             || workbook_truthy_v1(&loaded.values, &["ERL_ONLY"], "ERL_ONLY")?)
     {
-        let tdr_w_txpkg =
-            workbook_bool_json_v1(&loaded.values, &["TDR_W_TXPKG"], "TDR_W_TXPKG")?
-                .as_bool()
-                .expect("workbook boolean helper");
+        let tdr_w_txpkg = workbook_bool_json_v1(&loaded.values, &["TDR_W_TXPKG"], "TDR_W_TXPKG")?
+            .as_bool()
+            .expect("workbook boolean helper");
         Some((
             run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?,
             tdr_w_txpkg,
@@ -2770,24 +2767,9 @@ fn selected_workbook_crosstalk_pulses_v1(
         workbook_fd_scalar_v1(values, &["fb"], "fb")?,
         workbook_fd_usize_v1(values, &["samples_per_ui"], "samples_per_ui")?,
         &ctle_type,
-        workbook_selected_equalizer_value_v1(
-            values,
-            &["CTLE_fz"],
-            result.ctle_index,
-            "CTLE_fz",
-        )?,
-        workbook_selected_equalizer_value_v1(
-            values,
-            &["CTLE_fp1"],
-            result.ctle_index,
-            "CTLE_fp1",
-        )?,
-        workbook_selected_equalizer_value_v1(
-            values,
-            &["CTLE_fp2"],
-            result.ctle_index,
-            "CTLE_fp2",
-        )?,
+        workbook_selected_equalizer_value_v1(values, &["CTLE_fz"], result.ctle_index, "CTLE_fz")?,
+        workbook_selected_equalizer_value_v1(values, &["CTLE_fp1"], result.ctle_index, "CTLE_fp1")?,
+        workbook_selected_equalizer_value_v1(values, &["CTLE_fp2"], result.ctle_index, "CTLE_fp2")?,
         result.ctle_gain_db,
         &result.selected_tx_taps,
         winner.selected_tx_ffe_precursor_count(),
@@ -6685,9 +6667,7 @@ fn workbook_fd_scalar_v1(
                 .and_then(|items| items[0].as_f64())
         })
         .ok_or_else(|| {
-            DirectRunErrorV1::Parameters(format!(
-                "workbook FD control {label} must be a scalar"
-            ))
+            DirectRunErrorV1::Parameters(format!("workbook FD control {label} must be a scalar"))
         })?;
     if !scalar.is_finite() {
         return Err(DirectRunErrorV1::Parameters(format!(
@@ -6709,9 +6689,7 @@ fn workbook_fd_vector_v1(
         value
             .as_array()
             .ok_or_else(|| {
-                DirectRunErrorV1::Parameters(format!(
-                    "workbook FD control {label} must be numeric"
-                ))
+                DirectRunErrorV1::Parameters(format!("workbook FD control {label} must be numeric"))
             })?
             .iter()
             .map(|item| {
@@ -6853,11 +6831,7 @@ fn compose_workbook_fd_metrics_v1(
         f1_hz: workbook_fd_scalar_v1(values, &["f1"], "f1")?,
         f2_hz: workbook_fd_scalar_v1(values, &["f2"], "f2")?,
         baud_hz: workbook_fd_scalar_v1(values, &["fb"], "fb")?,
-        samples_per_ui: workbook_fd_usize_v1(
-            values,
-            &["samples_per_ui"],
-            "samples_per_ui",
-        )?,
+        samples_per_ui: workbook_fd_usize_v1(values, &["samples_per_ui"], "samples_per_ui")?,
         sample_dt_s: workbook_fd_scalar_v1(values, &["sample_dt"], "sample_dt")?,
         f_v: workbook_fd_scalar_v1(values, &["f_v"], "f_v")?,
         f_r: workbook_fd_scalar_v1(values, &["f_r"], "f_r")?,
@@ -7394,9 +7368,8 @@ fn result_value_v1(
     });
     let normal_erl_selected = normal_erl_selected_port
         .and_then(|port| normal_erl_result.map(|result| &result.ports[port]));
-    let normal_erl_db = normal_erl_selected.map(|port| {
-        metric_db_value_v1(port.erl_db).expect("normal ERL leaf rejects NaN")
-    });
+    let normal_erl_db = normal_erl_selected
+        .map(|port| metric_db_value_v1(port.erl_db).expect("normal ERL leaf rejects NaN"));
     let normal_erl11_db = normal_erl_result.map(|result| {
         metric_db_value_v1(result.ports[0].erl_db).expect("normal ERL leaf rejects NaN")
     });
