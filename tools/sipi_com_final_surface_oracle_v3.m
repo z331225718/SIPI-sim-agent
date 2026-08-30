@@ -28,10 +28,13 @@ write_stage(output_dir, nonce, 'oracle_entered');
 started_at = datetime('now', 'TimeZone', 'UTC', 'Format', "yyyy-MM-dd'T'HH:mm:ss'Z'");
 run_timer = tic;
 try
-    results = com_ieee8023_480(config_path, num_fext, num_next, varargin{:});
+    % Request no MATLAB output.  The pinned core still writes its own CSV
+    % report, but MATLAB need not marshal the full output graph back through
+    % the Engine boundary merely to obtain the final scalar surface.
+    com_ieee8023_480(config_path, num_fext, num_next, varargin{:});
     write_stage(output_dir, nonce, 'core_returned');
 
-    case_metrics = final_scalar_metrics(results);
+    case_metrics = final_scalar_metrics_from_csv(fullfile(fileparts(output_dir), 'results'));
     summary = struct( ...
         'schema_version', 3, ...
         'started_at_utc', char(started_at), ...
@@ -44,7 +47,6 @@ try
     summary.case_metrics = num2cell(case_metrics);
     write_atomic_text(fullfile(output_dir, 'summary.json'), jsonencode(summary, PrettyPrint=true));
     write_stage(output_dir, nonce, 'summary_written');
-    clear results;
 catch ME
     failure = struct( ...
         'identifier', ME.identifier, ...
@@ -57,24 +59,29 @@ end
 close all force;
 end
 
-function metrics = final_scalar_metrics(results)
-if iscell(results)
-    cases = results;
-else
-    cases = {results};
+function metrics = final_scalar_metrics_from_csv(results_dir)
+files = dir(fullfile(results_dir, '**', '*_results.csv'));
+if isempty(files)
+    error('sipi_com_final_surface_oracle_v3:Result', 'The returned core call wrote no CSV result.');
 end
+paths = arrayfun(@(item) fullfile(item.folder, item.name), files, 'UniformOutput', false);
+[~, order] = sort(paths);
+files = files(order);
 names = { ...
     'COM_dB', 'CTLE_DC_gain_dB', 'ERL', 'FOM', 'ICN_mV', ...
     'IL_dB_channel_only_at_Fnq', 'Peak_ISI_XTK_and_Noise_interference_at_BER_mV', ...
     'VEC_dB', 'VEO_mV', 'fitted_IL_dB_at_Fnq', 'g_DC_HP', 'itick'};
-metrics = repmat(struct('case_index', 0, 'output_metrics', struct()), 1, numel(cases));
-for case_index = 1:numel(cases)
-    result = cases{case_index};
+metrics = repmat(struct('case_index', 0, 'output_metrics', struct()), 1, numel(files));
+for case_index = 1:numel(files)
+    table = readtable(fullfile(files(case_index).folder, files(case_index).name), 'VariableNamingRule', 'preserve');
+    if height(table) ~= 1
+        error('sipi_com_final_surface_oracle_v3:Result', 'A core CSV result must contain exactly one row.');
+    end
     output = struct();
     for name_index = 1:numel(names)
         name = names{name_index};
-        if isfield(result, name)
-            value = result.(name);
+        if any(strcmp(table.Properties.VariableNames, name))
+            value = table.(name)(1);
             if isnumeric(value) && isscalar(value)
                 output.(name) = scalar_value(value);
             end
