@@ -1,0 +1,35 @@
+{
+  "claims": {
+    "p5_06_main_closed": false,
+    "release": false,
+    "txle_checkpoint_acceptance": true
+  },
+  "gates": {
+    "cross_a_1e_9": true,
+    "cross_b_1e_9": true,
+    "matlab_repeat_1e_12": true,
+    "per_workbook_rust_not_slower": true,
+    "rust_repeat_exact": true,
+    "total_rust_not_slower": true
+  },
+  "reports": {
+    "matlab_01": {
+      "path": "docs/baselines/p5-06-stage2a-txle-matlab-01.v1.json",
+      "sha256": "3cc03519d36d65e165690d5e44146478b73a3ffabe3d5ac306bea5854446271d"
+    },
+    "matlab_02": {
+      "path": "docs/baselines/p5-06-stage2a-txle-matlab-02.v1.json",
+      "sha256": "825e2aaf876e91083c1bbb76f8e2e3a35916ee04fd511726c755ea33a3d9b9be"
+    },
+    "rust_01": {
+      "path": "docs/baselines/p5-06-stage2a-txle-rust-01.v1.json",
+      "sha256": "abf7e140c8cea7934d7639a4875efda8a60c62ab0ac09e024bb19a852f333f3a"
+    },
+    "rust_02": {
+      "path": "docs/baselines/p5-06-stage2a-txle-rust-02.v1.json",
+      "sha256": "8d9f321091294793191d520155990dfa3c6d3908f84fc6d21bc53e435dd5194c"
+    }
+  },
+  "schema": "sipi.p5-06.stage2a-txle-aggregate.v1",
+  "status": "accepted_scoped_txle_checkpoint"
+}
