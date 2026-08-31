@@ -1,0 +1,28 @@
+{
+  "schema": "sipi.com.r480-root-integration.v1",
+  "status": "internal_feature_linked_non_distributed",
+  "candidate": {
+    "commit": "dfad53e69cf6c634a2dc9860fde1d5bfd9c58fd8",
+    "tree": "f11df255983f0564fc8fb2afd3c80216ee741e6e"
+  },
+  "feature": "com-direct-integration",
+  "default_cli_excludes_direct": true,
+  "root_feature_closure": {
+    "package_count": 226,
+    "sha256": "45c4dce034e4a8f8558ca475e189db737eb962dd1e8fc4e27e37aaf92b795b24"
+  },
+  "candidate_evidence": [
+    {"path": "Cargo.lock", "sha256": "4f88dde106c0b16e3e882c576a5fa0bb689a25926e9c4d042f797ec1e417845d"},
+    {"path": "Cargo.toml", "sha256": "ce329e420a8b2e7cfad0a48bec0a3d16dd1299beafd1de08f779eccf626481d2"},
+    {"path": "crates/sipi-agent-com-direct/Cargo.toml", "sha256": "f3987b94a8e47534177dafa98c5fd86c5ebd29590494758d7a88f2cdf7dfe42d"},
+    {"path": "crates/sipi-cli/Cargo.toml", "sha256": "e7a73ae2b55a5a2dc5de3cd6f80ebaf97d6dde17071272ed798ac97e29ffd113"},
+    {"path": "crates/sipi-cli/src/main.rs", "sha256": "af4274eca03d573ccfdc2cf1fd4e058a863421a820ba614c6da3e0012cf7fd93"},
+    {"path": "crates/sipi-cli/src/com_direct_integration.rs", "sha256": "42b16b152ac522f5725f546ca4e0282772237473c4a7ff94c8e08726aea2d612"}
+  ],
+  "non_claims": [
+    "no_public_com_run_route",
+    "no_public_request_or_result_wire",
+    "no_distribution_admission",
+    "no_release_admission"
+  ]
+}

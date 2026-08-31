@@ -33,8 +33,8 @@ def require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 def safe_path(path: object) -> bool:
@@ -50,6 +50,14 @@ def git_stdout(root: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(root), *args], check=True, capture_output=True, text=True
     ).stdout.strip()
+
+
+def git_bytes(root: Path, revision_path: str) -> bytes:
+    return subprocess.run(
+        ["git", "-C", str(root), "show", revision_path],
+        check=True,
+        capture_output=True,
+    ).stdout
 
 
 def load_manifest(path: Path) -> dict[str, Any]:
@@ -188,8 +196,15 @@ def verify(root: Path, cargo: str) -> dict[str, str]:
     require(git_stdout(root, "rev-parse", f"{candidate['commit']}^{{tree}}") == candidate["tree"], "candidate tree")
     subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", candidate["commit"], "HEAD"], check=True)
     for entry in document["evidence"]:
-        path = root / entry["path"]
-        require(path.is_file() and sha256(path) == entry["sha256"], f"evidence drift: {entry['path']}")
+        # This record is immutable evidence about `candidate`, not a promise
+        # that a later workspace revision still has the same source bytes.
+        # Reading the Git object prevents a later integration commit from
+        # silently rewriting a historic source/license observation.
+        require(
+            sha256_bytes(git_bytes(root, f"{candidate['commit']}:{entry['path']}"))
+            == entry["sha256"],
+            f"candidate evidence drift: {entry['path']}",
+        )
     raw_metadata = subprocess.run(
         [
             cargo,
