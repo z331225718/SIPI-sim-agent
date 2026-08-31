@@ -132,7 +132,9 @@ pub(crate) fn execute_com_r480_argv_v1(
     let mut request = DirectRunRequestV1::new(&parsed.config, &parsed.thru, &parsed.output_dir);
     request.artifact_id = "com-r480".to_owned();
     request.profile = "r480".to_owned();
-    request.reader = Some("r480".to_owned());
+    // The pinned r4.80 profile owns its reader choice; an explicit reader is
+    // only admitted by the direct port's custom-profile branch.
+    request.reader = None;
     request.fext = parsed.fext;
     request.next = parsed.next;
     request.calibration_noise = parsed.calibration_noise;
