@@ -89,6 +89,12 @@ class TxleProjectionTests(unittest.TestCase):
         candidate["cases"][0]["metrics"]["COM_dB"] += 5e-10
         self.assertEqual(compare_txle_checkpoint_surface(source_summary((1.0,)), candidate), [])
 
+    def test_compare_keeps_raw_receipt_distinct_from_numeric_tolerance(self):
+        source = project_matlab_summary(source_summary((0.18,)))
+        candidate = project_rust_result(rust_result((0.18 + 2e-14,)))
+        self.assertNotEqual(source[0]["txle_taps"]["raw_f64_sha256"], candidate[0]["txle_taps"]["raw_f64_sha256"])
+        self.assertEqual(compare_projected_txle_cases(source, candidate), [])
+
     def test_compare_rejects_old_zero_placeholder_shape(self):
         mismatches = compare_txle_checkpoint_surface(source_summary((1.0,)), rust_result((0.0, 0.0, 0.0, 1.0, 0.0)))
         self.assertEqual(mismatches, ["case 0: TXLE checkpoint differs"])

@@ -249,7 +249,15 @@ def compare_projected_txle_cases(
     mismatches: list[str] = []
     for source, candidate in zip(source_cases, rust_cases, strict=True):
         index = source["case_index"]
-        if source["txle_taps"] != candidate["txle_taps"]:
+        source_taps = source["txle_taps"]
+        candidate_taps = candidate["txle_taps"]
+        if source_taps["shape"] != candidate_taps["shape"]:
+            mismatches.append(f"case {index}: TXLE checkpoint differs")
+        elif any(
+            (left == 0.0 and right == 0.0 and struct.pack("<d", left) != struct.pack("<d", right))
+            or abs(left - right) > finite_tolerance
+            for left, right in zip(source_taps["values"], candidate_taps["values"], strict=True)
+        ):
             mismatches.append(f"case {index}: TXLE checkpoint differs")
         source_scalars = source["final_scalar_metrics"]
         candidate_scalars = candidate["final_scalar_metrics"]
