@@ -1020,6 +1020,21 @@ fn run_package_cases_v1(
             .filter(|value| !value.is_null())
             .cloned();
         if let Some(shared_normal_erl) = shared_normal_erl {
+            let shared_normal_erl_warnings = published_cases
+                .first()
+                .and_then(|case| case.get("warnings"))
+                .and_then(Value::as_array)
+                .map(|warnings| {
+                    warnings
+                        .iter()
+                        .filter(|warning| {
+                            warning.get("stage").and_then(Value::as_str)
+                                == Some("normal_tdr_reflection_interpolation")
+                        })
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
             let shared_metrics = published_cases
                 .first()
                 .and_then(|case| case.get("metrics"))
@@ -1035,12 +1050,31 @@ fn run_package_cases_v1(
                     case["metrics"][*key] = value.clone();
                 }
                 case["diagnostics"]["normal_erl"] = shared_normal_erl.clone();
+                case["warnings"]
+                    .as_array_mut()
+                    .expect("published case warnings are an array")
+                    .extend(shared_normal_erl_warnings.iter().cloned());
             }
         }
         let first = first_report
             .ok_or_else(|| DirectRunErrorV1::Execution("empty package cases".to_owned()))?;
         let mut result = first.result;
         result["cases"] = Value::Array(published_cases);
+        let mut root_warnings = Vec::new();
+        for case in result["cases"]
+            .as_array()
+            .expect("published cases are an array")
+        {
+            for warning in case["warnings"]
+                .as_array()
+                .expect("published case warnings are an array")
+            {
+                if !root_warnings.contains(warning) {
+                    root_warnings.push(warning.clone());
+                }
+            }
+        }
+        result["warnings"] = Value::Array(root_warnings);
         result["provenance"]["package_cases"] = json!({
             "count": cases.len(),
             "identity_field": "case_id",
