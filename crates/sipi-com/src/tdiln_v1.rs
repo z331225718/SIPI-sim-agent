@@ -19,6 +19,7 @@ use crate::{
 };
 
 pub const TDILN_POLICY_V1: &str = "sipi.com.metrics.tdiln-v1.complex-il-fit-filtered-impulse-pdf";
+const TDILN_SPARSE_PAM_BACKEND_V1: bool = true;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TdIlnResultV1 {
@@ -86,6 +87,49 @@ pub fn r480_tdiln_v1(
     ec_pulse_tolerance: f64,
     ec_relative_tolerance: f64,
     ec_difference_tolerance: f64,
+) -> Result<TdIlnResultV1, TdIlnErrorV1> {
+    r480_tdiln_with_pdf_backend_v1(
+        sdd21,
+        frequency_hz,
+        f1_hz,
+        f2_hz,
+        baud_hz,
+        samples_per_ui,
+        sample_dt_s,
+        levels,
+        spec_ber,
+        bin_size,
+        bessel_order,
+        bessel_cutoff_multiplier,
+        transmitter_transition_time_ns,
+        enforce_causality,
+        ec_pulse_tolerance,
+        ec_relative_tolerance,
+        ec_difference_tolerance,
+        TDILN_SPARSE_PAM_BACKEND_V1,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn r480_tdiln_with_pdf_backend_v1(
+    sdd21: &[Complex64],
+    frequency_hz: &[f64],
+    f1_hz: f64,
+    f2_hz: f64,
+    baud_hz: f64,
+    samples_per_ui: usize,
+    sample_dt_s: f64,
+    levels: u32,
+    spec_ber: f64,
+    bin_size: f64,
+    bessel_order: usize,
+    bessel_cutoff_multiplier: f64,
+    transmitter_transition_time_ns: f64,
+    enforce_causality: bool,
+    ec_pulse_tolerance: f64,
+    ec_relative_tolerance: f64,
+    ec_difference_tolerance: f64,
+    sparse_pam: bool,
 ) -> Result<TdIlnResultV1, TdIlnErrorV1> {
     validate_frequency_v1(frequency_hz)?;
     if sdd21.len() != frequency_hz.len() {
@@ -192,7 +236,10 @@ pub fn r480_tdiln_v1(
             .step_by(samples_per_ui)
             .copied()
             .collect::<Vec<_>>();
-        let pdf = sampled_signal_pdf_v1(&samples, levels, bin_size, false)?;
+        // Each PAM component has at most `levels` nonzero masses.  The
+        // sparse backend preserves the same binning and source-order
+        // normalization while avoiding dense spans of zero-probability bins.
+        let pdf = sampled_signal_pdf_v1(&samples, levels, bin_size, sparse_pam)?;
         let rms = (pdf
             .probability()
             .iter()
@@ -444,6 +491,49 @@ mod tests {
         assert_eq!(result.iln_pulse.len(), result.time_s.len());
         assert!(!result.pdf.probability().is_empty());
         assert!(result.fom_v > 0.0);
+    }
+
+    #[test]
+    fn sparse_pdf_backend_preserves_tdiln_receipts() {
+        let (transfer, frequency) = source();
+        let direct = r480_tdiln_with_pdf_backend_v1(
+            &transfer, &frequency, 0.0, 50.0e9, 25.0e9, 4, 1.0e-12, 4, 1.0e-4, 0.01, 4, 1.0, 0.0,
+            false, 0.05, 0.006, 1.0e-4, false,
+        )
+        .expect("direct TDILN");
+        let sparse = r480_tdiln_v1(
+            &transfer, &frequency, 0.0, 50.0e9, 25.0e9, 4, 1.0e-12, 4, 1.0e-4, 0.01, 4, 1.0, 0.0,
+            false, 0.05, 0.006, 1.0e-4,
+        )
+        .expect("sparse TDILN");
+        assert_eq!(direct.selected_phase, sparse.selected_phase);
+        assert_eq!(direct.pdf.min_bin(), sparse.pdf.min_bin());
+        assert_eq!(
+            direct.pdf.probability().len(),
+            sparse.pdf.probability().len()
+        );
+        for (left, right) in direct
+            .pdf
+            .probability()
+            .iter()
+            .zip(sparse.pdf.probability())
+        {
+            assert!(
+                (left - right).abs() < 1.0e-12,
+                "PDF drift: {left} vs {right}"
+            );
+        }
+        for (left, right) in [
+            (direct.fom_v, sparse.fom_v),
+            (direct.fom_pdf_v, sparse.fom_pdf_v),
+            (direct.snr_isi_fom_db, sparse.snr_isi_fom_db),
+            (direct.snr_isi_fom_pdf_db, sparse.snr_isi_fom_pdf_db),
+        ] {
+            assert!(
+                (left - right).abs() < 1.0e-12,
+                "TDILN scalar drift: {left} vs {right}"
+            );
+        }
     }
 
     #[test]
