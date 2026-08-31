@@ -243,3 +243,20 @@ harness for selected original-13 workbooks without invoking the Rust candidate.
 Its repository-external receipt retains only the callsite identifier, line,
 and bounded trace; source messages and their absolute fixture paths are not
 copied into the aggregate observation.
+
+The R2024b observer now also retains a bounded, path-free stack for that
+anti-causal event. For original-13 index 00 it is exactly
+`interp_Sparam:6337 -> s21_to_impulse_DC:10110 -> get_TDR:5427 ->
+process_sxp:8408 -> com_ieee8023_480:332` (with the observer and harness
+frames surrounding it). That proves the source warning belongs to the normal
+TDR/ERL route rather than the package VTF impulse route. The Rust normal-TDR
+diagnostic consequently records the same scalar-only input-trace shape at its
+FD-to-TD handoff when DEBUG bypasses the guard. It is still not promotable:
+the index-00 source trace's mean unwrapped phase step is
+`0.8011061266653972`, while the Rust port-1 candidate is
+`0.003926990816987242` (absolute delta `0.7971791358484099`). The comparator
+also records source maximum magnitude `4.537446090855192e-17` versus Rust
+`0.0`; this is a roundoff-sensitive diagnostic mismatch, not evidence for
+injecting artificial nonzero S-parameter data. The comparator reports it as
+`roundoff_sensitive_trace_mismatch`, preserves
+`source_warning_equivalent=false`, and does not alter root `warnings`.

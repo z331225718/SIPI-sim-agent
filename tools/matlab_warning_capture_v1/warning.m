@@ -52,6 +52,7 @@ if record
         end
     end
     line = source_line();
+    source_stack = source_stack_trace(line);
     source_trace = struct('schema', 'sipi.com.interp-sparam-input-trace.v1', ...
         'status', 'not_requested');
     if interpolation_input_trace_requested(line)
@@ -73,6 +74,7 @@ if record
         'message', char(message), ...
         'visible_to_lastwarn', visible_to_lastwarn, ...
         'source_line', double(line), ...
+        'source_stack', source_stack, ...
         'source_trace', source_trace);
     SIPI_COM_WARNING_CAPTURE_V1.events{end + 1} = event;
 end
@@ -172,6 +174,35 @@ end
 requested = true;
 end
 
+function trace = source_stack_trace(line)
+trace = struct('schema', 'sipi.com.source-warning-stack.v1', ...
+    'status', 'not_requested');
+if line ~= 6337
+    return
+end
+frames = dbstack('-completenames');
+if numel(frames) < 3 || numel(frames) > 16
+    mark_incomplete('source_warning_stack_shape_invalid');
+    trace.status = 'capture_failed';
+    return
+end
+projected = repmat(struct('name', '', 'line', 0), 1, numel(frames) - 1);
+for index = 2:numel(frames)
+    if ~isfield(frames(index), 'name') || ~ischar(frames(index).name) || ...
+            ~isfield(frames(index), 'line') || ~isscalar(frames(index).line)
+        mark_incomplete('source_warning_stack_frame_invalid');
+        trace.status = 'capture_failed';
+        return
+    end
+    projected(index - 1) = struct( ...
+        'name', char(frames(index).name), ...
+        'line', double(frames(index).line));
+end
+trace = struct('schema', 'sipi.com.source-warning-stack.v1', ...
+    'status', 'captured', ...
+    'frames', projected);
+end
+
 function trace = summarize_interpolation_input(input)
 % The trace deliberately contains only bounded scalar summary values, never
 % the MATLAB source waveform or an S-parameter payload.
@@ -197,6 +228,7 @@ trace = struct( ...
     'last_imaginary', imag(input(end)), ...
     'sum_real', sum(real(input)), ...
     'sum_imaginary', sum(imag(input)), ...
+    'maximum_magnitude', max(abs(input)), ...
     'mean_unwrapped_phase_step', mean(diff(phase)), ...
     'positive_mean_phase_step', mean(diff(phase)) > 0);
 end

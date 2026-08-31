@@ -203,9 +203,31 @@ pub(crate) struct R480NormalErlPortV1 {
     /// The exact interpolation guard was bypassed because DEBUG=true.
     /// This is a SIPI observation, not a MATLAB warning-count claim.
     pub(crate) phase_slope_debug_bypassed: bool,
+    /// Bounded summary of the exact normal-TDR FD vector passed to the
+    /// interpolation guard when DEBUG is enabled. It is diagnostic-only.
+    pub(crate) interpolation_input_trace: Option<R480NormalTdrInterpolationTraceV1>,
     pub(crate) erl_db: f64,
     pub(crate) erl_rms_db: f64,
     pub(crate) avg_port_impedance_ohm: f64,
+}
+
+/// Scalar-only interpolation input observation for source-stage diagnosis.
+///
+/// This deliberately excludes the waveform itself and is never a source
+/// warning claim. Its shape mirrors the MATLAB observer's bounded trace so
+/// callsite identity can be established before any warning-wire promotion.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct R480NormalTdrInterpolationTraceV1 {
+    pub(crate) element_count: usize,
+    pub(crate) first_real: f64,
+    pub(crate) first_imaginary: f64,
+    pub(crate) last_real: f64,
+    pub(crate) last_imaginary: f64,
+    pub(crate) sum_real: f64,
+    pub(crate) sum_imaginary: f64,
+    pub(crate) maximum_magnitude: f64,
+    pub(crate) mean_unwrapped_phase_step: f64,
+    pub(crate) positive_mean_phase_step: bool,
 }
 
 /// Both normal S4P TDR ports and the effective fixture delays used by them.
@@ -214,6 +236,17 @@ pub(crate) struct R480NormalErlResultV1 {
     pub(crate) ports: [R480NormalErlPortV1; 2],
     pub(crate) tfx_s: [f64; 2],
     pub(crate) input_is_ideal_match: bool,
+}
+
+/// Frequency-domain filters shared by the two normal-TDR reflection ports.
+///
+/// Agent-COM evaluates the same transition, receiver and Tukey responses for
+/// both ports.  Materializing the immutable product once keeps the numerical
+/// operation order inside each port unchanged while avoiding a second set of
+/// O(N) filter construction and temporary allocations.
+struct R480NormalTdrFiltersV1 {
+    transition: Vec<Complex64>,
+    receiver_tukey: Vec<Complex64>,
 }
 
 /// Execute one normal S4P TDR/PTDR/ERL result from an assembled DD network.
@@ -242,8 +275,9 @@ pub(crate) fn run_normal_erl_v1(
         tfx_s[1] = estimate_auto_tfx_v1(network, &controls)?;
     }
     let max_time_s = r480_tdr_max_time_v1(network, &controls)?;
-    let port1 = run_port_v1(network, &controls, 1, tfx_s[0], max_time_s)?;
-    let port2 = run_port_v1(network, &controls, 2, tfx_s[1], max_time_s)?;
+    let filters = normal_tdr_filters_v1(network, &controls)?;
+    let port1 = run_port_v1(network, &controls, &filters, 1, tfx_s[0], max_time_s)?;
+    let port2 = run_port_v1(network, &controls, &filters, 2, tfx_s[1], max_time_s)?;
     let input_is_ideal_match = network
         .s11
         .iter()
@@ -253,6 +287,44 @@ pub(crate) fn run_normal_erl_v1(
         ports: [port1, port2],
         tfx_s,
         input_is_ideal_match,
+    })
+}
+
+fn normal_tdr_filters_v1(
+    network: &R480TdrDdNetworkV1,
+    controls: &R480NormalErlControlsV1,
+) -> Result<R480NormalTdrFiltersV1, DirectRunErrorV1> {
+    let transition = transition_filter_v1(&network.frequency_hz, controls.tr_tdr_ns)?;
+    let receiver = butterworth_filter_v1(
+        &network.frequency_hz,
+        controls.fb_bw_cutoff,
+        controls.fb_hz,
+        controls.tdr_butterworth,
+    )
+    .map_err(|error| DirectRunErrorV1::Channel(format!("TDR Butterworth filter: {error:?}")))?;
+    let tukey = raised_cosine_filter_v1(
+        &network.frequency_hz,
+        controls.f_r * controls.fb_hz,
+        controls.fb_hz,
+        controls.tukey_window,
+    )
+    .map_err(|error| DirectRunErrorV1::Channel(format!("TDR Tukey filter: {error:?}")))?;
+    let receiver_tukey = receiver
+        .into_iter()
+        .zip(tukey)
+        .map(|(receiver, tukey)| {
+            Complex64::try_new(receiver.real() * tukey, receiver.imaginary() * tukey)
+                .map_err(|_| DirectRunErrorV1::Channel("non-finite TDR receiver filter".to_owned()))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if transition.len() != receiver_tukey.len() || transition.len() != network.frequency_hz.len() {
+        return Err(DirectRunErrorV1::Channel(
+            "normal TDR filter axes are not aligned".to_owned(),
+        ));
+    }
+    Ok(R480NormalTdrFiltersV1 {
+        transition,
+        receiver_tukey,
     })
 }
 
@@ -388,6 +460,7 @@ fn r480_tdr_max_time_v1(
 fn run_port_v1(
     network: &R480TdrDdNetworkV1,
     controls: &R480NormalErlControlsV1,
+    filters: &R480NormalTdrFiltersV1,
     port: u8,
     fixture_delay_s: f64,
     max_time_s: f64,
@@ -414,31 +487,12 @@ fn run_port_v1(
     } else {
         return Err(parameter_error("normal TDR port must be 1 or 2"));
     };
-    let transition = transition_filter_v1(&network.frequency_hz, controls.tr_tdr_ns)?;
-    let receiver = butterworth_filter_v1(
-        &network.frequency_hz,
-        controls.fb_bw_cutoff,
-        controls.fb_hz,
-        controls.tdr_butterworth,
-    )
-    .map_err(|error| DirectRunErrorV1::Channel(format!("TDR Butterworth filter: {error:?}")))?;
-    let tukey = raised_cosine_filter_v1(
-        &network.frequency_hz,
-        controls.f_r * controls.fb_hz,
-        controls.fb_hz,
-        controls.tukey_window,
-    )
-    .map_err(|error| DirectRunErrorV1::Channel(format!("TDR Tukey filter: {error:?}")))?;
     let filtered = reflection
         .into_iter()
-        .zip(transition)
-        .zip(receiver.into_iter().zip(tukey))
-        .map(|((value, transition), (receiver, tukey))| {
-            let receiver =
-                Complex64::try_new(receiver.real() * tukey, receiver.imaginary() * tukey).map_err(
-                    |_| DirectRunErrorV1::Channel("non-finite TDR receiver filter".to_owned()),
-                )?;
-            complex_mul(complex_mul(value, transition)?, receiver)
+        .zip(&filters.transition)
+        .zip(&filters.receiver_tukey)
+        .map(|((value, transition), receiver_tukey)| {
+            complex_mul(complex_mul(value, *transition)?, *receiver_tukey)
         })
         .collect::<Result<Vec<_>, _>>()?;
     // Match the signal passed to get_TDR's interpolation step, not the raw
@@ -446,6 +500,10 @@ fn run_port_v1(
     let phase_slope_debug_bypassed = controls.debug
         && has_positive_unwrapped_phase_slope_v1(&filtered)
             .map_err(|error| DirectRunErrorV1::Channel(format!("TDR phase guard: {error:?}")))?;
+    let interpolation_input_trace = controls
+        .debug
+        .then(|| normal_tdr_interpolation_input_trace_v1(&filtered))
+        .transpose()?;
     let impulse = s21_to_impulse_dc_v1(
         &filtered,
         &network.frequency_hz,
@@ -521,9 +579,75 @@ fn run_port_v1(
         worst_samples,
         phase_index,
         phase_slope_debug_bypassed,
+        interpolation_input_trace,
         erl_db,
         erl_rms_db,
         avg_port_impedance_ohm,
+    })
+}
+
+fn normal_tdr_interpolation_input_trace_v1(
+    values: &[Complex64],
+) -> Result<R480NormalTdrInterpolationTraceV1, DirectRunErrorV1> {
+    if values.len() < 2 {
+        return Err(DirectRunErrorV1::Channel(
+            "normal TDR interpolation trace needs at least two samples".to_owned(),
+        ));
+    }
+    let first = values[0];
+    let last = *values.last().expect("length checked");
+    let mut sum_real = 0.0;
+    let mut sum_imaginary = 0.0;
+    let mut maximum_magnitude = 0.0_f64;
+    let mut previous_phase = None;
+    let mut phase_delta_sum = 0.0;
+    for value in values {
+        let real = value.real();
+        let imaginary = value.imaginary();
+        if !real.is_finite() || !imaginary.is_finite() {
+            return Err(DirectRunErrorV1::Channel(
+                "normal TDR interpolation trace contains non-finite input".to_owned(),
+            ));
+        }
+        sum_real += real;
+        sum_imaginary += imaginary;
+        maximum_magnitude = maximum_magnitude.max(real.hypot(imaginary));
+        let mut phase = imaginary.atan2(real);
+        if let Some(previous) = previous_phase {
+            let mut delta = phase - previous;
+            while delta > std::f64::consts::PI {
+                phase -= std::f64::consts::TAU;
+                delta -= std::f64::consts::TAU;
+            }
+            while delta <= -std::f64::consts::PI {
+                phase += std::f64::consts::TAU;
+                delta += std::f64::consts::TAU;
+            }
+            phase_delta_sum += phase - previous;
+        }
+        previous_phase = Some(phase);
+    }
+    let mean_unwrapped_phase_step = phase_delta_sum / (values.len() - 1) as f64;
+    if !sum_real.is_finite()
+        || !sum_imaginary.is_finite()
+        || !maximum_magnitude.is_finite()
+        || !mean_unwrapped_phase_step.is_finite()
+    {
+        return Err(DirectRunErrorV1::Channel(
+            "normal TDR interpolation trace calculation is non-finite".to_owned(),
+        ));
+    }
+    Ok(R480NormalTdrInterpolationTraceV1 {
+        element_count: values.len(),
+        first_real: first.real(),
+        first_imaginary: first.imaginary(),
+        last_real: last.real(),
+        last_imaginary: last.imaginary(),
+        sum_real,
+        sum_imaginary,
+        maximum_magnitude,
+        mean_unwrapped_phase_step,
+        positive_mean_phase_step: mean_unwrapped_phase_step > 0.0,
     })
 }
 

@@ -7576,12 +7576,38 @@ fn normal_erl_phase_slope_observation_v1(result: &R480NormalErlResultV1) -> Opti
         .filter(|port| port.phase_slope_debug_bypassed)
         .map(|port| port.port)
         .collect::<Vec<_>>();
+    let input_traces = result
+        .ports
+        .iter()
+        .filter(|port| port.phase_slope_debug_bypassed)
+        .map(|port| {
+            let trace = port
+                .interpolation_input_trace
+                .as_ref()
+                .expect("DEBUG bypass must retain its normal-TDR trace");
+            json!({
+                "port": port.port,
+                "schema": "sipi.com.interp-sparam-input-trace.v1",
+                "element_count": trace.element_count,
+                "first_real": trace.first_real,
+                "first_imaginary": trace.first_imaginary,
+                "last_real": trace.last_real,
+                "last_imaginary": trace.last_imaginary,
+                "sum_real": trace.sum_real,
+                "sum_imaginary": trace.sum_imaginary,
+                "maximum_magnitude": trace.maximum_magnitude,
+                "mean_unwrapped_phase_step": trace.mean_unwrapped_phase_step,
+                "positive_mean_phase_step": trace.positive_mean_phase_step,
+            })
+        })
+        .collect::<Vec<_>>();
     (!ports.is_empty()).then(|| {
         json!({
             "code": "SIPI-COM-ANTI-CAUSAL-PHASE-SLOPE-BYPASSED",
             "severity": "DEGRADED",
             "stage": "normal_tdr_reflection_interpolation",
             "ports": ports,
+            "interpolation_input_traces": input_traces,
             "occurrence_count": ports.len(),
             "source_warning_equivalent": false,
         })
@@ -9515,6 +9541,18 @@ mod tests {
             worst_samples: vec![0.0],
             phase_index: 0,
             phase_slope_debug_bypassed: bypassed,
+            interpolation_input_trace: bypassed.then(|| crate::erl_tdr_v1::R480NormalTdrInterpolationTraceV1 {
+                element_count: 2,
+                first_real: 0.0,
+                first_imaginary: 0.0,
+                last_real: 0.0,
+                last_imaginary: 0.0,
+                sum_real: 0.0,
+                sum_imaginary: 0.0,
+                maximum_magnitude: 0.0,
+                mean_unwrapped_phase_step: 0.1,
+                positive_mean_phase_step: true,
+            }),
             erl_db: f64::INFINITY,
             erl_rms_db: f64::INFINITY,
             avg_port_impedance_ohm: 100.0,
@@ -9528,6 +9566,14 @@ mod tests {
             normal_erl_phase_slope_observation_v1(&result).expect("aggregated observation");
         assert_eq!(observation["stage"], "normal_tdr_reflection_interpolation");
         assert_eq!(observation["ports"], json!([1, 2]));
+        assert_eq!(
+            observation["interpolation_input_traces"][0]["schema"],
+            "sipi.com.interp-sparam-input-trace.v1"
+        );
+        assert_eq!(
+            observation["interpolation_input_traces"][1]["positive_mean_phase_step"],
+            true
+        );
         assert_eq!(observation["occurrence_count"], 2);
         assert_eq!(observation["source_warning_equivalent"], false);
     }

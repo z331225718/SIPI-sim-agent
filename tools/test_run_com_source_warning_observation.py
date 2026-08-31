@@ -19,11 +19,18 @@ def summary(events: list[dict]) -> dict:
 
 
 def event(sequence: int, identifier: str, line: int) -> dict:
+    stack = {"schema": "sipi.com.source-warning-stack.v1", "status": "not_requested"}
+    if line == 6337:
+        stack = {
+            "schema": "sipi.com.source-warning-stack.v1", "status": "captured",
+            "frames": [{"name": "warning", "line": 55}],
+        }
     return {
         "sequence": sequence,
         "identifier": identifier,
         "message": "not retained",
         "source_line": line,
+        "source_stack": stack,
         "source_trace": {"schema": "sipi.com.interp-sparam-input-trace.v1", "status": "not_requested"},
     }
 
@@ -35,6 +42,7 @@ class SourceWarningObservationRunnerTests(unittest.TestCase):
             "sequence": 1,
             "identifier": "COM:read_s4p:MaxFreqTooLow",
             "source_line": 9715,
+            "source_stack": {"schema": "sipi.com.source-warning-stack.v1", "status": "not_requested"},
             "source_trace": {"schema": "sipi.com.interp-sparam-input-trace.v1", "status": "not_requested"},
         }])
 

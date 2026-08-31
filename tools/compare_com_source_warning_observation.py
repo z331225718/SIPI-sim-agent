@@ -26,6 +26,11 @@ MAX_FREQUENCY = {
 }
 ANTI_CAUSAL_SOURCE_LINE = 6337
 TRACE_SCHEMA = "sipi.com.interp-sparam-input-trace.v1"
+NORMAL_TDR_STAGE = "normal_tdr_reflection_interpolation"
+TRACE_NUMERIC_FIELDS = (
+    "first_real", "first_imaginary", "last_real", "last_imaginary",
+    "sum_real", "sum_imaginary", "maximum_magnitude", "mean_unwrapped_phase_step",
+)
 ROLES = ("THRU", "FEXT", "NEXT")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -60,12 +65,21 @@ def _source_events(matlab: Any) -> list[dict[str, Any]]:
 
 def _validate_source_trace(event: dict[str, Any]) -> None:
     trace = _object(event.get("source_trace"), "MATLAB source warning trace")
+    stack = _object(event.get("source_stack"), "MATLAB source warning stack")
     line = event["source_line"]
     if line == ANTI_CAUSAL_SOURCE_LINE:
+        if set(stack) != {"schema", "status", "frames"} or stack.get("schema") != "sipi.com.source-warning-stack.v1" or stack.get("status") != "captured":
+            raise ValueError("MATLAB anti-causal source stack drift")
+        frames = stack.get("frames")
+        if not isinstance(frames, list) or not 2 <= len(frames) <= 15:
+            raise ValueError("MATLAB anti-causal source stack size drift")
+        for frame in frames:
+            if not isinstance(frame, dict) or set(frame) != {"name", "line"} or not isinstance(frame["name"], str) or not isinstance(frame["line"], (int, float)):
+                raise ValueError("MATLAB anti-causal source stack frame drift")
         expected = {
             "schema", "status", "element_count", "first_real", "first_imaginary",
             "last_real", "last_imaginary", "sum_real", "sum_imaginary",
-            "mean_unwrapped_phase_step", "positive_mean_phase_step",
+            "maximum_magnitude", "mean_unwrapped_phase_step", "positive_mean_phase_step",
         }
         if set(trace) != expected or trace.get("schema") != TRACE_SCHEMA or trace.get("status") != "captured":
             raise ValueError("MATLAB anti-causal source trace drift")
@@ -75,6 +89,8 @@ def _validate_source_trace(event: dict[str, Any]) -> None:
             _finite(trace.get(key), f"MATLAB anti-causal trace {key}")
         if not isinstance(trace.get("positive_mean_phase_step"), bool) or trace["positive_mean_phase_step"] is not True:
             raise ValueError("MATLAB anti-causal source trace predicate drift")
+    elif stack != {"schema": "sipi.com.source-warning-stack.v1", "status": "not_requested"}:
+        raise ValueError("MATLAB non-anti-causal source stack drift")
     elif trace != {"schema": TRACE_SCHEMA, "status": "not_requested"}:
         raise ValueError("MATLAB non-anti-causal source trace drift")
 
@@ -112,6 +128,93 @@ def _rust_warnings(rust: Any) -> list[dict[str, Any]]:
     return warnings
 
 
+def _normal_tdr_candidate(source_events: list[dict[str, Any]], rust: Any) -> dict[str, Any]:
+    """Diagnose, but never promote, the normal-TDR anti-causal stage.
+
+    The source stack establishes that line 6337 is reached through
+    ``process_sxp -> get_TDR -> s21_to_impulse_DC``. Rust exposes a bounded
+    trace from its corresponding normal-TDR FD-to-TD input only when DEBUG
+    bypasses the same predicate. This evidence stays diagnostic until the
+    vectors and occurrence semantics agree.
+    """
+    source_anti = [event for event in source_events if event["source_line"] == ANTI_CAUSAL_SOURCE_LINE]
+    root = _object(rust, "Rust result")
+    cases = root.get("cases")
+    if not isinstance(cases, list) or not cases:
+        raise ValueError("Rust result cases must be a non-empty array")
+    candidates = []
+    for case_index, case in enumerate(cases):
+        diagnostics = _object(_object(case, f"Rust case {case_index}").get("diagnostics"), f"Rust case {case_index} diagnostics")
+        observations = diagnostics.get("sipi_runtime_observations")
+        if not isinstance(observations, list):
+            raise ValueError("Rust SIPI observations must be an array")
+        candidates.extend(
+            (case_index, event)
+            for event in observations
+            if isinstance(event, dict)
+            and event.get("code") == "SIPI-COM-ANTI-CAUSAL-PHASE-SLOPE-BYPASSED"
+            and event.get("stage") == NORMAL_TDR_STAGE
+        )
+    result: dict[str, Any] = {
+        "source_event_count": len(source_anti),
+        "rust_observation_count": len(candidates),
+        "source_stack_proves_normal_tdr_route": bool(source_anti),
+        "source_warning_equivalent": False,
+    }
+    if len(source_anti) != 1 or len(candidates) != 1:
+        result["trace_matched"] = False
+        result["state"] = "incomplete_occurrence_evidence"
+        return result
+    case_index, candidate = candidates[0]
+    expected = {
+        "code", "severity", "stage", "ports", "interpolation_input_traces",
+        "occurrence_count", "source_warning_equivalent",
+    }
+    if set(candidate) != expected or candidate["severity"] != "DEGRADED" or candidate["occurrence_count"] != len(candidate["ports"]) or candidate["source_warning_equivalent"] is not False:
+        raise ValueError("Rust normal-TDR observation shape drift")
+    traces = candidate["interpolation_input_traces"]
+    if not isinstance(candidate["ports"], list) or not isinstance(traces, list) or len(traces) != len(candidate["ports"]):
+        raise ValueError("Rust normal-TDR observation trace count drift")
+    source_trace = source_anti[0]["source_trace"]
+    trace_deltas: list[dict[str, Any]] = []
+    observed_ports: list[int] = []
+    source_maximum_magnitude = _finite(source_trace["maximum_magnitude"], "source trace maximum magnitude")
+    rust_maximum_magnitudes: list[float] = []
+    for port, trace in zip(candidate["ports"], traces, strict=True):
+        if not isinstance(port, int) or port not in (1, 2) or not isinstance(trace, dict):
+            raise ValueError("Rust normal-TDR port drift")
+        expected_trace = {"port", "schema", "element_count", *TRACE_NUMERIC_FIELDS, "positive_mean_phase_step"}
+        if set(trace) != expected_trace or trace["port"] != port or trace["schema"] != TRACE_SCHEMA:
+            raise ValueError("Rust normal-TDR trace schema drift")
+        if trace["element_count"] != source_trace["element_count"] or trace["positive_mean_phase_step"] is not True:
+            trace_deltas.append({"port": port, "field": "shape_or_predicate"})
+        for field in TRACE_NUMERIC_FIELDS:
+            source_value = _finite(source_trace[field], f"source trace {field}")
+            rust_value = _finite(trace[field], f"Rust normal-TDR trace {field}")
+            if field == "maximum_magnitude":
+                rust_maximum_magnitudes.append(rust_value)
+            delta = abs(source_value - rust_value)
+            if delta > 1.0e-12:
+                trace_deltas.append({"port": port, "field": field, "absolute_delta": delta})
+        observed_ports.append(port)
+    result.update({
+        "state": (
+            "trace_matched_diagnostic_only"
+            if not trace_deltas
+            else "roundoff_sensitive_trace_mismatch"
+            if source_maximum_magnitude <= 1.0e-12 and all(value == 0.0 for value in rust_maximum_magnitudes)
+            else "trace_mismatch"
+        ),
+        "rust_ports": observed_ports,
+        "rust_case_index": case_index,
+        "trace_matched": not trace_deltas,
+        "trace_mismatches": trace_deltas,
+        "source_maximum_magnitude": source_maximum_magnitude,
+        "rust_maximum_magnitudes": rust_maximum_magnitudes,
+    })
+    return result
+
+
 def compare(matlab: Any, rust: Any) -> dict[str, Any]:
     """Return an auditable partial-coverage result without broad catalog claims."""
     source_events = _source_events(matlab)
@@ -139,6 +242,7 @@ def compare(matlab: Any, rust: Any) -> dict[str, Any]:
             "actual_roles": actual_roles,
             "matched": max_frequency_matched,
         },
+        "normal_tdr_interpolation_candidate": _normal_tdr_candidate(source_events, rust),
         "unimplemented_source_events": unmapped,
     }
 

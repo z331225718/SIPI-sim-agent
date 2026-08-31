@@ -14,20 +14,26 @@ def matlab(events: list[dict]) -> dict:
 
 def event(sequence: int, identifier: str, line: int) -> dict:
     trace = {"schema": "sipi.com.interp-sparam-input-trace.v1", "status": "not_requested"}
+    stack = {"schema": "sipi.com.source-warning-stack.v1", "status": "not_requested"}
     if line == 6337:
         trace = {
             "schema": "sipi.com.interp-sparam-input-trace.v1", "status": "captured",
             "element_count": 3, "first_real": 1.0, "first_imaginary": 0.0,
             "last_real": -1.0, "last_imaginary": 0.0, "sum_real": 0.0,
-            "sum_imaginary": -1.0, "mean_unwrapped_phase_step": 0.25,
+            "sum_imaginary": -1.0, "maximum_magnitude": 1.0, "mean_unwrapped_phase_step": 0.25,
             "positive_mean_phase_step": True,
         }
-    return {"sequence": sequence, "identifier": identifier, "message": "source", "source_line": line, "source_trace": trace}
+        stack = {
+            "schema": "sipi.com.source-warning-stack.v1", "status": "captured",
+            "frames": [{"name": "interp_Sparam", "line": 6337}, {"name": "s21_to_impulse_DC", "line": 10110}],
+        }
+    return {"sequence": sequence, "identifier": identifier, "message": "source", "source_line": line, "source_stack": stack, "source_trace": trace}
 
 
 def rust(roles: list[str]) -> dict:
     return {
         "provenance": {"warning_coverage": {"source_commit": "5272ffe74702cd585054d975559b06f8afae7b6e", "source_file_sha256": "642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad", "complete_catalog": False, "scope": "implemented_source_mapped_calls_only"}},
+        "cases": [{"diagnostics": {"sipi_runtime_observations": []}}],
         "warnings": [{"namespace": "agent_com_r480", "code": "COM:read_s4p:MaxFreqTooLow", "source_callsite_id": "read_s4p.max_frequency_below_fb", "source_line": 9715, "channel_role": role, "source_sha256": "a" * 64, "maximum_frequency_hz": 80.0, "signaling_rate_hz": 100.0} for role in roles],
     }
 
@@ -93,6 +99,33 @@ class SourceWarningObservationTests(unittest.TestCase):
         source["source_warning_calls"]["events"][0]["source_trace"]["positive_mean_phase_step"] = False
         with self.assertRaisesRegex(ValueError, "anti-causal source trace predicate drift"):
             compare(source, rust([]))
+        source = matlab([event(1, "", 6337)])
+        source["source_warning_calls"]["events"][0]["source_stack"]["frames"] = []
+        with self.assertRaisesRegex(ValueError, "anti-causal source stack size drift"):
+            compare(source, rust([]))
+
+    def test_normal_tdr_candidate_stays_diagnostic_until_trace_matches(self) -> None:
+        candidate = rust([])
+        candidate["cases"][0]["diagnostics"]["sipi_runtime_observations"] = [{
+            "code": "SIPI-COM-ANTI-CAUSAL-PHASE-SLOPE-BYPASSED",
+            "severity": "DEGRADED",
+            "stage": "normal_tdr_reflection_interpolation",
+            "ports": [1],
+            "interpolation_input_traces": [{
+                "port": 1, "schema": "sipi.com.interp-sparam-input-trace.v1",
+                "element_count": 3, "first_real": 1.0, "first_imaginary": 0.0,
+                "last_real": -1.0, "last_imaginary": 0.0, "sum_real": 0.0,
+                "sum_imaginary": -1.0, "maximum_magnitude": 1.0, "mean_unwrapped_phase_step": 0.125,
+                "positive_mean_phase_step": True,
+            }],
+            "occurrence_count": 1,
+            "source_warning_equivalent": False,
+        }]
+        report = compare(matlab([event(1, "", 6337)]), candidate)
+        normal = report["normal_tdr_interpolation_candidate"]
+        self.assertEqual(normal["state"], "trace_mismatch")
+        self.assertFalse(normal["trace_matched"])
+        self.assertFalse(normal["source_warning_equivalent"])
 
 
 if __name__ == "__main__":

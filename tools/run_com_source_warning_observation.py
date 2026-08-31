@@ -71,7 +71,8 @@ def _source_events(summary: Any) -> list[dict[str, Any]]:
         identifier = event.get("identifier")
         line = event.get("source_line")
         trace = event.get("source_trace")
-        if not isinstance(identifier, str) or line not in SOURCE_LINES or not isinstance(trace, dict):
+        stack = event.get("source_stack")
+        if not isinstance(identifier, str) or line not in SOURCE_LINES or not isinstance(trace, dict) or not isinstance(stack, dict):
             raise ValueError("MATLAB source-warning event shape drift")
         # Exclude source messages: they contain external fixture paths and are
         # not needed to establish the static callsite or input trace.
@@ -79,6 +80,7 @@ def _source_events(summary: Any) -> list[dict[str, Any]]:
             "sequence": sequence,
             "identifier": identifier,
             "source_line": line,
+            "source_stack": stack,
             "source_trace": trace,
         })
     return result
