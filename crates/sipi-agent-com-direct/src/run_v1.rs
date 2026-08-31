@@ -1812,6 +1812,10 @@ fn run_with_workflow_token_origin(
         request.overwrite,
         request.legacy_csv,
     )?;
+    write_tdiln_diagnostic_sidecar_v1(
+        package_case_index.unwrap_or(0),
+        tdiln_runtime.as_ref().map(|runtime| &runtime.result),
+    )?;
     Ok(DirectRunReportV1 {
         schema,
         workflow: vec!["load_config", "run_com", "write_artifacts"],
@@ -7296,6 +7300,94 @@ fn tdiln_diagnostics_v1(result: &TdIlnResultV1) -> Value {
             "sample_count": result.pdf.probability().len(),
         },
     })
+}
+
+// This sink exists only in the opt-in formal-diagnostic build. The normal
+// result wire deliberately continues to expose bounded receipts, not arrays.
+#[cfg(feature = "tdiln-diagnostic-sidecar")]
+fn write_tdiln_diagnostic_sidecar_v1(
+    case_index: usize,
+    result: Option<&TdIlnResultV1>,
+) -> Result<(), DirectRunErrorV1> {
+    let Some(root) = std::env::var_os("SIPI_COM_TDILN_DIAGNOSTIC_SIDECAR_DIR") else {
+        return Ok(());
+    };
+    let root = PathBuf::from(root);
+    let case_root = root.join(format!("case-{case_index}"));
+    fs::create_dir_all(&case_root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    let manifest_path = case_root.join("manifest.json");
+    let Some(result) = result else {
+        atomic_write_v1(
+            &manifest_path,
+            serde_json::to_vec_pretty(&json!({
+                "schema": "sipi.com.tdiln-array-sidecar.v1",
+                "diagnostic_only": true,
+                "tdiln_applicable": false,
+                "case_index": case_index,
+            }))
+            .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?
+            .as_slice(),
+            false,
+        )?;
+        return Ok(());
+    };
+    let pdf_axis = (0..result.pdf.probability().len())
+        .map(|index| (result.pdf.min_bin() + index as i64) as f64 * result.pdf.bin_size())
+        .collect::<Vec<_>>();
+    let vectors = [
+        ("time_s", result.time_s.as_slice()),
+        ("iln_pulse", result.iln_pulse.as_slice()),
+        ("reference_pulse", result.reference_pulse.as_slice()),
+        ("fitted_pulse", result.fitted_pulse.as_slice()),
+        ("pdf_axis", pdf_axis.as_slice()),
+        ("pdf_probability", result.pdf.probability()),
+    ];
+    let mut entries = serde_json::Map::new();
+    for (name, values) in vectors {
+        let bytes = values
+            .iter()
+            .flat_map(|value| value.to_le_bytes())
+            .collect::<Vec<_>>();
+        let file = format!("{name}.f64le");
+        atomic_write_v1(&case_root.join(&file), &bytes, false)?;
+        entries.insert(
+            name.to_owned(),
+            json!({
+                "file": file,
+                "dtype": "f64le",
+                "shape": [values.len()],
+                "bytes": bytes.len(),
+                "sha256": sha256_bytes_v1(&bytes),
+            }),
+        );
+    }
+    let manifest = json!({
+        "schema": "sipi.com.tdiln-array-sidecar.v1",
+        "diagnostic_only": true,
+        "tdiln_applicable": true,
+        "case_index": case_index,
+        "vectors": entries,
+        "pdf": {"bin_size": result.pdf.bin_size(), "min_bin": result.pdf.min_bin()},
+        "selected_phase": result.selected_phase,
+        "scalars": {
+            "fom_v": result.fom_v,
+            "fom_pdf_v": result.fom_pdf_v,
+            "snr_isi_fom_db": result.snr_isi_fom_db,
+            "snr_isi_fom_pdf_db": result.snr_isi_fom_pdf_db,
+        },
+        "non_claims": ["not_public_result_wire", "not_channel_s_parameter_fit", "not_full_result_graph"],
+    });
+    let bytes = serde_json::to_vec_pretty(&manifest)
+        .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    atomic_write_v1(&manifest_path, &bytes, false)
+}
+
+#[cfg(not(feature = "tdiln-diagnostic-sidecar"))]
+fn write_tdiln_diagnostic_sidecar_v1(
+    _case_index: usize,
+    _result: Option<&TdIlnResultV1>,
+) -> Result<(), DirectRunErrorV1> {
+    Ok(())
 }
 
 fn run_workbook_normal_erl_v1(

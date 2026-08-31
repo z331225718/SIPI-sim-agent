@@ -161,6 +161,9 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
     rust_output = case_root / "rust"
     rust_environment = os.environ.copy()
     rust_environment["RAYON_NUM_THREADS"] = str(rayon_threads)
+    # Only the opt-in formal diagnostic build consumes this variable. The
+    # default release binary ignores it, leaving its public result wire intact.
+    rust_environment["SIPI_COM_TDILN_DIAGNOSTIC_SIDECAR_DIR"] = str(case_root / "rust-tdiln-sidecar")
     rust_start = time.perf_counter()
     rust_run = bounded(
         [
