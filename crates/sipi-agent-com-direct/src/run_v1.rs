@@ -7367,6 +7367,30 @@ fn phase_slope_warning_v1(
     })])
 }
 
+/// Aggregate normal-TDR port observations into one deterministic result warning.
+/// The source only exposes a warning branch, so this does not claim MATLAB's
+/// warning count, stack text, or complete catalog.
+fn normal_erl_phase_slope_warning_v1(result: &R480NormalErlResultV1) -> Option<Value> {
+    let ports = result
+        .ports
+        .iter()
+        .filter(|port| port.phase_slope_debug_bypassed)
+        .map(|port| port.port)
+        .collect::<Vec<_>>();
+    (!ports.is_empty()).then(|| {
+        json!({
+            "code": "SIPI-COM-ANTI-CAUSAL-PHASE-SLOPE-BYPASSED",
+            "severity": "DEGRADED",
+            "stage": "normal_tdr_reflection_interpolation",
+            "ports": ports,
+            "occurrence_count": ports.len(),
+            "source_semantics": "exact_unwrapped_phase_mean_slope_gt_zero",
+            "matlab_warning_parity": false,
+            "complete_warning_catalog": false,
+        })
+    })
+}
+
 fn selected_ac_cm_rms_v1(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     package_case_index: usize,
@@ -7732,11 +7756,15 @@ fn result_value_v1(
     let normal_erl22_db = normal_erl_result.map(|result| {
         metric_db_value_v1(result.ports[1].erl_db).expect("normal ERL leaf rejects NaN")
     });
+    let normal_erl_warning = normal_erl_result
+        .and_then(normal_erl_phase_slope_warning_v1)
+        .into_iter();
     let runtime_warnings = std::iter::once(&impulse.runtime_warnings)
         .chain(fext_inputs.iter().map(|input| &input.runtime_warnings))
         .chain(next_inputs.iter().map(|input| &input.runtime_warnings))
         .flatten()
         .cloned()
+        .chain(normal_erl_warning)
         .collect::<Vec<_>>();
     let source_metric_surface = json!({
         "CTLE_DC_gain_dB": search_result.map(|result| result.ctle_gain_db),
@@ -7877,6 +7905,7 @@ fn result_value_v1(
                     "input_is_ideal_match": result.input_is_ideal_match,
                     "ports": result.ports.iter().map(|port| json!({
                         "port": port.port,
+                        "phase_slope_debug_bypassed": port.phase_slope_debug_bypassed,
                         "phase_index": port.phase_index,
                         "erl_db": metric_db_value_v1(port.erl_db).expect("normal ERL leaf rejects NaN"),
                         "erl_rms_db": metric_db_value_v1(port.erl_rms_db).expect("normal ERL leaf rejects NaN"),
@@ -9256,6 +9285,35 @@ mod tests {
         );
         assert_eq!(warnings[0]["role"], "FEXT");
         assert_eq!(warnings[0]["matlab_warning_parity"], false);
+    }
+
+    #[test]
+    fn normal_tdr_phase_warning_aggregates_ports_once_in_order() {
+        let port = |number, bypassed| crate::erl_tdr_v1::R480NormalErlPortV1 {
+            port: number,
+            time_s: vec![0.0],
+            impedance_ohm: vec![100.0],
+            step_reflection: vec![0.0],
+            ptdr: vec![0.0],
+            gated: vec![0.0],
+            worst_samples: vec![0.0],
+            phase_index: 0,
+            phase_slope_debug_bypassed: bypassed,
+            erl_db: f64::INFINITY,
+            erl_rms_db: f64::INFINITY,
+            avg_port_impedance_ohm: 100.0,
+        };
+        let result = R480NormalErlResultV1 {
+            ports: [port(1, true), port(2, true)],
+            tfx_s: [0.0, 0.0],
+            input_is_ideal_match: false,
+        };
+        let warning = normal_erl_phase_slope_warning_v1(&result).expect("aggregated warning");
+        assert_eq!(warning["stage"], "normal_tdr_reflection_interpolation");
+        assert_eq!(warning["ports"], json!([1, 2]));
+        assert_eq!(warning["occurrence_count"], 2);
+        assert_eq!(warning["matlab_warning_parity"], false);
+        assert_eq!(warning["complete_warning_catalog"], false);
     }
 
     #[test]

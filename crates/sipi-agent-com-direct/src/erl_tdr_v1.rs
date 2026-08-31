@@ -11,8 +11,9 @@
 use std::collections::BTreeMap;
 
 use sipi_com::{
-    FdToTdOptionsV1, ResolvedDefaultV1, butterworth_filter_v1, raised_cosine_filter_v1,
-    rectangular_pulse_response_v1, s21_to_impulse_dc_v1, sampled_signal_pdf_v1,
+    FdToTdOptionsV1, ResolvedDefaultV1, butterworth_filter_v1,
+    has_positive_unwrapped_phase_slope_v1, raised_cosine_filter_v1, rectangular_pulse_response_v1,
+    s21_to_impulse_dc_v1, sampled_signal_pdf_v1,
 };
 use sipi_types::Complex64;
 
@@ -199,6 +200,9 @@ pub(crate) struct R480NormalErlPortV1 {
     pub(crate) gated: Vec<f64>,
     pub(crate) worst_samples: Vec<f64>,
     pub(crate) phase_index: usize,
+    /// The exact interpolation guard was bypassed because DEBUG=true.
+    /// This is a SIPI observation, not a MATLAB warning-count claim.
+    pub(crate) phase_slope_debug_bypassed: bool,
     pub(crate) erl_db: f64,
     pub(crate) erl_rms_db: f64,
     pub(crate) avg_port_impedance_ohm: f64,
@@ -437,6 +441,11 @@ fn run_port_v1(
             complex_mul(complex_mul(value, transition)?, receiver)
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // Match the signal passed to get_TDR's interpolation step, not the raw
+    // S11/S22 trace before the TDR transition and receiver filters.
+    let phase_slope_debug_bypassed = controls.debug
+        && has_positive_unwrapped_phase_slope_v1(&filtered)
+            .map_err(|error| DirectRunErrorV1::Channel(format!("TDR phase guard: {error:?}")))?;
     let impulse = s21_to_impulse_dc_v1(
         &filtered,
         &network.frequency_hz,
@@ -511,6 +520,7 @@ fn run_port_v1(
         gated,
         worst_samples,
         phase_index,
+        phase_slope_debug_bypassed,
         erl_db,
         erl_rms_db,
         avg_port_impedance_ohm,
@@ -1085,7 +1095,7 @@ mod tests {
     }
 
     fn network() -> R480TdrDdNetworkV1 {
-        let frequency_hz = vec![0.0, 1.0e9, 2.0e9, 3.0e9, 4.0e9];
+        let frequency_hz: Vec<_> = (0..65).map(|index| index as f64 * 0.1e9).collect();
         let s11 = vec![c(0.1, 0.0); frequency_hz.len()];
         let s22 = vec![c(0.2, 0.0); frequency_hz.len()];
         let s12 = vec![c(0.0, 0.0); frequency_hz.len()];
@@ -1163,19 +1173,43 @@ mod tests {
     }
 
     #[test]
-    fn anti_causal_input_is_rejected_by_fd_leaf() {
+    fn anti_causal_tdr_reflection_is_rejected_without_debug_bypass() {
         let values = controls();
         let mut network = network();
-        network.s21 = network
+        network.s11 = network
             .frequency_hz
             .iter()
             .map(|frequency| {
-                let phase = 2.0 * std::f64::consts::PI * frequency * 1.0e-9;
-                c(0.8 * phase.cos(), 0.8 * phase.sin())
+                let phase = 31.0 * frequency * 1.0e-9;
+                c(0.1 * phase.cos(), 0.1 * phase.sin())
             })
             .collect();
         let error = run_normal_erl_v1(&network, &values).expect_err("anti-causal input");
         assert!(error.to_string().contains("anti-causal"), "{error}");
+    }
+
+    #[test]
+    fn debug_bypass_records_the_tdr_port_without_changing_erl_output_shape() {
+        let mut values = controls();
+        values.insert("DEBUG".to_owned(), ResolvedDefaultV1::Boolean(true));
+        let mut network = network();
+        network.s11 = network
+            .frequency_hz
+            .iter()
+            .map(|frequency| {
+                let phase = 31.0 * frequency * 1.0e-9;
+                c(0.1 * phase.cos(), 0.1 * phase.sin())
+            })
+            .collect();
+        let result = run_normal_erl_v1(&network, &values).expect("DEBUG bypass");
+        assert!(result.ports[0].phase_slope_debug_bypassed);
+        assert!(!result.ports[1].phase_slope_debug_bypassed);
+        assert!(
+            result
+                .ports
+                .iter()
+                .all(|port| port.erl_db.is_finite() || port.erl_db.is_infinite())
+        );
     }
 
     #[test]
