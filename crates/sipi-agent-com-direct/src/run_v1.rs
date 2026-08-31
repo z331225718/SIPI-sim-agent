@@ -255,6 +255,22 @@ struct OwnedRawSdd21V1 {
     sdd21: Vec<Complex64>,
 }
 
+/// Parsed, workbook-reordered raw S4P data shared by every consumer in one
+/// COM run.  A package channel can feed the VTF/FD-to-TD path, GET_FD,
+/// normal ERL, and TDILN.  Re-reading and re-parsing it per consumer turns
+/// those independent report leaves into avoidable wall-clock overhead.
+#[derive(Clone, Debug)]
+struct OwnedS4pNetworkV1 {
+    source_sha256: String,
+    frequency_hz: Vec<f64>,
+    samples: Vec<FourPortSMatrixV1>,
+}
+
+#[derive(Default)]
+struct S4pLoadCacheV1 {
+    networks: BTreeMap<PathBuf, Arc<OwnedS4pNetworkV1>>,
+}
+
 #[derive(Clone, Debug)]
 struct ErlTdrInputV1 {
     impulse: Vec<f64>,
@@ -1153,6 +1169,10 @@ fn run_with_workflow_token_origin(
         .and_then(|value| value.to_str())
         .is_some_and(|value| value.eq_ignore_ascii_case("s4p"));
     let package_s4p = is_s4p && s4p_fd_route_v1(&loaded.values)?;
+    // A package channel can feed several independent report leaves.  Retain
+    // one parsed and reordered representation for this run instead of paying
+    // the Touchstone parse cost once per leaf.
+    let mut s4p_cache = S4pLoadCacheV1::default();
     if workbook_run_mode == TrustedWorkbookRunModeV1::ErlOnly && !package_s4p {
         return Err(DirectRunErrorV1::Unsupported(
             "trusted workbook ERL_ONLY requires the admitted S4P package route".to_owned(),
@@ -1210,6 +1230,7 @@ fn run_with_workflow_token_origin(
             "THRU",
             package_case_index,
             trusted_workbook,
+            &mut s4p_cache,
         )?
     } else if is_s4p {
         load_s4p_impulse_v1(&request.pulse)?
@@ -1225,7 +1246,7 @@ fn run_with_workflow_token_origin(
             .as_bool()
             .expect("workbook boolean helper");
         let normal_erl = (
-            run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?,
+            run_workbook_normal_erl_v1(&request.pulse, &loaded.values, &mut s4p_cache)?,
             tdr_w_txpkg,
         );
         let selected_port =
@@ -1320,6 +1341,7 @@ fn run_with_workflow_token_origin(
                     "FEXT",
                     package_case_index,
                     trusted_workbook,
+                    &mut s4p_cache,
                 )
             } else {
                 load_channel_input_v1(path)
@@ -1345,6 +1367,7 @@ fn run_with_workflow_token_origin(
                     "NEXT",
                     package_case_index,
                     trusted_workbook,
+                    &mut s4p_cache,
                 )
             } else {
                 load_channel_input_v1(path)
@@ -1516,6 +1539,7 @@ fn run_with_workflow_token_origin(
             request,
             &loaded.values,
             resolved_package_case_index,
+            &mut s4p_cache,
         )?)
     } else {
         None
@@ -1530,7 +1554,7 @@ fn run_with_workflow_token_origin(
             .as_bool()
             .expect("workbook boolean helper");
         Some((
-            run_workbook_normal_erl_v1(&request.pulse, &loaded.values)?,
+            run_workbook_normal_erl_v1(&request.pulse, &loaded.values, &mut s4p_cache)?,
             tdr_w_txpkg,
         ))
     } else {
@@ -6961,12 +6985,13 @@ fn workbook_fd_usize_vector_v1(
         .collect()
 }
 
-fn load_reordered_s4p_samples_v1(
+fn load_reordered_s4p_network_v1(
     path: &Path,
     values: &BTreeMap<String, ResolvedDefaultV1>,
     trusted_workbook: bool,
-) -> Result<(Vec<f64>, Vec<FourPortSMatrixV1>), DirectRunErrorV1> {
+) -> Result<OwnedS4pNetworkV1, DirectRunErrorV1> {
     let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
+    let source_sha256 = sha256_bytes_v1(&bytes);
     let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, touchstone_limits_v1()?)
         .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
     let frequency_hz = parsed
@@ -6993,22 +7018,48 @@ fn load_reordered_s4p_samples_v1(
         })
         .collect::<Result<Vec<_>, DirectRunErrorV1>>()?;
     let samples = reorder_s4p_samples_v1(&samples, values, trusted_workbook)?;
-    Ok((frequency_hz, samples))
+    Ok(OwnedS4pNetworkV1 {
+        source_sha256,
+        frequency_hz,
+        samples,
+    })
+}
+
+fn load_reordered_s4p_network_cached_v1(
+    cache: &mut S4pLoadCacheV1,
+    path: &Path,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    trusted_workbook: bool,
+) -> Result<Arc<OwnedS4pNetworkV1>, DirectRunErrorV1> {
+    if let Some(network) = cache.networks.get(path) {
+        return Ok(Arc::clone(network));
+    }
+    let network = Arc::new(load_reordered_s4p_network_v1(
+        path,
+        values,
+        trusted_workbook,
+    )?);
+    cache
+        .networks
+        .insert(path.to_path_buf(), Arc::clone(&network));
+    Ok(network)
 }
 
 fn load_raw_sdd21_v1(
+    cache: &mut S4pLoadCacheV1,
     path: &Path,
     values: &BTreeMap<String, ResolvedDefaultV1>,
     trusted_workbook: bool,
 ) -> Result<OwnedRawSdd21V1, DirectRunErrorV1> {
-    let (frequency_hz, samples) = load_reordered_s4p_samples_v1(path, values, trusted_workbook)?;
-    let sdd21 = samples
+    let network = load_reordered_s4p_network_cached_v1(cache, path, values, trusted_workbook)?;
+    let sdd21 = network
+        .samples
         .iter()
         .map(com_mixed_mode_v1)
         .map(|sample| sample[3][1])
         .collect::<Vec<_>>();
     Ok(OwnedRawSdd21V1 {
-        frequency_hz,
+        frequency_hz: network.frequency_hz.clone(),
         sdd21,
     })
 }
@@ -7017,17 +7068,18 @@ fn compose_workbook_fd_metrics_v1(
     request: &DirectRunRequestV1,
     values: &BTreeMap<String, ResolvedDefaultV1>,
     package_case_index: usize,
+    cache: &mut S4pLoadCacheV1,
 ) -> Result<(FdRuntimeMetricsV1, FdRuntimeDiagnosticsV1), DirectRunErrorV1> {
-    let thru = load_raw_sdd21_v1(&request.pulse, values, true)?;
+    let thru = load_raw_sdd21_v1(cache, &request.pulse, values, true)?;
     let fext = request
         .fext
         .iter()
-        .map(|path| load_raw_sdd21_v1(path, values, true))
+        .map(|path| load_raw_sdd21_v1(cache, path, values, true))
         .collect::<Result<Vec<_>, _>>()?;
     let next = request
         .next
         .iter()
-        .map(|path| load_raw_sdd21_v1(path, values, true))
+        .map(|path| load_raw_sdd21_v1(cache, path, values, true))
         .collect::<Result<Vec<_>, _>>()?;
     let fext_refs = fext
         .iter()
@@ -7081,13 +7133,15 @@ fn compose_workbook_fd_metrics_v1(
 fn run_workbook_normal_erl_v1(
     path: &Path,
     values: &BTreeMap<String, ResolvedDefaultV1>,
+    cache: &mut S4pLoadCacheV1,
 ) -> Result<R480NormalErlResultV1, DirectRunErrorV1> {
-    let (frequency_hz, samples) = load_reordered_s4p_samples_v1(path, values, true)?;
+    let network = load_reordered_s4p_network_cached_v1(cache, path, values, true)?;
     // Pinned `_normal_tdr_erl_metrics` is run-scoped and always uses the first
     // package selection.  The outer package fan-out copies this result to all
     // published cases rather than recomputing it per case.
-    let network = assemble_r480_tdr_dd_network_v1(&frequency_hz, &samples, values, 0)?;
-    run_normal_erl_v1(&network, values)
+    let tdr_network =
+        assemble_r480_tdr_dd_network_v1(&network.frequency_hz, &network.samples, values, 0)?;
+    run_normal_erl_v1(&tdr_network, values)
 }
 
 fn load_s4p_package_impulse_v1(
@@ -7097,6 +7151,7 @@ fn load_s4p_package_impulse_v1(
     channel_type: &str,
     package_case_token: Option<usize>,
     trusted_workbook: bool,
+    cache: &mut S4pLoadCacheV1,
 ) -> Result<ImpulseInputV1, DirectRunErrorV1> {
     if !matches!(channel_type, "THRU" | "FEXT" | "NEXT") {
         return Err(DirectRunErrorV1::Unsupported(
@@ -7142,34 +7197,7 @@ fn load_s4p_package_impulse_v1(
     }
     let options = package_fd_to_td_options_v1(values)?;
     let amplitude = validate_s4p_package_controls_v1(values, channel_type, package_case_index)?;
-    let bytes = bounded_read_v1(path, MAX_IMPULSE_FILE_BYTES_V1)?;
-    let source_sha256 = sha256_bytes_v1(&bytes);
-    let parsed = parse_selected_four_port_hz_s_ri_50_v2(&bytes, touchstone_limits_v1()?)
-        .map_err(|error| DirectRunErrorV1::Touchstone(format!("{error:?}")))?;
-    let frequency_hz = parsed
-        .rows()
-        .iter()
-        .map(|row| row.frequency_hz())
-        .collect::<Vec<_>>();
-    let samples = parsed
-        .rows()
-        .iter()
-        .map(|row| {
-            let source = row.matrix();
-            let zero = Complex64::try_new(0.0, 0.0)
-                .map_err(|_| DirectRunErrorV1::Touchstone("invalid zero S4P sample".to_owned()))?;
-            let mut matrix = [[zero; 4]; 4];
-            for (output, line) in matrix.iter_mut().enumerate() {
-                for (incident, value) in line.iter_mut().enumerate() {
-                    *value = source.at(output, incident).ok_or_else(|| {
-                        DirectRunErrorV1::Touchstone("S4P matrix index".to_owned())
-                    })?;
-                }
-            }
-            Ok(matrix)
-        })
-        .collect::<Result<Vec<_>, DirectRunErrorV1>>()?;
-    let samples = reorder_s4p_samples_v1(&samples, values, trusted_workbook)?;
+    let network = load_reordered_s4p_network_cached_v1(cache, path, values, trusted_workbook)?;
     let ac_cm_rms = selected_ac_cm_rms_v1(values, package_case_index)?;
     if !ac_cm_rms.is_finite() || ac_cm_rms < 0.0 {
         return Err(DirectRunErrorV1::Parameters(
@@ -7178,8 +7206,8 @@ fn load_s4p_package_impulse_v1(
     }
     let ac_common_mode_transfer = if ac_cm_rms != 0.0 {
         Some(vec![s4p_package_dc_vtf_v1(
-            &frequency_hz,
-            &samples,
+            &network.frequency_hz,
+            &network.samples,
             values,
             channel_type,
             package_case_index,
@@ -7188,20 +7216,20 @@ fn load_s4p_package_impulse_v1(
         None
     };
     let vtf = s4p_package_vtf_v1(
-        &frequency_hz,
-        &samples,
+        &network.frequency_hz,
+        &network.samples,
         values,
         channel_type,
         package_case_index,
     )?;
-    let result = s21_to_impulse_dc_v1(&vtf, &frequency_hz, &options)
+    let result = s21_to_impulse_dc_v1(&vtf, &network.frequency_hz, &options)
         .map_err(|error| DirectRunErrorV1::Channel(format!("package VTF FD-to-TD: {error:?}")))?;
     let mut impulse = result.voltage;
     apply_package_channel_amplitude_v1(&mut impulse, amplitude)?;
     validate_impulse_v1(&impulse)?;
     let ac_common_mode_frequency_hz = ac_common_mode_transfer
         .as_ref()
-        .map(|_| frequency_hz.clone());
+        .map(|_| network.frequency_hz.clone());
     // The r4.80 search consumes the package-adjusted, receiver-filtered VTF
     // for each aggressor and applies the role amplitude inside the crosstalk
     // power integral.  Keep that unscaled FD response alongside the scaled
@@ -7215,7 +7243,7 @@ fn load_s4p_package_impulse_v1(
         values: impulse,
         erl_values: None,
         erl_time_s: Some(result.time_s.clone()),
-        source_sha256,
+        source_sha256: network.source_sha256.clone(),
         sample_interval_s: result
             .time_s
             .windows(2)
@@ -8928,6 +8956,7 @@ mod tests {
         request.fext.push(s4p.clone());
         request.next.push(s4p.clone());
         let loaded = load_config_v1(&request).expect("config");
+        let mut s4p_cache = S4pLoadCacheV1::default();
         let probe = load_s4p_package_impulse_v1(
             &s4p,
             &loaded.values,
@@ -8935,6 +8964,7 @@ mod tests {
             "THRU",
             None,
             false,
+            &mut s4p_cache,
         )
         .expect("S4P impulse");
         assert!(probe.td_crosstalk.is_none(), "THRU is not an aggressor");
@@ -8947,6 +8977,7 @@ mod tests {
             "FEXT",
             None,
             false,
+            &mut s4p_cache,
         )
         .expect("FEXT S4P impulse");
         let fext_search_channel = fext_probe
@@ -8964,6 +8995,7 @@ mod tests {
             "NEXT",
             None,
             false,
+            &mut s4p_cache,
         )
         .expect("NEXT S4P impulse");
         let next_search_channel = next_probe
@@ -8974,6 +9006,11 @@ mod tests {
         assert_eq!(next_search_channel.0, "NEXT");
         assert_eq!(next_search_channel.1.len(), parsed_rows);
         assert_eq!(next_search_channel.2, 0.3);
+        assert_eq!(
+            s4p_cache.networks.len(),
+            1,
+            "one parsed S4P is shared by THRU/FEXT/NEXT package consumers"
+        );
         let report = run_com_v1(&request).expect("typed public S4P workflow");
         assert_no_search_dfe_publication(&report.result);
         let case = &report.result["cases"][0];
@@ -9016,6 +9053,7 @@ mod tests {
         document["parameters"] = Value::Object(doubled_parameters);
         fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
         let loaded_doubled = load_config_v1(&request).expect("doubled config");
+        let mut doubled_s4p_cache = S4pLoadCacheV1::default();
         let doubled_probe = load_s4p_package_impulse_v1(
             &s4p,
             &loaded_doubled.values,
@@ -9023,6 +9061,7 @@ mod tests {
             "THRU",
             None,
             false,
+            &mut doubled_s4p_cache,
         )
         .expect("doubled S4P impulse");
         assert_eq!(doubled_probe.values.len(), first_probe.len());
