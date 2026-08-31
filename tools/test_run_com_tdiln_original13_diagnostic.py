@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import json
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -82,6 +83,36 @@ class RustPerformanceInvocationTests(unittest.TestCase):
             first.unlink(missing_ok=True)
             second.unlink(missing_ok=True)
             first.parent.rmdir()
+
+    def test_stable_result_hash_normalizes_only_the_supplied_replay_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_root = Path(temporary)
+            first_root = temporary_root / "current-replay-01"
+            second_root = temporary_root / "current-replay-02"
+            first = first_root / "result.json"
+            second = second_root / "result.json"
+            first_root.mkdir()
+            second_root.mkdir()
+            first.write_text(
+                json.dumps({"channel": str(first_root / "upstream" / "fixture.s4p"), "metric": 1.0}),
+                encoding="utf-8",
+            )
+            second.write_text(
+                json.dumps({"channel": str(second_root / "upstream" / "fixture.s4p"), "metric": 1.0}),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                _stable_result_sha256(first, first_root),
+                _stable_result_sha256(second, second_root),
+            )
+            second.write_text(
+                json.dumps({"channel": str(temporary_root / "outside" / "fixture.s4p"), "metric": 1.0}),
+                encoding="utf-8",
+            )
+            self.assertNotEqual(
+                _stable_result_sha256(first, first_root),
+                _stable_result_sha256(second, second_root),
+            )
 
 
 if __name__ == "__main__":

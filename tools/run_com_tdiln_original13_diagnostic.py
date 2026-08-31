@@ -130,7 +130,11 @@ _REPLAY_OUTPUT_ROOT = re.compile(
 )
 
 
-def _stable_result_value(value: Any, path: tuple[str, ...] = ()) -> Any:
+def _stable_result_value(
+    value: Any,
+    path: tuple[str, ...] = (),
+    replay_root: Path | None = None,
+) -> Any:
     """Normalize replay-local paths, while retaining all computed result values.
 
     Raw receipts deliberately retain absolute archive/materialization paths.  The
@@ -140,25 +144,39 @@ def _stable_result_value(value: Any, path: tuple[str, ...] = ()) -> Any:
     hide a source-input change.
     """
     if isinstance(value, str):
+        if replay_root is not None:
+            try:
+                relative = Path(value).resolve(strict=False).relative_to(replay_root.resolve())
+            except ValueError:
+                pass
+            else:
+                return "<tdiln-replay-root>/" + relative.as_posix()
         value = _PACKAGE_CASE_TEMP_ROOT.sub("sipi-com-package-cases-<process>-<config>", value)
         return _REPLAY_OUTPUT_ROOT.sub("sipi-p5-06-tdiln-array-<replay>-output", value)
     if isinstance(value, list):
-        return [_stable_result_value(item, path + (str(index),)) for index, item in enumerate(value)]
+        return [
+            _stable_result_value(item, path + (str(index),), replay_root)
+            for index, item in enumerate(value)
+        ]
     if isinstance(value, dict):
         return {
             key: (
                 "<materialized-config-path-dependent-sha256>"
                 if path == ("provenance",) and key == "config_sha256" and isinstance(item, str)
-                else _stable_result_value(item, path + (key,))
+                else _stable_result_value(item, path + (key,), replay_root)
             )
             for key, item in value.items()
         }
     return value
 
 
-def _stable_result_sha256(path: Path) -> str:
+def _stable_result_sha256(path: Path, replay_root: Path | None = None) -> str:
     document = json.loads(path.read_text(encoding="utf-8"))
-    payload = json.dumps(_stable_result_value(document), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    payload = json.dumps(
+        _stable_result_value(document, replay_root=replay_root),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -253,7 +271,8 @@ def _record(index: int, source_root: Path, binary: Path, performance_binary: Pat
             "rust_detail_sha256": hashlib.sha256(rust_run.stdout + rust_run.stderr).hexdigest(),
         }
     rust_diagnostic_result_sha256 = digest(rust_result_path)
-    rust_diagnostic_result_semantic_sha256 = _stable_result_sha256(rust_result_path)
+    replay_root = source_root.parent
+    rust_diagnostic_result_semantic_sha256 = _stable_result_sha256(rust_result_path, replay_root)
     rust_performance_result_sha256 = rust_diagnostic_result_sha256
     rust_performance_result_semantic_sha256 = rust_diagnostic_result_semantic_sha256
     rust_wall_seconds = rust_diagnostic_wall_seconds
@@ -283,7 +302,7 @@ def _record(index: int, source_root: Path, binary: Path, performance_binary: Pat
                 "rust_detail_sha256": hashlib.sha256(performance_run.stdout + performance_run.stderr).hexdigest(),
             }
         rust_performance_result_sha256 = digest(performance_result)
-        rust_performance_result_semantic_sha256 = _stable_result_sha256(performance_result)
+        rust_performance_result_semantic_sha256 = _stable_result_sha256(performance_result, replay_root)
         if rust_performance_result_semantic_sha256 != rust_diagnostic_result_semantic_sha256:
             return {
                 "workbook_index": index,
