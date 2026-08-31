@@ -1,0 +1,34 @@
+{
+  "schema": "sipi.p5-06.stage2b-dfe-checkpoint-acceptance.v1",
+  "status": "accepted_scoped_dfe_checkpoint",
+  "scope": {
+    "original_workbook_count": 13,
+    "eligible_dfe_case_count": 25,
+    "source_checkpoint": "output_args.DFE_taps",
+    "shape_semantics": "matlab_native_column_or_row_shape_preserved",
+    "source_precision_transport": "ieee754_f64_little_endian_hex_receipt",
+    "finite_tolerance": 1e-9,
+    "matlab_repeat_tolerance": 1e-12,
+    "thread_policy": {
+      "matlab": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+      "rust": "RAYON_NUM_THREADS=16"
+    }
+  },
+  "artifacts": {
+    "matlab_01": {"path": "docs/baselines/p5-06-stage2b-dfe-matlab-01.v1.json", "sha256": "be3fa58b5ea435e647cf0ba0fed4cbbff27b06e2597f55f7fd723d17f46b8c90"},
+    "matlab_02": {"path": "docs/baselines/p5-06-stage2b-dfe-matlab-02.v1.json", "sha256": "2e2e90ab73f49f76c1aebbe7dd1644dba27c1d197a0f7f929b8574116bcf382e"},
+    "rust_01": {"path": "docs/baselines/p5-06-stage2b-dfe-rust-01.v1.json", "sha256": "de1f440be7dfda78593fbad7d1de735cf68ea912dc5d31e181a38daf70a6f45b"},
+    "rust_02": {"path": "docs/baselines/p5-06-stage2b-dfe-rust-02.v1.json", "sha256": "aaf6829f91b0d7e7c9198a14075a01f7913c98a0b48e57af3103028adcdccb3d"},
+    "aggregate": {"path": "docs/baselines/p5-06-stage2b-dfe-aggregate.v1.json", "sha256": "f6a2a6d33bf12cd0f761baa0bda86c7a987888874b6fd5bdfd27c13c7fe3eb6b"}
+  },
+  "gate_tools": {
+    "aggregate": {"path": "tools/aggregate_p5_06_stage2b_dfe_matrix.py", "sha256": "6af0640e84c4eb496716be4a86517432bd7c649bc262498adb8ae6ce55db21a5"},
+    "runner": {"path": "tools/run_p5_06_stage2b_dfe_matrix.py", "sha256": "4a37c0a5536211f36d219f09a99f84ca339123fd39084969992acceb65aa2c26"},
+    "projector": {"path": "tools/project_p5_06_stage2b_dfe.py", "sha256": "17a6a34c3b6b9df00c529ce335b2df2ffba5b3f90476a88dfa1053bb63ba7dc8"},
+    "matlab_harness": {"path": "tools/sipi_com_dfe_checkpoint_oracle_v1.m", "sha256": "f7e14d955a116196d5fabc7899d5fb1c5cdf9330c87054d283613c02041f4cf3"}
+  },
+  "gates": {"matlab_repeat_1e_12": true, "rust_repeat_exact": true, "rust_vs_matlab_1e_9_run_a": true, "rust_vs_matlab_1e_9_run_b": true, "per_workbook_rust_not_slower": true, "total_rust_not_slower": true},
+  "performance": {"matlab_best_total_wall_ns": 1613483260500, "rust_worst_total_wall_ns": 157375059000, "fixed_deployment_speedup_min": 10.252471203203806},
+  "claims": {"stage2b_dfe_checkpoint_acceptance": true, "p5_06_main_closed": false, "full_intermediate_array_acceptance": false, "release": false, "s_parameter_fit": false, "one_final_fd_to_td_impulse": true},
+  "non_claims": ["single_thread_algorithm_comparison", "full_result_graph_or_array_acceptance", "generalized_COM_or_release_acceptance"]
+}

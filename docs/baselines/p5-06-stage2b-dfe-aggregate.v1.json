@@ -1,0 +1,467 @@
+{
+  "claims": {
+    "array_acceptance": false,
+    "one_final_fd_to_td_impulse": true,
+    "p5_06_main_closed": false,
+    "release": false,
+    "s_parameter_fit": false,
+    "stage2b_dfe_checkpoint_acceptance": true
+  },
+  "comparison": {
+    "cross_run_a": [
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 0
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 1
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 2
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 3
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 4
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 5
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 6
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 7
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 8
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 9
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 10
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 11
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 12
+      }
+    ],
+    "cross_run_b": [
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 0
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 1
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 2
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 3
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 4
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": true,
+        "workbook_index": 5
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 6
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 7
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 8
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 9
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 10
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 11
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "raw_f64_receipts_equal": false,
+        "workbook_index": 12
+      }
+    ],
+    "matlab_repeat": [
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 0
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 1
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 2
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 3
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 4
+      },
+      {
+        "eligible_case_count": 0,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 5
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 6
+      },
+      {
+        "eligible_case_count": 2,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 7
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 8
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 9
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 10
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 11
+      },
+      {
+        "eligible_case_count": 3,
+        "numeric_equal_within_tolerance": true,
+        "workbook_index": 12
+      }
+    ]
+  },
+  "gate_tools": {
+    "aggregate": {
+      "bytes": 12862,
+      "path": "tools/aggregate_p5_06_stage2b_dfe_matrix.py",
+      "sha256": "6af0640e84c4eb496716be4a86517432bd7c649bc262498adb8ae6ce55db21a5"
+    },
+    "matlab_harness": {
+      "bytes": 6009,
+      "path": "tools/sipi_com_dfe_checkpoint_oracle_v1.m",
+      "sha256": "f7e14d955a116196d5fabc7899d5fb1c5cdf9330c87054d283613c02041f4cf3"
+    },
+    "projection": {
+      "bytes": 15201,
+      "path": "tools/project_p5_06_stage2b_dfe.py",
+      "sha256": "17a6a34c3b6b9df00c529ce335b2df2ffba5b3f90476a88dfa1053bb63ba7dc8"
+    },
+    "runner": {
+      "bytes": 19231,
+      "path": "tools/run_p5_06_stage2b_dfe_matrix.py",
+      "sha256": "4a37c0a5536211f36d219f09a99f84ca339123fd39084969992acceb65aa2c26"
+    }
+  },
+  "gates": {
+    "matlab_repeat_1e_12": true,
+    "per_workbook_rust_not_slower": true,
+    "rust_repeat_exact": true,
+    "rust_vs_matlab_1e_9_run_a": true,
+    "rust_vs_matlab_1e_9_run_b": true,
+    "total_rust_not_slower": true
+  },
+  "host_fingerprint": "b2195549e387ffae49faf8b25614a5e98c48e4cdabb8cd8953a9f741290e6f30",
+  "matrix": {
+    "eligible_dfe_case_count": 25,
+    "workbook_count": 13
+  },
+  "performance": {
+    "fixed_deployment_speedup_min": 10.252471203203806,
+    "matlab_best_total_wall_ns": 1613483260500,
+    "per_workbook": [
+      {
+        "matlab_best_wall_ns": 24736886200,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 801032200,
+        "workbook_index": 0
+      },
+      {
+        "matlab_best_wall_ns": 29909779700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 1789734200,
+        "workbook_index": 1
+      },
+      {
+        "matlab_best_wall_ns": 700792131100,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 86444277100,
+        "workbook_index": 2
+      },
+      {
+        "matlab_best_wall_ns": 14822949200,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 193105800,
+        "workbook_index": 3
+      },
+      {
+        "matlab_best_wall_ns": 14980783700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 203149900,
+        "workbook_index": 4
+      },
+      {
+        "matlab_best_wall_ns": 14341159700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 201784000,
+        "workbook_index": 5
+      },
+      {
+        "matlab_best_wall_ns": 32723670700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 4008825700,
+        "workbook_index": 6
+      },
+      {
+        "matlab_best_wall_ns": 32165897600,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 2826472100,
+        "workbook_index": 7
+      },
+      {
+        "matlab_best_wall_ns": 142082835000,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 13977379300,
+        "workbook_index": 8
+      },
+      {
+        "matlab_best_wall_ns": 141786710000,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12796624100,
+        "workbook_index": 9
+      },
+      {
+        "matlab_best_wall_ns": 138097210800,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 9702788300,
+        "workbook_index": 10
+      },
+      {
+        "matlab_best_wall_ns": 93678441600,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 13512432500,
+        "workbook_index": 11
+      },
+      {
+        "matlab_best_wall_ns": 231468625400,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 11230341000,
+        "workbook_index": 12
+      }
+    ],
+    "rust_worst_total_wall_ns": 157375059000
+  },
+  "runs": [
+    {
+      "engine": "matlab",
+      "nonce": "35ff4c342b9349043ea6ca847e0ef687ee99aad42bd85e1b174f4a5d9c50b421",
+      "report_sha256": "be3fa58b5ea435e647cf0ba0fed4cbbff27b06e2597f55f7fd723d17f46b8c90",
+      "root_id": "f82d6bac38e7d97a28078109caa5be4718f31ac6a7dcf58e948d629692907bc3",
+      "run_id": "original13-stage2b-dfe-matlab-35ff4c342b9349043ea6ca847e0ef687ee99aad42bd85e1b174f4a5d9c50b421"
+    },
+    {
+      "engine": "matlab",
+      "nonce": "990fd60babe0f5a5aad349ce5e802033ab2fd43312144dfabd7eddf6289dd68e",
+      "report_sha256": "2e2e90ab73f49f76c1aebbe7dd1644dba27c1d197a0f7f929b8574116bcf382e",
+      "root_id": "fc0512463fe69c7fa845fe464f59a0e6375523c8986a072578d2ee84c1556b97",
+      "run_id": "original13-stage2b-dfe-matlab-990fd60babe0f5a5aad349ce5e802033ab2fd43312144dfabd7eddf6289dd68e"
+    },
+    {
+      "engine": "rust",
+      "nonce": "3a50f6affb001b7995a6bac542f673f800d1a71608c7784041e11b12eeb8be44",
+      "report_sha256": "de1f440be7dfda78593fbad7d1de735cf68ea912dc5d31e181a38daf70a6f45b",
+      "root_id": "b0deafeec6beb32aedbb3d66a466f0e8d2cf72d43be0d8573b6687a56c96b2de",
+      "run_id": "original13-stage2b-dfe-rust-3a50f6affb001b7995a6bac542f673f800d1a71608c7784041e11b12eeb8be44"
+    },
+    {
+      "engine": "rust",
+      "nonce": "24d2a04fddf0a03e60f9c09b704d1862c688d1f43cce2380bee7d38a355beb86",
+      "report_sha256": "aaf6829f91b0d7e7c9198a14075a01f7913c98a0b48e57af3103028adcdccb3d",
+      "root_id": "948aee3a66fb8f61a64c3804efd30c26b3a06b5576091300a5eac4522b3273e9",
+      "run_id": "original13-stage2b-dfe-rust-24d2a04fddf0a03e60f9c09b704d1862c688d1f43cce2380bee7d38a355beb86"
+    }
+  ],
+  "schema": "sipi.p5-06.stage2b-dfe-checkpoint-aggregate.v1",
+  "source": {
+    "candidate": {
+      "archive_bytes": 57098240,
+      "archive_sha256": "a3004fb29ef29439684af10f2c4fd58bf742f59d54fc8299a3a5cc02f86645ab",
+      "commit": "83e9cb6c264ca728d4147d8e4b19d75ee3c01ec5",
+      "tree": "49dbc479a42a7cdbe068a624e28e7582b0795269"
+    },
+    "gate_tools": {
+      "matlab_harness": {
+        "bytes": 6009,
+        "path": "tools/sipi_com_dfe_checkpoint_oracle_v1.m",
+        "sha256": "f7e14d955a116196d5fabc7899d5fb1c5cdf9330c87054d283613c02041f4cf3"
+      },
+      "projection": {
+        "bytes": 15201,
+        "path": "tools/project_p5_06_stage2b_dfe.py",
+        "sha256": "17a6a34c3b6b9df00c529ce335b2df2ffba5b3f90476a88dfa1053bb63ba7dc8"
+      },
+      "runner": {
+        "bytes": 19231,
+        "path": "tools/run_p5_06_stage2b_dfe_matrix.py",
+        "sha256": "4a37c0a5536211f36d219f09a99f84ca339123fd39084969992acceb65aa2c26"
+      }
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_sha256": "536624a00003544be3a7a5bb0d22893dc5b696c802ca6b3a5efd00abf53e3a50"
+      },
+      "matlab": {
+        "executable": "matlab.exe",
+        "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+        "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+        "path_redacted": true,
+        "release": "R2024b",
+        "role": "matlab",
+        "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca"
+      },
+      "python": {
+        "executable": "python.exe",
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb"
+      },
+      "uv": {
+        "executable": "uv.exe",
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "upstream": {
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    }
+  },
+  "status": "accepted_stage2b_dfe_checkpoint",
+  "thread_policy": {
+    "matlab_launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+    "rust_rayon_num_threads": 16
+  },
+  "timing_clock": "perf_counter_ns",
+  "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
+}
