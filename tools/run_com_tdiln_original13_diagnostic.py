@@ -124,16 +124,35 @@ def _worker_environment(source_root: Path, engine_site: Path, preference_dir: Pa
 
 
 _PACKAGE_CASE_TEMP_ROOT = re.compile(r"sipi-com-package-cases-\d+-[0-9a-f]{64}", re.IGNORECASE)
+_REPLAY_OUTPUT_ROOT = re.compile(
+    r"sipi-p5-06-tdiln-array-(?:formal|replay)-[0-9a-f]{32}[\\/]run[12]-output",
+    re.IGNORECASE,
+)
 
 
-def _stable_result_value(value: Any) -> Any:
-    """Replace only the process-specific package staging root in result receipts."""
+def _stable_result_value(value: Any, path: tuple[str, ...] = ()) -> Any:
+    """Normalize replay-local paths, while retaining all computed result values.
+
+    Raw receipts deliberately retain absolute archive/materialization paths.  The
+    repeatability digest may normalize only their per-replay roots and the
+    provenance hash derived from a config containing those roots.  The immutable
+    source archive is bound by the enclosing replay receipt, so this does not
+    hide a source-input change.
+    """
     if isinstance(value, str):
-        return _PACKAGE_CASE_TEMP_ROOT.sub("sipi-com-package-cases-<process>-<config>", value)
+        value = _PACKAGE_CASE_TEMP_ROOT.sub("sipi-com-package-cases-<process>-<config>", value)
+        return _REPLAY_OUTPUT_ROOT.sub("sipi-p5-06-tdiln-array-<replay>-output", value)
     if isinstance(value, list):
-        return [_stable_result_value(item) for item in value]
+        return [_stable_result_value(item, path + (str(index),)) for index, item in enumerate(value)]
     if isinstance(value, dict):
-        return {key: _stable_result_value(item) for key, item in value.items()}
+        return {
+            key: (
+                "<materialized-config-path-dependent-sha256>"
+                if path == ("provenance",) and key == "config_sha256" and isinstance(item, str)
+                else _stable_result_value(item, path + (key,))
+            )
+            for key, item in value.items()
+        }
     return value
 
 

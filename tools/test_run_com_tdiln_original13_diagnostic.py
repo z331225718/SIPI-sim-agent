@@ -45,15 +45,39 @@ class RustPerformanceInvocationTests(unittest.TestCase):
         self.assertEqual(environment["RAYON_NUM_THREADS"], "16")
         self.assertEqual(environment["SIPI_COM_TDILN_DIAGNOSTIC_SIDECAR_DIR"], "sidecar")
 
-    def test_stable_result_hash_ignores_only_the_ephemeral_package_process_id(self) -> None:
+    def test_stable_result_hash_ignores_only_bound_replay_materialization_paths(self) -> None:
         root = Path(self._testMethodName)
         first = root / "first.json"
         second = root / "second.json"
         first.parent.mkdir(exist_ok=True)
-        first.write_text(json.dumps({"input_manifest": {"pulse": r"C:\\Temp\\sipi-com-package-cases-12-" + "a" * 64 + r"\\case-0\\thru.s4p"}, "metric": 1.0}), encoding="utf-8")
-        second.write_text(json.dumps({"input_manifest": {"pulse": r"C:\\Temp\\sipi-com-package-cases-34-" + "a" * 64 + r"\\case-0\\thru.s4p"}, "metric": 1.0}), encoding="utf-8")
+        first.write_text(json.dumps({
+            "input_manifest": {"pulse": r"C:\Temp\sipi-com-package-cases-12-" + "a" * 64 + r"\case-0\thru.s4p"},
+            "channels": [r"C:\Temp\sipi-p5-06-tdiln-array-formal-" + "b" * 32 + r"\run1-output\upstream\fixture.s4p"],
+            "provenance": {"config_sha256": "c" * 64, "input_sha256": "d" * 64},
+            "metric": 1.0,
+        }), encoding="utf-8")
+        second.write_text(json.dumps({
+            "input_manifest": {"pulse": r"C:\Temp\sipi-com-package-cases-34-" + "a" * 64 + r"\case-0\thru.s4p"},
+            "channels": [r"C:\Temp\sipi-p5-06-tdiln-array-formal-" + "b" * 32 + r"\run2-output\upstream\fixture.s4p"],
+            "provenance": {"config_sha256": "e" * 64, "input_sha256": "d" * 64},
+            "metric": 1.0,
+        }), encoding="utf-8")
         try:
             self.assertEqual(_stable_result_sha256(first), _stable_result_sha256(second))
+        finally:
+            first.unlink(missing_ok=True)
+            second.unlink(missing_ok=True)
+            first.parent.rmdir()
+
+    def test_stable_result_hash_retains_non_ephemeral_provenance(self) -> None:
+        root = Path(self._testMethodName)
+        first = root / "first.json"
+        second = root / "second.json"
+        first.parent.mkdir(exist_ok=True)
+        first.write_text(json.dumps({"provenance": {"input_sha256": "a" * 64}}), encoding="utf-8")
+        second.write_text(json.dumps({"provenance": {"input_sha256": "b" * 64}}), encoding="utf-8")
+        try:
+            self.assertNotEqual(_stable_result_sha256(first), _stable_result_sha256(second))
         finally:
             first.unlink(missing_ok=True)
             second.unlink(missing_ok=True)
