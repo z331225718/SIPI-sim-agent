@@ -97,12 +97,17 @@ def _validate(report: Any) -> dict[str, Any]:
     return report
 
 
+def _common_source(source: dict[str, Any]) -> dict[str, Any]:
+    """Build artifacts are replay-local; source, tools, and harnesses are not."""
+    return {key: value for key, value in source.items() if key not in {"rust_binary", "rust_production_binary"}}
+
+
 def aggregate(first: Any, second: Any, first_sha256: str, second_sha256: str) -> dict[str, Any]:
     first = _validate(first)
     second = _validate(second)
     _require(first_sha256 != second_sha256, "duplicate report content")
     _require(first["run_id"] != second["run_id"] and first["nonce"] != second["nonce"], "run identity collision")
-    _require(first["source"] == second["source"] and first["host"] == second["host"] and first["performance_policy"] == second["performance_policy"], "source, host, or policy drift")
+    _require(_common_source(first["source"]) == _common_source(second["source"]) and first["host"] == second["host"] and first["performance_policy"] == second["performance_policy"], "source, host, or policy drift")
     per_workbook = []
     semantic_repeat = True
     hard_speed_gate = True
@@ -124,7 +129,11 @@ def aggregate(first: Any, second: Any, first_sha256: str, second_sha256: str) ->
         "status": "accepted_diagnostic_checkpoint" if accepted else "blocked",
         "diagnostic_only": True,
         "runs": [{"run_id": report["run_id"], "nonce": report["nonce"], "report_sha256": sha256} for report, sha256 in ((first, first_sha256), (second, second_sha256))],
-        "source": first["source"],
+        "source": _common_source(first["source"]),
+        "builds": [
+            {"diagnostic_binary": report["source"]["rust_binary"], "production_binary": report["source"]["rust_production_binary"]}
+            for report in (first, second)
+        ],
         "host": first["host"],
         "performance_policy": first["performance_policy"],
         "gates": {"two_fresh_replays": True, "rust_semantic_repeat_exact": semantic_repeat, "per_workbook_rust_not_slower": hard_speed_gate, "total_rust_not_slower": total_speed_gate},

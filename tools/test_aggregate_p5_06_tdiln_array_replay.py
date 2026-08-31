@@ -85,6 +85,15 @@ class TdilnArrayReplayAggregateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "source, host, or policy drift"):
             aggregate(first, second, _hash("1"), _hash("2"))
 
+    def test_fresh_build_artifacts_may_differ_when_the_source_receipts_match(self) -> None:
+        first = report("one", "a")
+        second = report("two", "b")
+        second["source"]["rust_binary"]["sha256"] = _hash("e")
+        second["source"]["rust_production_binary"]["sha256"] = _hash("f")
+        result = aggregate(first, second, _hash("1"), _hash("2"))
+        self.assertEqual(result["status"], "accepted_diagnostic_checkpoint")
+        self.assertEqual(len(result["builds"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
