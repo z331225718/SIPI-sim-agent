@@ -27,14 +27,14 @@ use sipi_com::{
     CtleParamsV1, FdToTdOptionsV1, FourPortSMatrixV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
     SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1,
-    SearchLoopResultWithWinnerV2, TdFrequencyFillinV1, TdIlnResultV1, XtalkChannelV1, apply_r480_equalization_v1,
-    apply_r480_pn_skew_v1, butterworth_filter_v1, calculate_r480_calibration_noise_v1,
-    calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, com_mixed_mode_v1, execute_com_run_v1,
-    execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
-    merge_com_parameters_v1, r480_tdiln_v1, raised_cosine_filter_v1, rectangular_pulse_response_v1,
-    s21_to_impulse_dc_v1, sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1,
-    search_mmse_candidates_v1, search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2, td_fd_fillin_v1,
-    td_pulse_input_v1,
+    SearchLoopResultWithWinnerV2, TdFrequencyFillinV1, TdIlnResultV1, XtalkChannelV1,
+    apply_r480_equalization_v1, apply_r480_pn_skew_v1, butterworth_filter_v1,
+    calculate_r480_calibration_noise_v1, calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1,
+    com_mixed_mode_v1, execute_com_run_v1, execute_com_run_with_crosstalk_v1,
+    execute_com_run_with_search_result_v2, merge_com_parameters_v1, r480_tdiln_v1,
+    raised_cosine_filter_v1, rectangular_pulse_response_v1, s21_to_impulse_dc_v1,
+    sampled_signal_pdf_v1, search_fvlms_rxffe_candidates_v1, search_mmse_candidates_v1,
+    search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2, td_fd_fillin_v1, td_pulse_input_v1,
 };
 use sipi_touchstone::selected_four_port_v1::parse_selected_four_port_hz_s_ri_50_v2;
 use sipi_touchstone::{TouchstoneParseLimitsV1, parse_touchstone_hz_s_ri_50_two_port_v1};
@@ -642,21 +642,21 @@ fn workbook_package_cases_from_config_v1(
                 search.insert("package_case_index".to_owned(), json!(index));
             }
             PackageCaseV1 {
-            identity: format!("workbook-case-{index}"),
-            calibration_identity: format!("workbook-case-{index}:calibration"),
-            document: Arc::new(document),
-            pulse: PackageChannelV1 {
-                values: Vec::new(),
-                source: Some(request.pulse.clone()),
-                source_bytes: Some(source_bytes.clone()),
-                already_pulse: false,
-                source_sha256: sha256_bytes_v1(&source_bytes),
-                source_kind: "workbook-s4p-source",
-            },
-            fext: fext.clone(),
-            next: next.clone(),
-            trusted_workbook: true,
-        }
+                identity: format!("workbook-case-{index}"),
+                calibration_identity: format!("workbook-case-{index}:calibration"),
+                document: Arc::new(document),
+                pulse: PackageChannelV1 {
+                    values: Vec::new(),
+                    source: Some(request.pulse.clone()),
+                    source_bytes: Some(source_bytes.clone()),
+                    already_pulse: false,
+                    source_sha256: sha256_bytes_v1(&source_bytes),
+                    source_kind: "workbook-s4p-source",
+                },
+                fext: fext.clone(),
+                next: next.clone(),
+                trusted_workbook: true,
+            }
         })
         .collect();
     Ok(Some(cases))
@@ -892,15 +892,15 @@ fn run_package_cases_v1(
         child.calibration_noise = calibration_snapshot.as_ref().map(|value| value.0.clone());
         child.fext = Vec::with_capacity(case.fext.len());
         for (channel, source) in case.fext.iter().enumerate() {
-            child
-                .fext
-                .push(stage_package_channel_v1(&case_root, "fext", channel, source)?);
+            child.fext.push(stage_package_channel_v1(
+                &case_root, "fext", channel, source,
+            )?);
         }
         child.next = Vec::with_capacity(case.next.len());
         for (channel, source) in case.next.iter().enumerate() {
-            child
-                .next
-                .push(stage_package_channel_v1(&case_root, "next", channel, source)?);
+            child.next.push(stage_package_channel_v1(
+                &case_root, "next", channel, source,
+            )?);
         }
         staged_children.push(child);
     }
@@ -4243,10 +4243,7 @@ fn portable_branch_result_with_sigma_v1(
                 .unwrap_or(1.0e-4),
         )
         .map_err(|error| DirectRunErrorV1::Unsupported(format!("tdiln: {error:?}")))?;
-        diagnostics.insert(
-            "tdiln".to_owned(),
-            tdiln_diagnostics_v1(&result),
-        );
+        diagnostics.insert("tdiln".to_owned(), tdiln_diagnostics_v1(&result));
     }
     if let Some(search) = root.get("search").and_then(Value::as_object) {
         let search_input = effective_values.as_ref().map_or_else(
@@ -7321,7 +7318,8 @@ fn write_tdiln_diagnostic_sidecar_v1(
     };
     let root = PathBuf::from(root);
     let case_root = root.join(format!("case-{case_index}"));
-    fs::create_dir_all(&case_root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    fs::create_dir_all(&case_root)
+        .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
     let manifest_path = case_root.join("manifest.json");
     let Some(result) = result else {
         atomic_write_v1(
@@ -7489,7 +7487,8 @@ fn load_s4p_package_impulse_v1(
         channel_type,
         package_case_index,
     )?;
-    let sipi_runtime_observations = phase_slope_runtime_observation_v1(&vtf, options.debug, channel_type)?;
+    let sipi_runtime_observations =
+        phase_slope_runtime_observation_v1(&vtf, options.debug, channel_type)?;
     let source_mapped_warnings = if trusted_workbook {
         source_max_frequency_warning_v1(
             &network.frequency_hz,
@@ -8012,15 +8011,31 @@ fn result_value_v1(
         .and_then(normal_erl_phase_slope_observation_v1)
         .into_iter();
     let sipi_runtime_observations = std::iter::once(&impulse.sipi_runtime_observations)
-        .chain(fext_inputs.iter().map(|input| &input.sipi_runtime_observations))
-        .chain(next_inputs.iter().map(|input| &input.sipi_runtime_observations))
+        .chain(
+            fext_inputs
+                .iter()
+                .map(|input| &input.sipi_runtime_observations),
+        )
+        .chain(
+            next_inputs
+                .iter()
+                .map(|input| &input.sipi_runtime_observations),
+        )
         .flatten()
         .cloned()
         .chain(normal_erl_observation)
         .collect::<Vec<_>>();
     let source_mapped_warnings = std::iter::once(&impulse.source_mapped_warnings)
-        .chain(fext_inputs.iter().map(|input| &input.source_mapped_warnings))
-        .chain(next_inputs.iter().map(|input| &input.source_mapped_warnings))
+        .chain(
+            fext_inputs
+                .iter()
+                .map(|input| &input.source_mapped_warnings),
+        )
+        .chain(
+            next_inputs
+                .iter()
+                .map(|input| &input.source_mapped_warnings),
+        )
         .flatten()
         .cloned()
         .collect::<Vec<_>>();
@@ -9518,8 +9533,8 @@ mod tests {
                 .expect("guard")
                 .is_empty()
         );
-        let observations = phase_slope_runtime_observation_v1(&anti_causal, true, "FEXT")
-            .expect("observation");
+        let observations =
+            phase_slope_runtime_observation_v1(&anti_causal, true, "FEXT").expect("observation");
         assert_eq!(observations.len(), 1);
         assert_eq!(
             observations[0]["code"],
@@ -9541,18 +9556,20 @@ mod tests {
             worst_samples: vec![0.0],
             phase_index: 0,
             phase_slope_debug_bypassed: bypassed,
-            interpolation_input_trace: bypassed.then(|| crate::erl_tdr_v1::R480NormalTdrInterpolationTraceV1 {
-                element_count: 2,
-                first_real: 0.0,
-                first_imaginary: 0.0,
-                last_real: 0.0,
-                last_imaginary: 0.0,
-                sum_real: 0.0,
-                sum_imaginary: 0.0,
-                maximum_magnitude: 0.0,
-                mean_unwrapped_phase_step: 0.1,
-                positive_mean_phase_step: true,
-            }),
+            interpolation_input_trace: bypassed.then_some(
+                crate::erl_tdr_v1::R480NormalTdrInterpolationTraceV1 {
+                    element_count: 2,
+                    first_real: 0.0,
+                    first_imaginary: 0.0,
+                    last_real: 0.0,
+                    last_imaginary: 0.0,
+                    sum_real: 0.0,
+                    sum_imaginary: 0.0,
+                    maximum_magnitude: 0.0,
+                    mean_unwrapped_phase_step: 0.1,
+                    positive_mean_phase_step: true,
+                },
+            ),
             erl_db: f64::INFINITY,
             erl_rms_db: f64::INFINITY,
             avg_port_impedance_ohm: 100.0,
@@ -9587,9 +9604,11 @@ mod tests {
         assert_eq!(low[0]["code"], "COM:read_s4p:MaxFreqTooLow");
         assert_eq!(low[0]["source_line"], 9715);
         assert_eq!(low[0]["channel_role"], "THRU");
-        assert!(source_max_frequency_warning_v1(&[0.0, 10.0e9], &values, "FEXT", "b")
-            .expect("equal is not low")
-            .is_empty());
+        assert!(
+            source_max_frequency_warning_v1(&[0.0, 10.0e9], &values, "FEXT", "b")
+                .expect("equal is not low")
+                .is_empty()
+        );
         let ordered = ["THRU", "FEXT", "NEXT"]
             .into_iter()
             .flat_map(|role| {
@@ -9745,10 +9764,7 @@ mod tests {
             "tx_ffe_cm1_values".to_owned(),
             ResolvedDefaultV1::Vector(vec![0.0; 18]),
         )]);
-        let lexemes = BTreeMap::from([(
-            "tx_ffe_cm1_values".to_owned(),
-            "[-.34:.02:0]".to_owned(),
-        )]);
+        let lexemes = BTreeMap::from([("tx_ffe_cm1_values".to_owned(), "[-.34:.02:0]".to_owned())]);
         let projected = workbook_txffe_vector_json_v1(&values, &lexemes, "tx_ffe_cm1_values")
             .expect("runtime sidecar projection");
         assert_eq!(
@@ -9779,8 +9795,14 @@ mod tests {
         ] {
             let values = txffe_decimal_colon_v1(literal).expect(literal);
             assert_eq!(values.len(), count, "{literal}");
-            assert_eq!(values.first().copied().map(f64::to_bits), Some(first.to_bits()));
-            assert_eq!(values.last().copied().map(f64::to_bits), Some(last.to_bits()));
+            assert_eq!(
+                values.first().copied().map(f64::to_bits),
+                Some(first.to_bits())
+            );
+            assert_eq!(
+                values.last().copied().map(f64::to_bits),
+                Some(last.to_bits())
+            );
         }
     }
 

@@ -498,16 +498,23 @@ mod tests {
     use flate2::Compression;
     use flate2::write::ZlibEncoder;
     use std::io::Write;
+    use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
     use zip::ZipWriter;
     use zip::write::SimpleFileOptions;
+
+    static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     fn temp_path(extension: &str) -> std::path::PathBuf {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("clock")
             .as_nanos();
-        std::env::temp_dir().join(format!("sipi-com-preflight-{nonce}.{extension}"))
+        let sequence = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "sipi-com-preflight-{}-{nonce}-{sequence}.{extension}",
+            std::process::id()
+        ))
     }
 
     fn write_xlsx(sheet: &str, shared_strings: Option<&[u8]>) -> std::path::PathBuf {
