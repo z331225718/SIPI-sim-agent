@@ -1,0 +1,51 @@
+{
+  "schema": "sipi.com.r480-route-product-boundary.v2",
+  "status": "preparation_only_not_distributed",
+  "scope": {
+    "command": "sipi com run",
+    "argv_schema": "sipi.com.r480.argv.v1",
+    "receipt_schema": "sipi.com.r480-cli-receipt.v1",
+    "profile": "r4.80",
+    "target": "x86_64-pc-windows-msvc",
+    "whole_repository_release": false
+  },
+  "candidate": null,
+  "distribution": {
+    "public_route_enabled": false,
+    "archive_created": false,
+    "release": false
+  },
+  "execution_contract": {
+    "required_arguments": ["--config", "--thru", "--output-dir"],
+    "repeatable_arguments": ["--fext", "--next"],
+    "optional_singleton_arguments": ["--calibration-noise"],
+    "forbidden_arguments": ["--profile", "--reader", "--fix-id", "--override", "--overwrite", "--legacy-csv"],
+    "forbidden_transports": ["stdin", "url", "inline_waveform", "network"],
+    "output_policy": "new_directory_only_and_direct_port_custody_checked"
+  },
+  "required_candidate_receipts": [
+    "candidate_commit_tree_and_parent",
+    "cargo_lock_and_rust_toolchain_hashes",
+    "actual_root_executable_source_and_link_closure",
+    "workspace_and_registry_license_material_receipts",
+    "route_notice_and_cyclonedx_sbom",
+    "archive_inventory_and_raw_binary_sha256",
+    "fresh_machine_windows_smoke",
+    "two_matlab_and_two_rust_original13_replays",
+    "per_workbook_and_total_rust_faster_than_matlab"
+  ],
+  "excluded_from_archive": [
+    "matlab_runtime",
+    "agent_com_workbooks",
+    "s_parameter_assets",
+    "python_runtime",
+    "agent_com_adapter"
+  ],
+  "non_claims": [
+    "no_distribution_admission",
+    "no_release_admission",
+    "no_full_matlab_warning_catalog_parity",
+    "no_s_parameter_fit",
+    "one_final_fd_to_td_impulse_only"
+  ]
+}

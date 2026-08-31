@@ -1,0 +1,33 @@
+{
+  "schema": "sipi.com.r480.argv.v1",
+  "status": "preparation_only_no_dispatch",
+  "route": ["com", "run"],
+  "fixed_profile": "r4.80",
+  "arguments": {
+    "required_singleton": ["--config", "--thru", "--output-dir"],
+    "optional_repeatable": ["--fext", "--next"],
+    "optional_singleton": ["--calibration-noise"],
+    "rejected": ["--profile", "--reader", "--fix-id", "--override", "--overwrite", "--legacy-csv"]
+  },
+  "limits": {
+    "path_utf8_bytes": 4096,
+    "fext_next_combined": 64
+  },
+  "path_policy": {
+    "remote_urls_rejected": true,
+    "output_must_be_new": true,
+    "input_output_overlap_rejected_by_execution_boundary": true,
+    "symlink_and_hardlink_custody_rejected_by_execution_boundary": true
+  },
+  "receipt": {
+    "schema": "sipi.com.r480-cli-receipt.v1",
+    "required_fields": ["schema", "status", "profile", "case_count", "warning_count", "config_sha256", "impulse_sha256", "artifacts"],
+    "artifact_fields": ["name", "sha256", "byte_length"],
+    "prohibited_fields": ["absolute_path", "raw_error_text", "direct_result_payload"]
+  },
+  "non_claims": [
+    "not_an_enabled_cli_route",
+    "not_a_distribution_or_release_record",
+    "not_a_general_com_oracle"
+  ]
+}
