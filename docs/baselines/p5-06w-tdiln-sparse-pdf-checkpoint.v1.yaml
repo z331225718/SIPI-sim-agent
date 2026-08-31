@@ -1,0 +1,55 @@
+schema: sipi.p5-06w.tdiln-sparse-pdf-checkpoint.v1
+status: accepted_bounded_current_checkpoint
+scope:
+  candidate: b456e9d57b2449787e22cdefdad6c0edc70d69dc
+  candidate_tree: 9cd25bd57387e571917cf5274952d8c4fffe44f5
+  workbook_index: 10
+  package_cases: 3
+  purpose: Validate the TDILN sparse PAM-PDF optimization on the prior full-matrix worst Rust TDILN workbook.
+archives:
+  candidate:
+    sha256: dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8
+    bytes: 58337280
+  upstream:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+    sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+    bytes: 43694080
+external_replay:
+  report_sha256: 8f03caddf48134178d185317fa5b9ff49b8e5ee1c21002c7e846b44bf01366bd
+  matlab_release: R2024b
+  rust_diagnostic_binary_sha256: b3c505377aa330e0b7a787ad52d9c0b039cc3b6a7a931719d6d79592446bc2eb
+  rust_production_binary_sha256: c01f7e1b0957307d40e7e3c6a7fd8c23421036da3048da61872bff9919eef4bd
+  matlab_core_seconds: 182.3215594
+  rust_production_wall_seconds: 19.0679352999432
+  speedup: 9.561683345996203
+array_gates:
+  passed: true
+  time_s: exact_f64le
+  iln_pulse:
+    max_abs: 1.5418222254481861e-12
+    atol: 5e-12
+    rtol: 1e-9
+  reference_pulse:
+    max_abs: 4.376360385194289e-13
+    atol: 5e-12
+    rtol: 1e-9
+  fitted_pulse:
+    max_abs: 2.311023334505835e-12
+    atol: 5e-12
+    rtol: 1e-9
+  pdf_axis:
+    max_abs: 5.551115123125783e-17
+    atol: 5e-12
+    rtol: 1e-9
+  pdf_probability:
+    max_abs: 4.336808689942018e-18
+    atol: 5e-12
+    rtol: 1e-9
+claims:
+  sparse_pdf_current_checkpoint_parity: true
+  rust_not_slower: true
+  full_original13_current_tdiln_rebind: false
+  full_result_graph: false
+  complete_warning_catalog: false
+  release: false
