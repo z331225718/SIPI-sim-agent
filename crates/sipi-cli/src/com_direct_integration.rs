@@ -7,13 +7,6 @@
 
 use sipi_agent_com_direct::{DirectRunErrorV1, DirectRunReportV1, DirectRunRequestV1, run_com_v1};
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the linkage remains test-only until route admission"
-    )
-)]
 pub(crate) fn run_com_direct_for_integration_v1(
     request: &DirectRunRequestV1,
 ) -> Result<DirectRunReportV1, DirectRunErrorV1> {

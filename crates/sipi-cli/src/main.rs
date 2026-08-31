@@ -1,10 +1,6 @@
 #![forbid(unsafe_code)]
 
 #[cfg(feature = "com-direct-integration")]
-#[allow(
-    dead_code,
-    reason = "the public command remains disabled until the immutable candidate stage"
-)]
 mod com_direct_cli_contract_v1;
 #[cfg(feature = "com-direct-integration")]
 mod com_direct_integration;
@@ -216,6 +212,25 @@ const COM_RUN_ARTIFACT_BINDINGS: &[CallerBindingV1] = &[
     CallerBindingV1 {
         pointer: "/artifact_id",
         role: "result_artifact_identity",
+        explicit_required: true,
+    },
+];
+
+#[cfg(feature = "com-direct-integration")]
+const COM_R480_ARGV_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/argv/config",
+        role: "caller_owned_local_workbook_or_json_config",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/argv/thru",
+        role: "caller_owned_local_thru_channel",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/argv/output_dir",
+        role: "caller_owned_new_local_output_directory",
         explicit_required: true,
     },
 ];
@@ -686,6 +701,18 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         unavailable_reason: Some("ami_runtime_not_admitted"),
         nonclaim: "no_vendor_dll_or_ami_workflow",
     },
+    #[cfg(feature = "com-direct-integration")]
+    CommandDescriptorV1 {
+        id: "com.run",
+        route: &["com", "run"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_r480_v1",
+        request_schema: Some(com_direct_cli_contract_v1::COM_R480_ARGV_SCHEMA_V1),
+        response_schema: Some("sipi.com.r480-cli-receipt.v1"),
+        unavailable_reason: None,
+        nonclaim: "r480_direct_port_scoped_no_oracle_acceptance_or_release",
+    },
+    #[cfg(not(feature = "com-direct-integration"))]
     CommandDescriptorV1 {
         id: "com.run",
         route: &["com", "run"],
@@ -1175,6 +1202,16 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: Some("com.run-artifact.specified-non-oracle.v1"),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    #[cfg(feature = "com-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "com.run",
+        example_id: None,
+        required_options: &["--config", "--thru", "--output-dir"],
+        caller_bindings: COM_R480_ARGV_BINDINGS,
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "single_path_free_typed_receipt_stdout_and_zero_stderr_on_success",
     },
     CommandProtocolProfileV1 {
         command_id: "upstream.agent-spice.fit-sparam",
@@ -3492,7 +3529,7 @@ fn command_manifest_is_valid(manifest: &[CommandDescriptorV1]) -> bool {
             })
             && matches!(
                 descriptor.transport,
-                "none" | "stdin_json_v1" | "external_migration_adapter"
+                "none" | "stdin_json_v1" | "external_migration_adapter" | "argv_r480_v1"
             )
             && match descriptor.availability {
                 CommandAvailabilityV1::Available => {
@@ -3556,7 +3593,7 @@ fn command_protocol_profiles_are_valid(
 }
 
 fn available_route_has_handler(route: &[&str]) -> bool {
-    matches!(
+    let standard_handler = matches!(
         route,
         ["version"]
             | ["doctor"]
@@ -3600,7 +3637,15 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["upstream", "agent-com", "run"]
             | ["upstream", "agent-com", "compare"]
             | ["upstream", "agent-com", "public-api"]
-    )
+    );
+    #[cfg(feature = "com-direct-integration")]
+    {
+        standard_handler || matches!(route, ["com", "run"])
+    }
+    #[cfg(not(feature = "com-direct-integration"))]
+    {
+        standard_handler
+    }
 }
 
 fn is_stdin_transport(transport: &str) -> bool {
@@ -3955,6 +4000,17 @@ impl CommandService {
             {
                 schema_show(id)
             }
+            #[cfg(feature = "com-direct-integration")]
+            [command, action, tail @ ..] if command == "com" && action == "run" => {
+                match com_direct_cli_contract_v1::execute_com_r480_argv_v1(tail) {
+                    Ok(receipt) => success(receipt),
+                    Err(error_value) => error(
+                        error_value.exit_code(),
+                        error_value.diagnostic_code(),
+                        "bounded COM argv route failed",
+                    ),
+                }
+            }
             [command, ..] if command == "run" => error(
                 4,
                 "unsupported",
@@ -4294,12 +4350,20 @@ mod tests {
         assert_eq!(commands_response.code, 0);
         assert_eq!(commands_response.stdout.as_deref(), Some(manifest.as_str()));
 
-        for command in [
+        #[cfg(feature = "com-direct-integration")]
+        let unavailable = vec![
+            ["ami", "run"].as_slice(),
+            ["project", "validate"].as_slice(),
+            ["report", "show"].as_slice(),
+        ];
+        #[cfg(not(feature = "com-direct-integration"))]
+        let unavailable = vec![
             ["ami", "run"].as_slice(),
             ["com", "run"].as_slice(),
             ["project", "validate"].as_slice(),
             ["report", "show"].as_slice(),
-        ] {
+        ];
+        for command in unavailable {
             let response = dispatch(&args(command));
             assert_eq!(response.code, 4);
             assert_eq!(response.stderr.as_deref(), Some("capability_unavailable"));
@@ -4487,10 +4551,15 @@ mod tests {
     }
 
     #[test]
-    fn specified_com_artifact_route_is_explicit_and_legacy_com_stays_closed() {
+    fn specified_com_artifact_route_is_explicit_and_com_route_matches_the_feature_gate() {
         let manifest = command_manifest_json();
         assert!(manifest.contains("\"id\":\"com.run-artifact\""));
         assert!(manifest.contains("product_owned_bounded_artifact_execution_non_oracle_only"));
+        #[cfg(feature = "com-direct-integration")]
+        assert!(manifest.contains(
+            "\"id\":\"com.run\",\"route\":[\"com\",\"run\"],\"availability\":\"available\""
+        ));
+        #[cfg(not(feature = "com-direct-integration"))]
         assert!(!manifest.contains(
             "\"id\":\"com.run\",\"route\":[\"com\",\"run\"],\"availability\":\"available\""
         ));
@@ -4504,6 +4573,9 @@ mod tests {
                 .unwrap()
                 .is_some()
         );
+        #[cfg(feature = "com-direct-integration")]
+        assert_eq!(dispatch(&args(&["com", "run"])).code, 2);
+        #[cfg(not(feature = "com-direct-integration"))]
         assert_eq!(dispatch(&args(&["com", "run"])).code, 4);
     }
 
@@ -4610,6 +4682,9 @@ mod tests {
                 .verify_published("result-1")
                 .is_ok()
         );
+        #[cfg(feature = "com-direct-integration")]
+        assert_eq!(dispatch(&args(&["com", "run"])).code, 2);
+        #[cfg(not(feature = "com-direct-integration"))]
         assert_eq!(dispatch(&args(&["com", "run"])).code, 4);
         let _ = fs::remove_dir_all(pulse_root);
         let _ = fs::remove_dir_all(output_root);
