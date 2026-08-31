@@ -95,13 +95,19 @@ def _matlab_cases(document: Any) -> list[dict[str, Any]]:
         case = _object(raw, f"MATLAB case {index}")
         if case.get("case_index") != index:
             raise ValueError("MATLAB case index drift")
-        tdiln = _object(case.get("tdiln"), f"MATLAB case {index}.tdiln")
-        for field in SCALAR_FIELDS:
-            _scalar(case.get(field), f"MATLAB case {index}.{field}")
-        for field in TDILN_SCALAR_FIELDS:
-            _finite(tdiln.get(field), f"MATLAB case {index}.tdiln.{field}")
-        for field in VECTOR_FIELDS:
-            _summary(tdiln.get(field), f"MATLAB case {index}.tdiln.{field}")
+        applicable = case.get("tdiln_applicable")
+        if not isinstance(applicable, bool):
+            raise ValueError("MATLAB TDILN applicability drift")
+        if applicable:
+            tdiln = _object(case.get("tdiln"), f"MATLAB case {index}.tdiln")
+            for field in SCALAR_FIELDS:
+                _scalar(case.get(field), f"MATLAB case {index}.{field}")
+            for field in TDILN_SCALAR_FIELDS:
+                _finite(tdiln.get(field), f"MATLAB case {index}.tdiln.{field}")
+            for field in VECTOR_FIELDS:
+                _summary(tdiln.get(field), f"MATLAB case {index}.tdiln.{field}")
+        elif case.get("tdiln") not in (None, []) or case.get("fom_tdiln") not in (None, []) or case.get("tdiln_inapplicable_reason") != "source_did_not_emit_FOM_TDILN_and_TD_ILN":
+            raise ValueError("MATLAB TDILN inapplicable shape drift")
         validated.append(case)
     return validated
 
@@ -118,14 +124,18 @@ def _rust_cases(document: Any) -> list[dict[str, Any]]:
             raise ValueError("Rust case index drift")
         metrics = _object(case.get("metrics"), f"Rust case {index}.metrics")
         diagnostics = _object(case.get("diagnostics"), f"Rust case {index}.diagnostics")
-        tdiln = _object(diagnostics.get("tdiln"), f"Rust case {index}.tdiln")
-        summaries = _object(tdiln.get("vector_summaries"), f"Rust case {index}.tdiln.vector_summaries")
-        for _, (_, metric_name) in SCALAR_FIELDS.items():
-            _scalar(metrics.get(metric_name), f"Rust case {index}.metrics.{metric_name}")
-        for _, field in TDILN_SCALAR_FIELDS.items():
-            _finite(tdiln.get(field), f"Rust case {index}.tdiln.{field}")
-        for field in VECTOR_FIELDS:
-            _summary(summaries.get(field), f"Rust case {index}.tdiln.vector_summaries.{field}")
+        tdiln = diagnostics.get("tdiln")
+        if tdiln is not None:
+            tdiln = _object(tdiln, f"Rust case {index}.tdiln")
+            summaries = _object(tdiln.get("vector_summaries"), f"Rust case {index}.tdiln.vector_summaries")
+            for _, (_, metric_name) in SCALAR_FIELDS.items():
+                _scalar(metrics.get(metric_name), f"Rust case {index}.metrics.{metric_name}")
+            for _, field in TDILN_SCALAR_FIELDS.items():
+                _finite(tdiln.get(field), f"Rust case {index}.tdiln.{field}")
+            for field in VECTOR_FIELDS:
+                _summary(summaries.get(field), f"Rust case {index}.tdiln.vector_summaries.{field}")
+        elif metrics.get("FOM_TDILN") is not None:
+            raise ValueError("Rust TDILN metric exists without diagnostics")
         validated.append(case)
     return validated
 
@@ -150,8 +160,24 @@ def compare(
     comparisons = []
     passed = rust_wall_seconds <= matlab_core_seconds
     for index, (matlab_case, rust_case) in enumerate(zip(matlab_cases, rust_cases, strict=True)):
+        matlab_tdiln_applicable = matlab_case["tdiln_applicable"]
+        rust_tdiln = rust_case["diagnostics"].get("tdiln")
+        if not matlab_tdiln_applicable:
+            rust_absent = rust_tdiln is None and rust_case["metrics"].get("FOM_TDILN") is None
+            passed = passed and rust_absent
+            comparisons.append({
+                "case_index": index,
+                "tdiln_applicable": False,
+                "source_inapplicable_reason": matlab_case["tdiln_inapplicable_reason"],
+                "rust_tdiln_absent": rust_absent,
+                "passed": rust_absent,
+            })
+            continue
         metrics = rust_case["metrics"]
-        rust_tdiln = rust_case["diagnostics"]["tdiln"]
+        if rust_tdiln is None:
+            passed = False
+            comparisons.append({"case_index": index, "tdiln_applicable": True, "rust_tdiln_absent": True, "passed": False})
+            continue
         rust_summaries = rust_tdiln["vector_summaries"]
         scalar_deltas = {}
         scalar_special_tokens = {}
@@ -179,7 +205,7 @@ def compare(
             and all(item["equal"] for item in scalar_special_tokens.values())
         )
         passed = passed and scalar_passed
-        comparisons.append({"case_index": index, "scalar_absolute_deltas": scalar_deltas, "scalar_special_tokens": scalar_special_tokens, "vector_summaries": vectors, "passed": scalar_passed and all(item["length_equal"] and all(delta <= tolerance for delta in item["absolute_deltas"].values()) for item in vectors.values())})
+        comparisons.append({"case_index": index, "tdiln_applicable": True, "scalar_absolute_deltas": scalar_deltas, "scalar_special_tokens": scalar_special_tokens, "vector_summaries": vectors, "passed": scalar_passed and all(item["length_equal"] and all(delta <= tolerance for delta in item["absolute_deltas"].values()) for item in vectors.values())})
     return {
         "schema": "sipi.com.tdiln-matrix-diagnostic-comparison.v1",
         "status": "passed_diagnostic" if passed else "blocked",
@@ -193,6 +219,7 @@ def compare(
         },
         "tolerance": tolerance,
         "case_count": len(comparisons),
+        "tdiln_applicable_case_count": sum(item["tdiln_applicable"] for item in comparisons),
         "cases": comparisons,
     }
 

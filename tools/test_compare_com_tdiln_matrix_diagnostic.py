@@ -34,7 +34,7 @@ def documents() -> tuple[dict, dict]:
         "diagnostic_only": True,
         "core_duration_seconds": 10.0,
         "case_count": 1,
-        "cases": [{"case_index": 0, "com_db": 5.0, "erl_db": 6.0, "fom_tdiln": 4.0, "tdiln": matlab_tdiln}],
+        "cases": [{"case_index": 0, "com_db": 5.0, "erl_db": 6.0, "tdiln_applicable": True, "tdiln_inapplicable_reason": None, "fom_tdiln": 4.0, "tdiln": matlab_tdiln}],
     }
     rust = {
         "cases": [{
@@ -89,6 +89,33 @@ class TdilnMatrixDiagnosticComparisonTests(unittest.TestCase):
             report["cases"][0]["scalar_special_tokens"]["erl_db"],
             {"matlab": "+Inf", "rust": "+Inf", "equal": True},
         )
+
+    def test_source_inapplicable_tdiln_requires_rust_to_omit_it(self) -> None:
+        matlab, rust = documents()
+        matlab["cases"][0].update({
+            "tdiln_applicable": False,
+            "tdiln_inapplicable_reason": "source_did_not_emit_FOM_TDILN_and_TD_ILN",
+            "fom_tdiln": None,
+            "tdiln": None,
+        })
+        rust["cases"][0]["metrics"]["FOM_TDILN"] = None
+        rust["cases"][0]["diagnostics"]["tdiln"] = None
+        report = compare(matlab, rust, rust_wall_seconds=9.0, tolerance=1.0e-9)
+        self.assertEqual(report["status"], "passed_diagnostic")
+        self.assertEqual(report["tdiln_applicable_case_count"], 0)
+        self.assertTrue(report["cases"][0]["rust_tdiln_absent"])
+
+    def test_source_inapplicable_tdiln_blocks_a_rust_payload(self) -> None:
+        matlab, rust = documents()
+        matlab["cases"][0].update({
+            "tdiln_applicable": False,
+            "tdiln_inapplicable_reason": "source_did_not_emit_FOM_TDILN_and_TD_ILN",
+            "fom_tdiln": None,
+            "tdiln": None,
+        })
+        report = compare(matlab, rust, rust_wall_seconds=9.0, tolerance=1.0e-9)
+        self.assertEqual(report["status"], "blocked")
+        self.assertFalse(report["cases"][0]["rust_tdiln_absent"])
 
     def test_missing_summary_field_is_rejected(self) -> None:
         matlab, rust = documents()
