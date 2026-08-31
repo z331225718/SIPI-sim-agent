@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 import struct
 from typing import Any
 
@@ -29,7 +30,7 @@ SCALAR_METRICS = (
     "g_DC_HP",
     "itick",
 )
-TAP_KEYS = {
+TAP_LEGACY_KEYS = {
     "class",
     "shape",
     "value_count",
@@ -40,6 +41,7 @@ TAP_KEYS = {
     "raw_f64_sha256",
     "column_major_values",
 }
+TAP_LOSSLESS_KEYS = TAP_LEGACY_KEYS | {"raw_f64_le_hex"}
 TAP_METADATA = {
     "class": "double",
     "storage_order": "matlab_column_major",
@@ -105,9 +107,12 @@ def _scalar_surface(values: Any, label: str, source: bool) -> dict[str, float | 
     }
 
 
-def _source_txle(value: Any, label: str) -> dict[str, Any]:
-    if not isinstance(value, dict) or set(value) != TAP_KEYS:
+def _source_txle(value: Any, label: str, require_lossless: bool) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) not in (TAP_LEGACY_KEYS, TAP_LOSSLESS_KEYS):
         raise ValueError(f"{label} TXLE schema drift")
+    has_lossless = set(value) == TAP_LOSSLESS_KEYS
+    if require_lossless and not has_lossless:
+        raise ValueError(f"{label} TXLE lossless raw bytes missing")
     for key, expected in TAP_METADATA.items():
         if value.get(key) != expected:
             raise ValueError(f"{label} TXLE {key} drift")
@@ -122,10 +127,21 @@ def _source_txle(value: Any, label: str) -> dict[str, Any]:
     values = value["column_major_values"]
     if not isinstance(values, list) or len(values) != int(shape[1]) or value["value_count"] != len(values):
         raise ValueError(f"{label} TXLE shape/value count drift")
-    projected = [_finite(item, f"{label}.TXLE[{index}]") for index, item in enumerate(values)]
     receipt = value["raw_f64_sha256"]
-    if not isinstance(receipt, str) or len(receipt) != 64 or receipt != _digest_f64(projected):
+    if not isinstance(receipt, str) or re.fullmatch(r"[0-9a-f]{64}", receipt) is None:
         raise ValueError(f"{label} TXLE raw digest drift")
+    if has_lossless:
+        raw_hex = value["raw_f64_le_hex"]
+        if not isinstance(raw_hex, str) or re.fullmatch(rf"[0-9a-f]{{{len(values) * 16}}}", raw_hex) is None:
+            raise ValueError(f"{label} TXLE lossless raw bytes drift")
+        raw_bytes = bytes.fromhex(raw_hex)
+        projected = list(struct.unpack(f"<{len(values)}d", raw_bytes)) if values else []
+        if any(not math.isfinite(item) for item in projected) or hashlib.sha256(raw_bytes).hexdigest() != receipt:
+            raise ValueError(f"{label} TXLE raw digest drift")
+    else:
+        projected = [_finite(item, f"{label}.TXLE[{index}]") for index, item in enumerate(values)]
+        if receipt != _digest_f64(projected):
+            raise ValueError(f"{label} TXLE raw digest drift")
     return {"shape": [1, len(projected)], "values": projected, "raw_f64_sha256": receipt}
 
 
@@ -138,7 +154,7 @@ def _rust_txle(value: Any, label: str) -> dict[str, Any]:
     return {"shape": [1, len(projected)], "values": projected, "raw_f64_sha256": _digest_f64(projected)}
 
 
-def project_matlab_summary(document: Any) -> list[dict[str, Any]]:
+def project_matlab_summary(document: Any, *, require_lossless: bool = False) -> list[dict[str, Any]]:
     """Project the bounded MATLAB harness output without accepting unknown wire shapes."""
     if not isinstance(document, dict) or document.get("schema_version") != 1 or document.get("diagnostic_only") is not True:
         raise ValueError("MATLAB TXLE checkpoint summary schema drift")
@@ -161,7 +177,7 @@ def project_matlab_summary(document: Any) -> list[dict[str, Any]]:
         projected.append({
             "case_index": len(projected),
             "final_scalar_metrics": _scalar_surface(item["final_scalar_metrics"], f"MATLAB case {expected_index}", True),
-            "txle_taps": _source_txle(item["txle_taps"], f"MATLAB case {expected_index}"),
+            "txle_taps": _source_txle(item["txle_taps"], f"MATLAB case {expected_index}", require_lossless),
         })
     return projected
 

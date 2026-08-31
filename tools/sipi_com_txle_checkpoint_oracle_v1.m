@@ -114,6 +114,10 @@ checkpoint = struct( ...
 % jsonencode serializes a 1-by-1 numeric array as a scalar.  Use cells so
 % the wire is always an array and shape is never inferred from JSON.
 checkpoint.column_major_values = num2cell(column_major);
+% jsonencode may truncate display decimals; the exact source doubles travel
+% separately so the replay projector never rebuilds them from display text.
+raw_bytes = typecast(value(:), 'uint8');
+checkpoint.raw_f64_le_hex = lower(reshape(dec2hex(raw_bytes, 2).', 1, []));
 end
 
 function value = scalar_value(number)
@@ -132,7 +136,8 @@ end
 
 function digest = sha256_bytes(bytes)
 engine = java.security.MessageDigest.getInstance('SHA-256');
-engine.update(bytes);
+bytes = bytes(:);
+for index = 1:numel(bytes), engine.update(bytes(index)); end
 raw = typecast(engine.digest(), 'uint8');
 digest = lower(reshape(dec2hex(raw, 2).', 1, []));
 end

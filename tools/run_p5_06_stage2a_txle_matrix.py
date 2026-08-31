@@ -32,13 +32,14 @@ except ImportError:
 
 
 CANDIDATE = (
-    "fe5227f7622ac1b7ee439381755af4716d0846d4",
-    "25be6af1e7e3694aba30a70c124b4dc50ed808b7",
-    "b649679cf0af7958f9a238631bc37bc96b86906f398067dee93361a1e6d87718",
-    57047040,
+    "83e9cb6c264ca728d4147d8e4b19d75ee3c01ec5",
+    "49dbc479a42a7cdbe068a624e28e7582b0795269",
+    "a3004fb29ef29439684af10f2c4fd58bf742f59d54fc8299a3a5cc02f86645ab",
+    57098240,
 )
 SCHEMA = "sipi.p5-06.stage2a-txle-checkpoint-run.v1"
 TIMING_SCOPE = "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
+RAYON_THREADS = 16
 MATLAB_RELEASE = "R2024b"
 MATLAB_RECEIPT = {
     "role": "matlab", "executable": "matlab.exe",
@@ -69,7 +70,7 @@ def host_fingerprint() -> str:
         "release": platform.release(),
         "machine": platform.machine(),
         "logical_cpus": os.cpu_count(),
-        "thread_policy": "default-process-policy",
+        "thread_policy": f"rayon-explicit-{RAYON_THREADS}",
         "timing_clock": "perf_counter_ns",
     }
     return hashlib.sha256(canonical(value)).hexdigest()
@@ -236,6 +237,7 @@ def main() -> int:
     build_env = os.environ.copy()
     build_env["CARGO_TARGET_DIR"] = str(target)
     build_env["RUSTC"] = str(args.rustc)
+    build_env["RAYON_NUM_THREADS"] = str(RAYON_THREADS)
     build_env.pop("RUSTC_WRAPPER", None)
     build_env.pop("RUSTC_WORKSPACE_WRAPPER", None)
     build = bounded(
@@ -303,7 +305,9 @@ def main() -> int:
                 "--fext", str(channels[1][1]), "--next", str(channels[2][1]), "--output-dir", str(output),
             ]
             timing_start = time.perf_counter_ns()
-            run = bounded(command, upstream, args.timeout)
+            run_env = os.environ.copy()
+            run_env["RAYON_NUM_THREADS"] = str(RAYON_THREADS)
+            run = bounded(command, upstream, args.timeout, run_env)
             execution_wall_ns = time.perf_counter_ns() - timing_start
             result_path = output / "result.json"
             result = json.loads(result_path.read_text(encoding="utf-8")) if run.returncode == 0 and result_path.is_file() else None
@@ -334,7 +338,7 @@ def main() -> int:
             summary = json.loads(summary_path.read_text(encoding="utf-8")) if run.returncode == 0 and summary_path.is_file() and worker_result.is_file() else None
             if summary is not None and summary.get("matlab_release") != "2024b":
                 raise RuntimeError("MATLAB Engine did not report R2024b")
-            checkpoints = project_matlab_summary(summary) if summary is not None else []
+            checkpoints = project_matlab_summary(summary, require_lossless=True) if summary is not None else []
             scope = txle_scope(summary, checkpoints, "case_checkpoints", "MATLAB") if summary is not None else None
             metrics = [item["final_scalar_metrics"] for item in checkpoints]
             materialization = {"comparison": "worker_failed"}
@@ -378,7 +382,7 @@ def main() -> int:
             else "failed_matrix_run"
         ),
         "timing_clock": "perf_counter_ns", "timing_scope": TIMING_SCOPE, "total_execution_wall_ns": sum(record["execution_wall_ns"] for record in records),
-        "host_fingerprint": host_fingerprint(), "selection_count": len(records),
+        "host_fingerprint": host_fingerprint(), "thread_policy": {"rust_rayon_num_threads": RAYON_THREADS, "matlab_launch_mode": MATLAB_RECEIPT["launch_mode"]}, "selection_count": len(records),
         "source": {
             "upstream": {"commit": UPSTREAM[0], "tree": UPSTREAM[1], "archive_sha256": UPSTREAM[2], "archive_bytes": UPSTREAM[3]},
             "candidate": {"commit": CANDIDATE[0], "tree": CANDIDATE[1], "archive_sha256": CANDIDATE[2], "archive_bytes": CANDIDATE[3]},
