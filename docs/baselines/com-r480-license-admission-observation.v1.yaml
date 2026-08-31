@@ -1,0 +1,50 @@
+{
+  "schema": "sipi.com.r480-license-admission-observation.v1",
+  "status": "candidate_only_internal_license_observation",
+  "candidate": {
+    "commit": "95cfa4ab23a26605e097af3a817a2ccd7ae6385b",
+    "tree": "cd328301f465919e3c1f2023b20798442d41e10e"
+  },
+  "route": {
+    "command": "sipi com run",
+    "profile": "r4.80 original-13 workbook execution",
+    "publicly_admitted": false
+  },
+  "local_compile_closure": [
+    {"name": "sipi-agent-com-direct", "path": "crates/sipi-agent-com-direct/Cargo.toml", "license": "MIT"},
+    {"name": "sipi-artifacts", "path": "crates/sipi-artifacts/Cargo.toml", "license": "MIT"},
+    {"name": "sipi-channel", "path": "crates/sipi-channel/Cargo.toml", "license": "MIT"},
+    {"name": "sipi-com", "path": "crates/sipi-com/Cargo.toml", "license": "MIT"},
+    {"name": "sipi-contracts", "path": "crates/sipi-contracts/Cargo.toml", "license": "MIT"},
+    {"name": "sipi-touchstone", "path": "crates/sipi-touchstone/Cargo.toml", "license": "MIT"},
+    {"name": "sipi-types", "path": "crates/sipi-types/Cargo.toml", "license": "MIT"}
+  ],
+  "forbidden_local_packages": [
+    "sipi-agent-com-adapter",
+    "sipi-ieee-com-sparam"
+  ],
+  "evidence": [
+    {"path": "LICENSE-SCOPE.md", "sha256": "d48bc2d75db3839f52319052a0a5c2cd8488625278bcdd9be348175f75a2b974"},
+    {"path": "crates/sipi-agent-com-direct/Cargo.toml", "sha256": "ff106a595d173a96d3ec3a5d31d287e822a6d904e52856b92a203a392edc5fe3"},
+    {"path": "crates/sipi-agent-com-direct/NOTICE-AGENT-COM-MIT.md", "sha256": "04344354a492e4afa55a71fe6fd39047f8ee52f78370ea0ea4fb243d9104817f"},
+    {"path": "crates/sipi-agent-com-direct/SOURCE-MAP-COM-01.md", "sha256": "ec424d0cf8f407d35696011ddc5751f5c147dd02d0769226e4784f60130fc326"},
+    {"path": "crates/sipi-agent-com-direct/SOURCE-MAP-COM-02.md", "sha256": "eec13cb521bc33054921027d8b2d7f28d7df85f61bcbd146756ed862bc2fd887"},
+    {"path": "crates/sipi-agent-com-direct/SOURCE-MAP-COM-04.md", "sha256": "a033d9f163a2d1d266f6aa317aa03dea651b0cf4aede0271e2da7647e4a596de"}
+  ],
+  "source_origin": {
+    "agent_com_commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "agent_com_tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "agent_com_license": "MIT",
+    "compiled_bsd_3_clause_direct_port": false
+  },
+  "boundary": {
+    "distribution_admitted": false,
+    "release": false,
+    "product_boundary_v1_remains_authoritative": true
+  },
+  "blockers": [
+    "final distributable archive lacks a route-specific NOTICE and SBOM receipt",
+    "product-boundary.v1 is provisional and MIT-only",
+    "final public CLI candidate requires a fresh immutable MATLAB/Rust replay"
+  ]
+}
