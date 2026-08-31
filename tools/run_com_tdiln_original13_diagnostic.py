@@ -27,7 +27,6 @@ try:
         bounded,
         digest,
         prepare_matlab_engine,
-        worker_environment,
     )
 except ImportError:
     from compare_com_tdiln_matrix_diagnostic import compare
@@ -36,7 +35,6 @@ except ImportError:
         bounded,
         digest,
         prepare_matlab_engine,
-        worker_environment,
     )
 
 
@@ -106,6 +104,22 @@ def _run_engine_worker(worker_python: Path, specification: dict[str, Any], cwd: 
     return bounded([str(worker_python), str(Path(__file__).resolve()), "--engine-worker", str(spec_path)], cwd, timeout, environment)
 
 
+def _worker_environment(source_root: Path, engine_site: Path, preference_dir: Path) -> dict[str, str]:
+    """Isolate every MATLAB Engine invocation, including its preferences.
+
+    The historical original-13 helper uses a source-root-adjacent preference
+    directory and intentionally creates it once.  A matrix runner invokes it
+    repeatedly, so it needs a fresh case-local directory instead.
+    """
+    preference_dir.mkdir(parents=True, exist_ok=False)
+    environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONPATH"] = os.pathsep.join((str(engine_site), str(source_root / "src")))
+    environment["MATLAB_PREFDIR"] = str(preference_dir)
+    environment["MW_DISABLE_CONNECTOR"] = "1"
+    return environment
+
+
 def _record(index: int, source_root: Path, binary: Path, worker_python: Path, engine_site: Path, harness: Path, output_root: Path, timeout: int, rayon_threads: int) -> dict[str, Any]:
     workbook = source_root / CONFIG_PATHS[index]
     channels = [
@@ -128,7 +142,13 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
         "nonce": nonce,
         "channels": [str(path) for path in channels],
     }
-    matlab_run = _run_engine_worker(worker_python, worker_spec, case_root, worker_environment(source_root, engine_site), timeout)
+    matlab_run = _run_engine_worker(
+        worker_python,
+        worker_spec,
+        case_root,
+        _worker_environment(source_root, engine_site, case_root / "matlab-pref"),
+        timeout,
+    )
     matlab_summary_path = matlab_output / "summary.json"
     if matlab_run.returncode != 0 or not matlab_summary_path.is_file():
         return {

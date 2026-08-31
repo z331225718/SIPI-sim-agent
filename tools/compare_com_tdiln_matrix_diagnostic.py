@@ -37,6 +37,24 @@ def _finite(value: Any, label: str) -> float:
     return float(value)
 
 
+def _scalar(value: Any, label: str) -> float | str:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return _finite(value, label)
+    if isinstance(value, str):
+        token = {
+            "inf": "+Inf",
+            "+inf": "+Inf",
+            "infinity": "+Inf",
+            "+infinity": "+Inf",
+            "-inf": "-Inf",
+            "-infinity": "-Inf",
+            "nan": "NaN",
+        }.get(value.casefold())
+        if token is not None:
+            return token
+    raise ValueError(f"{label} must be finite numeric or a supported special token")
+
+
 def _object(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{label} must be an object")
@@ -79,7 +97,7 @@ def _matlab_cases(document: Any) -> list[dict[str, Any]]:
             raise ValueError("MATLAB case index drift")
         tdiln = _object(case.get("tdiln"), f"MATLAB case {index}.tdiln")
         for field in SCALAR_FIELDS:
-            _finite(case.get(field), f"MATLAB case {index}.{field}")
+            _scalar(case.get(field), f"MATLAB case {index}.{field}")
         for field in TDILN_SCALAR_FIELDS:
             _finite(tdiln.get(field), f"MATLAB case {index}.tdiln.{field}")
         for field in VECTOR_FIELDS:
@@ -103,7 +121,7 @@ def _rust_cases(document: Any) -> list[dict[str, Any]]:
         tdiln = _object(diagnostics.get("tdiln"), f"Rust case {index}.tdiln")
         summaries = _object(tdiln.get("vector_summaries"), f"Rust case {index}.tdiln.vector_summaries")
         for _, (_, metric_name) in SCALAR_FIELDS.items():
-            _finite(metrics.get(metric_name), f"Rust case {index}.metrics.{metric_name}")
+            _scalar(metrics.get(metric_name), f"Rust case {index}.metrics.{metric_name}")
         for _, field in TDILN_SCALAR_FIELDS.items():
             _finite(tdiln.get(field), f"Rust case {index}.tdiln.{field}")
         for field in VECTOR_FIELDS:
@@ -136,10 +154,14 @@ def compare(
         rust_tdiln = rust_case["diagnostics"]["tdiln"]
         rust_summaries = rust_tdiln["vector_summaries"]
         scalar_deltas = {}
+        scalar_special_tokens = {}
         for matlab_name, (_, rust_name) in SCALAR_FIELDS.items():
-            left = _finite(matlab_case[matlab_name], f"MATLAB case {index}.{matlab_name}")
-            right = _finite(metrics[rust_name], f"Rust case {index}.{rust_name}")
-            scalar_deltas[matlab_name] = abs(left - right)
+            left = _scalar(matlab_case[matlab_name], f"MATLAB case {index}.{matlab_name}")
+            right = _scalar(metrics[rust_name], f"Rust case {index}.{rust_name}")
+            if isinstance(left, float) and isinstance(right, float):
+                scalar_deltas[matlab_name] = abs(left - right)
+            else:
+                scalar_special_tokens[matlab_name] = {"matlab": left, "rust": right, "equal": left == right}
         for matlab_name, rust_name in TDILN_SCALAR_FIELDS.items():
             left = _finite(matlab_case["tdiln"][matlab_name], f"MATLAB case {index}.tdiln.{matlab_name}")
             right = _finite(rust_tdiln[rust_name], f"Rust case {index}.tdiln.{rust_name}")
@@ -152,9 +174,12 @@ def compare(
             deltas = {field: abs(float(left[field]) - float(right[field])) for field in VECTOR_SUMMARY_FIELDS[1:]}
             vectors[name] = {"length_equal": length_equal, "absolute_deltas": deltas}
             passed = passed and length_equal and all(delta <= tolerance for delta in deltas.values())
-        scalar_passed = all(delta <= tolerance for delta in scalar_deltas.values())
+        scalar_passed = (
+            all(delta <= tolerance for delta in scalar_deltas.values())
+            and all(item["equal"] for item in scalar_special_tokens.values())
+        )
         passed = passed and scalar_passed
-        comparisons.append({"case_index": index, "scalar_absolute_deltas": scalar_deltas, "vector_summaries": vectors, "passed": scalar_passed and all(item["length_equal"] and all(delta <= tolerance for delta in item["absolute_deltas"].values()) for item in vectors.values())})
+        comparisons.append({"case_index": index, "scalar_absolute_deltas": scalar_deltas, "scalar_special_tokens": scalar_special_tokens, "vector_summaries": vectors, "passed": scalar_passed and all(item["length_equal"] and all(delta <= tolerance for delta in item["absolute_deltas"].values()) for item in vectors.values())})
     return {
         "schema": "sipi.com.tdiln-matrix-diagnostic-comparison.v1",
         "status": "passed_diagnostic" if passed else "blocked",

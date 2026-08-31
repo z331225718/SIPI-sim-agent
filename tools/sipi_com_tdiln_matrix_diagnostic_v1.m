@@ -112,8 +112,8 @@ for index = 1:numel(required)
 end
 summary = struct( ...
     'case_index', double(case_index - 1), ...
-    'com_db', optional_finite_scalar(result, 'COM_dB'), ...
-    'erl_db', optional_finite_scalar(result, 'ERL'), ...
+    'com_db', optional_scalar(result, 'COM_dB'), ...
+    'erl_db', optional_scalar(result, 'ERL'), ...
     'fom_tdiln', finite_scalar(result.FOM_TDILN), ...
     'tdiln', struct( ...
         'fom', finite_scalar(td.FOM), ...
@@ -126,11 +126,28 @@ summary = struct( ...
         'fitted_pr', vector_summary(td.FIT.PR)));
 end
 
-function value = optional_finite_scalar(result, name)
+function value = optional_scalar(result, name)
 if ~isfield(result, name)
     value = [];
 else
-    value = finite_scalar(result.(name));
+    value = finite_or_special_scalar(result.(name));
+end
+end
+
+function value = finite_or_special_scalar(number)
+number = double(number);
+if ~isscalar(number)
+    error('sipi_com_tdiln_matrix_diagnostic_v1:Nonfinite', ...
+        'Diagnostic scalar must be one numeric scalar.');
+end
+if isfinite(number)
+    value = number;
+elseif isinf(number) && number > 0
+    value = '+Inf';
+elseif isinf(number)
+    value = '-Inf';
+else
+    value = 'NaN';
 end
 end
 

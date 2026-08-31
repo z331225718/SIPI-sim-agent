@@ -79,6 +79,17 @@ class TdilnMatrixDiagnosticComparisonTests(unittest.TestCase):
         self.assertEqual(report["status"], "blocked")
         self.assertFalse(report["cases"][0]["vector_summaries"]["iln"]["length_equal"])
 
+    def test_equal_infinite_erl_is_observed_not_rejected(self) -> None:
+        matlab, rust = documents()
+        matlab["cases"][0]["erl_db"] = "+Inf"
+        rust["cases"][0]["metrics"]["ERL"] = "inf"
+        report = compare(matlab, rust, rust_wall_seconds=9.0, tolerance=1.0e-9)
+        self.assertEqual(report["status"], "passed_diagnostic")
+        self.assertEqual(
+            report["cases"][0]["scalar_special_tokens"]["erl_db"],
+            {"matlab": "+Inf", "rust": "+Inf", "equal": True},
+        )
+
     def test_missing_summary_field_is_rejected(self) -> None:
         matlab, rust = documents()
         del rust["cases"][0]["diagnostics"]["tdiln"]["vector_summaries"]["time"]["sum"]
