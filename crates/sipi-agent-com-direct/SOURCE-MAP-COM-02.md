@@ -205,3 +205,24 @@ unsupported data-rate/case shapes, and nonzero ACCM without a real S4P
 transfer remain fail-closed/open; canonical upstream `cd_cm_rms` and global
 numeric parity remain unclaimed. S-parameter fitting remains forbidden and the
 channel boundary remains the existing single final FD-to-TD impulse leaf.
+
+## Pinned MATLAB warning surface
+
+The original R4.80 MATLAB reader is separately pinned by the authorized
+`com-r480-matlab-source` record: `matlab_src/com_ieee8023_480.m`, SHA-256
+`642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad`.
+The trusted-workbook S4P read path ports one exact static predicate from that
+file: `Sch.freq(end) < param.fb` at source line 9715. It publishes repeated
+`COM:read_s4p:MaxFreqTooLow` events in THRU/FEXT/NEXT read order, retaining the
+raw pre-interpolation maximum frequency, signalling rate, source hash, and no
+absolute path. The result root's `warnings` array contains only such
+source-mapped events. Each result case's
+`diagnostics.sipi_runtime_observations` array retains useful SIPI phase-slope
+diagnostics, but those observations explicitly do not claim source-warning
+equivalence and never participate in source warning parity.
+
+The source-local MATLAB observer is intentionally bounded to static emission
+calls in that pinned file. `tools/compare_com_source_warning_observation.py`
+fails closed for an observed but unmapped callsite (including the currently
+unported identifier-less anti-causal warning at line 6337); it does not claim a
+complete MATLAB, toolbox, or runtime warning catalog.

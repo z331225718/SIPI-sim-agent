@@ -49,6 +49,9 @@ use std::sync::Arc;
 pub const COM_02_DIRECT_PORT_SCHEMA_V1: &str = "sipi.com-02.direct-port.v1";
 pub const COM_04_DIRECT_PORT_SCHEMA_V1: &str = "sipi.com-04.direct-port.v1";
 pub const COM_DIRECT_RESULT_SCHEMA_V1: &str = "sipi.com.direct-run-result.v1";
+const PINNED_AGENT_COM_COMMIT_V1: &str = "5272ffe74702cd585054d975559b06f8afae7b6e";
+const PINNED_COM_SOURCE_SHA256_V1: &str =
+    "642b28910a6fccca4682aa0a66a6a6c00633a14c17d05d8d6ee73d2808954cad";
 pub const MAX_IMPULSE_FILE_BYTES_V1: u64 = 8 * 1024 * 1024;
 pub const MAX_CONFIG_JSON_BYTES_V1: u64 = 16 * 1024 * 1024;
 pub const MAX_RESULT_BYTES_V1: usize = 16 * 1024 * 1024;
@@ -231,9 +234,12 @@ struct ImpulseInputV1 {
     source_sha256: String,
     sample_interval_s: Option<f64>,
     source_kind: &'static str,
-    /// SIPI-owned runtime degradation observations for this channel only.
-    /// These do not claim exhaustive upstream warning parity.
-    runtime_warnings: Vec<Value>,
+    /// SIPI-owned runtime observations for this channel only. These are not
+    /// promoted to the public source-mapped warning surface.
+    sipi_runtime_observations: Vec<Value>,
+    /// Pinned-source warning events whose predicate and callsite have been
+    /// ported exactly. Repeated events remain repeated, in channel order.
+    source_mapped_warnings: Vec<Value>,
     /// JSON may explicitly provide the already-integrated pulse response.
     /// Raw, Touchstone, and FD inputs remain impulse responses and are
     /// integrated at the COM boundary exactly once.
@@ -1020,21 +1026,6 @@ fn run_package_cases_v1(
             .filter(|value| !value.is_null())
             .cloned();
         if let Some(shared_normal_erl) = shared_normal_erl {
-            let shared_normal_erl_warnings = published_cases
-                .first()
-                .and_then(|case| case.get("warnings"))
-                .and_then(Value::as_array)
-                .map(|warnings| {
-                    warnings
-                        .iter()
-                        .filter(|warning| {
-                            warning.get("stage").and_then(Value::as_str)
-                                == Some("normal_tdr_reflection_interpolation")
-                        })
-                        .cloned()
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_default();
             let shared_metrics = published_cases
                 .first()
                 .and_then(|case| case.get("metrics"))
@@ -1050,11 +1041,14 @@ fn run_package_cases_v1(
                     case["metrics"][*key] = value.clone();
                 }
                 case["diagnostics"]["normal_erl"] = shared_normal_erl.clone();
-                case["warnings"]
-                    .as_array_mut()
-                    .expect("published case warnings are an array")
-                    .extend(shared_normal_erl_warnings.iter().cloned());
             }
+        }
+        // The pinned MATLAB reader admits the raw S4P files once at package
+        // testcase 1, then reuses that state for later package cases. These
+        // child runs are an implementation fan-out, so they must not
+        // manufacture repeated source warning occurrences.
+        for case in published_cases.iter_mut().skip(1) {
+            case["warnings"] = json!([]);
         }
         let first = first_report
             .ok_or_else(|| DirectRunErrorV1::Execution("empty package cases".to_owned()))?;
@@ -1069,9 +1063,10 @@ fn run_package_cases_v1(
                 .as_array()
                 .expect("published case warnings are an array")
             {
-                if !root_warnings.contains(warning) {
-                    root_warnings.push(warning.clone());
-                }
+                // A source warning is an occurrence, not a set member. The
+                // pinned reader can emit the same identifier repeatedly for
+                // distinct THRU/FEXT/NEXT reads, so preserve case/order.
+                root_warnings.push(warning.clone());
             }
         }
         result["warnings"] = Value::Array(root_warnings);
@@ -1257,7 +1252,8 @@ fn run_with_workflow_token_origin(
             source_sha256: sha256_bytes_v1(&source),
             sample_interval_s: None,
             source_kind: "touchstone-four-port-normal-erl",
-            runtime_warnings: Vec::new(),
+            sipi_runtime_observations: Vec::new(),
+            source_mapped_warnings: Vec::new(),
             already_pulse: false,
             causality_correction_db: None,
             truncation_db: None,
@@ -1444,7 +1440,8 @@ fn run_with_workflow_token_origin(
                     erl_time_s: None,
                     sample_interval_s: None,
                     source_kind: "package-case-fext",
-                    runtime_warnings: Vec::new(),
+                    sipi_runtime_observations: Vec::new(),
+                    source_mapped_warnings: Vec::new(),
                     already_pulse: false,
                     causality_correction_db: None,
                     truncation_db: None,
@@ -1474,7 +1471,8 @@ fn run_with_workflow_token_origin(
                     erl_time_s: None,
                     sample_interval_s: None,
                     source_kind: "package-case-next",
-                    runtime_warnings: Vec::new(),
+                    sipi_runtime_observations: Vec::new(),
+                    source_mapped_warnings: Vec::new(),
                     already_pulse: false,
                     causality_correction_db: None,
                     truncation_db: None,
@@ -1661,7 +1659,8 @@ fn run_with_workflow_token_origin(
             source_kind: branches
                 .effective_source_kind
                 .unwrap_or(input_impulse.source_kind),
-            runtime_warnings: input_impulse.runtime_warnings.clone(),
+            sipi_runtime_observations: input_impulse.sipi_runtime_observations.clone(),
+            source_mapped_warnings: input_impulse.source_mapped_warnings.clone(),
             already_pulse: false,
             causality_correction_db: input_impulse.causality_correction_db,
             truncation_db: input_impulse.truncation_db,
@@ -3752,7 +3751,8 @@ fn portable_branch_result_with_sigma_v1(
                     source_sha256: sha256_f64_v1(case_impulse),
                     sample_interval_s: None,
                     source_kind: "package-case-channel-state",
-                    runtime_warnings: Vec::new(),
+                    sipi_runtime_observations: Vec::new(),
+                    source_mapped_warnings: Vec::new(),
                     already_pulse: *case_already_pulse,
                     causality_correction_db: None,
                     truncation_db: None,
@@ -4258,7 +4258,8 @@ fn portable_branch_result_with_sigma_v1(
                 source_sha256: impulse.source_sha256.clone(),
                 sample_interval_s: impulse.sample_interval_s,
                 source_kind: "portable-channel-producing-search-input",
-                runtime_warnings: impulse.runtime_warnings.clone(),
+                sipi_runtime_observations: impulse.sipi_runtime_observations.clone(),
+                source_mapped_warnings: impulse.source_mapped_warnings.clone(),
                 already_pulse: false,
                 causality_correction_db: impulse.causality_correction_db,
                 truncation_db: impulse.truncation_db,
@@ -5876,7 +5877,8 @@ fn load_td_mode_input_v1(
         source_sha256: sha256_bytes_v1(&bytes),
         sample_interval_s: pulse.time_s.windows(2).next().map(|pair| pair[1] - pair[0]),
         source_kind: "td-mode-csv-impulse",
-        runtime_warnings: Vec::new(),
+        sipi_runtime_observations: Vec::new(),
+        source_mapped_warnings: Vec::new(),
         already_pulse: false,
         causality_correction_db: None,
         truncation_db: None,
@@ -6082,7 +6084,8 @@ fn load_impulse_mode_v1(
                 .next()
                 .map(|pair| pair[1] - pair[0]),
             source_kind: "touchstone-two-port-s21-fd-to-td-impulse",
-            runtime_warnings: Vec::new(),
+            sipi_runtime_observations: Vec::new(),
+            source_mapped_warnings: Vec::new(),
             already_pulse: false,
             causality_correction_db: Some(result.causality_correction_db),
             truncation_db: Some(result.truncation_db),
@@ -6129,7 +6132,8 @@ fn load_impulse_mode_v1(
             } else {
                 "json-impulse"
             },
-            runtime_warnings: Vec::new(),
+            sipi_runtime_observations: Vec::new(),
+            source_mapped_warnings: Vec::new(),
             already_pulse: explicit_pulse,
             causality_correction_db: None,
             truncation_db: None,
@@ -6151,7 +6155,8 @@ fn load_impulse_mode_v1(
             source_sha256,
             sample_interval_s: None,
             source_kind: "td-csv-impulse",
-            runtime_warnings: Vec::new(),
+            sipi_runtime_observations: Vec::new(),
+            source_mapped_warnings: Vec::new(),
             already_pulse: false,
             causality_correction_db: None,
             truncation_db: None,
@@ -6185,7 +6190,8 @@ fn load_impulse_mode_v1(
         source_sha256,
         sample_interval_s: None,
         source_kind: "f64le-impulse",
-        runtime_warnings: Vec::new(),
+        sipi_runtime_observations: Vec::new(),
+        source_mapped_warnings: Vec::new(),
         already_pulse: false,
         causality_correction_db: None,
         truncation_db: None,
@@ -6252,7 +6258,8 @@ fn load_s4p_impulse_v1(path: &Path) -> Result<ImpulseInputV1, DirectRunErrorV1> 
             .next()
             .map(|pair| pair[1] - pair[0]),
         source_kind: "touchstone-four-port-sdd21-fd-to-td-impulse",
-        runtime_warnings: Vec::new(),
+        sipi_runtime_observations: Vec::new(),
+        source_mapped_warnings: Vec::new(),
         already_pulse: false,
         causality_correction_db: Some(result.causality_correction_db),
         truncation_db: Some(result.truncation_db),
@@ -7482,7 +7489,17 @@ fn load_s4p_package_impulse_v1(
         channel_type,
         package_case_index,
     )?;
-    let runtime_warnings = phase_slope_warning_v1(&vtf, options.debug, channel_type)?;
+    let sipi_runtime_observations = phase_slope_runtime_observation_v1(&vtf, options.debug, channel_type)?;
+    let source_mapped_warnings = if trusted_workbook {
+        source_max_frequency_warning_v1(
+            &network.frequency_hz,
+            values,
+            channel_type,
+            &network.source_sha256,
+        )?
+    } else {
+        Vec::new()
+    };
     let result = s21_to_impulse_dc_v1(&vtf, &network.frequency_hz, &options)
         .map_err(|error| DirectRunErrorV1::Channel(format!("package VTF FD-to-TD: {error:?}")))?;
     let mut impulse = result.voltage;
@@ -7511,7 +7528,8 @@ fn load_s4p_package_impulse_v1(
             .next()
             .map(|pair| pair[1] - pair[0]),
         source_kind: "touchstone-four-port-package-vtf-fd-to-td-impulse",
-        runtime_warnings,
+        sipi_runtime_observations,
+        source_mapped_warnings,
         already_pulse: false,
         causality_correction_db: Some(result.causality_correction_db),
         truncation_db: Some(result.truncation_db),
@@ -7524,9 +7542,10 @@ fn load_s4p_package_impulse_v1(
     })
 }
 
-/// Reports the sole runtime warning which is mechanically bound to the
-/// source's DEBUG bypass. It intentionally covers no other R4.80 warnings.
-fn phase_slope_warning_v1(
+/// Reports a SIPI-owned phase-slope diagnostic. This signal is intentionally
+/// separate from pinned-source warning mapping: its current trace is not the
+/// source's `process_sxp` trace, so it cannot be published as source parity.
+fn phase_slope_runtime_observation_v1(
     values: &[Complex64],
     debug: bool,
     channel_type: &str,
@@ -7543,15 +7562,14 @@ fn phase_slope_warning_v1(
         "severity": "DEGRADED",
         "stage": "sparameter_interpolation",
         "role": channel_type,
-        "source_semantics": "exact_unwrapped_phase_mean_slope_gt_zero",
-        "matlab_warning_parity": false,
+        "source_warning_equivalent": false,
     })])
 }
 
-/// Aggregate normal-TDR port observations into one deterministic result warning.
-/// The source only exposes a warning branch, so this does not claim MATLAB's
-/// warning count, stack text, or complete catalog.
-fn normal_erl_phase_slope_warning_v1(result: &R480NormalErlResultV1) -> Option<Value> {
+/// Aggregate normal-TDR port diagnostics once. These are SIPI observations,
+/// not a source warning: the normal ERL trace demonstrably differs from the
+/// pinned `process_sxp` callsite that emits the MATLAB anti-causal message.
+fn normal_erl_phase_slope_observation_v1(result: &R480NormalErlResultV1) -> Option<Value> {
     let ports = result
         .ports
         .iter()
@@ -7565,11 +7583,37 @@ fn normal_erl_phase_slope_warning_v1(result: &R480NormalErlResultV1) -> Option<V
             "stage": "normal_tdr_reflection_interpolation",
             "ports": ports,
             "occurrence_count": ports.len(),
-            "source_semantics": "exact_unwrapped_phase_mean_slope_gt_zero",
-            "matlab_warning_parity": false,
-            "complete_warning_catalog": false,
+            "source_warning_equivalent": false,
         })
     })
+}
+
+/// Port the exact pinned predicate at `com_ieee8023_480.m:9715` from the
+/// trusted-workbook S4P read path. It must consume the pre-interpolation axis:
+/// comparing a synthesized axis would incorrectly erase source warnings.
+fn source_max_frequency_warning_v1(
+    frequency_hz: &[f64],
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    channel_type: &str,
+    source_sha256: &str,
+) -> Result<Vec<Value>, DirectRunErrorV1> {
+    let maximum_frequency_hz = *frequency_hz.last().ok_or_else(|| {
+        DirectRunErrorV1::Touchstone("S4P source must contain a frequency sample".to_owned())
+    })?;
+    let signaling_rate_hz = workbook_fd_scalar_v1(values, &["fb"], "fb")?;
+    if maximum_frequency_hz >= signaling_rate_hz {
+        return Ok(Vec::new());
+    }
+    Ok(vec![json!({
+        "namespace": "agent_com_r480",
+        "code": "COM:read_s4p:MaxFreqTooLow",
+        "source_callsite_id": "read_s4p.max_frequency_below_fb",
+        "source_line": 9715,
+        "channel_role": channel_type,
+        "source_sha256": source_sha256,
+        "maximum_frequency_hz": maximum_frequency_hz,
+        "signaling_rate_hz": signaling_rate_hz,
+    })])
 }
 
 fn selected_ac_cm_rms_v1(
@@ -7825,7 +7869,8 @@ fn load_frequency_domain_json_v1(
         source_sha256,
         sample_interval_s,
         source_kind: "json-s21-fd-to-td-impulse",
-        runtime_warnings: Vec::new(),
+        sipi_runtime_observations: Vec::new(),
+        source_mapped_warnings: Vec::new(),
         already_pulse: false,
         causality_correction_db: Some(result.causality_correction_db),
         truncation_db: Some(result.truncation_db),
@@ -7937,15 +7982,21 @@ fn result_value_v1(
     let normal_erl22_db = normal_erl_result.map(|result| {
         metric_db_value_v1(result.ports[1].erl_db).expect("normal ERL leaf rejects NaN")
     });
-    let normal_erl_warning = normal_erl_result
-        .and_then(normal_erl_phase_slope_warning_v1)
+    let normal_erl_observation = normal_erl_result
+        .and_then(normal_erl_phase_slope_observation_v1)
         .into_iter();
-    let runtime_warnings = std::iter::once(&impulse.runtime_warnings)
-        .chain(fext_inputs.iter().map(|input| &input.runtime_warnings))
-        .chain(next_inputs.iter().map(|input| &input.runtime_warnings))
+    let sipi_runtime_observations = std::iter::once(&impulse.sipi_runtime_observations)
+        .chain(fext_inputs.iter().map(|input| &input.sipi_runtime_observations))
+        .chain(next_inputs.iter().map(|input| &input.sipi_runtime_observations))
         .flatten()
         .cloned()
-        .chain(normal_erl_warning)
+        .chain(normal_erl_observation)
+        .collect::<Vec<_>>();
+    let source_mapped_warnings = std::iter::once(&impulse.source_mapped_warnings)
+        .chain(fext_inputs.iter().map(|input| &input.source_mapped_warnings))
+        .chain(next_inputs.iter().map(|input| &input.source_mapped_warnings))
+        .flatten()
+        .cloned()
         .collect::<Vec<_>>();
     let source_metric_surface = json!({
         "CTLE_DC_gain_dB": search_result.map(|result| result.ctle_gain_db),
@@ -8098,10 +8149,11 @@ fn result_value_v1(
                         "gated_sha256": sha256_f64_v1(&port.gated),
                     })).collect::<Vec<_>>(),
                 })),
+                "sipi_runtime_observations": sipi_runtime_observations,
                 "tdiln": tdiln_result.map(tdiln_diagnostics_v1),
                 "portable_branches": portable_diagnostics
             },
-            "warnings": runtime_warnings
+            "warnings": source_mapped_warnings
         }],
         "provenance": {
             "platform": std::env::consts::OS,
@@ -8112,6 +8164,12 @@ fn result_value_v1(
             "channel_source_kind": impulse.source_kind,
             "impulse_sha256": sha256_f64_v1(&impulse.values),
             "sample_interval_s": impulse.sample_interval_s,
+            "warning_coverage": {
+                "source_commit": PINNED_AGENT_COM_COMMIT_V1,
+                "source_file_sha256": PINNED_COM_SOURCE_SHA256_V1,
+                "complete_catalog": false,
+                "scope": "implemented_source_mapped_calls_only",
+            },
         },
         "input_manifest": {
             "config": request.config.to_string_lossy(),
@@ -8132,7 +8190,7 @@ fn result_value_v1(
                 "reason": "reporting plot format is non-core and no external renderer is bundled"
             }
         },
-        "warnings": runtime_warnings,
+        "warnings": source_mapped_warnings,
         "timings_s": {"load_config": 0.0, "run_com": 0.0, "write_artifacts": 0.0}
     })
 }
@@ -9161,7 +9219,8 @@ mod tests {
             source_sha256: "test".to_owned(),
             sample_interval_s: None,
             source_kind: "test",
-            runtime_warnings: Vec::new(),
+            sipi_runtime_observations: Vec::new(),
+            source_mapped_warnings: Vec::new(),
             already_pulse: false,
             causality_correction_db: None,
             truncation_db: None,
@@ -9421,7 +9480,7 @@ mod tests {
     }
 
     #[test]
-    fn debug_bypassed_phase_slope_is_a_single_scoped_runtime_warning() {
+    fn debug_bypassed_phase_slope_is_a_single_sipi_runtime_observation() {
         let anti_causal = (0..4)
             .map(|index| {
                 let phase = index as f64 * 0.25;
@@ -9429,22 +9488,23 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert!(
-            phase_slope_warning_v1(&anti_causal, false, "THRU")
+            phase_slope_runtime_observation_v1(&anti_causal, false, "THRU")
                 .expect("guard")
                 .is_empty()
         );
-        let warnings = phase_slope_warning_v1(&anti_causal, true, "FEXT").expect("warning");
-        assert_eq!(warnings.len(), 1);
+        let observations = phase_slope_runtime_observation_v1(&anti_causal, true, "FEXT")
+            .expect("observation");
+        assert_eq!(observations.len(), 1);
         assert_eq!(
-            warnings[0]["code"],
+            observations[0]["code"],
             "SIPI-COM-ANTI-CAUSAL-PHASE-SLOPE-BYPASSED"
         );
-        assert_eq!(warnings[0]["role"], "FEXT");
-        assert_eq!(warnings[0]["matlab_warning_parity"], false);
+        assert_eq!(observations[0]["role"], "FEXT");
+        assert_eq!(observations[0]["source_warning_equivalent"], false);
     }
 
     #[test]
-    fn normal_tdr_phase_warning_aggregates_ports_once_in_order() {
+    fn normal_tdr_phase_observation_aggregates_ports_once_in_order() {
         let port = |number, bypassed| crate::erl_tdr_v1::R480NormalErlPortV1 {
             port: number,
             time_s: vec![0.0],
@@ -9464,12 +9524,40 @@ mod tests {
             tfx_s: [0.0, 0.0],
             input_is_ideal_match: false,
         };
-        let warning = normal_erl_phase_slope_warning_v1(&result).expect("aggregated warning");
-        assert_eq!(warning["stage"], "normal_tdr_reflection_interpolation");
-        assert_eq!(warning["ports"], json!([1, 2]));
-        assert_eq!(warning["occurrence_count"], 2);
-        assert_eq!(warning["matlab_warning_parity"], false);
-        assert_eq!(warning["complete_warning_catalog"], false);
+        let observation =
+            normal_erl_phase_slope_observation_v1(&result).expect("aggregated observation");
+        assert_eq!(observation["stage"], "normal_tdr_reflection_interpolation");
+        assert_eq!(observation["ports"], json!([1, 2]));
+        assert_eq!(observation["occurrence_count"], 2);
+        assert_eq!(observation["source_warning_equivalent"], false);
+    }
+
+    #[test]
+    fn source_max_frequency_warning_is_strict_and_preserves_channel_order() {
+        let values = BTreeMap::from([("fb".to_owned(), ResolvedDefaultV1::Scalar(10.0e9))]);
+        let low = source_max_frequency_warning_v1(&[0.0, 9.0e9], &values, "THRU", "a")
+            .expect("low-frequency warning");
+        assert_eq!(low.len(), 1);
+        assert_eq!(low[0]["code"], "COM:read_s4p:MaxFreqTooLow");
+        assert_eq!(low[0]["source_line"], 9715);
+        assert_eq!(low[0]["channel_role"], "THRU");
+        assert!(source_max_frequency_warning_v1(&[0.0, 10.0e9], &values, "FEXT", "b")
+            .expect("equal is not low")
+            .is_empty());
+        let ordered = ["THRU", "FEXT", "NEXT"]
+            .into_iter()
+            .flat_map(|role| {
+                source_max_frequency_warning_v1(&[0.0, 9.0e9], &values, role, "same")
+                    .expect("warning")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            ordered
+                .iter()
+                .map(|event| event["channel_role"].as_str().expect("role"))
+                .collect::<Vec<_>>(),
+            ["THRU", "FEXT", "NEXT"]
+        );
     }
 
     #[test]
