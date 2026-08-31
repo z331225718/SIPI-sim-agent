@@ -1,0 +1,57 @@
+{
+  "schema": "sipi.p5-06.tdiln-array-current-acceptance.v1",
+  "status": "accepted_current_named_tdiln_array_checkpoint",
+  "scope": {
+    "candidate": {
+      "commit": "25c7ac5a348f5b5346ca6becd25b4e3dfbd4595f",
+      "tree": "7fb38b6b31f0b7d26eda3ca5149e8509e06f9734",
+      "archive_sha256": "1e379945bdbdc973443b9d508578b15a6fd4e8c4ab6db1d6de84156891123000",
+      "archive_bytes": 58234880
+    },
+    "upstream": {
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    },
+    "matlab_release": "R2024b",
+    "original_workbook_count": 13,
+    "channel_roles": ["THRU", "FEXT", "NEXT"],
+    "named_sidecar_vectors": {
+      "time_s": "exact_f64_little_endian",
+      "iln_pulse": {"atol": 5e-12, "rtol": 1e-9},
+      "reference_pulse": {"atol": 5e-12, "rtol": 1e-9},
+      "fitted_pulse": {"atol": 5e-12, "rtol": 1e-9},
+      "pdf_axis": {"atol": 5e-12, "rtol": 1e-9},
+      "pdf_probability": {"atol": 5e-12, "rtol": 1e-9}
+    }
+  },
+  "artifacts": {
+    "replay_01": {"path": "docs/baselines/p5-06-tdiln-array-current-replay-01.v1.json", "sha256": "b76c3c854c4a09e13eb7091b2a08f3dac314a2459fd8445f03feaf91573edfea"},
+    "replay_02": {"path": "docs/baselines/p5-06-tdiln-array-current-replay-02.v1.json", "sha256": "53e133ecd486d6bad16ffa23813c42a6588daf569e5b27059ccdf6e53cf0c2b0"},
+    "aggregate": {"path": "docs/baselines/p5-06-tdiln-array-current-replay-aggregate.v1.json", "sha256": "edc0329b18c236b91deab92bd461fa643ccb99bcfbe58674de2644358db2465e"}
+  },
+  "gates": {
+    "two_fresh_replays": true,
+    "rust_semantic_repeat_exact": true,
+    "per_workbook_rust_not_slower": true,
+    "total_rust_not_slower": true
+  },
+  "performance": {
+    "matlab_best_total_core_seconds": 1738.2513337999999,
+    "rust_worst_total_wall_seconds": 539.4338988000527,
+    "speedup_floor": 3.222362068210145
+  },
+  "claims": {
+    "tdiln_named_intermediate_checkpoint_parity": true,
+    "performance_acceptance_checkpoint": true,
+    "full_result_graph": false,
+    "complete_warning_catalog": false,
+    "release": false,
+    "p5_06_main_closed": false
+  },
+  "non_claims": [
+    "public_tdiln_sidecar_wire",
+    "complete_warning_catalog",
+    "full_result_graph",
+    "release"
+  ]
+}
