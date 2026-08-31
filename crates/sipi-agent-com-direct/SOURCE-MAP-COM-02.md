@@ -8,8 +8,9 @@ frequency-domain JSON uses direct FD-to-TD interpolation/IFFT (never a channel
 S-parameter fit), optional Apply_EQ covers CL93/CL120d/CL120e with TX/RX FFE
 role semantics, the portable non-MMSE/MMSE/RxFFE search loops are reachable
 from explicit canonical candidate branches, FEXT/NEXT input waveforms are loaded into
-the residual/noise PDF chain and published, and optional TDILN reports expose
-fit/ILN/pulse/PDF semantic fields.  Calibration noise/controller and COM-01
+the residual/noise PDF chain and published, and explicit `COMPUTE_TDILN` on a
+trusted-workbook S4P run composes its raw SDD21 report without exposing a new
+JSON input surface.  Calibration noise/controller and COM-01
 workbook/CSV ingestion are also reachable. Calibration accepts source S4P
 payloads and reruns each package case through the reference COM evaluator at
 every sigma; precomputed case evaluations are rejected. Only plotting format, MATLAB
@@ -30,7 +31,7 @@ engine, and proprietary golden data remain external blockers.
 | `src/agent_com/network/package.py::_selected_package_case,_make_full_package,_package_lengths,_package_preset` | one-based `pkg_len_select` selection plus crate-private DD package VTF/length/preset assembly consumed by the S4P run route | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
 | `src/agent_com/network/package.py::assemble_r480_dc_vtf` | pinned DC common-to-differential package VTF; requires full S4P plus DC-mode TX/RX package transforms and `AC_CM_RMS` | `55e2aae5669c4f3ba7acd453fba82f4eaebfdb4f` | 22300 | `bc3bd4bc3dd01317041a674b88690d6cd94f0589113b44576a1afee4aa8bbd32` | MIT |
 | `src/agent_com/network/two_port.py` | crate-private checked TwoPort cascade, board insertion, package VTF denominator, exact-zero singular handling | `6b1484effc18a25fe8c28373b47f55b0b99b0f4b` | 9600 | `8889d9695a56d83a59a771d938ba8084dbdfec6a24d79e14d88b83c678ddcd6a` | MIT |
-| `src/agent_com/_orchestration.py::_load_s4p_channel,_channel_amplitude` | typed role ordering and package amplitude selection: WC_PORTZ uses `Tx_rd_sel`, otherwise one-based `pkg_len_select`; final DD impulse is the only channel boundary | `5d260a0aab941f1a1955fe3abef36d85a56034c0` | 90877 | `069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69` | MIT |
+| `src/agent_com/_orchestration.py::_load_s4p_channel,_channel_amplitude,_r480_tdiln_from_network` | typed role ordering and package amplitude selection: WC_PORTZ uses `Tx_rd_sel`, otherwise one-based `pkg_len_select`; only explicit `COMPUTE_TDILN` with raw S4P SDD21 enters the private TDILN report composition, while CSV/TD inputs leave it absent | `5d260a0aab941f1a1955fe3abef36d85a56034c0` | 90877 | `069a5c08f9da6ad5b5be5648723eb05b0e3de8cf0dcb1ae7f54e23df7ab0db69` | MIT |
 | `src/agent_com/io/touchstone_r480.py::apply_r480_snp_port_order` | typed workbook S4P file-to-internal port permutation before both DD and SDC mixed-mode transforms | `99300e220c937f9ff73c8e97db47581be2a68241` | 7476 | `f0e037392656a7c70de9a5a2619411f76ae9c940afb4ed3ec44448dc4595fddd` | MIT |
 | `src/agent_com/equalization/mmse.py` | MMSE KKT solve and strict-best search branch | `61c54806da030dac1cb889261f344564c02f38f6` | 33933 | `d0542c3a091b5c79a1ba69270878387326dcb09c6ed2d385667709f541d9f4c9` | MIT |
 | `src/agent_com/equalization/fvlms_rxffe.py` | FV-LMS fixed/floating RxFFE candidate search | `525361878ad4802bf9d4968678ebd512b7c7a527` | 19769 | `16943815872c49de3d3f73639a340adbfb635450c5a3b6f9adb3a7009cc4cb59` | MIT |

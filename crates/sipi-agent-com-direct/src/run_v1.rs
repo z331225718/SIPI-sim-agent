@@ -255,6 +255,14 @@ struct OwnedRawSdd21V1 {
     sdd21: Vec<Complex64>,
 }
 
+/// The private result sidecar for the source `COMPUTE_TDILN` report.  This is
+/// intentionally not a second public input surface: it is composed only from
+/// a trusted workbook's resolved controls and the admitted raw S4P THRU.
+#[derive(Clone, Debug)]
+struct TdilnRuntimeV1 {
+    result: sipi_com::TdIlnResultV1,
+}
+
 /// Parsed, workbook-reordered raw S4P data shared by every consumer in one
 /// COM run.  A package channel can feed the VTF/FD-to-TD path, GET_FD,
 /// normal ERL, and TDILN.  Re-reading and re-parsing it per consumer turns
@@ -1284,6 +1292,7 @@ fn run_with_workflow_token_origin(
             None,
             None,
             Some(&normal_erl),
+            None,
         );
         let normal_erl_diagnostics = result["cases"][0]["diagnostics"]["normal_erl"].clone();
         result["cases"][0]["metrics"] = json!({
@@ -1560,6 +1569,21 @@ fn run_with_workflow_token_origin(
     } else {
         None
     };
+    // The pinned source leaves TDILN empty for CSV/TD inputs.  Only its
+    // explicit option plus an admitted raw S4P network activates this private
+    // composition route.
+    let tdiln_runtime = if package_s4p
+        && trusted_workbook
+        && workbook_truthy_v1(&loaded.values, &["COMPUTE_TDILN"], "COMPUTE_TDILN")?
+    {
+        Some(compose_workbook_tdiln_v1(
+            request,
+            &loaded.values,
+            &mut s4p_cache,
+        )?)
+    } else {
+        None
+    };
     let branches = portable_branch_result_with_sigma_v1(
         &document,
         &input_impulse,
@@ -1739,6 +1763,7 @@ fn run_with_workflow_token_origin(
             .map(SearchLoopResultWithWinnerV2::result),
         fd_runtime.as_ref(),
         normal_erl.as_ref(),
+        tdiln_runtime.as_ref(),
     );
     let artifacts = write_run_artifacts_internal_v1(
         &request.output_dir,
@@ -7130,6 +7155,45 @@ fn compose_workbook_fd_metrics_v1(
     .map_err(|error| DirectRunErrorV1::Parameters(format!("workbook FD metrics: {error}")))
 }
 
+/// Mirror the pinned `_r480_tdiln_from_network` dispatch without routing raw
+/// S4P data through the public JSON `portable.tdiln` surface.  The raw network
+/// is loaded from the same run-local cache as GET_FD and normal ERL, so turning
+/// on this report does not introduce another Touchstone parse.
+fn compose_workbook_tdiln_v1(
+    request: &DirectRunRequestV1,
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    cache: &mut S4pLoadCacheV1,
+) -> Result<TdilnRuntimeV1, DirectRunErrorV1> {
+    let thru = load_raw_sdd21_v1(cache, &request.pulse, values, true)?;
+    let result = r480_tdiln_v1(
+        &thru.sdd21,
+        &thru.frequency_hz,
+        workbook_fd_scalar_v1(values, &["f1"], "f1")?,
+        workbook_fd_scalar_v1(values, &["f2"], "f2")?,
+        workbook_fd_scalar_v1(values, &["fb"], "fb")?,
+        workbook_fd_usize_v1(values, &["samples_per_ui"], "samples_per_ui")?,
+        workbook_fd_scalar_v1(values, &["sample_dt"], "sample_dt")?,
+        u32::try_from(workbook_fd_usize_v1(values, &["levels"], "levels")?).map_err(|_| {
+            DirectRunErrorV1::Parameters("workbook TDILN levels are too large".to_owned())
+        })?,
+        workbook_fd_scalar_v1(values, &["specBER"], "specBER")?,
+        workbook_fd_scalar_v1(values, &["BinSize"], "BinSize")?,
+        workbook_fd_usize_v1(values, &["BTorder"], "BTorder")?,
+        workbook_fd_scalar_v1(values, &["fb_BT_cutoff"], "fb_BT_cutoff")?,
+        workbook_fd_scalar_v1(
+            values,
+            &["transmitter_transition_time", "T_r"],
+            "transmitter_transition_time",
+        )?,
+        workbook_truthy_v1(values, &["ENFORCE_CAUSALITY"], "ENFORCE_CAUSALITY")?,
+        workbook_fd_scalar_v1(values, &["EC_PULSE_TOL"], "EC_PULSE_TOL")?,
+        workbook_fd_scalar_v1(values, &["EC_REL_TOL"], "EC_REL_TOL")?,
+        workbook_fd_scalar_v1(values, &["EC_DIFF_TOL"], "EC_DIFF_TOL")?,
+    )
+    .map_err(|error| DirectRunErrorV1::Execution(format!("workbook TDILN: {error:?}")))?;
+    Ok(TdilnRuntimeV1 { result })
+}
+
 fn run_workbook_normal_erl_v1(
     path: &Path,
     values: &BTreeMap<String, ResolvedDefaultV1>,
@@ -7602,11 +7666,13 @@ fn result_value_v1(
     search_result: Option<&SearchLoopResultWithMetricsV1>,
     fd_runtime: Option<&(FdRuntimeMetricsV1, FdRuntimeDiagnosticsV1)>,
     normal_erl: Option<&(R480NormalErlResultV1, bool)>,
+    tdiln_runtime: Option<&TdilnRuntimeV1>,
 ) -> Value {
     let peak_interference_millivolts = envelope.interference_noise_v().map(|value| value * 1000.0);
     let fd_metrics = fd_runtime.map(|value| &value.0);
     let fd_diagnostics = fd_runtime.map(|value| &value.1);
     let normal_erl_result = normal_erl.map(|value| &value.0);
+    let tdiln_result = tdiln_runtime.map(|runtime| &runtime.result);
     let normal_erl_selected_port = normal_erl.map(|(result, tdr_w_txpkg)| {
         if *tdr_w_txpkg || result.ports[1].erl_db < result.ports[0].erl_db {
             1
@@ -7679,6 +7745,7 @@ fn result_value_v1(
                 "FOM_ILD": fd_metrics.map(|metrics| metrics.fom_ild),
                 "MDFEXT_ICN_92_47_mV": fd_metrics.map(|metrics| metrics.fext_icn_mv),
                 "MDNEXT_ICN_92_46_mV": fd_metrics.map(|metrics| metrics.next_icn_mv),
+                "FOM_TDILN": tdiln_result.map(|result| result.snr_isi_fom_pdf_db),
                 "ERL": normal_erl_db.as_ref().or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db"))),
                 "ERL11": normal_erl11_db.as_ref().or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db"))),
                 "ERL22": normal_erl22_db.as_ref(),
@@ -7772,6 +7839,32 @@ fn result_value_v1(
                         "ptdr_sha256": sha256_f64_v1(&port.ptdr),
                         "gated_sha256": sha256_f64_v1(&port.gated),
                     })).collect::<Vec<_>>(),
+                })),
+                "tdiln": tdiln_result.map(|result| json!({
+                    "schema": "sipi.com.metrics.tdiln.v1",
+                    "policy": sipi_com::TDILN_POLICY_V1,
+                    // This report performs a complex IL fit only to define
+                    // TDILN.  It is never a channel S-parameter fit or a
+                    // substitute for the primary S4P-to-impulse path.
+                    "source": "raw_mixed_mode_sdd21",
+                    "complex_il_report_fit": true,
+                    "channel_s_parameter_fit": false,
+                    "fit_sha256": sha256_complex_v1(&result.fit),
+                    "iln_db_sha256": sha256_f64_v1(&result.iln_db),
+                    "reference_pulse_sha256": sha256_f64_v1(&result.reference_pulse),
+                    "fitted_pulse_sha256": sha256_f64_v1(&result.fitted_pulse),
+                    "iln_pulse_sha256": sha256_f64_v1(&result.iln_pulse),
+                    "time_s_sha256": sha256_f64_v1(&result.time_s),
+                    "selected_phase": result.selected_phase,
+                    "fom_v": result.fom_v,
+                    "fom_pdf_v": result.fom_pdf_v,
+                    "snr_isi_fom_db": result.snr_isi_fom_db,
+                    "snr_isi_fom_pdf_db": result.snr_isi_fom_pdf_db,
+                    "pdf": {
+                        "bin_size": result.pdf.bin_size(),
+                        "min_bin": result.pdf.min_bin(),
+                        "sample_count": result.pdf.probability().len(),
+                    },
                 })),
                 "portable_branches": portable_diagnostics
             },
@@ -8108,6 +8201,7 @@ fn write_legacy_csv_v1(
     }
     for key in [
         "FOM",
+        "FOM_TDILN",
         "VEC_dB",
         "VEO_mV",
         "sigma_N",
@@ -9089,6 +9183,72 @@ mod tests {
             doubled_case["diagnostics"]["channel_impulse"]["sample_count"],
             1000
         );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn workbook_tdiln_composes_raw_sdd21_from_the_run_cache() {
+        let root = temp_root("workbook-tdiln-cache");
+        let s4p = root.join("channel.s4p");
+        let mut text = String::from("# Hz S RI R 50\n");
+        for index in 0..64 {
+            let frequency = index as f64 * 1.0e9;
+            let magnitude = (-frequency / 80.0e9).exp() * (1.0 + 0.4 * (frequency / 5.0e9).sin());
+            let phase = -2.0 * std::f64::consts::PI * frequency * 100.0e-12;
+            let mut row = Vec::with_capacity(32);
+            for pair in 0..16 {
+                if pair == 2 || pair == 7 {
+                    row.push(magnitude * phase.cos());
+                    row.push(magnitude * phase.sin());
+                } else {
+                    row.push(0.0);
+                    row.push(0.0);
+                }
+            }
+            text.push_str(&format!(
+                "{} {}\n",
+                frequency,
+                row.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ));
+        }
+        fs::write(&s4p, text).unwrap();
+        let values = BTreeMap::from([
+            (
+                "snpPortsOrder".to_owned(),
+                ResolvedDefaultV1::Vector(vec![1.0, 2.0, 3.0, 4.0]),
+            ),
+            ("f1".to_owned(), ResolvedDefaultV1::Scalar(0.0)),
+            ("f2".to_owned(), ResolvedDefaultV1::Scalar(30.0e9)),
+            ("fb".to_owned(), ResolvedDefaultV1::Scalar(10.0e9)),
+            ("samples_per_ui".to_owned(), ResolvedDefaultV1::Scalar(8.0)),
+            ("sample_dt".to_owned(), ResolvedDefaultV1::Scalar(1.0e-12)),
+            ("levels".to_owned(), ResolvedDefaultV1::Scalar(4.0)),
+            ("specBER".to_owned(), ResolvedDefaultV1::Scalar(1.0e-4)),
+            ("BinSize".to_owned(), ResolvedDefaultV1::Scalar(1.0e-4)),
+            ("BTorder".to_owned(), ResolvedDefaultV1::Scalar(4.0)),
+            ("fb_BT_cutoff".to_owned(), ResolvedDefaultV1::Scalar(0.75)),
+            (
+                "transmitter_transition_time".to_owned(),
+                ResolvedDefaultV1::Scalar(0.0),
+            ),
+            (
+                "ENFORCE_CAUSALITY".to_owned(),
+                ResolvedDefaultV1::Boolean(false),
+            ),
+            ("EC_PULSE_TOL".to_owned(), ResolvedDefaultV1::Scalar(0.05)),
+            ("EC_REL_TOL".to_owned(), ResolvedDefaultV1::Scalar(0.006)),
+            ("EC_DIFF_TOL".to_owned(), ResolvedDefaultV1::Scalar(1.0e-4)),
+        ]);
+        let request = DirectRunRequestV1::new(root.join("ignored.json"), &s4p, root.join("out"));
+        let mut cache = S4pLoadCacheV1::default();
+        let first = compose_workbook_tdiln_v1(&request, &values, &mut cache).unwrap();
+        let second = compose_workbook_tdiln_v1(&request, &values, &mut cache).unwrap();
+        assert_eq!(cache.networks.len(), 1);
+        assert_eq!(first.result.fit, second.result.fit);
+        assert!(first.result.snr_isi_fom_pdf_db.is_finite());
         let _ = fs::remove_dir_all(root);
     }
 
