@@ -237,3 +237,9 @@ fingerprint for follow-up work, but it is not yet a Rust mapping: the complete
 five-workbook occurrence set, source-stage trace identity, and event ordering
 must agree before this identifier-less warning can leave
 `sipi_runtime_observations` and enter root `warnings`.
+
+`tools/run_com_source_warning_observation.py` reuses that same pinned MATLAB
+harness for selected original-13 workbooks without invoking the Rust candidate.
+Its repository-external receipt retains only the callsite identifier, line,
+and bounded trace; source messages and their absolute fixture paths are not
+copied into the aggregate observation.
