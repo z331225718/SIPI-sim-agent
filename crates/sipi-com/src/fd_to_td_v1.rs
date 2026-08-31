@@ -248,9 +248,7 @@ fn interpolate_sparameter_v1(
         .map(|value| value.real().hypot(value.imaginary()).max(f64::EPSILON))
         .collect::<Vec<_>>();
     let phase = unwrap_phase_v1(values)?;
-    if phase.windows(2).map(|pair| pair[1] - pair[0]).sum::<f64>() / (phase.len() - 1) as f64 > 0.0
-        && !debug
-    {
+    if has_positive_unwrapped_phase_slope_from_phase_v1(&phase)? && !debug {
         return Err(FdToTdErrorV1::InvalidInput("anti-causal response found"));
     }
     let magnitude = interpolate_magnitude_v1(&magnitudes, fin, fout, magnitude_policy)?;
@@ -265,6 +263,32 @@ fn interpolate_sparameter_v1(
                 .ok_or(FdToTdErrorV1::NonFiniteCalculation)
         })
         .collect()
+}
+
+/// Exact R4.80 anti-causal guard used before S-parameter interpolation.
+///
+/// The source predicate is `mean(diff(unwrap(angle(s)))) > 0`. This helper
+/// exposes that predicate without changing the FD-to-TD result: callers that
+/// deliberately enable the source DEBUG bypass can report the degraded state
+/// while the converter keeps its existing reject-or-proceed semantics.
+pub fn has_positive_unwrapped_phase_slope_v1(values: &[Complex64]) -> Result<bool, FdToTdErrorV1> {
+    if values.len() < 2 {
+        return Err(FdToTdErrorV1::LengthMismatch);
+    }
+    let phase = unwrap_phase_v1(values)?;
+    has_positive_unwrapped_phase_slope_from_phase_v1(&phase)
+}
+
+fn has_positive_unwrapped_phase_slope_from_phase_v1(phase: &[f64]) -> Result<bool, FdToTdErrorV1> {
+    if phase.len() < 2 {
+        return Err(FdToTdErrorV1::LengthMismatch);
+    }
+    let mean_slope =
+        phase.windows(2).map(|pair| pair[1] - pair[0]).sum::<f64>() / (phase.len() - 1) as f64;
+    if !mean_slope.is_finite() {
+        return Err(FdToTdErrorV1::NonFiniteCalculation);
+    }
+    Ok(mean_slope > 0.0)
 }
 
 fn interpolate_magnitude_v1(
@@ -804,6 +828,22 @@ mod tests {
             s21_to_impulse_dc_v1(&values, &frequencies, &options),
             Err(FdToTdErrorV1::InvalidInput(_))
         ));
+        assert!(has_positive_unwrapped_phase_slope_v1(&values).expect("phase slope"));
+    }
+
+    #[test]
+    fn phase_slope_guard_unwraps_boundaries_and_keeps_zero_non_positive() {
+        let wrapped_negative = [-3.0, 3.0, 2.8]
+            .into_iter()
+            .map(|phase: f64| Complex64::try_new(phase.cos(), phase.sin()).expect("finite"))
+            .collect::<Vec<_>>();
+        assert!(!has_positive_unwrapped_phase_slope_v1(&wrapped_negative).expect("negative"));
+
+        let zero = [0.5, 0.5, 0.5]
+            .into_iter()
+            .map(|phase: f64| Complex64::try_new(phase.cos(), phase.sin()).expect("finite"))
+            .collect::<Vec<_>>();
+        assert!(!has_positive_unwrapped_phase_slope_v1(&zero).expect("zero"));
     }
 
     #[test]

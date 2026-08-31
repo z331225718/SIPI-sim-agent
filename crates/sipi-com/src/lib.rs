@@ -191,7 +191,7 @@ pub use fd_metrics_v1::{
 };
 pub use fd_to_td_v1::{
     FD_TO_TD_POLICY_V1, FdToTdErrorV1, FdToTdOptionsV1, ImpulseResultV1, MAX_FD_TO_TD_BINS_V1,
-    rectangular_pulse_response_fd_v1, s21_to_impulse_dc_v1,
+    has_positive_unwrapped_phase_slope_v1, rectangular_pulse_response_fd_v1, s21_to_impulse_dc_v1,
 };
 pub use horizontal_margin_v1::{
     HORIZONTAL_MARGIN_POLICY_V1, HorizontalMarginErrorV1, HorizontalMarginsV1,
