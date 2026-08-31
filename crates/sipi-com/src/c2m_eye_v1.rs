@@ -57,7 +57,14 @@ fn matlab_colon(start: f64, step: f64, stop: f64) -> Vec<f64> {
 }
 
 fn interp1_linear(x: &[f64], values: &[f64], query: &[f64]) -> Vec<f64> {
+    debug_assert_eq!(x.len(), values.len());
+    debug_assert!(x.len() >= 2);
+    debug_assert!(x.windows(2).all(|pair| pair[0] < pair[1]));
+    // `new_time` is constructed from two MATLAB-colon ranges and is ordered.
+    // Advancing from the previous bracket avoids restarting a linear scan for
+    // every resampled point in the C2M search hot path.
     let mut result = Vec::with_capacity(query.len());
+    let mut idx = 0usize;
     for &q in query {
         if q < x[0] || q > x[x.len() - 1] {
             result.push(f64::NAN);
@@ -67,7 +74,6 @@ fn interp1_linear(x: &[f64], values: &[f64], query: &[f64]) -> Vec<f64> {
             result.push(values[x.len() - 1]);
             continue;
         }
-        let mut idx = 0usize;
         while idx + 1 < x.len() && x[idx + 1] <= q {
             idx += 1;
         }
@@ -591,6 +597,35 @@ pub fn calculate_c2m_vertical_eye_v1(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn reference_interp1_linear(x: &[f64], values: &[f64], query: &[f64]) -> Vec<f64> {
+        query
+            .iter()
+            .map(|&q| {
+                if q < x[0] || q > x[x.len() - 1] {
+                    return f64::NAN;
+                }
+                if q == x[x.len() - 1] {
+                    return values[x.len() - 1];
+                }
+                let mut index = 0usize;
+                while index + 1 < x.len() && x[index + 1] <= q {
+                    index += 1;
+                }
+                let x0 = x[index];
+                let x1 = x[index + 1];
+                let y0 = values[index];
+                let y1 = values[index + 1];
+                if x1 == x0 {
+                    y0
+                } else {
+                    let fraction = (q - x0) / (x1 - x0);
+                    y0 + (y1 - y0) * fraction
+                }
+            })
+            .collect()
+    }
+
     fn pulse() -> Vec<f64> {
         (0..240)
             .map(|i| {
@@ -610,6 +645,21 @@ mod tests {
         assert_eq!(matlab_round(-0.5), -1);
         assert_eq!(matlab_round(1.5), 2);
         assert_eq!(matlab_round(-1.5), -2);
+    }
+
+    #[test]
+    fn monotonic_interpolation_preserves_reference_bits() {
+        let x = vec![-2.0, -0.5, 0.0, 0.75, 3.0];
+        let values = vec![1.5, -2.0, 0.25, 4.0, -3.5];
+        let query = vec![
+            -2.5, -2.0, -1.25, -0.5, -0.25, 0.0, 0.5, 0.75, 2.0, 3.0, 3.5,
+        ];
+        let expected = reference_interp1_linear(&x, &values, &query);
+        let actual = interp1_linear(&x, &values, &query);
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(expected) {
+            assert_eq!(actual.to_bits(), expected.to_bits());
+        }
     }
     #[test]
     fn t_o_zero_returns_none() {

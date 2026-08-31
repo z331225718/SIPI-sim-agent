@@ -648,6 +648,27 @@ fn linear_interp_extrap_v1(
             "interpolation axis is not increasing",
         ));
     }
+    if targets.windows(2).all(|pair| pair[0] <= pair[1]) {
+        // All FD-to-TD call sites provide a monotonic frequency grid. Reuse
+        // the previous bracket instead of binary-searching every output bin;
+        // the loop preserves the same rightmost-`<=` bracket and arithmetic.
+        let mut upper = 1usize;
+        return targets
+            .iter()
+            .map(|target| {
+                while upper < x.len() - 1 && x[upper] <= *target {
+                    upper += 1;
+                }
+                let lower = upper - 1;
+                let fraction = (*target - x[lower]) / (x[upper] - x[lower]);
+                let value = y[lower] + fraction * (y[upper] - y[lower]);
+                value
+                    .is_finite()
+                    .then_some(value)
+                    .ok_or(FdToTdErrorV1::NonFiniteCalculation)
+            })
+            .collect();
+    }
     targets
         .iter()
         .map(|target| {
@@ -760,6 +781,20 @@ fn db_ratio_v1(numerator: f64, denominator: f64) -> f64 {
 mod tests {
     use super::*;
 
+    fn reference_linear_interp_extrap(x: &[f64], y: &[f64], targets: &[f64]) -> Vec<f64> {
+        targets
+            .iter()
+            .map(|target| {
+                let upper = x
+                    .partition_point(|value| *value <= *target)
+                    .clamp(1, x.len() - 1);
+                let lower = upper - 1;
+                let fraction = (*target - x[lower]) / (x[upper] - x[lower]);
+                y[lower] + fraction * (y[upper] - y[lower])
+            })
+            .collect()
+    }
+
     fn trace(count: usize) -> (Vec<Complex64>, Vec<f64>) {
         let frequencies = (0..count)
             .map(|index| index as f64 * 1.0e9)
@@ -782,6 +817,23 @@ mod tests {
         assert!(!result.voltage.is_empty());
         assert_eq!(result.voltage.len(), result.time_s.len());
         assert!(result.time_s.windows(2).all(|pair| pair[1] > pair[0]));
+    }
+
+    #[test]
+    fn monotonic_interpolation_preserves_reference_bits_and_unordered_fallback() {
+        let x = vec![-1.0, 0.0, 0.25, 1.0, 2.5];
+        let y = vec![4.0, -1.0, 0.5, 3.0, -2.0];
+        for targets in [
+            vec![-2.0, -1.0, -0.5, 0.0, 0.25, 0.75, 1.0, 2.5, 3.0],
+            vec![1.0, -0.5, 2.5, 0.25],
+        ] {
+            let expected = reference_linear_interp_extrap(&x, &y, &targets);
+            let actual = linear_interp_extrap_v1(&x, &y, &targets).expect("interpolation");
+            assert_eq!(actual.len(), expected.len());
+            for (actual, expected) in actual.iter().zip(expected) {
+                assert_eq!(actual.to_bits(), expected.to_bits());
+            }
+        }
     }
 
     #[test]
