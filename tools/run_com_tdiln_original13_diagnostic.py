@@ -290,6 +290,10 @@ def _record(index: int, source_root: Path, binary: Path, performance_binary: Pat
             matlab_output / "tdiln-sidecar",
             case_root / "rust-tdiln-sidecar",
             int(comparison["case_count"]),
+            expected_applicability=tuple(
+                bool(case["tdiln_applicable"])
+                for case in comparison["cases"]
+            ),
         )
         comparison["tdiln_array_sidecars"] = sidecar
         if sidecar["status"] != "passed_diagnostic":

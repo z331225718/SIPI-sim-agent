@@ -57,6 +57,25 @@ class SidecarComparisonTests(unittest.TestCase):
         write_case(self.root / "rust", 0, {}, applicable=False)
         self.assertEqual(compare_sidecars(self.root / "matlab", self.root / "rust", 1)["status"], "passed_diagnostic")
 
+    def test_known_inapplicable_case_requires_both_sidecars_to_be_absent(self) -> None:
+        report = compare_sidecars(
+            self.root / "matlab",
+            self.root / "rust",
+            1,
+            expected_applicability=(False,),
+        )
+        self.assertEqual(report["status"], "passed_diagnostic")
+        write_case(self.root / "rust", 0, {}, applicable=False)
+        self.assertEqual(
+            compare_sidecars(
+                self.root / "matlab",
+                self.root / "rust",
+                1,
+                expected_applicability=(False,),
+            )["status"],
+            "blocked",
+        )
+
     def test_rust_payload_hash_drift_rejects(self) -> None:
         write_case(self.root / "matlab", 0, self.values)
         write_case(self.root / "rust", 0, self.values)

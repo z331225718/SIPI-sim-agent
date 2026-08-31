@@ -94,14 +94,39 @@ def _compare_vector(name: str, source_raw: bytes, source: tuple[float, ...], can
     return {"name": name, "length": len(source), "max_abs": max_abs, "max_abs_index": max_index, "nrmse": nrmse, "atol": atol, "rtol": rtol, "passed": passed}
 
 
-def compare_sidecars(matlab_root: Path, rust_root: Path, case_count: int, *, atol: float = ATOL, rtol: float = RTOL) -> dict[str, Any]:
+def compare_sidecars(
+    matlab_root: Path,
+    rust_root: Path,
+    case_count: int,
+    *,
+    expected_applicability: tuple[bool, ...] | None = None,
+    atol: float = ATOL,
+    rtol: float = RTOL,
+) -> dict[str, Any]:
     if case_count <= 0 or not math.isfinite(atol) or not math.isfinite(rtol) or atol < 0.0 or rtol < 0.0:
         raise ValueError("invalid comparison bounds")
+    if expected_applicability is not None and len(expected_applicability) != case_count:
+        raise ValueError("TDILN applicability length")
     cases: list[dict[str, Any]] = []
     passed = True
     for case_index in range(case_count):
         source_case = matlab_root / f"case-{case_index}"
         source_manifest_path = source_case / "manifest.json"
+        rust_manifest_path = rust_root / f"case-{case_index}" / "manifest.json"
+        expected = None if expected_applicability is None else expected_applicability[case_index]
+        if expected is False:
+            source_absent = not source_manifest_path.is_file()
+            rust_absent = not rust_manifest_path.is_file()
+            case_passed = source_absent and rust_absent
+            cases.append({
+                "case_index": case_index,
+                "tdiln_applicable": False,
+                "matlab_tdiln_absent": source_absent,
+                "rust_tdiln_absent": rust_absent,
+                "passed": case_passed,
+            })
+            passed = passed and case_passed
+            continue
         rust_case, rust_manifest = _load_manifest(rust_root, case_index, "Rust")
         if not source_manifest_path.is_file():
             inapplicable = rust_manifest["tdiln_applicable"] is False
