@@ -22,6 +22,7 @@ from typing import Any
 
 try:
     from tools.compare_com_tdiln_matrix_diagnostic import compare
+    from tools.compare_com_tdiln_sidecars import compare_sidecars
     from tools.run_p5_06_original13_fresh_matrix import (
         CONFIG_PATHS,
         bounded,
@@ -30,6 +31,7 @@ try:
     )
 except ImportError:
     from compare_com_tdiln_matrix_diagnostic import compare
+    from compare_com_tdiln_sidecars import compare_sidecars
     from run_p5_06_original13_fresh_matrix import (
         CONFIG_PATHS,
         bounded,
@@ -120,7 +122,7 @@ def _worker_environment(source_root: Path, engine_site: Path, preference_dir: Pa
     return environment
 
 
-def _record(index: int, source_root: Path, binary: Path, worker_python: Path, engine_site: Path, harness: Path, output_root: Path, timeout: int, rayon_threads: int) -> dict[str, Any]:
+def _record(index: int, source_root: Path, binary: Path, worker_python: Path, engine_site: Path, harness: Path, output_root: Path, timeout: int, rayon_threads: int, require_tdiln_sidecars: bool) -> dict[str, Any]:
     workbook = source_root / CONFIG_PATHS[index]
     channels = [
         source_root / "fixtures" / "synthetic" / name
@@ -187,12 +189,23 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
             "rust_wall_seconds": rust_wall_seconds,
             "rust_detail_sha256": hashlib.sha256(rust_run.stdout + rust_run.stderr).hexdigest(),
         }
+    matlab_document = json.loads(matlab_summary_path.read_text(encoding="utf-8"))
+    rust_document = json.loads(rust_result_path.read_text(encoding="utf-8"))
     comparison = compare(
-        json.loads(matlab_summary_path.read_text(encoding="utf-8")),
-        json.loads(rust_result_path.read_text(encoding="utf-8")),
+        matlab_document,
+        rust_document,
         rust_wall_seconds=rust_wall_seconds,
         tolerance=1.0e-9,
     )
+    if require_tdiln_sidecars:
+        sidecar = compare_sidecars(
+            matlab_output / "tdiln-sidecar",
+            case_root / "rust-tdiln-sidecar",
+            int(comparison["case_count"]),
+        )
+        comparison["tdiln_array_sidecars"] = sidecar
+        if sidecar["status"] != "passed_diagnostic":
+            comparison["status"] = "blocked"
     return {
         "workbook_index": index,
         "workbook": CONFIG_PATHS[index],
@@ -213,6 +226,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--indices", help="comma-separated original-13 indices; default runs all")
     parser.add_argument("--rayon-threads", type=int, default=1)
+    parser.add_argument("--require-tdiln-sidecars", action="store_true", help="require the opt-in full-array diagnostic receipts")
     parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
     if args.output.exists() or not args.source_root.is_dir() or not args.rust_binary.is_file() or not args.matlab.is_file() or args.rayon_threads <= 0:
@@ -233,7 +247,7 @@ def main() -> int:
     records = []
     for index in indices:
         try:
-            records.append(_record(index, args.source_root, args.rust_binary, worker_python, engine_site, harness, args.output, args.timeout, args.rayon_threads))
+            records.append(_record(index, args.source_root, args.rust_binary, worker_python, engine_site, harness, args.output, args.timeout, args.rayon_threads, args.require_tdiln_sidecars))
         except Exception as error:  # keep the rest of the matrix observable
             records.append({"workbook_index": index, "workbook": CONFIG_PATHS[index], "status": "runner_failed", "error_type": type(error).__name__, "error_sha256": hashlib.sha256(str(error).encode()).hexdigest()})
     passed = all(record["status"] == "passed_diagnostic" for record in records)
@@ -246,6 +260,7 @@ def main() -> int:
         "matlab_harness_sha256": digest(harness),
         "matlab_launch": "python_engine_noFigureWindows_singleCompThread",
         "rayon_threads": args.rayon_threads,
+        "tdiln_array_sidecars_required": args.require_tdiln_sidecars,
         "records": records,
         "status": "passed_diagnostic" if passed else "blocked",
     }
