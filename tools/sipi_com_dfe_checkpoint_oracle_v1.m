@@ -81,7 +81,13 @@ if isnan(number), value = struct('kind', 'nan'); elseif isinf(number) && number 
 end
 
 function digest = sha256_bytes(bytes)
-engine = java.security.MessageDigest.getInstance('SHA-256'); engine.update(bytes); raw = typecast(engine.digest(), 'uint8'); digest = lower(reshape(dec2hex(raw, 2).', 1, []));
+engine = java.security.MessageDigest.getInstance('SHA-256');
+% MATLAB's Java bridge accepts a scalar byte reliably, but treats some
+% row-shaped uint8 vectors as a non-scalar Java argument.  Hash each byte so
+% the receipt is shape-independent and still exactly covers the f64 payload.
+bytes = bytes(:);
+for index = 1:numel(bytes), engine.update(bytes(index)); end
+raw = typecast(engine.digest(), 'uint8'); digest = lower(reshape(dec2hex(raw, 2).', 1, []));
 end
 
 function write_stage(output_dir, nonce, stage)
