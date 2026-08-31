@@ -51,12 +51,29 @@ if record
             return
         end
     end
+    line = source_line();
+    source_trace = struct('schema', 'sipi.com.interp-sparam-input-trace.v1', ...
+        'status', 'not_requested');
+    if interpolation_input_trace_requested(line)
+        % This evalin must execute in warning.m itself. Its caller is the
+        % pinned local MATLAB function whose `Sin` argument we are observing.
+        try
+            source_input = evalin('caller', 'Sin');
+        catch
+            mark_incomplete('interp_sparam_input_missing');
+            source_trace.status = 'capture_failed';
+        end
+        if ~SIPI_COM_WARNING_CAPTURE_V1.capture_incomplete
+            source_trace = summarize_interpolation_input(source_input);
+        end
+    end
     event = struct( ...
         'sequence', double(numel(SIPI_COM_WARNING_CAPTURE_V1.events) + 1), ...
         'identifier', char(identifier), ...
         'message', char(message), ...
         'visible_to_lastwarn', visible_to_lastwarn, ...
-        'source_line', double(source_line()));
+        'source_line', double(line), ...
+        'source_trace', source_trace);
     SIPI_COM_WARNING_CAPTURE_V1.events{end + 1} = event;
 end
 end
@@ -140,6 +157,48 @@ for index = 2:numel(frames)
     end
 end
 mark_incomplete('source_stack_missing_after_classification');
+end
+
+function requested = interpolation_input_trace_requested(line)
+global SIPI_COM_WARNING_CAPTURE_V1;
+requested = false;
+if ~isfield(SIPI_COM_WARNING_CAPTURE_V1, 'interpolation_input_trace_lines')
+    return
+end
+lines = SIPI_COM_WARNING_CAPTURE_V1.interpolation_input_trace_lines;
+if ~isnumeric(lines) || ~isscalar(line) || ~any(lines == line)
+    return
+end
+requested = true;
+end
+
+function trace = summarize_interpolation_input(input)
+% The trace deliberately contains only bounded scalar summary values, never
+% the MATLAB source waveform or an S-parameter payload.
+trace = struct('schema', 'sipi.com.interp-sparam-input-trace.v1', ...
+    'status', 'capture_failed');
+if ~isnumeric(input) || ~isvector(input) || isempty(input)
+    mark_incomplete('interp_sparam_input_shape_invalid');
+    return
+end
+input = double(input(:));
+if any(~isfinite(real(input))) || any(~isfinite(imag(input)))
+    mark_incomplete('interp_sparam_input_nonfinite');
+    return
+end
+phase = unwrap(angle(input));
+trace = struct( ...
+    'schema', 'sipi.com.interp-sparam-input-trace.v1', ...
+    'status', 'captured', ...
+    'element_count', double(numel(input)), ...
+    'first_real', real(input(1)), ...
+    'first_imaginary', imag(input(1)), ...
+    'last_real', real(input(end)), ...
+    'last_imaginary', imag(input(end)), ...
+    'sum_real', sum(real(input)), ...
+    'sum_imaginary', sum(imag(input)), ...
+    'mean_unwrapped_phase_step', mean(diff(phase)), ...
+    'positive_mean_phase_step', mean(diff(phase)) > 0);
 end
 
 function mark_incomplete(reason)

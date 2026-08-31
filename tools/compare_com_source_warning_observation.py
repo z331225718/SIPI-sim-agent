@@ -24,6 +24,8 @@ MAX_FREQUENCY = {
     "source_line": 9715,
     "source_callsite_id": "read_s4p.max_frequency_below_fb",
 }
+ANTI_CAUSAL_SOURCE_LINE = 6337
+TRACE_SCHEMA = "sipi.com.interp-sparam-input-trace.v1"
 ROLES = ("THRU", "FEXT", "NEXT")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -52,7 +54,29 @@ def _source_events(matlab: Any) -> list[dict[str, Any]]:
         event = _object(raw, f"MATLAB source warning {index}")
         if event.get("sequence") != index or not isinstance(event.get("identifier"), str) or not isinstance(event.get("message"), str) or not isinstance(event.get("source_line"), (int, float)):
             raise ValueError("MATLAB source warning event shape drift")
+        _validate_source_trace(event)
     return events
+
+
+def _validate_source_trace(event: dict[str, Any]) -> None:
+    trace = _object(event.get("source_trace"), "MATLAB source warning trace")
+    line = event["source_line"]
+    if line == ANTI_CAUSAL_SOURCE_LINE:
+        expected = {
+            "schema", "status", "element_count", "first_real", "first_imaginary",
+            "last_real", "last_imaginary", "sum_real", "sum_imaginary",
+            "mean_unwrapped_phase_step", "positive_mean_phase_step",
+        }
+        if set(trace) != expected or trace.get("schema") != TRACE_SCHEMA or trace.get("status") != "captured":
+            raise ValueError("MATLAB anti-causal source trace drift")
+        if not isinstance(trace.get("element_count"), (int, float)) or trace["element_count"] < 2:
+            raise ValueError("MATLAB anti-causal source trace size drift")
+        for key in expected - {"schema", "status", "element_count", "positive_mean_phase_step"}:
+            _finite(trace.get(key), f"MATLAB anti-causal trace {key}")
+        if not isinstance(trace.get("positive_mean_phase_step"), bool) or trace["positive_mean_phase_step"] is not True:
+            raise ValueError("MATLAB anti-causal source trace predicate drift")
+    elif trace != {"schema": TRACE_SCHEMA, "status": "not_requested"}:
+        raise ValueError("MATLAB non-anti-causal source trace drift")
 
 
 def _rust_warnings(rust: Any) -> list[dict[str, Any]]:

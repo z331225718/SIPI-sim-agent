@@ -226,3 +226,14 @@ calls in that pinned file. `tools/compare_com_source_warning_observation.py`
 fails closed for an observed but unmapped callsite (including the currently
 unported identifier-less anti-causal warning at line 6337); it does not claim a
 complete MATLAB, toolbox, or runtime warning catalog.
+
+For that unported branch, the observer now records a bounded summary of the
+caller-local `interp_Sparam` `Sin` input only at the pinned line 6337: sample
+count, endpoint and sum components, and the exact positive-mean-unwrapped
+phase predicate.  An R2024b original-13 index-08 observation captured one such
+source input with 8,001 samples and mean phase step
+`1.3335561211958429`.  This establishes the source-local stage and an input
+fingerprint for follow-up work, but it is not yet a Rust mapping: the complete
+five-workbook occurrence set, source-stage trace identity, and event ordering
+must agree before this identifier-less warning can leave
+`sipi_runtime_observations` and enter root `warnings`.

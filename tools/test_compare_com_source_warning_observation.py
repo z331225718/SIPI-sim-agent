@@ -13,7 +13,16 @@ def matlab(events: list[dict]) -> dict:
 
 
 def event(sequence: int, identifier: str, line: int) -> dict:
-    return {"sequence": sequence, "identifier": identifier, "message": "source", "source_line": line}
+    trace = {"schema": "sipi.com.interp-sparam-input-trace.v1", "status": "not_requested"}
+    if line == 6337:
+        trace = {
+            "schema": "sipi.com.interp-sparam-input-trace.v1", "status": "captured",
+            "element_count": 3, "first_real": 1.0, "first_imaginary": 0.0,
+            "last_real": -1.0, "last_imaginary": 0.0, "sum_real": 0.0,
+            "sum_imaginary": -1.0, "mean_unwrapped_phase_step": 0.25,
+            "positive_mean_phase_step": True,
+        }
+    return {"sequence": sequence, "identifier": identifier, "message": "source", "source_line": line, "source_trace": trace}
 
 
 def rust(roles: list[str]) -> dict:
@@ -74,6 +83,16 @@ class SourceWarningObservationTests(unittest.TestCase):
         candidate["warnings"][0]["matlab_warning_parity"] = False
         with self.assertRaisesRegex(ValueError, "shape drift"):
             compare(matlab([event(1, "COM:read_s4p:MaxFreqTooLow", 9715)]), candidate)
+
+    def test_anti_causal_trace_is_required_and_must_reproduce_source_predicate(self) -> None:
+        source = matlab([event(1, "", 6337)])
+        source["source_warning_calls"]["events"][0]["source_trace"].pop("sum_real")
+        with self.assertRaisesRegex(ValueError, "anti-causal source trace drift"):
+            compare(source, rust([]))
+        source = matlab([event(1, "", 6337)])
+        source["source_warning_calls"]["events"][0]["source_trace"]["positive_mean_phase_step"] = False
+        with self.assertRaisesRegex(ValueError, "anti-causal source trace predicate drift"):
+            compare(source, rust([]))
 
 
 if __name__ == "__main__":
