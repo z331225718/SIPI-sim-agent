@@ -1,0 +1,60 @@
+schema: sipi.p5-06w.source-warning-observation.v1
+status: observed_warning_parity_blocked
+scope:
+  source: Agent-COM original-13 external MATLAB warning emission subset
+  candidate: b456e9d57b2449787e22cdefdad6c0edc70d69dc public-root Rust results
+  workbook_indices: [0, 2, 8, 10, 12]
+source_archive:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+  bytes: 43694080
+tools:
+  warning_observer_sha256: afed796f2d4e640527249c0988131ce820fc3f18584ae93a424b69e8733ee13f
+  warning_comparator_sha256: cc5b0c76cd962a39c88b38ceefaf376106638b8e2754c2506b40998d0598e6eb
+  matlab_harness_sha256: b84149fbe6d5d42988870f97ca25801907edf10a6ebc6d02130a128d04ee0602
+external_observation:
+  report_sha256: 25e0645941f800b448e2a17bf84b8a662870a2b1f602e4db90c93b07dadc620d
+  matlab_release: R2024b
+  launch: python_engine_noFigureWindows_singleCompThread
+  report_retained_in_repository: false
+observations:
+  - workbook_index: 0
+    source_event_lines: [6337]
+    comparison_sha256: a3ec96191970fe27df25f9c8898ae5a9220d64084248cfa5c1e4b07efa7b475f
+  - workbook_index: 2
+    source_event_lines: [6337]
+    comparison_sha256: e7117d8b285a43714d6fafe16830f01b2da0ff17ef0939d057030be00c80aa44
+  - workbook_index: 8
+    source_event_lines: [9715, 9715, 9715, 6337]
+    comparison_sha256: 7f2880193ea11017a4ea8786d06752a9aeff809b527851cf0147c5fbc579b20b
+  - workbook_index: 10
+    source_event_lines: [9715, 9715, 9715, 6337]
+    comparison_sha256: bd93c0ba35d2f208156e762b17564aea0c887ec0197da2d49c796fc21fb078f4
+  - workbook_index: 12
+    source_event_lines: [9715, 9715, 9715, 6337]
+    comparison_sha256: bd93c0ba35d2f208156e762b17564aea0c887ec0197da2d49c796fc21fb078f4
+findings:
+  mapped_max_frequency_callsite:
+    source_line: 9715
+    identifier: COM:read_s4p:MaxFreqTooLow
+    matched_for_every_observed_occurrence: true
+  anti_causal_callsite:
+    source_line: 6337
+    status: roundoff_sensitive_trace_mismatch
+    source_maximum_magnitude_range: [2.2737310514722023e-17, 4.547473192033099e-17]
+    rust_maximum_magnitude: 0.0
+    source_warning_equivalent: false
+    rationale: The MATLAB predicate is triggered by platform-sensitive near-zero complex residues; Rust records a diagnostic-only signed-zero phase observation and does not publish it as a mapped MATLAB warning.
+claims:
+  source_warning_emission_observed: true
+  max_frequency_warning_mapping_observed: true
+  anti_causal_warning_parity: false
+  complete_warning_catalog: false
+  p5_06_main_closed: false
+  release: false
+non_claims:
+  - complete_warning_catalog
+  - source_warning_parity
+  - external_result_provenance
+  - release
