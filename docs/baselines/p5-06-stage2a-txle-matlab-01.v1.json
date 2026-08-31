@@ -1,0 +1,1712 @@
+{
+  "channels": [
+    {
+      "bytes": 6393177,
+      "path": "fixtures/synthetic/thru_10db_at_26p56ghz.s4p",
+      "role": "THRU",
+      "sha256": "fcbcce086dbae6bbb9a1f8ca5df775073ebb6303f80a9f062caf1f2ab5607361"
+    },
+    {
+      "bytes": 6393140,
+      "path": "fixtures/synthetic/fext_m40db_at_26p56ghz.s4p",
+      "role": "FEXT",
+      "sha256": "cc5968bacd5bd40d6ccd7db4927dbb1dd3f20d82f4d3ad5a3193ad86e0e9ca04"
+    },
+    {
+      "bytes": 6392860,
+      "path": "fixtures/synthetic/next_m40db_at_26p56ghz.s4p",
+      "role": "NEXT",
+      "sha256": "882819542f43b8fb5f174c7e984b418ceb0f56e068654c9be362a84547b93e65"
+    }
+  ],
+  "claims": {
+    "acceptance": false,
+    "one_final_fd_to_td_impulse": true,
+    "release": false,
+    "s_parameter_fit": false,
+    "stage2a_txle_parity": false
+  },
+  "engine": "matlab",
+  "host_fingerprint": "b2195549e387ffae49faf8b25614a5e98c48e4cdabb8cd8953a9f741290e6f30",
+  "nonce": "48e7df75c1ad8e086158e84b6b9eeb7a9a83c192231af0d6fceafeb338c1336d",
+  "records": [
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4003,
+        "parameter_mat_sha256": "9fbda3303d9e38ff9f494cab1cf8fa5865b06ff34f456f2bd4bb348604f0dc2b",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "294864acff262aa9bb8a1aba3caf2349fc47088220042bd130a36972532cb1ec",
+        "pinned_sha256": "ffc2c45be26443fe662bd7e6352ba714b12532257f5f8a570e68e63624787d60",
+        "rust_sha256": "ffc2c45be26443fe662bd7e6352ba714b12532257f5f8a570e68e63624787d60"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 24758457300,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": -12.165899453240549,
+          "CTLE_DC_gain_dB": 0.0,
+          "ERL": 17.310082883306528,
+          "FOM": -4.166327806609774,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 229.75,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -346.2624294976843,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": -13.892359256573613,
+          "CTLE_DC_gain_dB": 0.0,
+          "ERL": 17.310082883306528,
+          "FOM": -5.459731690127896,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 234.33000000000004,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -373.98399468560086,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": -12.165899453240549,
+            "CTLE_DC_gain_dB": 0.0,
+            "ERL": 17.310082883306528,
+            "FOM": -4.166327806609774,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 229.75,
+            "VEC_dB": 313.07119549054045,
+            "VEO_mV": -346.2624294976843,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712",
+            "shape": [
+              1,
+              1
+            ],
+            "values": [
+              1.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": -13.892359256573613,
+            "CTLE_DC_gain_dB": 0.0,
+            "ERL": 17.310082883306528,
+            "FOM": -5.459731690127896,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 234.33000000000004,
+            "VEC_dB": 313.07119549054045,
+            "VEO_mV": -373.98399468560086,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712",
+            "shape": [
+              1,
+              1
+            ],
+            "values": [
+              1.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 2,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 67151,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA _TP0V_08_17_2022.xlsx",
+        "sha256": "54562fa2bbe856f1fb6e96b7c1c873d2b399555b1fb38e50cd6f4ad3ddc69f0a"
+      },
+      "workbook_index": 0
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4044,
+        "parameter_mat_sha256": "6d0978e37b843f807bebcb20551e17c095b46473e27ae3af91019b0dba736589",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "aa2b2c9e8082e709943f16b5f1b9cdaccfa7b9049aafdafe1479b16b9ed39cde",
+        "pinned_sha256": "f1c0f4c65663335803b20e3f6a271247eb67f5c84c26572ec9aa33ca2aa36874",
+        "rust_sha256": "f1c0f4c65663335803b20e3f6a271247eb67f5c84c26572ec9aa33ca2aa36874"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 30125080900,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 5.59394173045256,
+          "CTLE_DC_gain_dB": -5.0,
+          "ERL": "+Inf",
+          "FOM": 18.07395679932557,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 14.699999999999998,
+          "VEC_dB": 6.469303451302628,
+          "VEO_mV": 26.58148529439829,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 5.804046318121331,
+          "CTLE_DC_gain_dB": -8.0,
+          "ERL": "+Inf",
+          "FOM": 18.263067551389863,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 9.400000000000002,
+          "VEC_dB": 6.242690898186648,
+          "VEO_mV": 17.87415913860814,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 5.59394173045256,
+            "CTLE_DC_gain_dB": -5.0,
+            "ERL": "+Inf",
+            "FOM": 18.07395679932557,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 14.699999999999998,
+            "VEC_dB": 6.469303451302628,
+            "VEO_mV": 26.58148529439829,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "f466c94c7c2971e9d795f1153f6b8351e82fcd83391a3107526839721838d134",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.14,
+              0.84,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 5.804046318121331,
+            "CTLE_DC_gain_dB": -8.0,
+            "ERL": "+Inf",
+            "FOM": 18.263067551389863,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 9.400000000000002,
+            "VEC_dB": 6.242690898186648,
+            "VEO_mV": 17.87415913860814,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "f466c94c7c2971e9d795f1153f6b8351e82fcd83391a3107526839721838d134",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.14,
+              0.84,
+              0.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 2,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 67087,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx",
+        "sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925"
+      },
+      "workbook_index": 1
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4207,
+        "parameter_mat_sha256": "f8f0b78a0a10af768648037c54b068daea24843cccbcedeccd04cbc0f4ed0ce0",
+        "parameter_shape": [
+          64,
+          32
+        ],
+        "parameter_slot_digest": "1a8034da7a6c02f6548ebb34ada3f108756647b1a46e6948c1ee29b35806c62a",
+        "pinned_sha256": "1904b3204bd6be1ff9024261de3cf70da5e24689df7206b08ca7a9de2961a603",
+        "rust_sha256": "1904b3204bd6be1ff9024261de3cf70da5e24689df7206b08ca7a9de2961a603"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 700161973600,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 5.190191599808681,
+          "CTLE_DC_gain_dB": -3.0,
+          "ERL": 16.742740133561476,
+          "FOM": 6.029923244850435,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 57.18848278499239,
+          "VEC_dB": 6.938873046658207,
+          "VEO_mV": 46.76000000000001,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -0.5,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 4.877647775233487,
+          "CTLE_DC_gain_dB": -3.0,
+          "ERL": 16.742740133561476,
+          "FOM": 5.858374500465274,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 49.82707866914524,
+          "VEC_dB": 7.337070919529902,
+          "VEO_mV": 37.53999999999999,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -0.5,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 5.190191599808681,
+            "CTLE_DC_gain_dB": -3.0,
+            "ERL": 16.742740133561476,
+            "FOM": 6.029923244850435,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 57.18848278499239,
+            "VEC_dB": 6.938873046658207,
+            "VEO_mV": 46.76000000000001,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -0.5,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "db9cd973ecdc3a6bbf525178b931dcbdc70021cc48fdcd49ad741dba5568c0f4",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.0,
+              -0.08,
+              0.92,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 4.877647775233487,
+            "CTLE_DC_gain_dB": -3.0,
+            "ERL": 16.742740133561476,
+            "FOM": 5.858374500465274,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 49.82707866914524,
+            "VEC_dB": 7.337070919529902,
+            "VEO_mV": 37.53999999999999,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -0.5,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "8362113873de684895321b4225776abe8105e2b79ababcc09eb4331859cf46e2",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.12,
+              0.86,
+              0.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 2,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 63311,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx",
+        "sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9"
+      },
+      "workbook_index": 2
+    },
+    {
+      "case_count": 0,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4087,
+        "parameter_mat_sha256": "b0c8d3876c056b1be9b563b6ac9881a0597d4d38c982f8252bb09b97070933c3",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "34856a37fc2ff26cb45d01fca87504163c4821230c1f788d73b95dcab8051368",
+        "pinned_sha256": "ee7240480acee4ea710f5816517c2ff121eec9332c568a1b56568b188c21ca2f",
+        "rust_sha256": "ee7240480acee4ea710f5816517c2ff121eec9332c568a1b56568b188c21ca2f"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 14580442800,
+      "exit_code": 0,
+      "metrics": [],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [],
+      "txle_scope": {
+        "eligible_case_count": 0,
+        "inapplicable_erl_only_case_count": 1
+      },
+      "workbook": {
+        "bytes": 67009,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120G_ERL_HOST_10_26_2022.xlsx",
+        "sha256": "3c95f728ba03442ac11b4b3834c0ee426a8a5b41eef6f7acd8390dc4b813c8c2"
+      },
+      "workbook_index": 3
+    },
+    {
+      "case_count": 0,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4094,
+        "parameter_mat_sha256": "fd142ff4fd5bcf642c431e7db5815f3ab5f22ac137caa80c34e0f2ea54ec6e01",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "fd2dfcb6783b3d8eb8cd77e9b7167f129d73bfa202ae09c73e97ab5cf6d6be72",
+        "pinned_sha256": "c37da34b462f317b5cd1b23e644de332854ea75214991685c99534b9c958beb9",
+        "rust_sha256": "c37da34b462f317b5cd1b23e644de332854ea75214991685c99534b9c958beb9"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 15417730600,
+      "exit_code": 0,
+      "metrics": [],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [],
+      "txle_scope": {
+        "eligible_case_count": 0,
+        "inapplicable_erl_only_case_count": 1
+      },
+      "workbook": {
+        "bytes": 67208,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120G_ERL_MODULE_10_26_2022.xlsx",
+        "sha256": "bebc7cbb9701fcbd6b6645e0a5d9b68a8ee05ded305dfde2720042ce3823df0b"
+      },
+      "workbook_index": 4
+    },
+    {
+      "case_count": 0,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4086,
+        "parameter_mat_sha256": "0d6482b195476308d653a484a2ab6e783cfe8e221d7d6f85983a1c227ef059d4",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "33af94a4f470d23b7276d98c6f49efc0f586d273fae683fdd7b0c63337605a40",
+        "pinned_sha256": "32e4b534c744ae4382b4aad6104194bfd3dd92bfaddaf5fe013ea1e6a2f51fdf",
+        "rust_sha256": "32e4b534c744ae4382b4aad6104194bfd3dd92bfaddaf5fe013ea1e6a2f51fdf"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 14451962700,
+      "exit_code": 0,
+      "metrics": [],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [],
+      "txle_scope": {
+        "eligible_case_count": 0,
+        "inapplicable_erl_only_case_count": 1
+      },
+      "workbook": {
+        "bytes": 67022,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_162_ERL_HOST_10_26_2022 .xlsx",
+        "sha256": "7512e0dba337e881a4b27db9e3f8119e1642e6f29db0b69b4f188c17ccc8b66d"
+      },
+      "workbook_index": 5
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4085,
+        "parameter_mat_sha256": "e36d6b9fd49278ee5534df67a05aea316e1784187e988130fd6b5aafef14abb8",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "e2c1390df4f5b613f451b6e97ac1b85fa3200bad04f4611ae305fcab5e756466",
+        "pinned_sha256": "5249c598805ab4b45c888631b0795abb1a257a4d1a2cc254f27b4f4b38b8cf38",
+        "rust_sha256": "5249c598805ab4b45c888631b0795abb1a257a4d1a2cc254f27b4f4b38b8cf38"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 32580616600,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 6.923722853321385,
+          "CTLE_DC_gain_dB": -8.0,
+          "ERL": "+Inf",
+          "FOM": 18.131449877103385,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.500000000000002,
+          "VEC_dB": 5.202598779016085,
+          "VEO_mV": 13.41062099579705,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 6.411442067757624,
+          "CTLE_DC_gain_dB": -12.0,
+          "ERL": "+Inf",
+          "FOM": 17.613122668773137,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.866283225533977,
+          "VEC_dB": 5.646589939954754,
+          "VEO_mV": 8.444350810580488,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 6.923722853321385,
+            "CTLE_DC_gain_dB": -8.0,
+            "ERL": "+Inf",
+            "FOM": 18.131449877103385,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.500000000000002,
+            "VEC_dB": 5.202598779016085,
+            "VEO_mV": 13.41062099579705,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "dac2e8375ba3c710f82f5d52e3aa77002217909386747d17a684345787854d84",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.14,
+              0.8200000000000001,
+              -0.02
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 6.411442067757624,
+            "CTLE_DC_gain_dB": -12.0,
+            "ERL": "+Inf",
+            "FOM": 17.613122668773137,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.866283225533977,
+            "VEC_dB": 5.646589939954754,
+            "VEO_mV": 8.444350810580488,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "197a0e4ffbc98e7734142af2f7078e7e8552eb69ac646194bf12e7ee585b77cd",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.16,
+              0.8200000000000001,
+              0.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 2,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 67030,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_CR_CA_08_17_2022.xlsx",
+        "sha256": "06a62ad17fcaf51fffb2060e9d37e7192cd0fd5a95cf5920b0aba46786ad4b53"
+      },
+      "workbook_index": 6
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 4091,
+        "parameter_mat_sha256": "d3dc2eb0fdc95aac4dca6cc77d29a5416797d72be96c7689044ea91664771ab9",
+        "parameter_shape": [
+          68,
+          31
+        ],
+        "parameter_slot_digest": "b695acc72b4fc26c9ce74328ef99c4b570f95bce8cae11c336dc1f535eace480",
+        "pinned_sha256": "671c1c3dd0c6868f93663c01c7bc906386fac3ebd9cc0f7e125923c0b64ae33c",
+        "rust_sha256": "671c1c3dd0c6868f93663c01c7bc906386fac3ebd9cc0f7e125923c0b64ae33c"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 32332598000,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 7.669595868723472,
+          "CTLE_DC_gain_dB": -5.0,
+          "ERL": "+Inf",
+          "FOM": 19.019280550447675,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 11.62,
+          "VEC_dB": 4.6352699196532265,
+          "VEO_mV": 32.95736039939274,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 7.631121757781376,
+          "CTLE_DC_gain_dB": -7.0,
+          "ERL": "+Inf",
+          "FOM": 18.92511206497147,
+          "ICN_mV": 4.601554213273623,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 7.95,
+          "VEC_dB": 4.662502898575055,
+          "VEO_mV": 22.378350273046525,
+          "fitted_IL_dB_at_Fnq": 9.834912844952038,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 7.669595868723472,
+            "CTLE_DC_gain_dB": -5.0,
+            "ERL": "+Inf",
+            "FOM": 19.019280550447675,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 11.62,
+            "VEC_dB": 4.6352699196532265,
+            "VEO_mV": 32.95736039939274,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "f466c94c7c2971e9d795f1153f6b8351e82fcd83391a3107526839721838d134",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.14,
+              0.84,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 7.631121757781376,
+            "CTLE_DC_gain_dB": -7.0,
+            "ERL": "+Inf",
+            "FOM": 18.92511206497147,
+            "ICN_mV": 4.601554213273623,
+            "IL_dB_channel_only_at_Fnq": 10.000735704402235,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 7.95,
+            "VEC_dB": 4.662502898575055,
+            "VEO_mV": 22.378350273046525,
+            "fitted_IL_dB_at_Fnq": 9.834912844952038,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "f466c94c7c2971e9d795f1153f6b8351e82fcd83391a3107526839721838d134",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.14,
+              0.84,
+              0.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 2,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 67620,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_KR_08_17_2022.xlsx",
+        "sha256": "8247d4c950009293187b82999e780c5aa4bca1c21c448fd1b5557fd185b5e989"
+      },
+      "workbook_index": 7
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 125328,
+        "parameter_mat_sha256": "b0325531d3e7a0d2e1e963ee0519cae7e5f5699ebf7b87c6da762f6ce7c3c47e",
+        "parameter_shape": [
+          68,
+          32
+        ],
+        "parameter_slot_digest": "a490bb9501a0d402b0aac98e0a48d034ab54551bc6b9c7296a7d2494f65421ee",
+        "pinned_sha256": "e7e731295c24dc116a961c1862a69ad6443d6c898f56023d9d2975f27438b429",
+        "rust_sha256": "e7e731295c24dc116a961c1862a69ad6443d6c898f56023d9d2975f27438b429"
+      },
+      "detail_sha256": "45010ebf4df22ac96884ff78ae814fa656a175f0d5ca5b4453391c5cbb58e386",
+      "execution_wall_ns": 142971992900,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 1.8086961768611973,
+          "CTLE_DC_gain_dB": -11.0,
+          "ERL": 20.078526910294492,
+          "FOM": 11.60038328220674,
+          "ICN_mV": 3.30799909234799,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 18.3152466810052,
+          "VEC_dB": 14.517634492708655,
+          "VEO_mV": 4.240000000000001,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 0.6584053171100566,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 9.828875997070378,
+          "ICN_mV": 3.30799909234799,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 15.55392592400006,
+          "VEC_dB": 22.733542797590907,
+          "VEO_mV": 1.224850693044229,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": -1.6377427884709959,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 7.673275900375337,
+          "ICN_mV": 3.30799909234799,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.342631661995682,
+          "VEC_dB": -313.07119549054045,
+          "VEO_mV": -2.808361134463026,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -5.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 1.8086961768611973,
+            "CTLE_DC_gain_dB": -11.0,
+            "ERL": 20.078526910294492,
+            "FOM": 11.60038328220674,
+            "ICN_mV": 3.30799909234799,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 18.3152466810052,
+            "VEC_dB": 14.517634492708655,
+            "VEO_mV": 4.240000000000001,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "197a0e4ffbc98e7734142af2f7078e7e8552eb69ac646194bf12e7ee585b77cd",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.16,
+              0.8200000000000001,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 0.6584053171100566,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": 20.078526910294492,
+            "FOM": 9.828875997070378,
+            "ICN_mV": 3.30799909234799,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 15.55392592400006,
+            "VEC_dB": 22.733542797590907,
+            "VEO_mV": 1.224850693044229,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "4c97205a69df23d4f5bc86a293478824d6ed1ca6b204d06a1524819dba11cb79",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.18000000000000002,
+              0.8,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 2,
+          "final_scalar_metrics": {
+            "COM_dB": -1.6377427884709959,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": 20.078526910294492,
+            "FOM": 7.673275900375337,
+            "ICN_mV": 3.30799909234799,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.342631661995682,
+            "VEC_dB": -313.07119549054045,
+            "VEO_mV": -2.808361134463026,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -5.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "8af10cc05c5b2d68da5a4c4eb4595e95600bcf5080082e7b2a1bfc744036813d",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.2,
+              0.78,
+              0.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 3,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 45881,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_fr55_C2M_TP1a_11_2022.xlsx",
+        "sha256": "17cda9b0fa4aed850b9534631d4fe7f65950517392edc19407b1668dba8c2482"
+      },
+      "workbook_index": 8
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 118128,
+        "parameter_mat_sha256": "82f6324f7fe316b244bbc6c6ee12b186588451af9f7ee4a04197c7f799488b09",
+        "parameter_shape": [
+          64,
+          32
+        ],
+        "parameter_slot_digest": "8f0b25366332311937e251cd33666773e3e15042f7cb0faabb240bbfe3c48d43",
+        "pinned_sha256": "948296fd909c2a3ce1d6809b0ec8c4d4476b49aed9f9ce198781975cf83865bb",
+        "rust_sha256": "948296fd909c2a3ce1d6809b0ec8c4d4476b49aed9f9ce198781975cf83865bb"
+      },
+      "detail_sha256": "735a7e78137bc883c76ed61a0e5f2b96b1dc7d017f68db80c84af3a6c4fea546",
+      "execution_wall_ns": 142731741900,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 2.877511115153993,
+          "CTLE_DC_gain_dB": -12.0,
+          "ERL": "+Inf",
+          "FOM": 13.144788793970157,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 6.578293251317707,
+          "VEC_dB": 10.995017833612778,
+          "VEO_mV": 5.167350130561542,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 1.3708425862198985,
+          "CTLE_DC_gain_dB": -14.0,
+          "ERL": "+Inf",
+          "FOM": 11.284363855431083,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.629311176298978,
+          "VEC_dB": 16.71294288431126,
+          "VEO_mV": 1.9247761867439115,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": -0.15495556001479988,
+          "CTLE_DC_gain_dB": -16.0,
+          "ERL": "+Inf",
+          "FOM": 9.891823871085881,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.784849699256199,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -0.2045722879894154,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -2.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 2.877511115153993,
+            "CTLE_DC_gain_dB": -12.0,
+            "ERL": "+Inf",
+            "FOM": 13.144788793970157,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 6.578293251317707,
+            "VEC_dB": 10.995017833612778,
+            "VEO_mV": 5.167350130561542,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "39f578f99554f79482ef7c22d925d83fd2c47de7cd97e8e5488c7374f78facd8",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.04,
+              -0.2,
+              0.76,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 1.3708425862198985,
+            "CTLE_DC_gain_dB": -14.0,
+            "ERL": "+Inf",
+            "FOM": 11.284363855431083,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.629311176298978,
+            "VEC_dB": 16.71294288431126,
+            "VEO_mV": 1.9247761867439115,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "39f578f99554f79482ef7c22d925d83fd2c47de7cd97e8e5488c7374f78facd8",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.04,
+              -0.2,
+              0.76,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 2,
+          "final_scalar_metrics": {
+            "COM_dB": -0.15495556001479988,
+            "CTLE_DC_gain_dB": -16.0,
+            "ERL": "+Inf",
+            "FOM": 9.891823871085881,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.784849699256199,
+            "VEC_dB": 313.07119549054045,
+            "VEO_mV": -0.2045722879894154,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -2.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "d93bfa03d5f1073bbede26988ca1fc9c6d7aac731b796bf7ef5a587093bca183",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.0,
+              -0.16,
+              0.84,
+              0.0
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 3,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 45859,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_C2C_11_2022.xlsx",
+        "sha256": "b259c3c647bbb5d1fd136703d8d47e2e818a2ce70aa965fc9819013954ac3548"
+      },
+      "workbook_index": 9
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 125328,
+        "parameter_mat_sha256": "fe1e429cfa276fbec8663749ce9bcfe0ce67b9e796cbccb9797a050d4c508028",
+        "parameter_shape": [
+          68,
+          32
+        ],
+        "parameter_slot_digest": "c54e7cf19ccca89cf6372e34ca32199198cb1d3a953cf20cb1046e5a3c580c56",
+        "pinned_sha256": "e33465d72c96ce3936156b0eaab48de53a2aa04f069d1ad3c8528113496f8e1a",
+        "rust_sha256": "e33465d72c96ce3936156b0eaab48de53a2aa04f069d1ad3c8528113496f8e1a"
+      },
+      "detail_sha256": "9d2a287c108803d3afd098adff31b37a540fed27be6b07cd064ad3725ff1543b",
+      "execution_wall_ns": 138317067600,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 1.9370098673805234,
+          "CTLE_DC_gain_dB": -11.0,
+          "ERL": 20.078526910294492,
+          "FOM": 12.942936594089417,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 19.61343909343541,
+          "VEC_dB": 13.98416328993566,
+          "VEO_mV": 4.899999999999998,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 0.5791241632794248,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 11.066420603365028,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.81818858433633,
+          "VEC_dB": 23.808805707294646,
+          "VEO_mV": 1.1595651135111635,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": -1.5763836619769733,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 8.719360710154545,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.28461908068131,
+          "VEC_dB": -313.07119549054045,
+          "VEO_mV": -2.7027849850338477,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -4.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 1.9370098673805234,
+            "CTLE_DC_gain_dB": -11.0,
+            "ERL": 20.078526910294492,
+            "FOM": 12.942936594089417,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 19.61343909343541,
+            "VEC_dB": 13.98416328993566,
+            "VEO_mV": 4.899999999999998,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "197a0e4ffbc98e7734142af2f7078e7e8552eb69ac646194bf12e7ee585b77cd",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.16,
+              0.8200000000000001,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 0.5791241632794248,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": 20.078526910294492,
+            "FOM": 11.066420603365028,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.81818858433633,
+            "VEC_dB": 23.808805707294646,
+            "VEO_mV": 1.1595651135111635,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "4c97205a69df23d4f5bc86a293478824d6ed1ca6b204d06a1524819dba11cb79",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.18000000000000002,
+              0.8,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 2,
+          "final_scalar_metrics": {
+            "COM_dB": -1.5763836619769733,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": 20.078526910294492,
+            "FOM": 8.719360710154545,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.28461908068131,
+            "VEC_dB": -313.07119549054045,
+            "VEO_mV": -2.7027849850338477,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -4.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "327100160c616385cdab5dcbbd1446e1733758a987736566d1dfbd45c610f5aa",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.18000000000000002,
+              0.76,
+              -0.04
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 3,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 45883,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_C2M_TP1a_11_2022.xlsx",
+        "sha256": "4b9a7157652bdbfd2df199f2424d6ec8e0f257ebb49b51d728eb10d1b0377b06"
+      },
+      "workbook_index": 10
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 118128,
+        "parameter_mat_sha256": "49afac8741f888e617e5155bbe548eaed601036eb17468c4476604088686a730",
+        "parameter_shape": [
+          64,
+          32
+        ],
+        "parameter_slot_digest": "8e79421fea7138119fe7f7dcf219b4417a150a4f9e7e234f2b11f189b4373483",
+        "pinned_sha256": "609358473e1751272715075802dfad7894f09ab98221d32f1365b014abc429c9",
+        "rust_sha256": "609358473e1751272715075802dfad7894f09ab98221d32f1365b014abc429c9"
+      },
+      "detail_sha256": "68f738e307dc2aefa1ea906e7a91190494e040a30b89be16d6c3f5df86437469",
+      "execution_wall_ns": 94654009900,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 3.260865258808991,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": "+Inf",
+          "FOM": 13.584439244956814,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.388321813084056,
+          "VEC_dB": 10.089113249071032,
+          "VEO_mV": 4.909882758356068,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": 0.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 1.7449339265735422,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": "+Inf",
+          "FOM": 11.99049971905076,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.211493490356896,
+          "VEC_dB": 14.798572240298498,
+          "VEO_mV": 1.429075342897202,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -4.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": -1.7129457659371319,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": "+Inf",
+          "FOM": 8.75781334097797,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.2448903584651183,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -1.1615535273323419,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -6.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 3.260865258808991,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": "+Inf",
+            "FOM": 13.584439244956814,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.388321813084056,
+            "VEC_dB": 10.089113249071032,
+            "VEO_mV": 4.909882758356068,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": 0.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "39f578f99554f79482ef7c22d925d83fd2c47de7cd97e8e5488c7374f78facd8",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.04,
+              -0.2,
+              0.76,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 1.7449339265735422,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": "+Inf",
+            "FOM": 11.99049971905076,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.211493490356896,
+            "VEC_dB": 14.798572240298498,
+            "VEO_mV": 1.429075342897202,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -4.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "2e4b5aae561742bbc7d135211b1e284b03f060935ae85bbe6f5b9676e0af3241",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.16,
+              0.6799999999999999,
+              -0.14
+            ]
+          }
+        },
+        {
+          "case_index": 2,
+          "final_scalar_metrics": {
+            "COM_dB": -1.7129457659371319,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": "+Inf",
+            "FOM": 8.75781334097797,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.2448903584651183,
+            "VEC_dB": 313.07119549054045,
+            "VEO_mV": -1.1615535273323419,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -6.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "e182ea8519d5ab7ecaae6ec8e9284d17cbb8a79aa950b8cbf77b68381d11c432",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.0,
+              -0.14,
+              0.6599999999999999,
+              -0.2
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 3,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 45800,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_CAKR_11_2022.xlsx",
+        "sha256": "49983d6cae96220b983bdc0b47ac5994bb3c7aac097798b94e18f327e97b2cd9"
+      },
+      "workbook_index": 11
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "equal",
+        "first_difference": null,
+        "parameter_mat_bytes": 125368,
+        "parameter_mat_sha256": "ba228681e91bcf5514a5e23315bb88101f660691ac79c6c4b027770d405117ab",
+        "parameter_shape": [
+          68,
+          32
+        ],
+        "parameter_slot_digest": "2d3e38eca1b176c36bb49c9ff74604385726d1526ae393c7b49e2040add520f4",
+        "pinned_sha256": "368fadd695a898b5560e77869be6fb53ea35a4c1d989eac403003a5f8a0767ff",
+        "rust_sha256": "368fadd695a898b5560e77869be6fb53ea35a4c1d989eac403003a5f8a0767ff"
+      },
+      "detail_sha256": "480a6860ab9db425ca5da0d647ee79d6aa0967cc26b47bebd54c0f391f9c6b19",
+      "execution_wall_ns": 230420823800,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 2.295521131823024,
+          "CTLE_DC_gain_dB": -11.0,
+          "ERL": 20.078526910294492,
+          "FOM": 13.435493824940444,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 21.421843429141436,
+          "VEC_dB": 12.681157829534245,
+          "VEO_mV": 6.4799999999999995,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -1.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": 0.6457589112547701,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 11.483726500681556,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 19.43529648656683,
+          "VEC_dB": 22.89575713424402,
+          "VEO_mV": 1.5000000000000013,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -2.0,
+          "itick": 0.0
+        },
+        {
+          "COM_dB": -1.1533220781965845,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 9.34107874759535,
+          "ICN_mV": 3.368928301997892,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 18.80275230196492,
+          "VEC_dB": -313.07119549054045,
+          "VEO_mV": -2.337995470121732,
+          "fitted_IL_dB_at_Fnq": 16.231300142003825,
+          "g_DC_HP": -3.0,
+          "itick": 0.0
+        }
+      ],
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "txle_checkpoints": [
+        {
+          "case_index": 0,
+          "final_scalar_metrics": {
+            "COM_dB": 2.295521131823024,
+            "CTLE_DC_gain_dB": -11.0,
+            "ERL": 20.078526910294492,
+            "FOM": 13.435493824940444,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 21.421843429141436,
+            "VEC_dB": 12.681157829534245,
+            "VEO_mV": 6.4799999999999995,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -1.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "5d6073a452c8d7ecd280c469d10b891d74617286a109956dd838fe814812bd3b",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.06,
+              0.92,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 1,
+          "final_scalar_metrics": {
+            "COM_dB": 0.6457589112547701,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": 20.078526910294492,
+            "FOM": 11.483726500681556,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 19.43529648656683,
+            "VEC_dB": 22.89575713424402,
+            "VEO_mV": 1.5000000000000013,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -2.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "346eddee8eb4e4d2bbf5925fc57c94952ba382c17a36450270ec7efde76e8bf9",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.02,
+              0.96,
+              0.0
+            ]
+          }
+        },
+        {
+          "case_index": 2,
+          "final_scalar_metrics": {
+            "COM_dB": -1.1533220781965845,
+            "CTLE_DC_gain_dB": -13.0,
+            "ERL": 20.078526910294492,
+            "FOM": 9.34107874759535,
+            "ICN_mV": 3.368928301997892,
+            "IL_dB_channel_only_at_Fnq": 15.682812645740874,
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 18.80275230196492,
+            "VEC_dB": -313.07119549054045,
+            "VEO_mV": -2.337995470121732,
+            "fitted_IL_dB_at_Fnq": 16.231300142003825,
+            "g_DC_HP": -3.0,
+            "itick": 0.0
+          },
+          "txle_taps": {
+            "raw_f64_sha256": "3cd65cba8fbd053f81c0852a0c2447eb71ffde0416beb01ede6377c3ac37ddaa",
+            "shape": [
+              1,
+              5
+            ],
+            "values": [
+              0.0,
+              0.02,
+              -0.02,
+              0.9,
+              -0.06
+            ]
+          }
+        }
+      ],
+      "txle_scope": {
+        "eligible_case_count": 3,
+        "inapplicable_erl_only_case_count": 0
+      },
+      "workbook": {
+        "bytes": 45894,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_Txpre_C2M_TP1a_11_2022.xlsx",
+        "sha256": "15b2b454d0c8a305628e04b579b47cedcdb315ff57981c6e2284c57d15c0ce5f"
+      },
+      "workbook_index": 12
+    }
+  ],
+  "root_id": "a673fe38aa6f1ec26dc06536e6103f6fd75b4660c575f5226165a39a8d71636a",
+  "run_id": "original13-stage2a-txle-matlab-48e7df75c1ad8e086158e84b6b9eeb7a9a83c192231af0d6fceafeb338c1336d",
+  "schema": "sipi.p5-06.stage2a-txle-checkpoint-run.v1",
+  "selection_count": 13,
+  "source": {
+    "candidate": {
+      "archive_bytes": 57098240,
+      "archive_sha256": "a3004fb29ef29439684af10f2c4fd58bf742f59d54fc8299a3a5cc02f86645ab",
+      "commit": "83e9cb6c264ca728d4147d8e4b19d75ee3c01ec5",
+      "tree": "49dbc479a42a7cdbe068a624e28e7582b0795269"
+    },
+    "gate_tools": {
+      "matlab_harness": {
+        "bytes": 6580,
+        "path": "tools/sipi_com_txle_checkpoint_oracle_v1.m",
+        "sha256": "d3dbb97afb160b414fe047230bfe13fee29cb16e2dd18bdea44ab18b478c7f2a"
+      },
+      "projection": {
+        "bytes": 13213,
+        "path": "tools/project_p5_06_stage2a_txle.py",
+        "sha256": "45487fb766572ff40fac5f33e0c8624d6a3d61224bb02b1d5b7969448cc67f42"
+      },
+      "runner": {
+        "bytes": 20432,
+        "path": "tools/run_p5_06_stage2a_txle_matrix.py",
+        "sha256": "0cb90733ec605b602df2829756c35ead86a9d76f5096fb789a3f8b9ea7ca26d5"
+      }
+    },
+    "rust_binary": {
+      "bytes": 7369728,
+      "sha256": "f2ad6493ef6ee3cbaf8cc01132dfd4d8beb56c43b29e996ad01b86c817026589"
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_sha256": "536624a00003544be3a7a5bb0d22893dc5b696c802ca6b3a5efd00abf53e3a50"
+      },
+      "matlab": {
+        "executable": "matlab.exe",
+        "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+        "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+        "path_redacted": true,
+        "release": "R2024b",
+        "role": "matlab",
+        "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca"
+      },
+      "python": {
+        "executable": "python.exe",
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb"
+      },
+      "uv": {
+        "executable": "uv.exe",
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "upstream": {
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    }
+  },
+  "status": "fresh_matrix_run",
+  "thread_policy": {
+    "matlab_launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+    "rust_rayon_num_threads": 16
+  },
+  "timing_clock": "perf_counter_ns",
+  "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+  "total_execution_wall_ns": 1613504498600
+}
