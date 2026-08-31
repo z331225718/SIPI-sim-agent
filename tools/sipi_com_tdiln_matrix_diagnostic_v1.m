@@ -36,6 +36,8 @@ if ~isfolder(source_dir)
         'MATLAB source directory does not exist.');
 end
 addpath(source_dir);
+warning_capture = begin_warning_capture(source_dir);
+warning_capture_cleanup = onCleanup(@() end_warning_capture(warning_capture));
 close all force;
 
 write_atomic_text(fullfile(output_dir, 'stage.json'), jsonencode(struct( ...
@@ -49,6 +51,17 @@ try
     results = com_ieee8023_480(config_path, num_fext, num_next, channel_args{:}, override_args{:});
     duration_seconds = toc(run_timer);
     [last_warning_message, last_warning_identifier] = lastwarn;
+    global SIPI_COM_WARNING_CAPTURE_V1;
+    if ~isstruct(SIPI_COM_WARNING_CAPTURE_V1) || ...
+            SIPI_COM_WARNING_CAPTURE_V1.capture_incomplete
+        reason = 'missing_capture_state';
+        if isstruct(SIPI_COM_WARNING_CAPTURE_V1) && ...
+                isfield(SIPI_COM_WARNING_CAPTURE_V1, 'incomplete_reason')
+            reason = SIPI_COM_WARNING_CAPTURE_V1.incomplete_reason;
+        end
+        error('sipi_com_tdiln_matrix_diagnostic_v1:WarningCapture', ...
+            'Pinned-source warning capture was incomplete: %s.', reason);
+    end
     cases = result_cases(results);
     summaries = repmat(case_summary(cases{1}, 1, output_dir), 1, numel(cases));
     for index = 1:numel(cases)
@@ -70,6 +83,13 @@ try
             'identifier', char(last_warning_identifier), ...
             'message', char(last_warning_message), ...
             'full_warning_catalog_coverage', false), ...
+        'source_warning_calls', struct( ...
+            'schema', 'sipi.com.pinned-source-warning-call-observation.v1', ...
+            'source_local_only', true, ...
+            'source_emission_callsite_filter', 'pinned-com_ieee8023_480.m static emission lines only', ...
+            'matlab_internal_warning_coverage', false, ...
+            'capture_incomplete', false, ...
+            'events', {SIPI_COM_WARNING_CAPTURE_V1.events}), ...
         'case_count', numel(summaries));
     % A scalar MATLAB struct encodes as a JSON object. Keep the wire shape
     % stable for one-case ERL-only workbooks and package sweeps alike.
@@ -85,6 +105,45 @@ catch ME
     rethrow(ME);
 end
 close all force;
+end
+
+function capture = begin_warning_capture(source_dir)
+% Add a temporary diagnostic observer before the pinned source. It forwards
+% every call to builtin warning and observes only pinned static callsites.
+capture_dir = fullfile(fileparts(mfilename('fullpath')), 'matlab_warning_capture_v1');
+shim = fullfile(capture_dir, 'warning.m');
+source_file = fullfile(source_dir, 'com_ieee8023_480.m');
+if ~isfile(shim) || ~isfile(source_file)
+    error('sipi_com_tdiln_matrix_diagnostic_v1:WarningCapture', ...
+        'Warning observer or pinned source is missing.');
+end
+addpath(capture_dir, '-begin');
+clear warning;
+resolved = which('warning');
+if ~strcmp(resolved, shim)
+    error('sipi_com_tdiln_matrix_diagnostic_v1:WarningCapture', ...
+        'Warning observer did not take precedence.');
+end
+global SIPI_COM_WARNING_CAPTURE_V1 SIPI_COM_WARNING_CAPTURE_DELEGATING_V1;
+SIPI_COM_WARNING_CAPTURE_V1 = struct( ...
+    'enabled', true, ...
+    'source_file', source_file, ...
+    'source_emission_lines', [2109 2228 2238 6337 8660 9243 9715 9720 9727 9731 10008 10055], ...
+    'events', {{}}, ...
+    'capture_incomplete', false, ...
+    'incomplete_reason', '');
+SIPI_COM_WARNING_CAPTURE_DELEGATING_V1 = false;
+capture = struct('directory', capture_dir);
+end
+
+function end_warning_capture(capture)
+global SIPI_COM_WARNING_CAPTURE_V1 SIPI_COM_WARNING_CAPTURE_DELEGATING_V1;
+SIPI_COM_WARNING_CAPTURE_V1 = [];
+SIPI_COM_WARNING_CAPTURE_DELEGATING_V1 = [];
+if isstruct(capture) && isfield(capture, 'directory') && isfolder(capture.directory)
+    rmpath(capture.directory);
+end
+clear warning;
 end
 
 function cases = result_cases(results)
