@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -122,7 +123,57 @@ def _worker_environment(source_root: Path, engine_site: Path, preference_dir: Pa
     return environment
 
 
-def _record(index: int, source_root: Path, binary: Path, worker_python: Path, engine_site: Path, harness: Path, output_root: Path, timeout: int, rayon_threads: int, require_tdiln_sidecars: bool) -> dict[str, Any]:
+_PACKAGE_CASE_TEMP_ROOT = re.compile(r"sipi-com-package-cases-\d+-[0-9a-f]{64}", re.IGNORECASE)
+
+
+def _stable_result_value(value: Any) -> Any:
+    """Replace only the process-specific package staging root in result receipts."""
+    if isinstance(value, str):
+        return _PACKAGE_CASE_TEMP_ROOT.sub("sipi-com-package-cases-<process>-<config>", value)
+    if isinstance(value, list):
+        return [_stable_result_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _stable_result_value(item) for key, item in value.items()}
+    return value
+
+
+def _stable_result_sha256(path: Path) -> str:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.dumps(_stable_result_value(document), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _run_rust(
+    binary: Path,
+    workbook: Path,
+    channels: list[Path],
+    output: Path,
+    timeout: int,
+    rayon_threads: int,
+    sidecar_root: Path | None,
+    cwd: Path,
+) -> tuple[subprocess.CompletedProcess[bytes], float]:
+    environment = os.environ.copy()
+    environment["RAYON_NUM_THREADS"] = str(rayon_threads)
+    if sidecar_root is not None:
+        environment["SIPI_COM_TDILN_DIAGNOSTIC_SIDECAR_DIR"] = str(sidecar_root)
+    else:
+        environment.pop("SIPI_COM_TDILN_DIAGNOSTIC_SIDECAR_DIR", None)
+    start = time.perf_counter()
+    completed = bounded(
+        [
+            str(binary), "run", "--config", str(workbook), "--thru", str(channels[0]),
+            "--fext", str(channels[1]), "--next", str(channels[2]),
+            "--override", "COMPUTE_TDILN=1", "--output-dir", str(output),
+        ],
+        cwd,
+        timeout,
+        environment,
+    )
+    return completed, time.perf_counter() - start
+
+
+def _record(index: int, source_root: Path, binary: Path, performance_binary: Path | None, worker_python: Path, engine_site: Path, harness: Path, output_root: Path, timeout: int, rayon_threads: int, require_tdiln_sidecars: bool) -> dict[str, Any]:
     workbook = source_root / CONFIG_PATHS[index]
     channels = [
         source_root / "fixtures" / "synthetic" / name
@@ -160,24 +211,17 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
             "matlab_exit_code": matlab_run.returncode,
             "matlab_detail_sha256": hashlib.sha256(matlab_run.stdout + matlab_run.stderr).hexdigest(),
         }
-    rust_output = case_root / "rust"
-    rust_environment = os.environ.copy()
-    rust_environment["RAYON_NUM_THREADS"] = str(rayon_threads)
-    # Only the opt-in formal diagnostic build consumes this variable. The
-    # default release binary ignores it, leaving its public result wire intact.
-    rust_environment["SIPI_COM_TDILN_DIAGNOSTIC_SIDECAR_DIR"] = str(case_root / "rust-tdiln-sidecar")
-    rust_start = time.perf_counter()
-    rust_run = bounded(
-        [
-            str(binary), "run", "--config", str(workbook), "--thru", str(channels[0]),
-            "--fext", str(channels[1]), "--next", str(channels[2]),
-            "--override", "COMPUTE_TDILN=1", "--output-dir", str(rust_output),
-        ],
-        source_root,
+    rust_output = case_root / "rust-diagnostic"
+    rust_run, rust_diagnostic_wall_seconds = _run_rust(
+        binary,
+        workbook,
+        channels,
+        rust_output,
         timeout,
-        rust_environment,
+        rayon_threads,
+        (case_root / "rust-tdiln-sidecar") if require_tdiln_sidecars else None,
+        source_root,
     )
-    rust_wall_seconds = time.perf_counter() - rust_start
     rust_result_path = rust_output / "result.json"
     if rust_run.returncode != 0 or not rust_result_path.is_file():
         return {
@@ -186,9 +230,52 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
             "status": "rust_failed",
             "matlab_exit_code": matlab_run.returncode,
             "rust_exit_code": rust_run.returncode,
-            "rust_wall_seconds": rust_wall_seconds,
+            "rust_diagnostic_wall_seconds": rust_diagnostic_wall_seconds,
             "rust_detail_sha256": hashlib.sha256(rust_run.stdout + rust_run.stderr).hexdigest(),
         }
+    rust_diagnostic_result_sha256 = digest(rust_result_path)
+    rust_diagnostic_result_semantic_sha256 = _stable_result_sha256(rust_result_path)
+    rust_performance_result_sha256 = rust_diagnostic_result_sha256
+    rust_performance_result_semantic_sha256 = rust_diagnostic_result_semantic_sha256
+    rust_wall_seconds = rust_diagnostic_wall_seconds
+    rust_timing_scope = "Rust diagnostic process invocation plus normal artifact write; MATLAB reports source COM core after engine startup."
+    if performance_binary is not None:
+        performance_output = case_root / "rust-performance"
+        performance_run, rust_wall_seconds = _run_rust(
+            performance_binary,
+            workbook,
+            channels,
+            performance_output,
+            timeout,
+            rayon_threads,
+            None,
+            source_root,
+        )
+        performance_result = performance_output / "result.json"
+        if performance_run.returncode != 0 or not performance_result.is_file():
+            return {
+                "workbook_index": index,
+                "workbook": CONFIG_PATHS[index],
+                "status": "rust_performance_failed",
+                "matlab_exit_code": matlab_run.returncode,
+                "rust_diagnostic_exit_code": rust_run.returncode,
+                "rust_performance_exit_code": performance_run.returncode,
+                "rust_wall_seconds": rust_wall_seconds,
+                "rust_detail_sha256": hashlib.sha256(performance_run.stdout + performance_run.stderr).hexdigest(),
+            }
+        rust_performance_result_sha256 = digest(performance_result)
+        rust_performance_result_semantic_sha256 = _stable_result_sha256(performance_result)
+        if rust_performance_result_semantic_sha256 != rust_diagnostic_result_semantic_sha256:
+            return {
+                "workbook_index": index,
+                "workbook": CONFIG_PATHS[index],
+                "status": "rust_build_result_drift",
+                "rust_diagnostic_result_sha256": rust_diagnostic_result_sha256,
+                "rust_performance_result_sha256": rust_performance_result_sha256,
+                "rust_diagnostic_result_semantic_sha256": rust_diagnostic_result_semantic_sha256,
+                "rust_performance_result_semantic_sha256": rust_performance_result_semantic_sha256,
+            }
+        rust_timing_scope = "Rust default-production process invocation plus normal artifact write; opt-in TDILN sidecar I/O is excluded. MATLAB reports source COM core after engine startup."
     matlab_document = json.loads(matlab_summary_path.read_text(encoding="utf-8"))
     rust_document = json.loads(rust_result_path.read_text(encoding="utf-8"))
     comparison = compare(
@@ -196,6 +283,7 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
         rust_document,
         rust_wall_seconds=rust_wall_seconds,
         tolerance=1.0e-9,
+        rust_timing_scope=rust_timing_scope,
     )
     if require_tdiln_sidecars:
         sidecar = compare_sidecars(
@@ -211,7 +299,11 @@ def _record(index: int, source_root: Path, binary: Path, worker_python: Path, en
         "workbook": CONFIG_PATHS[index],
         "status": comparison["status"],
         "matlab_summary_sha256": digest(matlab_summary_path),
-        "rust_result_sha256": digest(rust_result_path),
+        "rust_result_sha256": rust_diagnostic_result_sha256,
+        "rust_result_semantic_sha256": rust_diagnostic_result_semantic_sha256,
+        "rust_performance_result_sha256": rust_performance_result_sha256,
+        "rust_performance_result_semantic_sha256": rust_performance_result_semantic_sha256,
+        "rust_diagnostic_wall_seconds": rust_diagnostic_wall_seconds,
         "comparison": comparison,
     }
 
@@ -220,6 +312,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, required=True, help="pinned Agent-COM source checkout")
     parser.add_argument("--rust-binary", type=Path, required=True)
+    parser.add_argument("--performance-rust-binary", type=Path, help="default-production Rust binary used for the hard speed gate")
     parser.add_argument("--matlab", type=Path, required=True)
     parser.add_argument("--python", type=Path, required=True, help="Python used for the frozen Agent-COM environment")
     parser.add_argument("--uv", type=Path, required=True)
@@ -230,7 +323,7 @@ def main() -> int:
     parser.add_argument("--require-tdiln-sidecars", action="store_true", help="require the opt-in full-array diagnostic receipts")
     parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
-    if args.output.exists() or not args.source_root.is_dir() or not args.rust_binary.is_file() or not args.matlab.is_file() or args.rayon_threads <= 0:
+    if args.output.exists() or not args.source_root.is_dir() or not args.rust_binary.is_file() or (args.performance_rust_binary is not None and not args.performance_rust_binary.is_file()) or not args.matlab.is_file() or args.rayon_threads <= 0:
         raise ValueError("invalid output/source/tool/thread request")
     indices = _parse_indices(args.indices)
     harness = args.harness or Path(__file__).with_name("sipi_com_tdiln_matrix_diagnostic_v1.m")
@@ -248,7 +341,7 @@ def main() -> int:
     records = []
     for index in indices:
         try:
-            records.append(_record(index, args.source_root, args.rust_binary, worker_python, engine_site, harness, args.output, args.timeout, args.rayon_threads, args.require_tdiln_sidecars))
+            records.append(_record(index, args.source_root, args.rust_binary, args.performance_rust_binary, worker_python, engine_site, harness, args.output, args.timeout, args.rayon_threads, args.require_tdiln_sidecars))
         except Exception as error:  # keep the rest of the matrix observable
             records.append({"workbook_index": index, "workbook": CONFIG_PATHS[index], "status": "runner_failed", "error_type": type(error).__name__, "error_sha256": hashlib.sha256(str(error).encode()).hexdigest()})
     passed = all(record["status"] == "passed_diagnostic" for record in records)
@@ -258,6 +351,8 @@ def main() -> int:
         "non_claims": ["not_immutable_replay", "not_release_evidence", "not_complete_warning_catalog"],
         "source_commit_unverified": True,
         "rust_binary_sha256": digest(args.rust_binary),
+        "performance_rust_binary_sha256": digest(args.performance_rust_binary) if args.performance_rust_binary is not None else None,
+        "performance_gate_binary": "default_production" if args.performance_rust_binary is not None else "diagnostic_binary",
         "matlab_harness_sha256": digest(harness),
         "matlab_launch": "python_engine_noFigureWindows_singleCompThread",
         "rayon_threads": args.rayon_threads,

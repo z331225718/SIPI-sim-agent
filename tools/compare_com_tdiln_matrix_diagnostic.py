@@ -146,12 +146,15 @@ def compare(
     *,
     rust_wall_seconds: float,
     tolerance: float,
+    rust_timing_scope: str = "Rust measures process invocation plus artifact write; MATLAB reports source COM core after engine startup.",
 ) -> dict[str, Any]:
     """Return a deterministic diagnostic record; raise on malformed inputs."""
     rust_wall_seconds = _finite(rust_wall_seconds, "Rust wall duration")
     tolerance = _finite(tolerance, "tolerance")
     if tolerance < 0.0:
         raise ValueError("tolerance must be nonnegative")
+    if not isinstance(rust_timing_scope, str) or not rust_timing_scope:
+        raise ValueError("Rust timing scope must be a non-empty string")
     matlab_cases = _matlab_cases(matlab_document)
     rust_cases = _rust_cases(rust_document)
     if len(matlab_cases) != len(rust_cases):
@@ -215,7 +218,7 @@ def compare(
             "matlab_core_seconds": matlab_core_seconds,
             "rust_wall_seconds": rust_wall_seconds,
             "rust_not_slower": rust_wall_seconds <= matlab_core_seconds,
-            "scope_note": "Rust measures process invocation plus artifact write; MATLAB reports source COM core after engine startup.",
+            "scope_note": rust_timing_scope,
         },
         "tolerance": tolerance,
         "case_count": len(comparisons),

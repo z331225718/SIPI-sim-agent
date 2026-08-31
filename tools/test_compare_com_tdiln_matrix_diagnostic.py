@@ -71,6 +71,20 @@ class TdilnMatrixDiagnosticComparisonTests(unittest.TestCase):
         self.assertEqual(report["status"], "blocked")
         self.assertFalse(report["timing"]["rust_not_slower"])
 
+    def test_production_timing_scope_is_recorded_with_the_hard_speed_gate(self) -> None:
+        matlab, rust = documents()
+        scope = "Rust default-production process plus normal artifacts; diagnostic sidecars excluded."
+        report = compare(
+            matlab,
+            rust,
+            rust_wall_seconds=9.0,
+            tolerance=1.0e-9,
+            rust_timing_scope=scope,
+        )
+        self.assertEqual(report["status"], "passed_diagnostic")
+        self.assertTrue(report["timing"]["rust_not_slower"])
+        self.assertEqual(report["timing"]["scope_note"], scope)
+
     def test_vector_length_drift_blocks(self) -> None:
         matlab, rust = documents()
         rust = copy.deepcopy(rust)
