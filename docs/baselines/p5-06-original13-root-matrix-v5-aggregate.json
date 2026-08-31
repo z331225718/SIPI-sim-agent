@@ -1,0 +1,232 @@
+{
+  "claims": {
+    "array_acceptance": false,
+    "one_final_fd_to_td_impulse": true,
+    "performance_acceptance": true,
+    "release": false,
+    "s_parameter_fit": false,
+    "stage1_scalar_acceptance": true
+  },
+  "gate_tools": {
+    "aggregate": {
+      "bytes": 7132,
+      "path": "tools/aggregate_p5_06_original13_root_matrix_v5.py",
+      "sha256": "fa33ffbaf1a449f431dfe66c06cbae69ed61796bb8e3f2286b1dc4e13b164b51"
+    },
+    "verifier": {
+      "bytes": 11776,
+      "path": "tools/verify_p5_06_original13_root_matrix_v5.py",
+      "sha256": "3828388ee5c66b88ae4330eaaec4a9e96585a9818f433e2aa481d40f2adbfdaf"
+    }
+  },
+  "gates": {
+    "matlab_repeat_1e_12": true,
+    "per_workbook_rust_not_slower": true,
+    "rust_repeat_exact": true,
+    "rust_vs_matlab_1e_9": true,
+    "total_rust_not_slower": true
+  },
+  "host_fingerprint": "b2195549e387ffae49faf8b25614a5e98c48e4cdabb8cd8953a9f741290e6f30",
+  "matrix": {
+    "case_count": 28,
+    "scalar_slot_count": 303,
+    "workbook_count": 13
+  },
+  "performance": {
+    "matlab_best_total_wall_ns": 1568999152200,
+    "per_workbook": [
+      {
+        "matlab_best_wall_ns": 22253096000,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 614626700,
+        "workbook_index": 0
+      },
+      {
+        "matlab_best_wall_ns": 27914771500,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 1528357000,
+        "workbook_index": 1
+      },
+      {
+        "matlab_best_wall_ns": 667201282100,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 48542511400,
+        "workbook_index": 2
+      },
+      {
+        "matlab_best_wall_ns": 14649338700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 187156700,
+        "workbook_index": 3
+      },
+      {
+        "matlab_best_wall_ns": 15085170400,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 188174600,
+        "workbook_index": 4
+      },
+      {
+        "matlab_best_wall_ns": 14580524900,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 182787600,
+        "workbook_index": 5
+      },
+      {
+        "matlab_best_wall_ns": 32591041500,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 3464785500,
+        "workbook_index": 6
+      },
+      {
+        "matlab_best_wall_ns": 32199058100,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 2460117700,
+        "workbook_index": 7
+      },
+      {
+        "matlab_best_wall_ns": 141048321300,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 11061278500,
+        "workbook_index": 8
+      },
+      {
+        "matlab_best_wall_ns": 141133964500,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 11912310900,
+        "workbook_index": 9
+      },
+      {
+        "matlab_best_wall_ns": 137740214700,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 9106986300,
+        "workbook_index": 10
+      },
+      {
+        "matlab_best_wall_ns": 93441999400,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12904200700,
+        "workbook_index": 11
+      },
+      {
+        "matlab_best_wall_ns": 229020908800,
+        "rust_not_slower": true,
+        "rust_worst_wall_ns": 12765329000,
+        "workbook_index": 12
+      }
+    ],
+    "rust_worst_total_wall_ns": 113014804800
+  },
+  "runs": [
+    {
+      "engine": "matlab",
+      "nonce": "62500ced84606edf15a7e2d9b3d16d35cf11c2164678430b8cad2268e1c902fc",
+      "report_sha256": "59f94d396e590b0b7a5cd5cf7930ab153e24bb7fa64b420a34c0d5027edfefe2",
+      "root_id": "8076b6f6a4a61fd6a1aba1ad1e66e9f4d823b8a810149aaed77acc8d026deb6e",
+      "run_id": "original13-root-v5-matlab-62500ced84606edf15a7e2d9b3d16d35cf11c2164678430b8cad2268e1c902fc"
+    },
+    {
+      "engine": "matlab",
+      "nonce": "6b4de477aca3a2e56d0da04c2fecdc66cf7d97a4371b8e9dae20b98621c3443a",
+      "report_sha256": "120642333d6d91ff56362f0e558a206b4d5e559e0b3e41bfe0dbfbe7b7f2d451",
+      "root_id": "26759f21f5da5d37dbb3de7ddebf76a77135c2768f477688854f2e4cc827d79c",
+      "run_id": "original13-root-v5-matlab-6b4de477aca3a2e56d0da04c2fecdc66cf7d97a4371b8e9dae20b98621c3443a"
+    },
+    {
+      "engine": "rust",
+      "nonce": "7396198ed5bd49f43b516cce5a6816b70573be1f4eb6845b966ba46ff771b8ed",
+      "report_sha256": "8bd85a57d86409b44f51c1490bdb32958ddb37c742455a8281e31c078661cec6",
+      "root_id": "249ebc45d547f76dbb92a97964cdc363c95968f048345dff8041db776c918b57",
+      "run_id": "original13-root-v5-rust-7396198ed5bd49f43b516cce5a6816b70573be1f4eb6845b966ba46ff771b8ed"
+    },
+    {
+      "engine": "rust",
+      "nonce": "5b9bd1f6c7bf0acbf344248f95ad85b57c5e0885733c94825000f3fede03787a",
+      "report_sha256": "2e5afcb70521b1c207bb6659a15a91c5d574a44a42f9afda0223862737428ada",
+      "root_id": "a9def70710fe67511030cd16bcfe75d74da21cae8e84c5eecc8998f501073867",
+      "run_id": "original13-root-v5-rust-5b9bd1f6c7bf0acbf344248f95ad85b57c5e0885733c94825000f3fede03787a"
+    }
+  ],
+  "schema": "sipi.p5-06.original13-root-aggregate.v5",
+  "source": {
+    "candidate": {
+      "archive_bytes": 58337280,
+      "archive_sha256": "dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8",
+      "commit": "b456e9d57b2449787e22cdefdad6c0edc70d69dc",
+      "tree": "9cd25bd57387e571917cf5274952d8c4fffe44f5"
+    },
+    "gate_tools": {
+      "matlab_harness": {
+        "bytes": 4644,
+        "path": "tools/sipi_com_final_surface_oracle_v3.m",
+        "sha256": "5f2325766f089f9cf19aed4fcff753864dc7fa72ec0e2cb83860eb753d3a7494"
+      },
+      "runner": {
+        "bytes": 18600,
+        "path": "tools/run_p5_06_original13_root_matrix_v5.py",
+        "sha256": "8fe5058a79417c3638fadc82c9701d4656f31ed9abcfff5d0868eba3c66ab975"
+      },
+      "worker": {
+        "bytes": 23483,
+        "path": "tools/run_p5_06_original13_fresh_matrix.py",
+        "sha256": "4d921a7a374d61a613f0e2b8bcf6669ed8408c5100101252bebe5e60ee78d3ae"
+      }
+    },
+    "root_cli": {
+      "feature": "com-direct-integration",
+      "manifest": "crates/sipi-cli/Cargo.toml",
+      "receipt_schema": "sipi.com.r480-cli-receipt.v1",
+      "route": [
+        "com",
+        "run"
+      ]
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_sha256": "536624a00003544be3a7a5bb0d22893dc5b696c802ca6b3a5efd00abf53e3a50"
+      },
+      "matlab": {
+        "executable": "matlab.exe",
+        "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+        "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+        "path_redacted": true,
+        "release": "R2024b",
+        "role": "matlab",
+        "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca"
+      },
+      "python": {
+        "executable": "python.exe",
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb"
+      },
+      "uv": {
+        "executable": "uv.exe",
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "upstream": {
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    }
+  },
+  "status": "accepted_stage1",
+  "timing_clock": "perf_counter_ns",
+  "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
+}

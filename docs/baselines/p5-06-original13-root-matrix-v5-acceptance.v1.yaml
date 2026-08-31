@@ -1,0 +1,81 @@
+{
+  "schema": "sipi.p5-06.original13-root-matrix-v5-acceptance.v1",
+  "status": "accepted_stage1_public_root_scalar_and_per_workbook_performance",
+  "supersedes": {
+    "path": "docs/baselines/p5-06-original13-rust-matlab-r2024b-current-acceptance.v1.yaml",
+    "kind": "additive_public_root_replay"
+  },
+  "candidate": {
+    "commit": "b456e9d57b2449787e22cdefdad6c0edc70d69dc",
+    "tree": "9cd25bd57387e571917cf5274952d8c4fffe44f5",
+    "archive_bytes": 58337280,
+    "archive_sha256": "dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8"
+  },
+  "upstream": {
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "archive_bytes": 43694080,
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+  },
+  "public_route": {
+    "binary": "sipi.exe",
+    "manifest": "crates/sipi-cli/Cargo.toml",
+    "feature": "com-direct-integration",
+    "argv": ["com", "run"],
+    "receipt_schema": "sipi.com.r480-cli-receipt.v1"
+  },
+  "matrix": {
+    "workbooks": 13,
+    "package_cases": 28,
+    "scalar_slots": 303,
+    "channels": ["THRU", "FEXT", "NEXT"],
+    "matlab_release": "R2024b",
+    "matlab_launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+    "rust_rayon_num_threads": 16,
+    "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+    "timing_clock": "perf_counter_ns"
+  },
+  "reports": [
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v5-matlab-01.json", "engine": "matlab", "bytes": 34629, "sha256": "59f94d396e590b0b7a5cd5cf7930ab153e24bb7fa64b420a34c0d5027edfefe2"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v5-matlab-02.json", "engine": "matlab", "bytes": 34629, "sha256": "120642333d6d91ff56362f0e558a206b4d5e559e0b3e41bfe0dbfbe7b7f2d451"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v5-rust-01.json", "engine": "rust", "bytes": 40844, "sha256": "8bd85a57d86409b44f51c1490bdb32958ddb37c742455a8281e31c078661cec6"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v5-rust-02.json", "engine": "rust", "bytes": 40844, "sha256": "2e5afcb70521b1c207bb6659a15a91c5d574a44a42f9afda0223862737428ada"}
+  ],
+  "aggregate": {"path": "docs/baselines/p5-06-original13-root-matrix-v5-aggregate.json", "bytes": 8186, "sha256": "ee1ba0b30eeec5b57181097f2b15daa104fcfea5216652fd5787fa0a60527f67"},
+  "audit": {"path": "docs/baselines/audits/2026-09-01-p5-06-original13-root-matrix-v5-acceptance.md", "bytes": 1100, "sha256": "03dda7a2ddfc3577007c5ffa59197f12daaafd31a65de42012c4e9597e17847b"},
+  "gate_tools": {
+    "runner": {"path": "tools/run_p5_06_original13_root_matrix_v5.py", "bytes": 18600, "sha256": "8fe5058a79417c3638fadc82c9701d4656f31ed9abcfff5d0868eba3c66ab975"},
+    "aggregate": {"path": "tools/aggregate_p5_06_original13_root_matrix_v5.py", "bytes": 7132, "sha256": "fa33ffbaf1a449f431dfe66c06cbae69ed61796bb8e3f2286b1dc4e13b164b51"},
+    "report_verifier": {"path": "tools/verify_p5_06_original13_root_matrix_v5.py", "bytes": 11776, "sha256": "3828388ee5c66b88ae4330eaaec4a9e96585a9818f433e2aa481d40f2adbfdaf"},
+    "tests": {"path": "tools/test_verify_p5_06_original13_root_matrix_v5.py", "bytes": 8904, "sha256": "2635cf30fccc3fb9425e61d9d3b5bc8b1cbf9250e267256a1bea718e3cab84f1"}
+  },
+  "performance": {
+    "matlab_best_total_wall_ns": 1568999152200,
+    "rust_worst_total_wall_ns": 113014804800,
+    "speedup_floor": 13.883129338467
+  },
+  "gates": {
+    "matlab_repeat_1e_12": true,
+    "rust_repeat_exact": true,
+    "rust_vs_matlab_1e_9": true,
+    "per_workbook_rust_not_slower": true,
+    "total_rust_not_slower": true,
+    "s_parameter_fit": false,
+    "one_final_fd_to_td_impulse": true
+  },
+  "claims": {
+    "stage1_scalar_acceptance": true,
+    "public_root_route_exercised": true,
+    "performance_acceptance": true,
+    "array_acceptance": false,
+    "release": false,
+    "p5_06_main_closed": false
+  },
+  "non_claims": [
+    "no_single_thread_algorithm_comparison",
+    "no_array_or_checkpoint_acceptance",
+    "no_warning_or_full_surface_acceptance_beyond_303_scalar_slots",
+    "no_ieee_certification",
+    "no_release"
+  ]
+}
