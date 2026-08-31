@@ -224,6 +224,7 @@ def main() -> int:
     parser.add_argument("--python", type=Path, required=True, help="Python used for the frozen Agent-COM environment")
     parser.add_argument("--uv", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--harness", type=Path, help="pinned TDILN MATLAB harness; defaults to this checkout's diagnostic harness")
     parser.add_argument("--indices", help="comma-separated original-13 indices; default runs all")
     parser.add_argument("--rayon-threads", type=int, default=1)
     parser.add_argument("--require-tdiln-sidecars", action="store_true", help="require the opt-in full-array diagnostic receipts")
@@ -232,7 +233,7 @@ def main() -> int:
     if args.output.exists() or not args.source_root.is_dir() or not args.rust_binary.is_file() or not args.matlab.is_file() or args.rayon_threads <= 0:
         raise ValueError("invalid output/source/tool/thread request")
     indices = _parse_indices(args.indices)
-    harness = Path(__file__).with_name("sipi_com_tdiln_matrix_diagnostic_v1.m")
+    harness = args.harness or Path(__file__).with_name("sipi_com_tdiln_matrix_diagnostic_v1.m")
     if not harness.is_file():
         raise FileNotFoundError("TDILN MATLAB harness missing")
     args.output.mkdir(parents=True)
