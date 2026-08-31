@@ -2,6 +2,7 @@
 members = [
   "crates/sipi-cli",
   "crates/sipi-agent-com-adapter",
+  "crates/sipi-agent-com-direct",
   "crates/sipi-agent-spice-adapter",
   "crates/sipi-pybert-adapter",
   "crates/sipi-channel",

@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "com-direct-integration")]
+mod com_direct_integration;
 mod com_run_artifact_preflight_v1;
 mod upstream_migration;
 

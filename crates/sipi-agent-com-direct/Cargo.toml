@@ -7,8 +7,6 @@ license = "MIT"
 publish = false
 description = "Lane-local direct ports of the pinned Agent-COM compare, run, and public artifact boundaries."
 
-[workspace]
-
 [features]
 # Opt-in, repository-only receipt sink used by the MATLAB TDILN array
 # diagnostic. It does not alter the public run JSON or the default binary.

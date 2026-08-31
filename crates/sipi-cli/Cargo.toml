@@ -11,6 +11,9 @@ default-run = "sipi"
 
 [features]
 test-support = []
+# Internal-only link check for the quarantined Agent-COM direct port.  This is
+# deliberately non-default and does not publish a `sipi com run` command.
+com-direct-integration = ["dep:sipi-agent-com-direct"]
 
 [[bin]]
 name = "sipi"
@@ -38,6 +41,7 @@ required-features = ["test-support"]
 
 [dependencies]
 sipi-agent-com-adapter = { path = "../sipi-agent-com-adapter" }
+sipi-agent-com-direct = { path = "../sipi-agent-com-direct", optional = true }
 sipi-agent-spice-adapter = { path = "../sipi-agent-spice-adapter" }
 sipi-artifacts = { path = "../sipi-artifacts" }
 sipi-channel = { path = "../sipi-channel" }
