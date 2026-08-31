@@ -27,7 +27,7 @@ use sipi_com::{
     CtleParamsV1, FdToTdOptionsV1, FourPortSMatrixV1, MmseCandidateSpecV1, ReceiverNoiseOptionsV1,
     ReceiverNoiseParamsV1, ResolvedDefaultV1, RxFfeSearchCandidateV1, RxFfeSearchEvaluationV1,
     SearchFullOptionsV1, SearchFullParamsV1, SearchLoopResultWithMetricsV1,
-    SearchLoopResultWithWinnerV2, TdFrequencyFillinV1, XtalkChannelV1, apply_r480_equalization_v1,
+    SearchLoopResultWithWinnerV2, TdFrequencyFillinV1, TdIlnResultV1, XtalkChannelV1, apply_r480_equalization_v1,
     apply_r480_pn_skew_v1, butterworth_filter_v1, calculate_r480_calibration_noise_v1,
     calibrate_receiver_noise_v1, com_mixed_mode_spectrum_v1, com_mixed_mode_v1, execute_com_run_v1,
     execute_com_run_with_crosstalk_v1, execute_com_run_with_search_result_v2,
@@ -4241,25 +4241,7 @@ fn portable_branch_result_with_sigma_v1(
         .map_err(|error| DirectRunErrorV1::Unsupported(format!("tdiln: {error:?}")))?;
         diagnostics.insert(
             "tdiln".to_owned(),
-            json!({
-                "schema": "sipi.com.metrics.tdiln.v1",
-                "policy": sipi_com::TDILN_POLICY_V1,
-                "fit_sha256": sha256_complex_v1(&result.fit),
-                "iln_db_sha256": sha256_f64_v1(&result.iln_db),
-                "reference_pulse_sha256": sha256_f64_v1(&result.reference_pulse),
-                "fitted_pulse_sha256": sha256_f64_v1(&result.fitted_pulse),
-                "iln_pulse_sha256": sha256_f64_v1(&result.iln_pulse),
-                "selected_phase": result.selected_phase,
-                "fom_v": result.fom_v,
-                "fom_pdf_v": result.fom_pdf_v,
-                "snr_isi_fom_db": result.snr_isi_fom_db,
-                "snr_isi_fom_pdf_db": result.snr_isi_fom_pdf_db,
-                "pdf": {
-                    "bin_size": result.pdf.bin_size(),
-                    "min_bin": result.pdf.min_bin(),
-                    "sample_count": result.pdf.probability().len(),
-                },
-            }),
+            tdiln_diagnostics_v1(&result),
         );
     }
     if let Some(search) = root.get("search").and_then(Value::as_object) {
@@ -7243,6 +7225,79 @@ fn compose_workbook_tdiln_v1(
     Ok(TdilnRuntimeV1 { result })
 }
 
+/// Bounded, presentation-independent receipts for the TDILN vectors.
+///
+/// The direct result already publishes a digest for each payload.  These
+/// summaries add the minimal numeric surface needed for an external MATLAB
+/// comparison without serializing the large vectors into the public report.
+/// They are diagnostics only: equal summaries are not vector identity.
+fn tdiln_vector_summary_v1(values: &[f64]) -> Value {
+    debug_assert!(
+        !values.is_empty() && values.iter().all(|value| value.is_finite()),
+        "TDILN core only publishes finite, non-empty diagnostic vectors"
+    );
+    let (minimum, maximum, sum, sum_squares) = values.iter().copied().fold(
+        (f64::INFINITY, f64::NEG_INFINITY, 0.0, 0.0),
+        |(minimum, maximum, sum, sum_squares), value| {
+            (
+                minimum.min(value),
+                maximum.max(value),
+                sum + value,
+                sum_squares + value * value,
+            )
+        },
+    );
+    json!({
+        "length": values.len(),
+        "first": values[0],
+        "last": values[values.len() - 1],
+        "minimum": minimum,
+        "maximum": maximum,
+        "sum": sum,
+        "sum_squares": sum_squares,
+    })
+}
+
+fn tdiln_diagnostics_v1(result: &TdIlnResultV1) -> Value {
+    json!({
+        "schema": "sipi.com.metrics.tdiln.v1",
+        "policy": sipi_com::TDILN_POLICY_V1,
+        // This report performs a complex IL fit only to define TDILN.  It is
+        // never a channel S-parameter fit or a substitute for the primary
+        // S4P-to-impulse path.
+        "source": "raw_mixed_mode_sdd21",
+        "complex_il_report_fit": true,
+        "channel_s_parameter_fit": false,
+        "fit_sha256": sha256_complex_v1(&result.fit),
+        "iln_db_sha256": sha256_f64_v1(&result.iln_db),
+        "reference_pulse_sha256": sha256_f64_v1(&result.reference_pulse),
+        "fitted_pulse_sha256": sha256_f64_v1(&result.fitted_pulse),
+        "iln_pulse_sha256": sha256_f64_v1(&result.iln_pulse),
+        "time_s_sha256": sha256_f64_v1(&result.time_s),
+        "vector_summaries": {
+            "time": tdiln_vector_summary_v1(&result.time_s),
+            // MATLAB's TD_ILN.ILN is the time-domain residual after the
+            // cursor. `iln_db` is the separate frequency-domain fit
+            // residual, so it deliberately has its own receipt instead of
+            // being mislabeled as the source ILN waveform.
+            "iln": tdiln_vector_summary_v1(&result.iln_pulse),
+            "iln_db": tdiln_vector_summary_v1(&result.iln_db),
+            "reference_pr": tdiln_vector_summary_v1(&result.reference_pulse),
+            "fitted_pr": tdiln_vector_summary_v1(&result.fitted_pulse),
+        },
+        "selected_phase": result.selected_phase,
+        "fom_v": result.fom_v,
+        "fom_pdf_v": result.fom_pdf_v,
+        "snr_isi_fom_db": result.snr_isi_fom_db,
+        "snr_isi_fom_pdf_db": result.snr_isi_fom_pdf_db,
+        "pdf": {
+            "bin_size": result.pdf.bin_size(),
+            "min_bin": result.pdf.min_bin(),
+            "sample_count": result.pdf.probability().len(),
+        },
+    })
+}
+
 fn run_workbook_normal_erl_v1(
     path: &Path,
     values: &BTreeMap<String, ResolvedDefaultV1>,
@@ -7951,32 +8006,7 @@ fn result_value_v1(
                         "gated_sha256": sha256_f64_v1(&port.gated),
                     })).collect::<Vec<_>>(),
                 })),
-                "tdiln": tdiln_result.map(|result| json!({
-                    "schema": "sipi.com.metrics.tdiln.v1",
-                    "policy": sipi_com::TDILN_POLICY_V1,
-                    // This report performs a complex IL fit only to define
-                    // TDILN.  It is never a channel S-parameter fit or a
-                    // substitute for the primary S4P-to-impulse path.
-                    "source": "raw_mixed_mode_sdd21",
-                    "complex_il_report_fit": true,
-                    "channel_s_parameter_fit": false,
-                    "fit_sha256": sha256_complex_v1(&result.fit),
-                    "iln_db_sha256": sha256_f64_v1(&result.iln_db),
-                    "reference_pulse_sha256": sha256_f64_v1(&result.reference_pulse),
-                    "fitted_pulse_sha256": sha256_f64_v1(&result.fitted_pulse),
-                    "iln_pulse_sha256": sha256_f64_v1(&result.iln_pulse),
-                    "time_s_sha256": sha256_f64_v1(&result.time_s),
-                    "selected_phase": result.selected_phase,
-                    "fom_v": result.fom_v,
-                    "fom_pdf_v": result.fom_pdf_v,
-                    "snr_isi_fom_db": result.snr_isi_fom_db,
-                    "snr_isi_fom_pdf_db": result.snr_isi_fom_pdf_db,
-                    "pdf": {
-                        "bin_size": result.pdf.bin_size(),
-                        "min_bin": result.pdf.min_bin(),
-                        "sample_count": result.pdf.probability().len(),
-                    },
-                })),
+                "tdiln": tdiln_result.map(tdiln_diagnostics_v1),
                 "portable_branches": portable_diagnostics
             },
             "warnings": runtime_warnings
@@ -9348,6 +9378,19 @@ mod tests {
         assert_eq!(warning["occurrence_count"], 2);
         assert_eq!(warning["matlab_warning_parity"], false);
         assert_eq!(warning["complete_warning_catalog"], false);
+    }
+
+    #[test]
+    fn tdiln_vector_summary_is_bounded_and_preserves_numeric_receipts() {
+        let summary = tdiln_vector_summary_v1(&[-2.0, 0.5, 3.0]);
+        assert_eq!(summary["length"], 3);
+        assert_eq!(summary["first"], -2.0);
+        assert_eq!(summary["last"], 3.0);
+        assert_eq!(summary["minimum"], -2.0);
+        assert_eq!(summary["maximum"], 3.0);
+        assert_eq!(summary["sum"], 1.5);
+        assert_eq!(summary["sum_squares"], 13.25);
+        assert!(summary.get("values").is_none());
     }
 
     #[test]
