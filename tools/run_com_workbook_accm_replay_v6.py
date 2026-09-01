@@ -96,11 +96,20 @@ def normalize(report: dict[str, Any]) -> dict[str, Any]:
             item["numeric_within_tolerance"] = numeric_match(item)
             projected.append(item)
         projected_controls.append({**control, "comparison": projected})
+    dfe_unmatched = any(
+        not isinstance(comparison.get("dfe"), dict)
+        or comparison["dfe"].get("upstream_published") is not True
+        or comparison["dfe"].get("candidate_published") is not True
+        for control in projected_controls
+        for comparison in control["comparison"]
+    )
     blockers = [
         blocker
         for blocker in report.get("blockers", [])
-        if blocker != "candidate_dfe_taps_not_published"
+        if blocker != "candidate_dfe_taps_not_published" or dfe_unmatched
     ]
+    if dfe_unmatched and "candidate_dfe_taps_not_published" not in blockers:
+        blockers.append("candidate_dfe_taps_not_published")
     matched = not blockers and all(
         comparison["numeric_within_tolerance"]
         for control in projected_controls

@@ -59,7 +59,7 @@ class CurrentCandidateReplayTests(unittest.TestCase):
         value["controls"][0]["comparison"][0] = comparison(dfe=False)
         result = replay.normalize(value)
         self.assertEqual(result["status"], "blocked")
-        self.assertEqual(result["blockers"], [])
+        self.assertEqual(result["blockers"], ["candidate_dfe_taps_not_published"])
 
     def test_legacy_schema_or_matrix_drift_is_rejected(self) -> None:
         value = report()
