@@ -1,0 +1,84 @@
+{
+  "schema": "sipi.p5-02-06.original13-execution-closure.v1",
+  "status": "accepted_selected_original13_execution_surface",
+  "scope": {
+    "workbooks": 13,
+    "package_cases": 28,
+    "channel_roles": ["THRU", "FEXT", "NEXT"],
+    "matlab_release": "R2024b",
+    "candidate": {
+      "commit": "b9b195a19d3d209a37a52ba29c730759361dba03",
+      "tree": "becca5842b55eeb1d1a310b2c3174458936ec901",
+      "archive_sha256": "4e40155745d439a721e0f9923a36a60c9daf2404ff24f574b12a4fd7d425a8a2"
+    },
+    "upstream": {
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    }
+  },
+  "evidence": {
+    "root_scalar_and_materialization": {
+      "path": "docs/baselines/p5-06-original13-root-matrix-v6-acceptance.v1.yaml",
+      "sha256": "8b692c8d4b21d129586dc5368b61246ad5d0d93ea885263f160aa29e1c1c183b"
+    },
+    "scalar_reference_custody": {
+      "path": "docs/baselines/p5-06-original13-scalar-reference-custody.v2.yaml",
+      "sha256": "7b0fb5a34b066edef52d7fd377206b33ea2b2fe12fc79ac02c9bcbaf595d8808"
+    },
+    "tdiln_named_arrays": {
+      "path": "docs/baselines/p5-06-tdiln-array-b9-acceptance.v1.yaml",
+      "sha256": "cdd863cf2b8b8370c300a6da2d96e11905b1316f3bd828df3d21ac191f083481"
+    },
+    "source_warning_observation": {
+      "path": "docs/baselines/p5-06w-source-warning-observation.v1.yaml",
+      "sha256": "ac80d296fc7271a5834c4a1099b3b2a7d663f1a6cb97d50b8566430396e77936"
+    }
+  },
+  "accepted_surface": {
+    "workbook_cell_matrix_custody": true,
+    "runtime_consumed_parameter_and_option_projection": true,
+    "matlab_parameter_slot_matrix_observed": true,
+    "final_scalar_slots": 303,
+    "tdiln_named_vectors": ["time_s", "iln_pulse", "reference_pulse", "fitted_pulse", "pdf_axis", "pdf_probability"],
+    "raw_fd_to_td_impulse_without_s_parameter_fit": true
+  },
+  "warning_contract": {
+    "source_observed_callsite_lines": [6337, 9715],
+    "mapped_callsite": {
+      "identifier": "COM:read_s4p:MaxFreqTooLow",
+      "source_line": 9715,
+      "exact_occurrence_mapping": true
+    },
+    "bounded_exception": {
+      "source_line": 6337,
+      "classification": "platform_roundoff_sensitive_nonfunctional_trace_difference",
+      "source_warning_equivalent": false,
+      "blocks_selected_execution_acceptance": false
+    }
+  },
+  "performance": {
+    "per_workbook_rust_not_slower": true,
+    "total_rust_not_slower": true,
+    "minimum_bound_speedup": 9.237029377981356
+  },
+  "claims": {
+    "p5_02_selected_original13_parameter_default_consumption_accepted": true,
+    "p5_06_selected_original13_matlab_execution_accepted": true,
+    "p5_06_selected_original13_performance_accepted": true,
+    "complete_warning_catalog": false,
+    "full_result_graph": false,
+    "generalized_com_conformance": false,
+    "ieee_certification": false,
+    "release": false
+  },
+  "non_claims": [
+    "no_unselected_workbook_or_profile_claim",
+    "no_full_matlab_result_graph_claim",
+    "no_complete_warning_catalog_claim",
+    "no_s_parameter_fit",
+    "no_ieee_certification",
+    "no_release"
+  ],
+  "audit": "docs/baselines/audits/2026-09-01-p5-02-06-original13-execution-closure.md"
+}
