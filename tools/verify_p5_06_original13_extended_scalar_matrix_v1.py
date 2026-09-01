@@ -36,7 +36,7 @@ def verify(report):
         keys={"role","executable","file_sha256","version_sha256","path_redacted"}
         if role=="matlab":keys.update(("release","launch_mode"))
         if set(receipt)!=keys or receipt["role"]!=role or receipt["path_redacted"] is not True or not HEX.fullmatch(receipt["file_sha256"]) or not HEX.fullmatch(receipt["version_sha256"]):raise Error("tool receipt")
-        if role=="matlab" and (receipt["executable"]!="matlab.exe" or receipt["release"]!="R2026a" or receipt["launch_mode"]!="python_engine_noFigureWindows_singleCompThread"):raise Error("matlab receipt")
+        if role=="matlab" and (receipt["executable"]!="matlab.exe" or receipt["release"]!="R2024b" or receipt["launch_mode"]!="python_engine_noFigureWindows_singleCompThread"):raise Error("matlab receipt")
     for asset in report["channels"]+[r["workbook"] for r in report["records"]]:
         if not HEX.fullmatch(asset["sha256"]) or type(asset["bytes"]) is not int or asset["bytes"]<=0:raise Error("asset")
     if type(report["selection_count"]) is not int or report["selection_count"]!=len(report["records"]) or not 1<=report["selection_count"]<=13:raise Error("selection")

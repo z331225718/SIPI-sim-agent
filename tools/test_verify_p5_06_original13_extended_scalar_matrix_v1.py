@@ -7,7 +7,7 @@ def sample():
     n = "a" * 64
     channels = [{"role":role,"path":path,"bytes":size,"sha256":sha} for role,path,size,sha in CHANNELS]
     receipt = lambda role: {"role":role,"executable":role+".exe","file_sha256":n,"version_sha256":n,"path_redacted":True}
-    matlab = receipt("matlab"); matlab.update({"release":"R2026a","launch_mode":"python_engine_noFigureWindows_singleCompThread"})
+    matlab = receipt("matlab"); matlab.update({"release":"R2024b","launch_mode":"python_engine_noFigureWindows_singleCompThread"})
     source = {"upstream":{"commit":UPSTREAM[0],"tree":UPSTREAM[1],"archive_sha256":UPSTREAM[2],"archive_bytes":UPSTREAM[3]},"candidate":{"commit":CANDIDATE[0],"tree":CANDIDATE[1],"archive_sha256":CANDIDATE[2],"archive_bytes":CANDIDATE[3]},"adapter":{"path":ADAPTER[0],"bytes":ADAPTER[1],"sha256":ADAPTER[2],"git_blob":ADAPTER[3]},"projection_sources":[{"path":p,"bytes":b,"sha256":s,"git_blob":g} for p,b,s,g in PROJECTION_SOURCES],"rust_binary":{"path":"target/release/sipi-com-direct-run.exe","bytes":1,"sha256":n},"toolchain":{"cargo":receipt("cargo"),"rustc":receipt("rustc"),"uv":receipt("uv"),"matlab":matlab,"python":receipt("python")}}
     wb = WORKBOOKS[CONFIG_PATHS[0]]
     record = {"workbook_index":0,"workbook":{"path":CONFIG_PATHS[0],"bytes":wb[0],"sha256":wb[1]},"status":"candidate_timeout","exit_code":124,"detail_sha256":n,"source_inventory_unchanged":True,"config_materialization":{"comparison":"not_run_for_rust_result_replay"},"case_count":0,"metrics":[]}
