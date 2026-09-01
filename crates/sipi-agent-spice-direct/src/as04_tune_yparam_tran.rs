@@ -8,9 +8,15 @@
 
 use std::fmt::{Display, Formatter};
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus, Stdio};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, AtomicUsize, Ordering},
+};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use faer::Mat;
 use num_complex::Complex64 as Complex;
@@ -26,6 +32,8 @@ pub const WORKFLOW_ID: &str = "AS-04";
 pub const WORKFLOW_NAME: &str = "tune-yparam-tran";
 const MAX_EVALUATIONS: usize = 150;
 const MAX_ARTIFACT_BYTES: usize = 16 * 1024 * 1024;
+const MAX_EXTERNAL_PIPE_BYTES: usize = 8 * 1024 * 1024;
+const EXTERNAL_TIMEOUT: Duration = Duration::from_secs(120);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TuneYparamTranRequest {
@@ -120,6 +128,26 @@ pub struct TuneYparamTranResult {
     pub output_rfm: PathBuf,
     pub best_tran_rms: f64,
     pub evaluations: usize,
+}
+
+/// Caller-attested HSPICE runtime identity.
+///
+/// The ordinary `tune_yparam_tran` entry point remains preparation-only and
+/// fails closed.  External execution is available only through the additive
+/// custody entry point below, so a PATH lookup can never select the solver.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HspiceCustody {
+    pub executable: PathBuf,
+    pub sha256: String,
+}
+
+impl HspiceCustody {
+    pub fn new(executable: impl Into<PathBuf>, sha256: impl Into<String>) -> Self {
+        Self {
+            executable: executable.into(),
+            sha256: sha256.into(),
+        }
+    }
 }
 
 fn validate_request(request: &TuneYparamTranRequest) -> Result<(), TuneError> {
@@ -320,8 +348,206 @@ fn relative_path(target: &Path, base: &Path) -> Result<String, TuneError> {
     })
 }
 
+fn resolve_hspice_path(path: &Path) -> Result<PathBuf, TuneError> {
+    if path.as_os_str().is_empty() || !path.is_absolute() {
+        return Err(TuneError::External(
+            "HSPICE execution requires an absolute executable path for custody".to_owned(),
+        ));
+    }
+    let metadata = fs::symlink_metadata(path).map_err(|error| {
+        TuneError::External(format!(
+            "HSPICE executable is unavailable for custody: {error}"
+        ))
+    })?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(TuneError::External(
+            "HSPICE executable must be a regular non-symlink file for custody".to_owned(),
+        ));
+    }
+    let resolved = fs::canonicalize(path).map_err(|error| {
+        TuneError::External(format!(
+            "HSPICE executable path could not be canonicalized for custody: {error}"
+        ))
+    })?;
+    let resolved_metadata = fs::symlink_metadata(&resolved).map_err(|error| {
+        TuneError::External(format!(
+            "HSPICE executable could not be rechecked for custody: {error}"
+        ))
+    })?;
+    if resolved_metadata.file_type().is_symlink() || !resolved_metadata.is_file() {
+        return Err(TuneError::External(
+            "resolved HSPICE executable must be a regular non-symlink file".to_owned(),
+        ));
+    }
+    Ok(resolved)
+}
+
+fn attest_hspice(
+    request: &TuneYparamTranRequest,
+    custody: &HspiceCustody,
+) -> Result<(PathBuf, String), TuneError> {
+    let requested = resolve_hspice_path(Path::new(&request.hspice_bin))?;
+    let (attested, sha256) =
+        crate::attest_external_executable(&custody.executable, Some(&custody.sha256), "HSPICE")
+            .map_err(|error| TuneError::External(error.to_string()))?;
+    let attested = resolve_hspice_path(&attested)?;
+    if requested != attested {
+        return Err(TuneError::External(
+            "request HSPICE path and custody executable must resolve to the same file".to_owned(),
+        ));
+    }
+    Ok((requested, sha256))
+}
+
+fn read_hspice_output<R: Read>(
+    mut reader: R,
+    total: Arc<AtomicUsize>,
+    overflow: Arc<AtomicBool>,
+    read_error: Arc<AtomicBool>,
+) -> Result<Vec<u8>, io::Error> {
+    let mut output = Vec::new();
+    let mut chunk = [0_u8; 16 * 1024];
+    loop {
+        match reader.read(&mut chunk) {
+            Ok(0) => break,
+            Ok(count) => {
+                let mut reserved = false;
+                loop {
+                    let current = total.load(Ordering::Acquire);
+                    let Some(next) = current.checked_add(count) else {
+                        overflow.store(true, Ordering::Release);
+                        break;
+                    };
+                    if next > MAX_EXTERNAL_PIPE_BYTES {
+                        overflow.store(true, Ordering::Release);
+                        break;
+                    }
+                    if total
+                        .compare_exchange(current, next, Ordering::AcqRel, Ordering::Acquire)
+                        .is_ok()
+                    {
+                        reserved = true;
+                        break;
+                    }
+                }
+                if !reserved {
+                    break;
+                }
+                output.extend_from_slice(&chunk[..count]);
+            }
+            Err(error) => {
+                read_error.store(true, Ordering::Release);
+                return Err(error);
+            }
+        }
+    }
+    Ok(output)
+}
+
+struct HspiceProcessResult {
+    status: ExitStatus,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+}
+
+fn run_hspice_process(
+    program: &Path,
+    arguments: &[PathBuf],
+    current_dir: &Path,
+    environment: &std::collections::HashMap<std::ffi::OsString, std::ffi::OsString>,
+) -> Result<HspiceProcessResult, TuneError> {
+    let mut command = Command::new(program);
+    command
+        .args(arguments.iter().map(|value| value.as_os_str()))
+        .current_dir(current_dir)
+        .envs(environment.iter())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = command
+        .spawn()
+        .map_err(|error| TuneError::External(format!("HSPICE process could not start: {error}")))?;
+    let overflow = Arc::new(AtomicBool::new(false));
+    let total = Arc::new(AtomicUsize::new(0));
+    let read_error = Arc::new(AtomicBool::new(false));
+    let stdout = child.stdout.take().ok_or_else(|| {
+        let _ = child.kill();
+        let _ = child.wait();
+        TuneError::External("HSPICE stdout pipe was unavailable".to_owned())
+    })?;
+    let stderr = child.stderr.take().ok_or_else(|| {
+        let _ = child.kill();
+        let _ = child.wait();
+        TuneError::External("HSPICE stderr pipe was unavailable".to_owned())
+    })?;
+    let stdout_thread = {
+        let total = Arc::clone(&total);
+        let overflow = Arc::clone(&overflow);
+        let read_error = Arc::clone(&read_error);
+        thread::spawn(move || read_hspice_output(stdout, total, overflow, read_error))
+    };
+    let stderr_thread = {
+        let total = Arc::clone(&total);
+        let overflow = Arc::clone(&overflow);
+        let read_error = Arc::clone(&read_error);
+        thread::spawn(move || read_hspice_output(stderr, total, overflow, read_error))
+    };
+    let deadline = Instant::now() + EXTERNAL_TIMEOUT;
+    let mut failure = None;
+    let status = loop {
+        if overflow.load(Ordering::Acquire) {
+            failure = Some("HSPICE output exceeded the bounded 8 MiB pipe budget".to_owned());
+            break None;
+        }
+        if read_error.load(Ordering::Acquire) {
+            failure = Some("HSPICE output read failed".to_owned());
+            break None;
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => break Some(status),
+            Ok(None) if Instant::now() >= deadline => {
+                failure = Some("HSPICE exceeded the 120 second timeout".to_owned());
+                break None;
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(10)),
+            Err(error) => {
+                failure = Some(format!("HSPICE status check failed: {error}"));
+                break None;
+            }
+        }
+    };
+    if failure.is_some() {
+        let _ = child.kill();
+    }
+    if failure.is_some() || status.is_none() {
+        let _ = child.wait();
+    }
+    let stdout = stdout_thread
+        .join()
+        .map_err(|_| TuneError::External("HSPICE stdout reader failed".to_owned()))?
+        .map_err(|error| TuneError::External(format!("HSPICE stdout read failed: {error}")))?;
+    let stderr = stderr_thread
+        .join()
+        .map_err(|_| TuneError::External("HSPICE stderr reader failed".to_owned()))?
+        .map_err(|error| TuneError::External(format!("HSPICE stderr read failed: {error}")))?;
+    if let Some(error) = failure {
+        return Err(TuneError::External(error));
+    }
+    if overflow.load(Ordering::Acquire) {
+        return Err(TuneError::External(
+            "HSPICE output exceeded the bounded 8 MiB pipe budget".to_owned(),
+        ));
+    }
+    Ok(HspiceProcessResult {
+        status: status.expect("successful HSPICE process must have a status"),
+        stdout,
+        stderr,
+    })
+}
+
 fn measure(path: &Path, name: &str) -> Result<f64, TuneError> {
-    let text = fs::read_to_string(path).map_err(|error| TuneError::External(error.to_string()))?;
+    let (bytes, _) = bounded_artifact(path)
+        .map_err(|error| TuneError::External(format!("HSPICE listing read failed: {error}")))?;
+    let text = String::from_utf8_lossy(&bytes);
     let lower = text.to_ascii_lowercase();
     let needle = name.to_ascii_lowercase();
     let mut token = None;
@@ -391,6 +617,18 @@ struct FrozenArtifactReceipt {
 }
 
 fn bounded_artifact(path: &Path) -> Result<(Vec<u8>, ArtifactReceipt), TuneError> {
+    let before = fs::symlink_metadata(path)
+        .map_err(|error| TuneError::Output(format!("artifact could not be inspected: {error}")))?;
+    if before.file_type().is_symlink() || !before.is_file() {
+        return Err(TuneError::Output(
+            "bounded artifact must be a regular non-symlink file".to_owned(),
+        ));
+    }
+    if before.len() > MAX_ARTIFACT_BYTES as u64 {
+        return Err(TuneError::Output(
+            "bounded artifact exceeds the 16 MiB byte budget".to_owned(),
+        ));
+    }
     let mut file = fs::File::open(path).map_err(|error| TuneError::Output(error.to_string()))?;
     let mut bytes = Vec::new();
     Read::by_ref(&mut file)
@@ -400,6 +638,13 @@ fn bounded_artifact(path: &Path) -> Result<(Vec<u8>, ArtifactReceipt), TuneError
     if bytes.len() > MAX_ARTIFACT_BYTES {
         return Err(TuneError::Output(
             "RFM artifact exceeds the bounded byte budget".to_owned(),
+        ));
+    }
+    let after = fs::symlink_metadata(path)
+        .map_err(|error| TuneError::Output(format!("artifact could not be rechecked: {error}")))?;
+    if after.file_type().is_symlink() || !after.is_file() || after.len() != before.len() {
+        return Err(TuneError::Output(
+            "bounded artifact changed during read".to_owned(),
         ));
     }
     let byte_len = bytes.len();
@@ -553,16 +798,37 @@ fn validate_artifact_paths(
 pub fn tune_yparam_tran(
     request: &TuneYparamTranRequest,
 ) -> Result<TuneYparamTranResult, TuneError> {
+    tune_yparam_tran_internal(request, None)
+}
+
+/// Execute the external HSPICE residual search with explicit caller custody.
+///
+/// The requested `hspice_bin` and the attested executable must resolve to the
+/// same regular file, and the file digest is checked again after each trial.
+/// This keeps the upstream Rust controller and HSPICE runtime boundary while
+/// leaving the default entry point fail-closed.
+pub fn tune_yparam_tran_with_hspice_custody(
+    request: &TuneYparamTranRequest,
+    custody: &HspiceCustody,
+) -> Result<TuneYparamTranResult, TuneError> {
+    tune_yparam_tran_internal(request, Some(custody))
+}
+
+fn tune_yparam_tran_internal(
+    request: &TuneYparamTranRequest,
+    custody: Option<&HspiceCustody>,
+) -> Result<TuneYparamTranResult, TuneError> {
     validate_request(request)?;
     let (requested_work_dir, report) = validate_artifact_paths(request)?;
-    // Preparation and Nelder-Mead orchestration are portable, but this leaf
-    // never launches an unbound PATH HSPICE process. A higher-level adapter
-    // must provide executable custody before enabling the external runtime.
-    if !external_execution_available() {
-        return Err(TuneError::External(
-            "HSPICE execution is unavailable: external executable custody is required".to_owned(),
-        ));
-    }
+    let (hspice_path, hspice_sha256) = custody.map_or_else(
+        || {
+            Err(TuneError::External(
+                "HSPICE execution is unavailable: explicit executable custody is required"
+                    .to_owned(),
+            ))
+        },
+        |custody| attest_hspice(request, custody),
+    )?;
     if !request.touchstone.is_file() || !request.input_rfm.is_file() || !request.deck.is_file() {
         return Err(TuneError::Input(
             "touchstone, input RFM, and deck must exist".to_owned(),
@@ -648,22 +914,43 @@ pub fn tune_yparam_tran(
         )
         .map_err(|error| TuneError::Output(error.to_string()))?;
         let output_stem = work_dir.join(format!("trial_{ordinal:03}"));
-        let result = Command::new(&request.hspice_bin)
-            .arg(&trial_deck)
-            .arg("-o")
-            .arg(&output_stem)
-            .current_dir(deck_dir)
-            .envs(environment.iter())
-            .output()
-            .map_err(|error| TuneError::External(error.to_string()))?;
         let listing = output_stem.with_extension("lis");
+        if fs::symlink_metadata(&listing).is_ok() {
+            return Err(TuneError::External(
+                "HSPICE listing path must be fresh before each trial".to_owned(),
+            ));
+        }
+        let relative_trial_deck = relative_path(&trial_deck, deck_dir)?;
+        let relative_output_stem = relative_path(&output_stem, deck_dir)?;
+        let result = run_hspice_process(
+            &hspice_path,
+            &[
+                PathBuf::from(relative_trial_deck),
+                PathBuf::from("-o"),
+                PathBuf::from(relative_output_stem),
+            ],
+            deck_dir,
+            &environment,
+        )?;
+        let after_hspice_sha256 = crate::file_sha256(&hspice_path).map_err(|error| {
+            TuneError::External(format!("HSPICE executable re-attestation failed: {error}"))
+        })?;
+        if after_hspice_sha256 != hspice_sha256 {
+            return Err(TuneError::External(
+                "HSPICE executable changed during tuning".to_owned(),
+            ));
+        }
         if !result.status.success() || !listing.is_file() {
             record["status"] = json!("HSPICE_REJECT");
             record["returncode"] = json!(result.status.code());
+            record["stdout_bytes"] = json!(result.stdout.len());
+            record["stderr_bytes"] = json!(result.stderr.len());
             record["objective"] = json!(2.0);
             history.push(record);
             return Ok(2.0);
         }
+        record["stdout_bytes"] = json!(result.stdout.len());
+        record["stderr_bytes"] = json!(result.stderr.len());
         let tran_rms = measure(&listing, &request.rms_measure)?;
         let tran_peak = request
             .peak_measure
@@ -826,6 +1113,11 @@ pub fn tune_yparam_tran(
         "residual_damping_rad_per_s": request.residual_poles,
         "band_boundaries_rad_per_s": request.band_boundaries,
         "baseline": {"s_rms": baseline_rms, "max_sigma": baseline_sigma},
+        "hspice": {
+            "executable": hspice_path.file_name().map(|value| value.to_string_lossy()).unwrap_or_default(),
+            "sha256": hspice_sha256,
+            "path_redacted": true,
+        },
         "best": {"ordinal": best_ordinal, "tran_rms": best_rms, "tran_peak": best_peak},
         "best_artifact": {
             "frozen_source": {"bytes": frozen_receipt.source.bytes, "sha256": frozen_receipt.source.sha256},
@@ -836,7 +1128,7 @@ pub fn tune_yparam_tran(
         "optimizer": {"method": "Nelder-Mead", "xatol": 4.0e-4, "fatol": 1.0e-7, "success": optimizer_success, "message": optimizer_message},
         "history": history,
         "portable_branches": ["response-grouping", "static-gates", "exact-token-replacement", "bounded-trial-artifacts", "best-rfm-freeze-and-final-copy", "Nelder-Mead", "measure-parsing"],
-        "external_runtime_boundary": ["commercial HSPICE result without caller executable"],
+        "external_runtime_boundary": ["commercial HSPICE result requires the caller-selected executable"],
     });
     let text = serde_json::to_string_pretty(&payload)
         .map_err(|error| TuneError::Output(error.to_string()))?
@@ -876,10 +1168,6 @@ pub fn tune_yparam_tran(
     })
 }
 
-fn external_execution_available() -> bool {
-    false
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -913,6 +1201,71 @@ mod tests {
         assert!(measure(&path, "foo").is_err());
         fs::write(&path, "foo = 2.5m\n").unwrap();
         assert!((measure(&path, "foo").unwrap() - 2.5e-3).abs() < 1e-15);
+        fs::write(&path, "foox = 1\nfoo = 3u\n").unwrap();
+        assert!((measure(&path, "foo").unwrap() - 3e-6).abs() < 1e-18);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn hspice_executable_requires_explicit_regular_absolute_file() {
+        let relative = resolve_hspice_path(Path::new("hspice"));
+        assert!(matches!(
+            relative,
+            Err(TuneError::External(message)) if message.contains("absolute") && message.contains("custody")
+        ));
+        let missing = resolve_hspice_path(
+            &std::env::temp_dir().join(format!("sipi-as04-missing-{}", std::process::id())),
+        );
+        assert!(
+            matches!(missing, Err(TuneError::External(message)) if message.contains("unavailable"))
+        );
+        let current = std::env::current_exe().unwrap();
+        assert_eq!(
+            resolve_hspice_path(&current).unwrap(),
+            fs::canonicalize(current).unwrap()
+        );
+    }
+
+    #[test]
+    fn hspice_custody_binds_request_path_and_digest() {
+        let executable = std::env::current_exe().unwrap();
+        let digest = crate::file_sha256(&executable).unwrap();
+        let mut request = TuneYparamTranRequest::new(
+            "input.s2p",
+            "input.rfm",
+            "deck.sp",
+            "output.rfm",
+            "work",
+            "model.rfm",
+            "rms",
+            vec![1.0, 2.0],
+            vec![1.5],
+        )
+        .unwrap();
+        request.hspice_bin = executable.display().to_string();
+        let custody = HspiceCustody::new(&executable, &digest);
+        let (resolved, actual) = attest_hspice(&request, &custody).unwrap();
+        assert_eq!(resolved, fs::canonicalize(&executable).unwrap());
+        assert_eq!(actual, digest);
+
+        let wrong = HspiceCustody::new(&executable, "0".repeat(64));
+        assert!(matches!(
+            attest_hspice(&request, &wrong),
+            Err(TuneError::External(message)) if message.contains("does not match")
+        ));
+    }
+
+    #[test]
+    fn oversized_hspice_listing_is_rejected_before_read() {
+        let root = std::env::temp_dir().join(format!("sipi-as04-listing-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("oversized.lis");
+        let file = fs::File::create(&path).unwrap();
+        file.set_len((MAX_ARTIFACT_BYTES + 1) as u64).unwrap();
+        assert!(matches!(
+            measure(&path, "rms"),
+            Err(TuneError::External(message)) if message.contains("16 MiB")
+        ));
         let _ = fs::remove_dir_all(root);
     }
 

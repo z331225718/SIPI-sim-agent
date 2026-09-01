@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use sipi_agent_spice_direct::as04_tune_yparam_tran::{TuneYparamTranRequest, tune_yparam_tran};
+use sipi_agent_spice_direct::as04_tune_yparam_tran::{
+    HspiceCustody, TuneYparamTranRequest, tune_yparam_tran, tune_yparam_tran_with_hspice_custody,
+};
 
 fn take(args: &[String], index: &mut usize, option: &str) -> Result<String, String> {
     *index += 1;
@@ -30,7 +32,7 @@ fn main() -> ExitCode {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.iter().any(|value| value == "--help" || value == "-h") {
         println!(
-            "usage: sipi-agent-spice-tune-yparam-tran TOUCHSTONE INPUT_RFM DECK --output-rfm FILE [--work-dir DIR] --rfm-token TOKEN --rms-measure NAME --residual-poles CSV --band-boundaries CSV"
+            "usage: sipi-agent-spice-tune-yparam-tran TOUCHSTONE INPUT_RFM DECK --output-rfm FILE [--work-dir DIR] --rfm-token TOKEN --rms-measure NAME --residual-poles CSV --band-boundaries CSV [--hspice-bin ABSOLUTE_EXE --hspice-sha256 SHA256]"
         );
         return ExitCode::SUCCESS;
     }
@@ -56,6 +58,7 @@ fn main() -> ExitCode {
         max_static_rms_growth: 0.003,
         max_sigma: 0.999,
     };
+    let mut hspice_sha256 = None;
     let mut index = 3;
     while index < args.len() {
         let option = &args[index];
@@ -82,6 +85,9 @@ fn main() -> ExitCode {
                 .map(|value| request.band_boundaries = value),
             "--hspice-bin" => {
                 take(&args, &mut index, option).map(|value| request.hspice_bin = value)
+            }
+            "--hspice-sha256" => {
+                take(&args, &mut index, option).map(|value| hspice_sha256 = Some(value))
             }
             "--license-file" => {
                 take(&args, &mut index, option).map(|value| request.license_file = Some(value))
@@ -111,7 +117,14 @@ fn main() -> ExitCode {
         }
         index += 1;
     }
-    match tune_yparam_tran(&request) {
+    let result = hspice_sha256.as_deref().map_or_else(
+        || tune_yparam_tran(&request),
+        |sha256| {
+            let custody = HspiceCustody::new(request.hspice_bin.clone(), sha256);
+            tune_yparam_tran_with_hspice_custody(&request, &custody)
+        },
+    );
+    match result {
         Ok(result) => {
             println!(
                 "{{\"status\":\"PASS\",\"best_tran_rms\":{:.17e},\"report\":\"{}\"}}",
