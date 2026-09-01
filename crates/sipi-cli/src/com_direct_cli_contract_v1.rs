@@ -7,8 +7,9 @@
 use crate::com_direct_integration::run_com_direct_for_integration_v1;
 use sha2::{Digest, Sha256};
 use sipi_agent_com_direct::{
-    ConfigValidateErrorV1, ConfigValidateRequestV1, DirectRunErrorV1, DirectRunRequestV1,
-    config_validate_v1,
+    ConfigValidateErrorV1, ConfigValidateRequestV1, DEFAULT_ATOL_V1, DirectCompareErrorV1,
+    DirectRunErrorV1, DirectRunRequestV1, compare_result_paths_v1, config_validate_v1,
+    error_exit_code_v1,
 };
 use std::{fs, path::PathBuf};
 
@@ -250,6 +251,57 @@ pub(crate) fn execute_com_config_validate_argv_v1(
             .and_then(serde_json::Value::as_str)
             .map_or_else(|| report.to_json(), ToOwned::to_owned)
     })
+}
+
+pub(crate) fn execute_com_compare_argv_v1(
+    arguments: &[String],
+) -> Result<String, ComConfigExecutionErrorV1> {
+    let mut golden = None;
+    let mut result = None;
+    let mut atol = DEFAULT_ATOL_V1;
+    let mut iterator = arguments.iter();
+    while let Some(option) = iterator.next() {
+        match option.as_str() {
+            "--golden" => {
+                golden = Some(PathBuf::from(
+                    iterator
+                        .next()
+                        .ok_or_else(ComConfigExecutionErrorV1::argument)?,
+                ))
+            }
+            "--result" => {
+                result = Some(PathBuf::from(
+                    iterator
+                        .next()
+                        .ok_or_else(ComConfigExecutionErrorV1::argument)?,
+                ))
+            }
+            "--atol" => {
+                atol = iterator
+                    .next()
+                    .ok_or_else(ComConfigExecutionErrorV1::argument)?
+                    .parse()
+                    .map_err(|_| ComConfigExecutionErrorV1::argument())?
+            }
+            _ => return Err(ComConfigExecutionErrorV1::argument()),
+        }
+    }
+    if !atol.is_finite() {
+        return Err(ComConfigExecutionErrorV1::argument());
+    }
+    let report = compare_result_paths_v1(
+        &golden.ok_or_else(ComConfigExecutionErrorV1::argument)?,
+        &result.ok_or_else(ComConfigExecutionErrorV1::argument)?,
+        atol,
+    )
+    .map_err(|error| ComConfigExecutionErrorV1 {
+        exit_code: error_exit_code_v1(&error),
+        diagnostic_code: match error {
+            DirectCompareErrorV1::Io { .. } => "operational_failure",
+            _ => "invalid_input",
+        },
+    })?;
+    Ok(report.to_json())
 }
 
 fn map_direct_error_v1(error: DirectRunErrorV1) -> ComR480ExecutionErrorV1 {

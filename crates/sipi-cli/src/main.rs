@@ -242,6 +242,20 @@ const COM_CONFIG_VALIDATE_ARGV_BINDINGS: &[CallerBindingV1] = &[CallerBindingV1 
     explicit_required: true,
 }];
 
+#[cfg(feature = "com-direct-integration")]
+const COM_COMPARE_ARGV_BINDINGS: &[CallerBindingV1] = &[
+    CallerBindingV1 {
+        pointer: "/argv/golden",
+        role: "caller_owned_local_result",
+        explicit_required: true,
+    },
+    CallerBindingV1 {
+        pointer: "/argv/result",
+        role: "caller_owned_local_result",
+        explicit_required: true,
+    },
+];
+
 const PRBS9_METRIC_ARTIFACT_BINDINGS: &[CallerBindingV1] = &[
     CallerBindingV1 {
         pointer: "/invocation/artifact_root",
@@ -740,6 +754,17 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         response_schema: Some("sipi.agent-com.config-validate.v1"),
         unavailable_reason: None,
         nonclaim: "r480_config_validation_only_no_execution_or_oracle_acceptance",
+    },
+    #[cfg(feature = "com-direct-integration")]
+    CommandDescriptorV1 {
+        id: "com.compare",
+        route: &["com", "compare"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_r480_v1",
+        request_schema: Some("sipi.agent-com.direct-compare.argv.v1"),
+        response_schema: Some("sipi.agent-com.direct-compare.v1"),
+        unavailable_reason: None,
+        nonclaim: "bounded_result_comparison_only_no_oracle_acceptance_or_release",
     },
     CommandDescriptorV1 {
         id: "com.run-artifact",
@@ -1240,6 +1265,16 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "root_json_envelope_with_existing_validator_payload",
+    },
+    #[cfg(feature = "com-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "com.compare",
+        example_id: None,
+        required_options: &["--golden", "--result"],
+        caller_bindings: COM_COMPARE_ARGV_BINDINGS,
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_bounded_direct_compare_payload",
     },
     CommandProtocolProfileV1 {
         command_id: "upstream.agent-spice.fit-sparam",
@@ -3668,7 +3703,11 @@ fn available_route_has_handler(route: &[&str]) -> bool {
     );
     #[cfg(feature = "com-direct-integration")]
     {
-        standard_handler || matches!(route, ["com", "run"] | ["com", "config", "validate"])
+        standard_handler
+            || matches!(
+                route,
+                ["com", "run"] | ["com", "config", "validate"] | ["com", "compare"]
+            )
     }
     #[cfg(not(feature = "com-direct-integration"))]
     {
@@ -4047,6 +4086,17 @@ impl CommandService {
                         error_value.exit_code(),
                         error_value.diagnostic_code(),
                         "bounded COM config validator failed",
+                    ),
+                }
+            }
+            #[cfg(feature = "com-direct-integration")]
+            [command, action, tail @ ..] if command == "com" && action == "compare" => {
+                match com_direct_cli_contract_v1::execute_com_compare_argv_v1(tail) {
+                    Ok(payload) => success(payload),
+                    Err(error_value) => error(
+                        error_value.exit_code(),
+                        error_value.diagnostic_code(),
+                        "bounded COM comparison failed",
                     ),
                 }
             }
