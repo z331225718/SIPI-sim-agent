@@ -8269,11 +8269,14 @@ fn result_value_v1(
                 "ERL_RMS": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_rms_db")),
                 "ERL_phase_index": portable_diagnostics.get("erl_only").and_then(|value| value.get("phase_index")),
                 "COM_dB": envelope.com_db(),
+                "channel_operating_margin_dB": envelope.com_db(),
                 "VEC_dB": envelope.vec_db(),
                 "VEO_mV": envelope.veo_mv(),
                 "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": peak_interference_millivolts,
                 "sigma_N_V": envelope.sigma_n_v(),
+                "sigma_N": envelope.sigma_n_v(),
                 "available_signal_v": envelope.available_signal_v(),
+                "available_signal_after_eq_mV": envelope.available_signal_v().map(|value| value * 1000.0),
                 "interference_noise_v": envelope.interference_noise_v(),
                 "threshold_der": envelope.threshold_der(),
                 "eye_opening_v": envelope.eye_opening_v(),
@@ -11062,6 +11065,20 @@ mod tests {
         let metrics = &report.result["cases"][0]["metrics"];
         let source_metric_surface =
             &report.result["cases"][0]["diagnostics"]["source_metric_surface"];
+        assert_eq!(
+            metrics["channel_operating_margin_dB"], metrics["COM_dB"],
+            "legacy source name must remain an alias for COM"
+        );
+        assert_eq!(metrics["sigma_N"], metrics["sigma_N_V"]);
+        assert_eq!(
+            metrics["available_signal_after_eq_mV"]
+                .as_f64()
+                .expect("available signal in millivolts"),
+            metrics["available_signal_v"]
+                .as_f64()
+                .expect("available signal in volts")
+                * 1000.0
+        );
         for key in ["CTLE_DC_gain_dB", "g_DC_HP", "itick"] {
             assert_eq!(metrics[key], source_metric_surface[key]);
             assert!(metrics[key].is_number(), "search metric {key}");
