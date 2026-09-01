@@ -1,0 +1,79 @@
+schema: sipi.com-01.current-candidate-replay.v2
+status: scoped_current_candidate_parity_observed
+scope:
+  work_item: COM-01
+  leaf: config-validate
+  complete_com_parity: false
+  global_migration_row_closed: false
+  product_capability_promoted: false
+  release_ready: false
+policy:
+  s_parameter_fit: not_in_scope
+  channel_simulation: impulse_only
+  raw_configuration_values_in_evidence: false
+  same_crate_self_comparison: false
+candidate:
+  commit: 5b974ebd799fefd2b89c11a0626dc5c6e555d885
+  tree: 329bfc2b08d5593744f498aea18c924c7a41e9dd
+  source_mode: git_archive_at_immutable_commit
+  archive_bytes: 59381760
+  archive_sha256: 3b670c3c3e8a8ab1f00a3a0a97231c66b508c21b1ea24f79885b1da2f41921b7
+  inventory:
+    file_count: 24
+    total_bytes: 1805587
+    sha256: 92f025e3bbefa796a94eac62852081ab5f34b71611509efcea00e526d4f59604
+  cargo_lock_sha256: 4f88dde106c0b16e3e882c576a5fa0bb689a25926e9c4d042f797ec1e417845d
+  source_date_epoch: "1788265581"
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  source_mode: git_archive_at_immutable_commit
+  archive_bytes: 43694080
+  archive_sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+  inventory:
+    file_count: 70
+    total_bytes: 1006648
+    sha256: 1cd0366c0d1cb7e14678ccfc5671918d6a36f8f993896aa2b4729fec487b621e
+  source_module_sha256: 0608729cb58b26107264c005cb362f713635783cca01f70967ecf0fa8253a0e0
+harness:
+  runner: tools/run_com_01_current_candidate_v2.py
+  runner_sha256: 83cc0b1383b9b0a6011830a10ec6354b6a39bf5849bac1ee10f55257baa10385
+  aggregate_runner: tools/aggregate_com_01_current_candidate_v2.py
+  aggregate_runner_sha256: d82081c7ed68d07e1512cc72b591408cceb4a1b17cf1bf7f4f88849e3191d89b
+  semantic_runner: tools/run_com_01_direct_oracle_v2.py
+  semantic_runner_sha256: bf56fb3bbce9ebad99111a840919d64214a05ccbae94f766f540105c2814a4e1
+  scenario_count: 14
+  scenario_set_sha256: abcb4cdecfb67f5de13439baec64cf45f752bc76a7765ace7434b2874523fa96
+  no_s_fit: true
+  channel_impulse_only: true
+fixtures:
+  - role: primary_xlsx
+    bytes: 63311
+    sha256: f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9
+  - role: package_warning_csv
+    bytes: 4600
+    sha256: ebf22813b12e12d73bef253197eb747ac71db0bee4aee86a130fcba92dbaf295
+reports:
+  - path: docs/baselines/com-01-current-candidate-replay-run1.v2.json
+    sha256: 99935bf8f53de6397af3b9375f5fa7d57a440b7341299cc2797b8585ae5eefdc
+    run_id: 35618d01924371fff12a3c950e5e84dfbdb53f0b2f7a2a32ce3c0f21830ecfee
+    nonce: de342fc01024cbb7f2c86dec23d09d050ad2c1eeba9578fdff89622cac988a90
+  - path: docs/baselines/com-01-current-candidate-replay-run2.v2.json
+    sha256: 7359f7ee8f49f5af80ee3abc85b831cddf961cf77dd9cf672bee8036893b9a89
+    run_id: 7f3872b09428ecdfa5f3c41648eedce88d2be79647aaecabffdf77469d1a4fed
+    nonce: d3f86bdab2230c4d40201e96b6bd6ca19370ed394289fff6646bd8883faeb6a5
+aggregate:
+  path: docs/baselines/com-01-current-candidate-replay.aggregate.v2.json
+  sha256: 23d48c1a4264accef4a22e02226d9aa43dc486803cda95b0a71e54f6c8e13c08
+physical:
+  - {path: tools/run_com_01_current_candidate_v2.py, sha256: 83cc0b1383b9b0a6011830a10ec6354b6a39bf5849bac1ee10f55257baa10385}
+  - {path: tools/aggregate_com_01_current_candidate_v2.py, sha256: d82081c7ed68d07e1512cc72b591408cceb4a1b17cf1bf7f4f88849e3191d89b}
+  - {path: tools/verify_com_01_current_candidate_v2.py, sha256: f3aa028134d77a5a667b23c59aa6789447555d13b7c85f3dc899e703dc4bd8c8}
+  - {path: tools/test_verify_com_01_current_candidate_v2.py, sha256: 4d698ff107c4fe5561dbfd3613dbb4fa978370482f987c7750d10e66dc33f906}
+  - {path: tools/run_com_01_direct_oracle_v2.py, sha256: bf56fb3bbce9ebad99111a840919d64214a05ccbae94f766f540105c2814a4e1}
+  - {path: crates/sipi-agent-com-direct/src/config_validate_v1.rs, sha256: 1c2d0f37ee10c07419507e974ac73f1f6a8d2f5fccd244b59f10b18c93c21e0a}
+  - {path: crates/sipi-agent-com-direct/SOURCE-MAP-COM-01.md, sha256: 2300df968c955eb49173cb5fe1eaa0aa4c02f17ecff3222736e32fe67b82f855}
+  - {path: crates/sipi-agent-com-direct/NOTICE-AGENT-COM-MIT.md, sha256: 04344354a492e4afa55a71fe6fd39047f8ee52f78370ea0ea4fb243d9104817f}
+audit:
+  path: docs/baselines/audits/2026-09-01-com-01-current-candidate-replay-v2.md
+  sha256: ccec25e19215804bd9dcf8c6e394e1aad01baee7c1b6da88f0fb00e51d5f41e3
