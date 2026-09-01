@@ -33,10 +33,10 @@ except ImportError:
 
 
 CANDIDATE = (
-    "19ba74ac1926f6468d699af34dc984ccae8ba386",
-    "e5f3ca12f8cecc9a6dc1e932e0a986e1686718e1",
-    "458cac4fde784da57e7ea5ff03fbe9b47d901fada86b4fac0ee3186104a9418b",
-    59043840,
+    "54d667c6e31e779b8c39d01fcb56aadce446c8a1",
+    "c29fad7752c1b55b611bbbdf10ffc15f7027faa7",
+    "be1cba20f1a452dae77d725b2325e1bdcf6200384a25059d9a29e00b4c02ac9c",
+    59146240,
 )
 SCHEMA = "sipi.p5-06.original13-root-matrix.v7"
 TIMING_SCOPE = "model-subprocess-only:engine-start-run-quit-or-rust-run-write"
