@@ -1497,6 +1497,16 @@ mod tests {
         assert_eq!(corrected.0, r480.0);
         assert_eq!(corrected.1, r480.1);
         assert_ne!(corrected.2.to_bits(), r480.2.to_bits());
+        assert!(
+            (r480.2 - 13.979_400_086_720_375).abs() < 1.0e-12,
+            "r480={}",
+            r480.2
+        );
+        assert!(
+            (corrected.2 - -12.041_199_826_559_248).abs() < 1.0e-12,
+            "corrected={}",
+            corrected.2
+        );
 
         let normalized_r480 =
             effective_return_loss_v1(&ptdr, 2, 4, 0.01, 1.0e-3, true, false).expect("r480");
