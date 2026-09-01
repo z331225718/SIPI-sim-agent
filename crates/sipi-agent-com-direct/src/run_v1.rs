@@ -1366,6 +1366,8 @@ fn run_with_workflow_token_origin(
             };
         let selected_erl_db = normal_erl.0.ports[selected_port].erl_db;
         let erl_metric = metric_db_value_v1(selected_erl_db)?;
+        let erl11_metric = metric_db_value_v1(normal_erl.0.ports[0].erl_db)?;
+        let erl22_metric = metric_db_value_v1(normal_erl.0.ports[1].erl_db)?;
         let envelope = sipi_com::erl_only_envelope_v1(&sipi_com::ErlOnlyMetricsV1 {
             erl_db: selected_erl_db,
             erl11_db: normal_erl.0.ports[0].erl_db,
@@ -1398,6 +1400,8 @@ fn run_with_workflow_token_origin(
         let normal_erl_diagnostics = result["cases"][0]["diagnostics"]["normal_erl"].clone();
         result["cases"][0]["metrics"] = json!({
             "ERL": erl_metric,
+            "ERL11": erl11_metric,
+            "ERL22": erl22_metric,
         });
         result["cases"][0]["diagnostics"] = json!({
             "normal_erl": normal_erl_diagnostics,
