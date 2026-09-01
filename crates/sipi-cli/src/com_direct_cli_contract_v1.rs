@@ -6,7 +6,10 @@
 
 use crate::com_direct_integration::run_com_direct_for_integration_v1;
 use sha2::{Digest, Sha256};
-use sipi_agent_com_direct::{DirectRunErrorV1, DirectRunRequestV1};
+use sipi_agent_com_direct::{
+    ConfigValidateErrorV1, ConfigValidateRequestV1, DirectRunErrorV1, DirectRunRequestV1,
+    config_validate_v1,
+};
 use std::{fs, path::PathBuf};
 
 pub(crate) const COM_R480_ARGV_SCHEMA_V1: &str = "sipi.com.r480.argv.v1";
@@ -39,6 +42,45 @@ pub(crate) enum ComR480ExecutionErrorV1 {
     Argument(ComR480ArgvErrorV1),
     InvalidInput,
     OperationalFailure,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct ComConfigExecutionErrorV1 {
+    exit_code: i32,
+    diagnostic_code: &'static str,
+}
+
+impl ComConfigExecutionErrorV1 {
+    const fn argument() -> Self {
+        Self {
+            exit_code: 2,
+            diagnostic_code: "usage",
+        }
+    }
+
+    const fn from_config(error: &ConfigValidateErrorV1) -> Self {
+        match error {
+            ConfigValidateErrorV1::Io(_) => Self {
+                exit_code: error.exit_code(),
+                diagnostic_code: "operational_failure",
+            },
+            ConfigValidateErrorV1::Unsupported(_) => Self {
+                exit_code: error.exit_code(),
+                diagnostic_code: "unsupported",
+            },
+            _ => Self {
+                exit_code: error.exit_code(),
+                diagnostic_code: "invalid_input",
+            },
+        }
+    }
+
+    pub(crate) const fn exit_code(self) -> i32 {
+        self.exit_code
+    }
+    pub(crate) const fn diagnostic_code(self) -> &'static str {
+        self.diagnostic_code
+    }
 }
 
 impl ComR480ExecutionErrorV1 {
@@ -140,6 +182,74 @@ pub(crate) fn execute_com_r480_argv_v1(
     request.calibration_noise = parsed.calibration_noise;
     let report = run_com_direct_for_integration_v1(&request).map_err(map_direct_error_v1)?;
     receipt_json_v1(&report)
+}
+
+/// Execute the existing Agent-COM config validator through the root CLI.
+/// The root consumes `com config`; this function consumes the original
+/// validator tail beginning with `validate` so no config semantics are added.
+pub(crate) fn execute_com_config_validate_argv_v1(
+    arguments: &[String],
+) -> Result<String, ComConfigExecutionErrorV1> {
+    let mut iterator = arguments.iter();
+    if iterator.next().map(String::as_str) != Some("validate") {
+        return Err(ComConfigExecutionErrorV1::argument());
+    }
+    let config = iterator
+        .next()
+        .ok_or_else(ComConfigExecutionErrorV1::argument)?;
+    let mut request = ConfigValidateRequestV1 {
+        config: PathBuf::from(config),
+        profile: "r480".to_owned(),
+        reader: None,
+        fix_ids: Vec::new(),
+        overrides: Vec::new(),
+        json: false,
+        materialized_json: false,
+    };
+    while let Some(option) = iterator.next() {
+        match option.as_str() {
+            "--override" => request.overrides.push(
+                iterator
+                    .next()
+                    .ok_or_else(ComConfigExecutionErrorV1::argument)?
+                    .clone(),
+            ),
+            "--profile" => {
+                request.profile = iterator
+                    .next()
+                    .ok_or_else(ComConfigExecutionErrorV1::argument)?
+                    .clone()
+            }
+            "--reader" => {
+                request.reader = Some(
+                    iterator
+                        .next()
+                        .ok_or_else(ComConfigExecutionErrorV1::argument)?
+                        .clone(),
+                )
+            }
+            "--fix-id" => request.fix_ids.push(
+                iterator
+                    .next()
+                    .ok_or_else(ComConfigExecutionErrorV1::argument)?
+                    .clone(),
+            ),
+            "--json" => request.json = true,
+            "--materialized-json" => request.materialized_json = true,
+            _ => return Err(ComConfigExecutionErrorV1::argument()),
+        }
+    }
+    let report = config_validate_v1(&request)
+        .map_err(|error| ComConfigExecutionErrorV1::from_config(&error))?;
+    Ok(if request.json || request.materialized_json {
+        report.to_json()
+    } else {
+        report
+            .value()
+            .get("text")
+            .and_then(serde_json::Value::as_str)
+            .map_or_else(|| report.to_json(), ToOwned::to_owned)
+    })
 }
 
 fn map_direct_error_v1(error: DirectRunErrorV1) -> ComR480ExecutionErrorV1 {
@@ -281,6 +391,21 @@ mod tests {
             args(&["--config", "a.xlsx", "--thru", "thru.s4p", "--output-dir"]),
         ] {
             assert!(parse_com_r480_argv_v1(&values).is_err());
+        }
+    }
+
+    #[test]
+    fn root_config_validate_tail_reuses_the_existing_option_surface() {
+        for values in [
+            args(&["validate"]),
+            args(&["validate", "config.xlsx", "--unknown"]),
+            args(&["validate", "config.xlsx", "--profile"]),
+            args(&["other", "config.xlsx"]),
+        ] {
+            assert_eq!(
+                execute_com_config_validate_argv_v1(&values),
+                Err(ComConfigExecutionErrorV1::argument())
+            );
         }
     }
 

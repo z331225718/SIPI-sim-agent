@@ -235,6 +235,13 @@ const COM_R480_ARGV_BINDINGS: &[CallerBindingV1] = &[
     },
 ];
 
+#[cfg(feature = "com-direct-integration")]
+const COM_CONFIG_VALIDATE_ARGV_BINDINGS: &[CallerBindingV1] = &[CallerBindingV1 {
+    pointer: "/argv/config",
+    role: "caller_owned_local_workbook_or_json_config",
+    explicit_required: true,
+}];
+
 const PRBS9_METRIC_ARTIFACT_BINDINGS: &[CallerBindingV1] = &[
     CallerBindingV1 {
         pointer: "/invocation/artifact_root",
@@ -722,6 +729,17 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         response_schema: None,
         unavailable_reason: Some("com_profile_not_admitted"),
         nonclaim: "no_com_solver_or_oracle_workflow",
+    },
+    #[cfg(feature = "com-direct-integration")]
+    CommandDescriptorV1 {
+        id: "com.config.validate",
+        route: &["com", "config", "validate"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_r480_v1",
+        request_schema: Some("sipi.com.r480.config-validate.argv.v1"),
+        response_schema: Some("sipi.agent-com.config-validate.v1"),
+        unavailable_reason: None,
+        nonclaim: "r480_config_validation_only_no_execution_or_oracle_acceptance",
     },
     CommandDescriptorV1 {
         id: "com.run-artifact",
@@ -1212,6 +1230,16 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "single_path_free_typed_receipt_stdout_and_zero_stderr_on_success",
+    },
+    #[cfg(feature = "com-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "com.config.validate",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: COM_CONFIG_VALIDATE_ARGV_BINDINGS,
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_existing_validator_payload",
     },
     CommandProtocolProfileV1 {
         command_id: "upstream.agent-spice.fit-sparam",
@@ -3640,7 +3668,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
     );
     #[cfg(feature = "com-direct-integration")]
     {
-        standard_handler || matches!(route, ["com", "run"])
+        standard_handler || matches!(route, ["com", "run"] | ["com", "config", "validate"])
     }
     #[cfg(not(feature = "com-direct-integration"))]
     {
@@ -4008,6 +4036,17 @@ impl CommandService {
                         error_value.exit_code(),
                         error_value.diagnostic_code(),
                         "bounded COM argv route failed",
+                    ),
+                }
+            }
+            #[cfg(feature = "com-direct-integration")]
+            [command, config, tail @ ..] if command == "com" && config == "config" => {
+                match com_direct_cli_contract_v1::execute_com_config_validate_argv_v1(tail) {
+                    Ok(payload) => success(payload),
+                    Err(error_value) => error(
+                        error_value.exit_code(),
+                        error_value.diagnostic_code(),
+                        "bounded COM config validator failed",
                     ),
                 }
             }
