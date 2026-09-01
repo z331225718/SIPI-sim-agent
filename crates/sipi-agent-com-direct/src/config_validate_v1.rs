@@ -272,8 +272,8 @@ pub fn config_validate_v1(
     });
 
     if request.materialized_json {
-        let parameters_json = json_map(&materialized.parameters);
-        let options_json = json_map(&materialized.options);
+        let parameters_json = json_map(&materialized.parameters, &materialized.integer_parameters);
+        let options_json = json_map(&materialized.options, &materialized.integer_options);
         let fingerprint = materialized_fingerprint(
             &parameters_json,
             &options_json,
@@ -296,10 +296,12 @@ pub fn config_validate_v1(
                 },
                 "warnings": package.warnings,
                 "config_consumption": consumption_report(
-                    &materialized.parameters,
-                    &materialized.options,
+                    &materialized,
                     &registry,
-                ),
+                    &schema,
+                    &main_rows,
+                    &overrides,
+                )?,
             }),
             txffe_decimal_colon_lexemes,
         });
@@ -1619,10 +1621,13 @@ fn canonicalize_override_keys(
     Ok(canonical)
 }
 
-fn json_map(values: &BTreeMap<String, ResolvedDefaultV1>) -> Value {
+fn json_map(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    integer_keys: &BTreeSet<String>,
+) -> Value {
     let object = values
         .iter()
-        .map(|(key, value)| (key.clone(), json_value_for_key(key, value)))
+        .map(|(key, value)| (key.clone(), json_consumption_value(key, value, integer_keys)))
         .collect::<serde_json::Map<_, _>>();
     Value::Object(object)
 }
@@ -1639,6 +1644,26 @@ fn json_value_for_key(key: &str, value: &ResolvedDefaultV1) -> Value {
         );
     }
     json_value(value)
+}
+
+/// Python's consumption report serializes source integer cells as JSON
+/// integers even though the separately materialized artifact deliberately
+/// normalizes all numerical values through its fingerprint writer.
+fn json_consumption_value(
+    key: &str,
+    value: &ResolvedDefaultV1,
+    integer_keys: &BTreeSet<String>,
+) -> Value {
+    if integer_keys.contains(key)
+        && let ResolvedDefaultV1::Scalar(number) = value
+        && number.is_finite()
+        && number.fract() == 0.0
+        && *number >= i64::MIN as f64
+        && *number <= i64::MAX as f64
+    {
+        return json!(*number as i64);
+    }
+    json_value_for_key(key, value)
 }
 
 fn json_value(value: &ResolvedDefaultV1) -> Value {
@@ -2004,10 +2029,14 @@ fn decimal_from_digits(digits: &str, exponent: i32) -> String {
 }
 
 fn consumption_report(
-    parameters: &BTreeMap<String, ResolvedDefaultV1>,
-    options: &BTreeMap<String, ResolvedDefaultV1>,
+    materialized: &MaterializedV1,
     registry: &ConsumptionRegistry,
-) -> Value {
+    schema: &SchemaDocument,
+    rows: &[Vec<sipi_com::RawCellV1>],
+    overrides: &BTreeMap<String, String>,
+) -> Result<Value, ConfigValidateErrorV1> {
+    let parameters = &materialized.parameters;
+    let options = &materialized.options;
     let buckets = [
         (
             "implemented",
@@ -2035,8 +2064,8 @@ fn consumption_report(
         result.insert(
             status.to_owned(),
             json!({
-                "parameters": select_values(parameters, parameter_names),
-                "options": select_values(options, option_names),
+                "parameters": select_values(parameters, parameter_names, &materialized.integer_parameters),
+                "options": select_values(options, option_names, &materialized.integer_options),
             }),
         );
     }
@@ -2051,8 +2080,8 @@ fn consumption_report(
     result.insert(
         "unverified".to_owned(),
         json!({
-            "parameters": select_unverified(parameters, &classified_parameters),
-            "options": select_unverified(options, &classified_options),
+            "parameters": select_unverified(parameters, &classified_parameters, &materialized.integer_parameters),
+            "options": select_unverified(options, &classified_options, &materialized.integer_options),
         }),
     );
     let mut status_counts = serde_json::Map::new();
@@ -2091,16 +2120,65 @@ fn consumption_report(
             "status_counts": status_counts,
         }),
     );
-    Value::Object(result)
+    let unverified = result
+        .get("unverified")
+        .cloned()
+        .expect("unverified bucket");
+    result.insert(
+        "source_field_trace".to_owned(),
+        source_field_trace(
+            parameters,
+            options,
+            &materialized.integer_parameters,
+            &materialized.integer_options,
+            registry,
+            schema,
+            rows,
+            overrides,
+        )?,
+    );
+    let defaults = source_order_default_consumption(parameters, options, schema, rows)?;
+    if !defaults.is_empty() {
+        result.insert(
+            "source_order_default_consumption".to_owned(),
+            Value::Array(defaults),
+        );
+    }
+    let provenance = materialization_provenance(
+        parameters,
+        &materialized.integer_parameters,
+        rows,
+        overrides,
+    )?;
+    if !provenance.is_empty() {
+        result.insert(
+            "materialization_provenance".to_owned(),
+            Value::Array(provenance),
+        );
+    }
+    result.insert(
+        "unverified_mutability".to_owned(),
+        unverified_mutability(&unverified),
+    );
+    Ok(Value::Object(result))
 }
 
-fn select_values(values: &BTreeMap<String, ResolvedDefaultV1>, names: &[String]) -> Value {
+fn select_values(
+    values: &BTreeMap<String, ResolvedDefaultV1>,
+    names: &[String],
+    integer_keys: &BTreeSet<String>,
+) -> Value {
     let name_set: BTreeSet<&str> = names.iter().map(String::as_str).collect();
     Value::Object(
         values
             .iter()
             .filter(|(key, _)| name_set.contains(key.as_str()))
-            .map(|(key, value)| (key.clone(), json_value_for_key(key, value)))
+            .map(|(key, value)| {
+                (
+                    key.clone(),
+                    json_consumption_value(key, value, integer_keys),
+                )
+            })
             .collect(),
     )
 }
@@ -2108,14 +2186,419 @@ fn select_values(values: &BTreeMap<String, ResolvedDefaultV1>, names: &[String])
 fn select_unverified(
     values: &BTreeMap<String, ResolvedDefaultV1>,
     classified: &BTreeSet<&str>,
+    integer_keys: &BTreeSet<String>,
 ) -> Value {
     Value::Object(
         values
             .iter()
             .filter(|(key, _)| !classified.contains(key.as_str()))
-            .map(|(key, value)| (key.clone(), json_value_for_key(key, value)))
+            .map(|(key, value)| {
+                (
+                    key.clone(),
+                    json_consumption_value(key, value, integer_keys),
+                )
+            })
             .collect(),
     )
+}
+
+/// Direct port of Agent-COM's config-consumption provenance, emitted by the
+/// public `config validate --materialized-json` artifact.  This is static
+/// materialization evidence, not a claim that a later COM runtime read any
+/// particular field.
+#[allow(clippy::too_many_arguments)]
+fn source_field_trace(
+    parameters: &BTreeMap<String, ResolvedDefaultV1>,
+    options: &BTreeMap<String, ResolvedDefaultV1>,
+    integer_parameters: &BTreeSet<String>,
+    integer_options: &BTreeSet<String>,
+    registry: &ConsumptionRegistry,
+    schema: &SchemaDocument,
+    rows: &[Vec<sipi_com::RawCellV1>],
+    overrides: &BTreeMap<String, String>,
+) -> Result<Value, ConfigValidateErrorV1> {
+    let mut trace = Vec::new();
+    for (key_cell, value_cell) in source_setting_cells(rows) {
+        let CellValueV1::String(key) = key_cell.value() else {
+            continue;
+        };
+        let Some(entry) = schema
+            .parameters
+            .iter()
+            .find(|entry| entry.key.eq_ignore_ascii_case(key))
+        else {
+            continue;
+        };
+        let override_value = overrides.get(&entry.key);
+        let mut targets = Vec::new();
+        for call in &entry.calls {
+            let Some(target) = call.target.as_deref() else {
+                continue;
+            };
+            let Some((kind, name)) = trace_target(target) else {
+                continue;
+            };
+            let (values, integer_keys) = if kind == "options" {
+                (options, integer_options)
+            } else {
+                (parameters, integer_parameters)
+            };
+            let effective_value = values
+                .get(name)
+                .map(|value| json_consumption_value(name, value, integer_keys));
+            targets.push(json!({
+                "target_field": target,
+                "kind": kind,
+                "name": name,
+                "global_status": configuration_field_status(registry, kind, name),
+                "source_line": call.source_line,
+                "effective_value": effective_value,
+                "observation": "not_observed",
+            }));
+        }
+        trace.push(json!({
+            "scope": "main",
+            "source_key": key,
+            "key_cell": key_cell.coordinate(),
+            "value_cell": value_cell.coordinate(),
+            "raw_value": cell_json_value(value_cell.value()),
+            "formula": key_cell.formula().or(value_cell.formula()),
+            "effective_source": if override_value.is_some() { "api_override" } else { "xlsx" },
+            "override_value": override_value.map(|value| json!(value)),
+            "targets": targets,
+        }));
+    }
+    Ok(Value::Array(trace))
+}
+
+fn source_order_default_consumption(
+    parameters: &BTreeMap<String, ResolvedDefaultV1>,
+    options: &BTreeMap<String, ResolvedDefaultV1>,
+    schema: &SchemaDocument,
+    rows: &[Vec<sipi_com::RawCellV1>],
+) -> Result<Vec<Value>, ConfigValidateErrorV1> {
+    let mut dependencies = Vec::new();
+    let mut seen = BTreeSet::new();
+    for entry in &schema.parameters {
+        for call in &entry.calls {
+            let (Some(default), Some(target)) =
+                (call.default_expression.as_deref(), call.target.as_deref())
+            else {
+                continue;
+            };
+            let Some((target_kind, target_name)) = trace_target(target) else {
+                continue;
+            };
+            if matches!(lookup_value(rows, &call.key)?, LookupValueV1::Present(_)) {
+                continue;
+            }
+            let target_values = if target_kind == "options" {
+                options
+            } else {
+                parameters
+            };
+            if !target_values.contains_key(target_name) {
+                continue;
+            }
+            for source_field in default_field_references(default) {
+                let Some((kind, name)) = trace_target(&source_field) else {
+                    continue;
+                };
+                let source_values = if kind == "options" {
+                    options
+                } else {
+                    parameters
+                };
+                if !source_values.contains_key(name) {
+                    continue;
+                }
+                let identity = (source_field.clone(), target.to_owned(), default.to_owned());
+                if seen.insert(identity) {
+                    dependencies.push(json!({
+                        "source_field": source_field,
+                        "target_field": target,
+                        "default_expression": default,
+                        "source_line": call.source_line,
+                        "behavior": "source_order_default",
+                    }));
+                }
+            }
+        }
+    }
+    Ok(dependencies)
+}
+
+#[allow(clippy::type_complexity)]
+fn materialization_provenance(
+    parameters: &BTreeMap<String, ResolvedDefaultV1>,
+    integer_parameters: &BTreeSet<String>,
+    rows: &[Vec<sipi_com::RawCellV1>],
+    overrides: &BTreeMap<String, String>,
+) -> Result<Vec<Value>, ConfigValidateErrorV1> {
+    const RULES: &[(&str, &str, &[&str], &[u64], Option<&str>)] = &[
+        ("ui", "r480.core.ui", &["param.fb"], &[224], None),
+        (
+            "sample_dt",
+            "r480.core.sample_dt",
+            &["param.ui", "param.samples_per_ui"],
+            &[225],
+            None,
+        ),
+        (
+            "fb_BT_cutoff",
+            "r480.core.fb_bt_cutoff",
+            &["param.f_r"],
+            &[227, 228],
+            Some("XLSX.TDR_f_BT_3db"),
+        ),
+        (
+            "fb_BW_cutoff",
+            "r480.core.fb_bw_cutoff",
+            &["param.f_r"],
+            &[228],
+            None,
+        ),
+        (
+            "RxFFE_cmx",
+            "r480.rxffe.precursor_alias",
+            &["param.ffe_pre_tap_len"],
+            &[8852, 8853],
+            None,
+        ),
+        (
+            "RxFFE_cpx",
+            "r480.rxffe.postcursor_alias",
+            &["param.ffe_post_tap_len"],
+            &[8854, 8855],
+            None,
+        ),
+        (
+            "RxFFE_stepz",
+            "r480.rxffe.tap_step_alias",
+            &["param.ffe_tap_step_size"],
+            &[8856, 8857],
+            None,
+        ),
+    ];
+    let mut provenance = Vec::new();
+    for (name, rule_id, inputs, source_lines, overwritten) in RULES {
+        let Some(value) = parameters.get(*name) else {
+            continue;
+        };
+        let mut entry = serde_json::Map::new();
+        entry.insert("target_field".to_owned(), json!(format!("param.{name}")));
+        entry.insert("kind".to_owned(), json!("derived"));
+        entry.insert("behavior".to_owned(), json!("materialization_derivation"));
+        entry.insert("rule_id".to_owned(), json!(rule_id));
+        entry.insert("inputs".to_owned(), json!(inputs));
+        entry.insert("source_lines".to_owned(), json!(source_lines));
+        entry.insert(
+            "effective_value".to_owned(),
+            json_consumption_value(name, value, integer_parameters),
+        );
+        if let Some(source_field) = overwritten {
+            let source_key = source_field.trim_start_matches("XLSX.");
+            if let Some(cell) = lookup_source_cell(rows, source_key)? {
+                entry.insert("overrides_source_field".to_owned(), json!(source_field));
+                entry.insert(
+                    "overridden_source_value".to_owned(),
+                    overrides
+                        .get(source_key)
+                        .map(|value| json!(value))
+                        .unwrap_or_else(|| cell_json_value(cell.value())),
+                );
+            }
+        }
+        provenance.push(Value::Object(entry));
+    }
+    Ok(provenance)
+}
+
+fn unverified_mutability(unverified: &Value) -> Value {
+    const DERIVED: &[(&str, &str, &[&str], &[u64])] = &[
+        ("ui", "r480.core.ui", &["param.fb"], &[224]),
+        (
+            "sample_dt",
+            "r480.core.sample_dt",
+            &["param.ui", "param.samples_per_ui"],
+            &[225],
+        ),
+        (
+            "fb_BT_cutoff",
+            "r480.core.fb_bt_cutoff",
+            &["param.f_r"],
+            &[227, 228],
+        ),
+        (
+            "fb_BW_cutoff",
+            "r480.core.fb_bw_cutoff",
+            &["param.f_r"],
+            &[228],
+        ),
+        (
+            "RxFFE_cmx",
+            "r480.rxffe.precursor_alias",
+            &["param.ffe_pre_tap_len"],
+            &[8852, 8853],
+        ),
+        (
+            "RxFFE_cpx",
+            "r480.rxffe.postcursor_alias",
+            &["param.ffe_post_tap_len"],
+            &[8854, 8855],
+        ),
+        (
+            "RxFFE_stepz",
+            "r480.rxffe.tap_step_alias",
+            &["param.ffe_tap_step_size"],
+            &[8856, 8857],
+        ),
+    ];
+    let derived: BTreeMap<&str, (&str, &[&str], &[u64])> = DERIVED
+        .iter()
+        .map(|(name, rule, inputs, lines)| (*name, (*rule, *inputs, *lines)))
+        .collect();
+    let mut fields = serde_json::Map::new();
+    let mut configurable = 0usize;
+    let mut internal = 0usize;
+    for kind in ["parameters", "options"] {
+        let mut entries = serde_json::Map::new();
+        let names = unverified
+            .get(kind)
+            .and_then(Value::as_object)
+            .map(|values| values.keys().cloned().collect::<Vec<_>>())
+            .unwrap_or_default();
+        for name in names {
+            if kind == "parameters"
+                && let Some((rule, inputs, lines)) = derived.get(name.as_str())
+            {
+                entries.insert(name, json!({"mutability":"internal_derived","rule_id":rule,"inputs":inputs,"source_lines":lines}));
+                internal += 1;
+            } else {
+                entries.insert(name, json!({"mutability":"xlsx_configurable"}));
+                configurable += 1;
+            }
+        }
+        fields.insert(kind.to_owned(), Value::Object(entries));
+    }
+    json!({"fields": fields, "summary": {"xlsx_configurable": configurable, "internal_derived": internal, "total": configurable + internal}})
+}
+
+fn source_setting_cells(
+    rows: &[Vec<sipi_com::RawCellV1>],
+) -> impl Iterator<Item = (&sipi_com::RawCellV1, &sipi_com::RawCellV1)> {
+    rows.iter().flat_map(|row| {
+        [0usize, 9usize].into_iter().filter_map(move |column| {
+            let (key, value) = (row.get(column)?, row.get(column + 1)?);
+            let CellValueV1::String(name) = key.value() else {
+                return None;
+            };
+            if name.trim().is_empty()
+                || matches!(name.as_str(), ".START" | ".END" | "Parameter")
+                || matches!(value.value(), CellValueV1::None)
+            {
+                return None;
+            }
+            Some((key, value))
+        })
+    })
+}
+
+fn trace_target(target: &str) -> Option<(&'static str, &str)> {
+    if let Some(name) = target.strip_prefix("param.") {
+        return valid_trace_name(name).then_some(("parameters", name));
+    }
+    if let Some(name) = target.strip_prefix("OP.") {
+        return valid_trace_name(name).then_some(("options", name));
+    }
+    None
+}
+
+fn valid_trace_name(name: &str) -> bool {
+    name.as_bytes().first().is_some_and(u8::is_ascii_alphabetic)
+        && name
+            .as_bytes()
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
+}
+
+fn configuration_field_status(
+    registry: &ConsumptionRegistry,
+    kind: &str,
+    name: &str,
+) -> &'static str {
+    let groups = if kind == "parameters" {
+        [
+            (&registry.implemented_parameters, "implemented"),
+            (&registry.report_only_parameters, "report_only"),
+            (&registry.unimplemented_parameters, "unimplemented"),
+            (&registry.obsolete_parameters, "obsolete"),
+        ]
+    } else {
+        [
+            (&registry.implemented_options, "implemented"),
+            (&registry.report_only_options, "report_only"),
+            (&registry.unimplemented_options, "unimplemented"),
+            (&registry.obsolete_options, "obsolete"),
+        ]
+    };
+    groups
+        .into_iter()
+        .find_map(|(names, status)| {
+            names
+                .iter()
+                .any(|candidate| candidate == name)
+                .then_some(status)
+        })
+        .unwrap_or("unverified")
+}
+
+fn default_field_references(expression: &str) -> Vec<String> {
+    let bytes = expression.as_bytes();
+    let mut references = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        let suffix = &expression[index..];
+        let Some((prefix, offset)) = [("param.", 0usize), ("OP.", 0usize)]
+            .iter()
+            .filter_map(|(prefix, offset)| {
+                suffix.find(prefix).map(|found| (*prefix, found + offset))
+            })
+            .min_by_key(|(_, position)| *position)
+        else {
+            break;
+        };
+        let start = index + offset;
+        let name_start = start + prefix.len();
+        let name_end = expression[name_start..]
+            .char_indices()
+            .find_map(|(position, character)| {
+                (!(character.is_ascii_alphanumeric() || character == '_'))
+                    .then_some(name_start + position)
+            })
+            .unwrap_or(expression.len());
+        let target = &expression[start..name_end];
+        if trace_target(target).is_some() {
+            references.push(target.to_owned());
+        }
+        index = name_end.max(start + 1);
+    }
+    references
+}
+
+fn cell_json_value(value: &CellValueV1) -> Value {
+    match value {
+        CellValueV1::None => Value::Null,
+        CellValueV1::Integer(value) => json!(value),
+        CellValueV1::Number(value) => json!(value),
+        CellValueV1::Bool(value) => json!(value),
+        CellValueV1::String(value) => json!(value),
+        CellValueV1::Array { dims, data } if dims.len() == 2 => {
+            let columns = dims[1] as usize;
+            Value::Array(data.chunks(columns).map(|row| json!(row)).collect())
+        }
+        CellValueV1::Array { data, .. } => json!(data),
+    }
 }
 
 fn load_settings(path: &Path) -> Result<ComSettingsV1, ConfigValidateErrorV1> {
@@ -2796,6 +3279,17 @@ mod tests {
     }
 
     #[test]
+    fn public_materialized_projection_preserves_source_scalar_origins() {
+        let parameters = BTreeMap::from([
+            ("count".to_owned(), ResolvedDefaultV1::Scalar(2.0)),
+            ("ratio".to_owned(), ResolvedDefaultV1::Scalar(2.0)),
+        ]);
+        let projected = json_map(&parameters, &BTreeSet::from(["count".to_owned()]));
+        assert_eq!(projected["count"], json!(2));
+        assert_eq!(projected["ratio"], json!(2.0));
+    }
+
+    #[test]
     fn fingerprint_writer_enforces_single_cumulative_and_unicode_byte_limits() {
         let empty = BTreeSet::new();
         let large = json!({"payload": "x".repeat(64)});
@@ -2892,7 +3386,7 @@ mod tests {
         for key in ["ui", "sample_dt", "sigma_X", "fb_BW_cutoff"] {
             assert!(!integer_parameters.contains(key), "{key} must be float");
         }
-        let parameters_json = json_map(&parameters);
+        let parameters_json = json_map(&parameters, &integer_parameters);
         let options_json = json!({});
         assert_eq!(
             parameters_json.get("fb_BT_cutoff"),
@@ -2931,16 +3425,16 @@ mod tests {
             ("SNR_TX", "[32.5 32.5]"),
             ("TDR_f_BT_3db", "1"),
         ]);
-        let request = request(path.clone());
-        let profile = request.validate().expect("profile");
+        let config_request = request(path.clone());
+        let profile = config_request.validate().expect("profile");
         let schema = load_schema().expect("schema");
         let settings = load_settings(&path).expect("xlsx settings");
         let (rows, packages, _) = split_packages(&settings, &profile).expect("package split");
         let materialized = materialize_r480(&schema, &rows, &packages, &BTreeMap::new(), &profile)
             .expect("materialize");
         assert!(!materialized.integer_parameters.contains("fb_BT_cutoff"));
-        let parameters_json = json_map(&materialized.parameters);
-        let options_json = json_map(&materialized.options);
+        let parameters_json = json_map(&materialized.parameters, &materialized.integer_parameters);
+        let options_json = json_map(&materialized.options, &materialized.integer_options);
         assert_eq!(
             parameters_json.get("fb_BT_cutoff"),
             Some(&json!(1.892148_f64))
@@ -2953,6 +3447,15 @@ mod tests {
         )
         .expect("materialized digest");
         assert_eq!(digest.len(), 64);
+        let mut materialized_request = request(path.clone());
+        materialized_request.json = false;
+        materialized_request.materialized_json = true;
+        let report = config_validate_v1(&materialized_request).expect("materialized report");
+        let consumption = &report.value()["config_consumption"];
+        assert!(consumption["source_field_trace"].is_array());
+        assert!(consumption["source_order_default_consumption"].is_array());
+        assert!(consumption["materialization_provenance"].is_array());
+        assert!(consumption["unverified_mutability"].is_object());
         fs::remove_file(path).expect("cleanup");
     }
 

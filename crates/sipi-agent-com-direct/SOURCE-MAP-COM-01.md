@@ -12,7 +12,7 @@ runtime itself is not executed here.
 | src/agent_com/config/materialize.py | source-order assignments, defaults, derived values, package case selection | ported for schema-reachable config-validate path; selected-package full oracle fixture open |
 | src/agent_com/config/derived.py | DFE/core/package shape derivations | ported in direct module |
 | src/agent_com/config/literals.py | MATLAB scalar/vector/matrix literals and default expressions | reused through sipi-com parser plus direct special cases |
-| src/agent_com/config/consumption.py | implemented/report-only/unimplemented/obsolete/unverified field registry | derived registry consumed in Rust; full runtime trace sections open |
+| src/agent_com/config/consumption.py | materialized field-status, source-field trace, source-order defaults, derivation provenance, and unverified-mutability report | ported for the public config-validate artifact; post-run runtime-read augmentation remains COM-02 scope |
 | schemas/behavior-presets.yaml | preset/fix-id catalog | exact MIT blob quarantined and parsed |
 | schemas/r480-config.schema.yaml | complete r4.80 call/default catalog | exact MIT blob quarantined and parsed |
 | src/agent_com/capabilities.py | materialized fingerprint boundary | ported: canonical key ordering, Python scalar int/float spelling, special-float tags, compact JSON string escaping, and float exponent formatting |
@@ -25,7 +25,9 @@ owner inputs and are never copied into this repository.
 
 The direct module does not use a surface-only classifier as its materializer.
 It executes the embedded schema calls, scales values, resolves defaults,
-applies package and core derivations, and builds the consumption report.
+applies package and core derivations, and builds the public static consumption
+report, including source-cell-to-target provenance. Runtime-read augmentation
+only exists after a COM execution and therefore remains outside COM-01.
 Allocation-driving counts, input/output numeric-element totals, file/cell
 sizes, and array dimensions are bounded in the Rust trust boundary. Override
 keys are canonicalized to concrete schema calls so a case-insensitive match
