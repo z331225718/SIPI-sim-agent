@@ -983,6 +983,14 @@ FD-to-TD impulse。
   successor，不是 row close、product promotion 或 release approval。
   This is not row close, product promotion, or release approval.
 
+**2026-09-01 COM-02/04 current-candidate V6：** 保留上述 v5 为历史观察，新增
+`b1cc5884` clean candidate 对 `5272ffe` Agent-COM 的两次 fresh archive replay。
+在两个 `AC_CM_RMS` 控制向量和两个 package case 的共同公开标量面上，V6 记录
+`scoped_numeric_parity_observed`（阈值 `1e-9`）；双方已观察到 DFE 发布。上游
+public `RunResult` 不公开 Port Order，因此该字段为 `not_exposed_by_upstream`，
+不得据此制造 mismatch。V6 verifier/mutation gate 已绑定报告和 aggregate；它仍
+不是完整结果图、泛化 COM、row close、产品 promotion 或 release claim。
+
 ### 20.1 v12 verification marker
 
 `2026-08-27 v12 upstream-first successor` 是 v12 verifier 的 PLAN marker；
