@@ -1432,6 +1432,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sipi-agent-spice-direct"
+version = "0.1.0"
+dependencies = [
+ "faer",
+ "num-complex",
+ "same-file",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "sipi-channel",
+ "sipi-types",
+]
+
+[[package]]
 name = "sipi-ami-host"
 version = "0.1.0"
 dependencies = [
@@ -1484,11 +1498,13 @@ dependencies = [
 name = "sipi-cli"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "sha2",
  "sipi-agent-com-adapter",
  "sipi-agent-com-direct",
  "sipi-agent-spice-adapter",
+ "sipi-agent-spice-direct",
  "sipi-artifacts",
  "sipi-channel",
  "sipi-com",

@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "agent-spice-direct-integration")]
+mod agent_spice_direct_cli;
 #[cfg(feature = "com-direct-integration")]
 mod com_direct_cli_contract_v1;
 #[cfg(feature = "com-direct-integration")]
@@ -776,6 +778,39 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         unavailable_reason: None,
         nonclaim: "product_owned_bounded_artifact_execution_non_oracle_only",
     },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandDescriptorV1 {
+        id: "agent-spice.tune-yparam-tran",
+        route: &["agent-spice", "tune-yparam-tran"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.agent-spice.direct-cli-argv.v1"),
+        response_schema: Some(agent_spice_direct_cli::AGENT_SPICE_DIRECT_RECEIPT_SCHEMA_V1),
+        unavailable_reason: None,
+        nonclaim: "quarantined_direct_port_external_hspice_no_oracle_acceptance_or_release",
+    },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandDescriptorV1 {
+        id: "agent-spice.run-hspice",
+        route: &["agent-spice", "run-hspice"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.agent-spice.direct-cli-argv.v1"),
+        response_schema: Some(agent_spice_direct_cli::AGENT_SPICE_DIRECT_RECEIPT_SCHEMA_V1),
+        unavailable_reason: None,
+        nonclaim: "quarantined_direct_port_external_solver_no_numeric_parity_or_release",
+    },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandDescriptorV1 {
+        id: "agent-spice.run-rfm",
+        route: &["agent-spice", "run-rfm"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.agent-spice.direct-cli-argv.v1"),
+        response_schema: Some(agent_spice_direct_cli::AGENT_SPICE_DIRECT_RECEIPT_SCHEMA_V1),
+        unavailable_reason: None,
+        nonclaim: "quarantined_direct_port_scoped_external_observation_no_solver_correctness_or_release",
+    },
     CommandDescriptorV1 {
         id: "upstream.agent-spice.fit-sparam",
         route: &["upstream", "agent-spice", "fit-sparam"],
@@ -1275,6 +1310,36 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "root_json_envelope_with_bounded_direct_compare_payload",
+    },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "agent-spice.tune-yparam-tran",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_path_free_typed_direct_receipt",
+    },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "agent-spice.run-hspice",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_path_free_typed_direct_receipt",
+    },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "agent-spice.run-rfm",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_path_free_typed_direct_receipt",
     },
     CommandProtocolProfileV1 {
         command_id: "upstream.agent-spice.fit-yparam",
@@ -3578,7 +3643,11 @@ fn command_manifest_is_valid(manifest: &[CommandDescriptorV1]) -> bool {
             })
             && matches!(
                 descriptor.transport,
-                "none" | "stdin_json_v1" | "external_migration_adapter" | "argv_r480_v1"
+                "none"
+                    | "stdin_json_v1"
+                    | "external_migration_adapter"
+                    | "argv_r480_v1"
+                    | "argv_typed_v1"
             )
             && match descriptor.availability {
                 CommandAvailabilityV1::Available => {
@@ -3642,7 +3711,7 @@ fn command_protocol_profiles_are_valid(
 }
 
 fn available_route_has_handler(route: &[&str]) -> bool {
-    let standard_handler = matches!(
+    let has_handler = matches!(
         route,
         ["version"]
             | ["doctor"]
@@ -3685,18 +3754,26 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["upstream", "agent-com", "compare"]
             | ["upstream", "agent-com", "public-api"]
     );
+    if has_handler {
+        return true;
+    }
     #[cfg(feature = "com-direct-integration")]
-    {
-        standard_handler
-            || matches!(
-                route,
-                ["com", "run"] | ["com", "config", "validate"] | ["com", "compare"]
-            )
+    if matches!(
+        route,
+        ["com", "run"] | ["com", "config", "validate"] | ["com", "compare"]
+    ) {
+        return true;
     }
-    #[cfg(not(feature = "com-direct-integration"))]
-    {
-        standard_handler
+    #[cfg(feature = "agent-spice-direct-integration")]
+    if matches!(
+        route,
+        ["agent-spice", "tune-yparam-tran"]
+            | ["agent-spice", "run-hspice"]
+            | ["agent-spice", "run-rfm"]
+    ) {
+        return true;
     }
+    false
 }
 
 fn is_stdin_transport(transport: &str) -> bool {
@@ -4081,6 +4158,26 @@ impl CommandService {
                         error_value.exit_code(),
                         error_value.diagnostic_code(),
                         "bounded COM comparison failed",
+                    ),
+                }
+            }
+            #[cfg(feature = "agent-spice-direct-integration")]
+            [command, action, tail @ ..]
+                if command == "agent-spice"
+                    && matches!(
+                        action.as_str(),
+                        "tune-yparam-tran" | "run-hspice" | "run-rfm"
+                    ) =>
+            {
+                let mut direct_arguments = Vec::with_capacity(tail.len().saturating_add(1));
+                direct_arguments.push(action.clone());
+                direct_arguments.extend(tail.iter().cloned());
+                match agent_spice_direct_cli::execute_agent_spice_direct_json(&direct_arguments) {
+                    Ok(receipt) => success(receipt),
+                    Err(error_value) => error(
+                        error_value.exit_code(),
+                        error_value.diagnostic_code(),
+                        "bounded Agent-Spice direct route failed",
                     ),
                 }
             }
@@ -4607,6 +4704,69 @@ mod tests {
             nonclaim: "test",
         }];
         assert!(!command_manifest_is_valid(&unavailable_with_handler));
+    }
+
+    #[cfg(feature = "agent-spice-direct-integration")]
+    #[test]
+    fn agent_spice_direct_routes_are_feature_gated_and_fail_closed() {
+        assert!(command_manifest_is_valid(COMMAND_MANIFEST_V1));
+        for id in [
+            "agent-spice.tune-yparam-tran",
+            "agent-spice.run-hspice",
+            "agent-spice.run-rfm",
+        ] {
+            let descriptor = COMMAND_MANIFEST_V1
+                .iter()
+                .find(|descriptor| descriptor.id == id)
+                .expect("feature-gated direct descriptor");
+            assert_eq!(descriptor.availability, CommandAvailabilityV1::Available);
+            assert_eq!(descriptor.transport, "argv_typed_v1");
+        }
+        assert_eq!(
+            dispatch(&args(&[
+                "agent-spice",
+                "run-hspice",
+                "deck.sp",
+                "--backend",
+                "xyce",
+                "--output-root",
+                "out",
+            ]))
+            .code,
+            4
+        );
+        assert_eq!(
+            dispatch(&args(&[
+                "agent-spice",
+                "run-rfm",
+                "deck.sp",
+                "--rfm",
+                "model.rfm",
+                "--output-root",
+                "out",
+                "--unknown",
+                "value",
+            ]))
+            .code,
+            2
+        );
+        // The historical compatibility route remains distinct and continues
+        // to require its pre-existing stdin protocol.
+        assert_eq!(
+            dispatch(&args(&["upstream", "agent-spice", "run-rfm"])).code,
+            64
+        );
+    }
+
+    #[cfg(not(feature = "agent-spice-direct-integration"))]
+    #[test]
+    fn agent_spice_direct_routes_are_absent_without_the_quarantine_feature() {
+        assert!(
+            COMMAND_MANIFEST_V1
+                .iter()
+                .all(|descriptor| !descriptor.id.starts_with("agent-spice."))
+        );
+        assert_eq!(dispatch(&args(&["agent-spice", "run-rfm"])).code, 64);
     }
 
     #[test]

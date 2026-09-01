@@ -7,8 +7,6 @@ rust-version = "1.97"
 publish = false
 description = "Lane-local Agent-Spice direct-port admission model."
 
-[workspace]
-
 [dependencies]
 faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
 num-complex = "0.4"
