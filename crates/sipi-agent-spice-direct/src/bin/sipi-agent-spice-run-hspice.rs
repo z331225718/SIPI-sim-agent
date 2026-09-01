@@ -16,7 +16,7 @@ fn main() -> ExitCode {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.iter().any(|value| value == "--help" || value == "-h") {
         println!(
-            "usage: sipi-agent-spice-run-hspice DECK --backend native|ngspice|xyce|xyce-xdm --output-root DIR [--execute] [--ngspice PATH --ngspice-sha256 SHA256]"
+            "usage: sipi-agent-spice-run-hspice DECK --backend native|ngspice --output-root DIR [--execute] [--ngspice PATH --ngspice-sha256 SHA256]"
         );
         return ExitCode::SUCCESS;
     }

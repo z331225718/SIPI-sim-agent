@@ -19,7 +19,7 @@ fn main() -> ExitCode {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.iter().any(|value| value == "--help" || value == "-h") {
         println!(
-            "usage: sipi-agent-spice-run-rfm DECK --rfm FILE --backend native|ngspice --output-root DIR [--execute] [--native-engine PATH --native-engine-sha256 SHA256 [--dotnet PATH --dotnet-sha256 SHA256]] [--ngspice PATH --ngspice-sha256 SHA256 --code-model PATH --code-model-sha256 SHA256]"
+            "usage: sipi-agent-spice-run-rfm DECK --rfm FILE [--backend native|ngspice] --output-root DIR [--execute] [--native-engine PATH --native-engine-sha256 SHA256 [--dotnet PATH --dotnet-sha256 SHA256]] [--ngspice PATH --ngspice-sha256 SHA256 --code-model PATH --code-model-sha256 SHA256]"
         );
         return ExitCode::SUCCESS;
     }
@@ -31,7 +31,9 @@ fn main() -> ExitCode {
         }
     };
     let mut rfm = None;
-    let mut backend = None;
+    // Match the pinned `run-rfm` dispatcher: native is the default branch,
+    // while actual execution still requires explicit caller custody below.
+    let mut backend = Some("native".to_owned());
     let mut output_root = None;
     let mut subckt = "rfm_direct".to_owned();
     let mut code_model = None;
@@ -88,7 +90,7 @@ fn main() -> ExitCode {
     let (rfm, backend, output_root) = match (rfm, backend, output_root) {
         (Some(rfm), Some(backend), Some(output_root)) => (rfm, backend, output_root),
         _ => {
-            eprintln!("--rfm, --backend, and --output-root are required");
+            eprintln!("--rfm and --output-root are required");
             return ExitCode::from(2);
         }
     };

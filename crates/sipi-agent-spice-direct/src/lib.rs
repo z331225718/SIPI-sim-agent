@@ -1274,7 +1274,12 @@ fn stage_case_dependencies_inner(
     Ok((staged, actions, unsupported))
 }
 
-/// The four backend selectors accepted by the pinned CLI.
+/// The two retained backend selectors supported by this direct port.
+///
+/// Xyce/XDM existed in the upstream project, but this lane deliberately does
+/// not retain those runtime branches.  Keeping the historical variants lets
+/// old serialized/request values be diagnosed by the admission boundary
+/// without making them executable capabilities.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Backend {
     Native,
@@ -1284,7 +1289,7 @@ pub enum Backend {
 }
 
 impl Backend {
-    pub const ALL: [Self; 4] = [Self::Native, Self::Ngspice, Self::Xyce, Self::XyceXdm];
+    pub const ALL: [Self; 2] = [Self::Native, Self::Ngspice];
 
     pub const fn name(self) -> &'static str {
         match self {
@@ -1299,8 +1304,6 @@ impl Backend {
         match value {
             "native" => Ok(Self::Native),
             "ngspice" => Ok(Self::Ngspice),
-            "xyce" => Ok(Self::Xyce),
-            "xyce-xdm" => Ok(Self::XyceXdm),
             other => Err(DirectPortError::UnsupportedBackend(other.to_owned())),
         }
     }
@@ -1556,6 +1559,11 @@ pub fn admit_run_hspice(
 ) -> Result<RunHspiceAdmission, DirectPortError> {
     if deck_stem.is_empty() {
         return Err(DirectPortError::EmptyDeckStem);
+    }
+    if matches!(request.backend, Backend::Xyce | Backend::XyceXdm) {
+        return Err(DirectPortError::UnsupportedBackend(
+            request.backend.name().to_owned(),
+        ));
     }
     let cases = split_alter_cases(deck_text, deck_stem);
     let prepared = cases
@@ -2542,36 +2550,90 @@ struct NgspiceWaveform {
     rows: Vec<Vec<f64>>,
 }
 
+#[derive(Debug)]
+struct NgspiceWaveformBlock {
+    columns: Vec<String>,
+    indices: Vec<u64>,
+    rows: Vec<Vec<f64>>,
+}
+
+fn canonical_waveform_key(value: &str) -> String {
+    let canonical = canonical_ascii_key(value);
+    if let Some(value) = canonical
+        .strip_prefix("i(")
+        .and_then(|value| value.strip_suffix(')'))
+    {
+        format!("{value}#branch")
+    } else {
+        canonical
+    }
+}
+
 fn parse_ngspice_waveform(text: &str) -> Result<Option<NgspiceWaveform>, DirectPortError> {
-    let mut columns: Option<Vec<String>> = None;
-    let mut rows = Vec::<Vec<f64>>::new();
-    let mut header_conflict = false;
+    let mut blocks = Vec::<NgspiceWaveformBlock>::new();
+    let mut current = None;
     for line in text.lines() {
         let fields = line.split_whitespace().collect::<Vec<_>>();
-        if fields.first() == Some(&"Index") && fields.len() >= 3 {
+        if fields
+            .first()
+            .is_some_and(|value| value.eq_ignore_ascii_case("index"))
+            && fields.len() >= 3
+        {
             let candidate = fields[1..]
                 .iter()
                 .map(|field| (*field).to_owned())
                 .collect::<Vec<_>>();
-            if columns.as_ref().is_none_or(|value| *value != candidate) {
-                if columns.is_some() {
-                    header_conflict = true;
-                    break;
-                } else {
-                    columns = Some(candidate);
+            if current
+                .as_ref()
+                .is_some_and(|block: &NgspiceWaveformBlock| {
+                    block.columns.len() != candidate.len()
+                        || block.columns.iter().zip(&candidate).any(|(left, right)| {
+                            canonical_ascii_key(left) != canonical_ascii_key(right)
+                        })
+                })
+            {
+                if let Some(block) = current.take()
+                    && !block.rows.is_empty()
+                {
+                    blocks.push(block);
                 }
+                current = Some(NgspiceWaveformBlock {
+                    columns: candidate,
+                    indices: Vec::new(),
+                    rows: Vec::new(),
+                });
+            } else if current.is_none() {
+                current = Some(NgspiceWaveformBlock {
+                    columns: candidate,
+                    indices: Vec::new(),
+                    rows: Vec::new(),
+                });
             }
             continue;
         }
-        let Some(header) = columns.as_ref() else {
+        let Some(block) = current.as_mut() else {
             continue;
         };
-        if fields.len() != header.len() + 1
+        if fields.len() != block.columns.len() + 1
             || fields
                 .first()
                 .is_none_or(|value| !value.chars().all(|character| character.is_ascii_digit()))
         {
             continue;
+        }
+        let index = fields[0].parse::<u64>().map_err(|error| {
+            DirectPortError::UnsupportedExecution(format!(
+                "ngspice waveform index is not an integer: {error}"
+            ))
+        })?;
+        if block
+            .indices
+            .last()
+            .is_some_and(|previous| index <= *previous)
+        {
+            return Err(DirectPortError::UnsupportedExecution(
+                "ngspice print table contains conflicting waveform headers".to_owned(),
+            ));
         }
         let values = fields[1..]
             .iter()
@@ -2587,16 +2649,52 @@ fn parse_ngspice_waveform(text: &str) -> Result<Option<NgspiceWaveform>, DirectP
                 "ngspice waveform contains a non-finite value".to_owned(),
             ));
         }
-        rows.push(values);
+        block.indices.push(index);
+        block.rows.push(values);
     }
-    if header_conflict {
+    if let Some(block) = current
+        && !block.rows.is_empty()
+    {
+        blocks.push(block);
+    }
+    let Some(first) = blocks.first() else {
+        return Ok(None);
+    };
+    let axis = canonical_waveform_key(first.columns.first().map_or("", String::as_str));
+    if axis.is_empty() {
         return Err(DirectPortError::UnsupportedExecution(
-            "ngspice print table contains conflicting waveform headers".to_owned(),
+            "ngspice print table is missing its axis column".to_owned(),
         ));
     }
-    Ok(columns
-        .filter(|_| !rows.is_empty())
-        .map(|columns| NgspiceWaveform { columns, rows }))
+    let mut columns = first.columns.clone();
+    let mut rows = first.rows.clone();
+    let indices = &first.indices;
+    let axis_values = first
+        .rows
+        .iter()
+        .map(|row| row[0].to_bits())
+        .collect::<Vec<_>>();
+    for block in blocks.iter().skip(1) {
+        if block.indices != *indices
+            || canonical_waveform_key(block.columns.first().map_or("", String::as_str)) != axis
+            || block
+                .rows
+                .iter()
+                .map(|row| row[0].to_bits())
+                .ne(axis_values.iter().copied())
+        {
+            return Err(DirectPortError::UnsupportedExecution(
+                "ngspice print table contains conflicting waveform headers".to_owned(),
+            ));
+        }
+        for value in block.columns.iter().skip(1) {
+            columns.push(value.clone());
+        }
+        for (row, block_row) in rows.iter_mut().zip(&block.rows) {
+            row.extend_from_slice(&block_row[1..]);
+        }
+    }
+    Ok(Some(NgspiceWaveform { columns, rows }))
 }
 
 fn validate_ngspice_waveform_columns(
@@ -2614,7 +2712,7 @@ fn validate_ngspice_waveform_columns(
     };
     let expected = requested
         .iter()
-        .map(|value| canonical_ascii_key(value))
+        .map(|value| canonical_waveform_key(value))
         .collect::<BTreeSet<_>>();
     if expected.len() != requested.len() {
         return Err(DirectPortError::UnsupportedExecution(
@@ -2645,7 +2743,7 @@ fn validate_ngspice_waveform_columns(
         .columns
         .iter()
         .skip(1)
-        .map(|value| canonical_ascii_key(value))
+        .map(|value| canonical_waveform_key(value))
         .collect::<BTreeSet<_>>();
     if returned.len() != requested.len() || returned != expected {
         return Err(DirectPortError::UnsupportedExecution(
@@ -2807,7 +2905,7 @@ fn compile_touchstone_s_elements(
         // the unsupported boundary explicit.
         unsupported.push(UnsupportedIssue {
             line: raw.trim().to_owned(),
-            reason: "touchstone_s_element_s_domain_exporter_unavailable".to_owned(),
+            reason: "touchstone_s_element_auto_fit_disabled".to_owned(),
         });
         output.extend(
             lines[line_index..end_index]
@@ -3602,10 +3700,11 @@ mod tests {
     }
 
     #[test]
-    fn ngspice_s_element_parser_consumes_continuation_lines() {
+    fn ngspice_s_element_parser_rejects_auto_fit_without_mutating_source() {
         let root = std::env::temp_dir().join(format!("sipi-as05-s-cont-{}", std::process::id()));
         let run = root.join("run");
         fs::create_dir_all(&run).unwrap();
+        fs::write(root.join("missing.s2p"), b"not fitted").unwrap();
         let (prepared, actions, unsupported) = compile_touchstone_s_elements(
             "Sfoo p1 p2 0\n+ TSTONEFILE='missing.s2p'\n.end\n",
             &root,
@@ -3613,7 +3712,10 @@ mod tests {
         )
         .unwrap();
         assert!(actions.is_empty());
-        assert_eq!(unsupported[0].reason, "touchstone_file_not_found");
+        assert_eq!(
+            unsupported[0].reason,
+            "touchstone_s_element_auto_fit_disabled"
+        );
         assert!(prepared.contains("+ TSTONEFILE='missing.s2p'"));
         let _ = fs::remove_dir_all(root);
     }
@@ -3698,6 +3800,33 @@ mod tests {
     }
 
     #[test]
+    fn ngspice_waveform_merges_print_tables_on_exact_shared_axis() {
+        let text = concat!(
+            "Index time v(load)\n",
+            "0 0 1\n",
+            "1 1e-9 2\n",
+            "Index time v(vdd) vsrc#branch\n",
+            "0 0 3 4\n",
+            "1 1e-9 5 6\n",
+        );
+        let waveform = parse_ngspice_waveform(text).unwrap().unwrap();
+        assert_eq!(
+            waveform.columns,
+            ["time", "v(load)", "v(vdd)", "vsrc#branch"]
+        );
+        assert_eq!(waveform.rows, [[0.0, 1.0, 3.0, 4.0], [1e-9, 2.0, 5.0, 6.0]]);
+        validate_ngspice_waveform_columns(
+            Some(&waveform),
+            &[
+                "v(load)".to_owned(),
+                "v(vdd)".to_owned(),
+                "i(Vsrc)".to_owned(),
+            ],
+        )
+        .unwrap();
+    }
+
+    #[test]
     fn ngspice_waveform_contract_rejects_missing_axis_and_duplicate_probe_columns() {
         let missing_axis = parse_ngspice_waveform("Index\n0\n").unwrap();
         assert!(
@@ -3735,7 +3864,7 @@ mod tests {
     }
 
     #[test]
-    fn ngspice_touchstone_s_element_fails_closed_without_s_domain_exporter() {
+    fn ngspice_touchstone_s_element_fails_closed_without_auto_fit() {
         let root = std::env::temp_dir().join(format!("sipi-as05-sparam-{}", std::process::id()));
         fs::create_dir_all(&root).unwrap();
         let mut s2p = String::from("# Hz S RI R 50\n");
@@ -3751,7 +3880,7 @@ mod tests {
         assert_eq!(result.status, PreparationStatus::Blocked);
         let report =
             fs::read_to_string(root.join("two-out/two/two__base/compat_report.json")).unwrap();
-        assert!(report.contains("touchstone_s_element_s_domain_exporter_unavailable"));
+        assert!(report.contains("touchstone_s_element_auto_fit_disabled"));
         assert!(
             !root
                 .join("two-out/two/two__base/sparam/Sfoo.y.sp")
@@ -3772,7 +3901,7 @@ mod tests {
         let report =
             fs::read_to_string(root.join("three-out/three/three__base/compat_report.json"))
                 .unwrap();
-        assert!(report.contains("touchstone_s_element_s_domain_exporter_unavailable"));
+        assert!(report.contains("touchstone_s_element_auto_fit_disabled"));
         assert!(
             !root
                 .join("three-out/three/three__base/sparam/Sfoo.y.sp")
@@ -3809,22 +3938,13 @@ mod tests {
     }
 
     #[test]
-    fn xdm_plan_contains_two_stage_case_artifact() {
-        let admission = admit_run_hspice(
-            "deck",
-            ".end\n",
-            RunHspiceRequest::new("xyce-xdm", "runs", true).unwrap(),
-        )
-        .unwrap();
-        assert!(
-            admission.cases[0]
-                .output_paths
-                .iter()
-                .any(|path| path.ends_with("/case.sp"))
-        );
-        assert_eq!(admission.execution_stage, ExecutionStage::XdmThenXyce);
-        assert!(admission.external_solver_required);
-        assert_eq!(admission.numerical_parity, ParityStatus::NotEvaluated);
+    fn xyce_and_xdm_backends_are_rejected_before_admission() {
+        for backend in ["xyce", "xyce-xdm"] {
+            assert_eq!(
+                RunHspiceRequest::new(backend, "runs", true).unwrap_err(),
+                DirectPortError::UnsupportedBackend(backend.to_owned())
+            );
+        }
     }
 
     #[test]

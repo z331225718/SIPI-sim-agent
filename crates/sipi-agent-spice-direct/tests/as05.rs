@@ -26,12 +26,7 @@ fn relative_and_escaping_dependencies_are_visible_to_admission() {
 
 #[test]
 fn prepared_artifact_contract_is_backend_specific_without_execution() {
-    for (backend, needs_case_sp) in [
-        (Backend::Native, false),
-        (Backend::Ngspice, false),
-        (Backend::Xyce, false),
-        (Backend::XyceXdm, true),
-    ] {
+    for (backend, needs_case_sp) in [(Backend::Native, false), (Backend::Ngspice, false)] {
         let request = RunHspiceRequest::new(backend.name(), "runs", false).unwrap();
         let admission = admit_run_hspice("demo", ".end\n", request).unwrap();
         let paths = &admission.cases[0].output_paths;
@@ -49,6 +44,16 @@ fn prepared_artifact_contract_is_backend_specific_without_execution() {
         assert_eq!(
             admission.cases[0].preparation_status,
             PreparationStatus::Compatible
+        );
+    }
+}
+
+#[test]
+fn xyce_and_xdm_are_explicitly_rejected() {
+    for backend in ["xyce", "xyce-xdm"] {
+        assert_eq!(
+            RunHspiceRequest::new(backend, "runs", false).unwrap_err(),
+            sipi_agent_spice_direct::DirectPortError::UnsupportedBackend(backend.to_owned())
         );
     }
 }
