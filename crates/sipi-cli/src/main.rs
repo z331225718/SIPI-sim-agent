@@ -4618,6 +4618,16 @@ mod tests {
         assert_eq!(dispatch(&args(&["com", "run"])).code, 4);
     }
 
+    #[cfg(feature = "com-direct-integration")]
+    #[test]
+    fn root_com_config_validate_is_discoverable_and_requires_a_config_path() {
+        let manifest = command_manifest_json();
+        assert!(manifest.contains(
+            "\"id\":\"com.config.validate\",\"route\":[\"com\",\"config\",\"validate\"],\"availability\":\"available\""
+        ));
+        assert_eq!(dispatch(&args(&["com", "config", "validate"])).code, 2);
+    }
+
     #[test]
     fn specified_com_request_result_and_cli_route_share_one_bounded_schema() {
         let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
