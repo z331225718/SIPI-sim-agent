@@ -7400,9 +7400,23 @@ fn write_normal_erl_diagnostic_sidecar_v1(
         return Ok(());
     };
     let root = PathBuf::from(root);
-    fs::create_dir_all(&root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    write_normal_erl_diagnostic_sidecar_at_v1(&root, result)
+}
+
+#[cfg(feature = "normal-erl-diagnostic-sidecar")]
+fn write_normal_erl_diagnostic_sidecar_at_v1(
+    root: &Path,
+    result: Option<&R480NormalErlResultV1>,
+) -> Result<(), DirectRunErrorV1> {
+    fs::create_dir_all(root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
     let manifest_path = root.join("manifest.json");
     let Some(result) = result else {
+        // A multi-package run invokes this sink once per package. The normal
+        // TDR result is intentionally only computed for package zero; later
+        // package calls must not erase that first, usable trace receipt.
+        if manifest_path.exists() {
+            return Ok(());
+        }
         let bytes = serde_json::to_vec_pretty(&json!({
             "schema": "sipi.com.normal-erl-array-sidecar.v1",
             "diagnostic_only": true,
@@ -9667,6 +9681,51 @@ mod tests {
         );
         assert_eq!(observation["occurrence_count"], 2);
         assert_eq!(observation["source_warning_equivalent"], false);
+    }
+
+    #[cfg(feature = "normal-erl-diagnostic-sidecar")]
+    #[test]
+    fn normal_erl_sidecar_keeps_the_first_package_trace() {
+        let unique = format!(
+            "sipi-normal-erl-sidecar-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        );
+        let root = std::env::temp_dir().join(unique);
+        let port = |number| crate::erl_tdr_v1::R480NormalErlPortV1 {
+            port: number,
+            time_s: vec![0.0, 1.0e-12],
+            impedance_ohm: vec![100.0, 99.0],
+            step_reflection: vec![0.0, -0.005],
+            ptdr: vec![0.0, -0.005],
+            gated: vec![0.0, -0.005],
+            worst_samples: vec![-0.005],
+            phase_index: 1,
+            phase_slope_debug_bypassed: false,
+            interpolation_input_trace: None,
+            erl_db: 16.0,
+            erl_rms_db: 16.0,
+            avg_port_impedance_ohm: 99.5,
+        };
+        let result = R480NormalErlResultV1 {
+            ports: [port(1), port(2)],
+            tfx_s: [0.0, 0.0],
+            input_is_ideal_match: false,
+        };
+        write_normal_erl_diagnostic_sidecar_at_v1(&root, Some(&result))
+            .expect("write first package");
+        let manifest = fs::read(root.join("manifest.json")).expect("first manifest");
+        write_normal_erl_diagnostic_sidecar_at_v1(&root, None).expect("later package");
+        assert_eq!(
+            fs::read(root.join("manifest.json")).expect("retained manifest"),
+            manifest
+        );
+        let document: Value = serde_json::from_slice(&manifest).expect("manifest JSON");
+        assert_eq!(document["normal_erl_applicable"], true);
+        assert_eq!(document["ports"].as_array().expect("ports").len(), 2);
+        fs::remove_dir_all(root).expect("clean sidecar");
     }
 
     #[test]
