@@ -1,0 +1,474 @@
+{
+  "candidate": {
+    "archive_bytes": 58337280,
+    "archive_sha256": "dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8",
+    "commit": "b456e9d57b2449787e22cdefdad6c0edc70d69dc",
+    "tree": "9cd25bd57387e571917cf5274952d8c4fffe44f5"
+  },
+  "claims": {
+    "array_digest_identity": true,
+    "performance_acceptance": false,
+    "scalar_parity": true
+  },
+  "diagnostic_only": true,
+  "instrumentation": {
+    "instrumented_sha256": "1409a3b6923aa9e2dc8d736f0861123ea7a6602e39c65eeae729467c26928a3c",
+    "original_sha256": "88db14d7d82dab980d223a5be02a28013c11e0d0239e0e97e36c9d36fef55596",
+    "source_path": "matlab_src/com_ieee8023_480.m"
+  },
+  "matlab_release": "R2024b",
+  "non_claims": [
+    "not_release",
+    "not_full_erl_result_graph",
+    "not_warning_catalog",
+    "not_instrumented_matlab_performance",
+    "not_channel_s_parameter_fit"
+  ],
+  "records": [
+    {
+      "comparison": {
+        "array_digest_identity": true,
+        "ports": [
+          {
+            "passed": true,
+            "port": 1,
+            "vectors": {
+              "gated": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "impedance_ohm": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                }
+              },
+              "ptdr": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "time_s": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                }
+              }
+            }
+          },
+          {
+            "passed": true,
+            "port": 2,
+            "vectors": {
+              "gated": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "impedance_ohm": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                }
+              },
+              "ptdr": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "time_s": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                }
+              }
+            }
+          }
+        ],
+        "scalar": {
+          "ERL": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "ERL11": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "ERL22": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "Z11est": {
+            "matlab": 0,
+            "passed": true,
+            "rust": 0.0
+          },
+          "Z22est": {
+            "matlab": 0,
+            "passed": true,
+            "rust": 0.0
+          }
+        },
+        "scalar_passed": true
+      },
+      "matlab_instrumented_wall_seconds": 14.571969799988437,
+      "matlab_original_wall_seconds": 14.559034399979282,
+      "rust_wall_seconds": 0.18437339999945834,
+      "workbook": {
+        "bytes": 67009,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120G_ERL_HOST_10_26_2022.xlsx",
+        "sha256": "3c95f728ba03442ac11b4b3834c0ee426a8a5b41eef6f7acd8390dc4b813c8c2"
+      },
+      "workbook_index": 3
+    },
+    {
+      "comparison": {
+        "array_digest_identity": true,
+        "ports": [
+          {
+            "passed": true,
+            "port": 1,
+            "vectors": {
+              "gated": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "impedance_ohm": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                }
+              },
+              "ptdr": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "time_s": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                }
+              }
+            }
+          },
+          {
+            "passed": true,
+            "port": 2,
+            "vectors": {
+              "gated": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "impedance_ohm": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                }
+              },
+              "ptdr": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "time_s": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                }
+              }
+            }
+          }
+        ],
+        "scalar": {
+          "ERL": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "ERL11": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "ERL22": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "Z11est": {
+            "matlab": 0,
+            "passed": true,
+            "rust": 0.0
+          },
+          "Z22est": {
+            "matlab": 0,
+            "passed": true,
+            "rust": 0.0
+          }
+        },
+        "scalar_passed": true
+      },
+      "matlab_instrumented_wall_seconds": 15.24604240001645,
+      "matlab_original_wall_seconds": 15.227815599995665,
+      "rust_wall_seconds": 0.1784287000191398,
+      "workbook": {
+        "bytes": 67208,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120G_ERL_MODULE_10_26_2022.xlsx",
+        "sha256": "bebc7cbb9701fcbd6b6645e0a5d9b68a8ee05ded305dfde2720042ce3823df0b"
+      },
+      "workbook_index": 4
+    },
+    {
+      "comparison": {
+        "array_digest_identity": true,
+        "ports": [
+          {
+            "passed": true,
+            "port": 1,
+            "vectors": {
+              "gated": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "impedance_ohm": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                }
+              },
+              "ptdr": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "time_s": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                }
+              }
+            }
+          },
+          {
+            "passed": true,
+            "port": 2,
+            "vectors": {
+              "gated": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "impedance_ohm": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "73aadc6937de7f0d4575a2f6e7df1764ea63b4f712d4756dbcde92b78e8a64fa"
+                }
+              },
+              "ptdr": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "78902dbbf3ee23e635e0b63fd65aea1e80d4a8b08559ea0bb884c7eb872e15d8"
+                }
+              },
+              "time_s": {
+                "matlab": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                },
+                "passed": true,
+                "rust": {
+                  "count": 1,
+                  "sha256": "bf971c912fe887cfe2656d881cb9804ab49d5640560aa4e7d83a484853d0576c"
+                }
+              }
+            }
+          }
+        ],
+        "scalar": {
+          "ERL": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "ERL11": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "ERL22": {
+            "matlab": "+Inf",
+            "passed": true,
+            "rust": "+Inf"
+          },
+          "Z11est": {
+            "matlab": 0,
+            "passed": true,
+            "rust": 0.0
+          },
+          "Z22est": {
+            "matlab": 0,
+            "passed": true,
+            "rust": 0.0
+          }
+        },
+        "scalar_passed": true
+      },
+      "matlab_instrumented_wall_seconds": 14.49739499995485,
+      "matlab_original_wall_seconds": 14.638565799978096,
+      "rust_wall_seconds": 0.1756176999770105,
+      "workbook": {
+        "bytes": 67022,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_162_ERL_HOST_10_26_2022 .xlsx",
+        "sha256": "7512e0dba337e881a4b27db9e3f8119e1642e6f29db0b69b4f188c17ccc8b66d"
+      },
+      "workbook_index": 5
+    }
+  ],
+  "schema": "sipi.com.normal-erl-trace-diagnostic.v1",
+  "upstream": {
+    "archive_bytes": 43694080,
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "vectors": [
+    "time_s",
+    "impedance_ohm",
+    "ptdr",
+    "gated"
+  ]
+}

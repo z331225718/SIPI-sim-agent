@@ -1,0 +1,83 @@
+{
+  "candidate": {
+    "archive_bytes": 58337280,
+    "archive_sha256": "dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8",
+    "commit": "b456e9d57b2449787e22cdefdad6c0edc70d69dc",
+    "tree": "9cd25bd57387e571917cf5274952d8c4fffe44f5"
+  },
+  "diagnostic_only": true,
+  "gates": {
+    "instrumentation_scalar_and_warning_semantics_unchanged": true,
+    "matlab_rust_normal_erl_array_digest_identity": true,
+    "matlab_rust_scalar_parity": true,
+    "per_workbook_rust_not_slower": true,
+    "s_parameter_fit": false,
+    "two_fresh_matlab_instrumented_replays": true
+  },
+  "instrumentation": {
+    "instrumented_sha256": "1409a3b6923aa9e2dc8d736f0861123ea7a6602e39c65eeae729467c26928a3c",
+    "original_sha256": "88db14d7d82dab980d223a5be02a28013c11e0d0239e0e97e36c9d36fef55596",
+    "source_path": "matlab_src/com_ieee8023_480.m"
+  },
+  "matlab_release": "R2024b",
+  "non_claims": [
+    "not_public_result_wire",
+    "not_full_erl_result_graph",
+    "not_complete_warning_catalog",
+    "not_instrumented_matlab_performance",
+    "not_ieee_certification",
+    "not_release"
+  ],
+  "performance": {
+    "minimum_speedup_floor": 72.43344098541151,
+    "per_workbook": [
+      {
+        "matlab_best_wall_seconds": 14.181872599991038,
+        "rust_worst_wall_seconds": 0.18437339999945834,
+        "speedup_floor": 76.91929855409025,
+        "workbook_index": 3
+      },
+      {
+        "matlab_best_wall_seconds": 15.227815599995665,
+        "rust_worst_wall_seconds": 0.17926770000485703,
+        "speedup_floor": 84.94455833138421,
+        "workbook_index": 4
+      },
+      {
+        "matlab_best_wall_seconds": 14.50605689996155,
+        "rust_worst_wall_seconds": 0.20026740001048893,
+        "speedup_floor": 72.43344098541151,
+        "workbook_index": 5
+      }
+    ]
+  },
+  "reports": [
+    {
+      "path": "docs/baselines/p5-06-normal-erl-trace-replay-01.v1.json",
+      "sha256": "4cf71f3bf79bf6908492b3cae1233e520eaf80e9fea15663d5a0120ffe629ac6"
+    },
+    {
+      "path": "docs/baselines/p5-06-normal-erl-trace-replay-02.v1.json",
+      "sha256": "e2499752bcf306820bf7493e05fef37a6f75bc3728788620958203384109b1c9"
+    }
+  ],
+  "schema": "sipi.p5-06.normal-erl-trace-aggregate.v1",
+  "status": "accepted_named_normal_erl_tdr_array_checkpoint",
+  "upstream": {
+    "archive_bytes": 43694080,
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  },
+  "vectors": [
+    "time_s",
+    "impedance_ohm",
+    "ptdr",
+    "gated"
+  ],
+  "workbook_indices": [
+    3,
+    4,
+    5
+  ]
+}
