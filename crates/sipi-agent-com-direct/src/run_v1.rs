@@ -8175,6 +8175,17 @@ fn result_value_v1(
     let normal_erl22_db = normal_erl_result.map(|result| {
         metric_db_value_v1(result.ports[1].erl_db).expect("normal ERL leaf rejects NaN")
     });
+    // The MATLAB ERL-only route publishes the selected return-loss value for
+    // both port aliases when it does not produce per-port diagnostics.  Keep
+    // those source-visible aliases rather than silently dropping them.
+    let source_erl_db = normal_erl_db
+        .as_ref()
+        .or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db")));
+    let source_erl11_db = normal_erl11_db
+        .as_ref()
+        .or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db")))
+        .or(source_erl_db);
+    let source_erl22_db = normal_erl22_db.as_ref().or(source_erl_db);
     let normal_erl_observation = normal_erl_result
         .and_then(normal_erl_phase_slope_observation_v1)
         .into_iter();
@@ -8263,9 +8274,9 @@ fn result_value_v1(
                 "MDFEXT_ICN_92_47_mV": fd_metrics.map(|metrics| metrics.fext_icn_mv),
                 "MDNEXT_ICN_92_46_mV": fd_metrics.map(|metrics| metrics.next_icn_mv),
                 "FOM_TDILN": tdiln_result.map(|result| result.snr_isi_fom_pdf_db),
-                "ERL": normal_erl_db.as_ref().or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db"))),
-                "ERL11": normal_erl11_db.as_ref().or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db"))),
-                "ERL22": normal_erl22_db.as_ref(),
+                "ERL": source_erl_db,
+                "ERL11": source_erl11_db,
+                "ERL22": source_erl22_db,
                 "ERL_RMS": portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_rms_db")),
                 "ERL_phase_index": portable_diagnostics.get("erl_only").and_then(|value| value.get("phase_index")),
                 "COM_dB": envelope.com_db(),
@@ -10318,6 +10329,7 @@ mod tests {
         let case = &report.result["cases"][0];
         assert!(case["metrics"]["ERL"].is_number());
         assert_eq!(case["metrics"]["ERL11"], case["metrics"]["ERL"]);
+        assert_eq!(case["metrics"]["ERL22"], case["metrics"]["ERL"]);
         assert!(case["metrics"]["COM_dB"].is_null());
         let _ = fs::remove_dir_all(root);
     }
