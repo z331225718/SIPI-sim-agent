@@ -11,7 +11,7 @@
 use std::collections::BTreeMap;
 
 use sipi_com::{
-    FdToTdOptionsV1, ResolvedDefaultV1, butterworth_filter_v1,
+    FdToTdOptionsV1, MAX_FD_TO_TD_BINS_V1, ResolvedDefaultV1, butterworth_filter_v1,
     has_positive_unwrapped_phase_slope_v1, raised_cosine_filter_v1, rectangular_pulse_response_v1,
     s21_to_impulse_dc_v1, sampled_signal_pdf_v1,
 };
@@ -487,6 +487,9 @@ fn run_port_v1(
     } else {
         return Err(parameter_error("normal TDR port must be 1 or 2"));
     };
+    let exact_zero_reflection = reflection
+        .iter()
+        .all(|value| value.real() == 0.0 && value.imaginary() == 0.0);
     let filtered = reflection
         .into_iter()
         .zip(&filters.transition)
@@ -504,23 +507,34 @@ fn run_port_v1(
         .debug
         .then(|| normal_tdr_interpolation_input_trace_v1(&filtered))
         .transpose()?;
-    let impulse = s21_to_impulse_dc_v1(
-        &filtered,
-        &network.frequency_hz,
-        &tdr_fd_options_v1(controls),
-    )
-    .map_err(|error| DirectRunErrorV1::Channel(format!("TDR FD-to-TD: {error:?}")))?;
-    let shifted_time = impulse
-        .time_s
-        .iter()
-        .map(|time| *time - TDR_DELAY_S)
-        .collect::<Vec<_>>();
-    let end = shifted_time
-        .iter()
-        .position(|time| *time >= max_time_s + fixture_delay_s)
-        .map_or(shifted_time.len(), |index| index.saturating_add(1));
-    let mut selected_time = shifted_time[..end].to_vec();
-    let mut selected_impulse = impulse.voltage[..end].to_vec();
+    let (mut selected_time, mut selected_impulse) = if exact_zero_reflection {
+        // MATLAB's mixed-mode matrix product can leave subnormal round-off in
+        // an otherwise ideal reflection. The source then retains a complete
+        // zero-equivalent TDR observation window. Rust cancellation is exact,
+        // so construct that physical zero response explicitly rather than
+        // collapsing the port to one sample and publishing Z=0 ohm.
+        zero_reflection_tdr_window_v1(network, controls, fixture_delay_s, max_time_s)?
+    } else {
+        let impulse = s21_to_impulse_dc_v1(
+            &filtered,
+            &network.frequency_hz,
+            &tdr_fd_options_v1(controls),
+        )
+        .map_err(|error| DirectRunErrorV1::Channel(format!("TDR FD-to-TD: {error:?}")))?;
+        let shifted_time = impulse
+            .time_s
+            .iter()
+            .map(|time| *time - TDR_DELAY_S)
+            .collect::<Vec<_>>();
+        let end = shifted_time
+            .iter()
+            .position(|time| *time >= max_time_s + fixture_delay_s)
+            .map_or(shifted_time.len(), |index| index.saturating_add(1));
+        (
+            shifted_time[..end].to_vec(),
+            impulse.voltage[..end].to_vec(),
+        )
+    };
     let average_start = selected_time
         .iter()
         .position(|time| *time >= 3.0 * controls.tr_tdr_ns * 1.0e-9);
@@ -584,6 +598,56 @@ fn run_port_v1(
         erl_rms_db,
         avg_port_impedance_ohm,
     })
+}
+
+fn zero_reflection_tdr_window_v1(
+    network: &R480TdrDdNetworkV1,
+    controls: &R480NormalErlControlsV1,
+    fixture_delay_s: f64,
+    max_time_s: f64,
+) -> Result<(Vec<f64>, Vec<f64>), DirectRunErrorV1> {
+    let source_df = network.frequency_hz[2] - network.frequency_hz[1];
+    let fmax = 1.0 / (2.0 * controls.sample_dt_s);
+    let points_float = (fmax / source_df + 0.5).floor();
+    if !(source_df.is_finite() && source_df > 0.0)
+        || !(points_float.is_finite() && points_float >= 1.0)
+        || points_float > MAX_FD_TO_TD_BINS_V1 as f64
+    {
+        return Err(DirectRunErrorV1::Channel(
+            "normal TDR zero reflection axis is invalid".to_owned(),
+        ));
+    }
+    let length = (points_float as usize).checked_mul(2).ok_or_else(|| {
+        DirectRunErrorV1::Channel("normal TDR zero reflection axis overflow".to_owned())
+    })?;
+    let dt_s = 1.0 / (source_df * length as f64);
+    if !(dt_s.is_finite() && dt_s > 0.0) {
+        return Err(DirectRunErrorV1::Channel(
+            "normal TDR zero reflection timestep is invalid".to_owned(),
+        ));
+    }
+    let first_at_or_after = |target: f64| {
+        let mut index = ((target + TDR_DELAY_S) / dt_s).ceil().max(0.0) as usize;
+        while index < length && index as f64 * dt_s - TDR_DELAY_S < target {
+            index += 1;
+        }
+        index
+    };
+    let end = first_at_or_after(max_time_s + fixture_delay_s).min(length.saturating_sub(1));
+    let start = first_at_or_after(controls.tr_tdr_ns * 1.0e-9);
+    // Match the source fallback when a threshold lands beyond the already
+    // truncated TDR span.  The fallback starts at its first sample; it must
+    // not re-expand the selection to the full IFFT horizon.
+    let (start, end) = if start >= end { (0, end) } else { (start, end) };
+    let time_s = (start..=end)
+        .map(|index| index as f64 * dt_s - TDR_DELAY_S)
+        .collect::<Vec<_>>();
+    if time_s.is_empty() {
+        return Err(DirectRunErrorV1::Channel(
+            "normal TDR zero reflection window is empty".to_owned(),
+        ));
+    }
+    Ok((time_s, vec![0.0; end - start + 1]))
 }
 
 fn normal_tdr_interpolation_input_trace_v1(
@@ -1294,6 +1358,53 @@ mod tests {
         let result = run_normal_erl_v1(&network, &values).expect("ideal input");
         assert!(result.input_is_ideal_match);
         assert!(result.ports.iter().all(|port| port.erl_db.is_infinite()));
+    }
+
+    #[test]
+    fn exact_zero_reflection_keeps_a_source_equivalent_tdr_window() {
+        let mut values = controls();
+        values.insert("Tukey_Window".to_owned(), ResolvedDefaultV1::Boolean(false));
+        let mut network = network();
+        // With ZT=50 ohm, the r4.80 renormalization reduces port 1 to S11.
+        // An exact zero must still publish the physical 100-ohm TDR window,
+        // not a one-sample artifact of FD truncation.
+        network.s11.fill(c(0.0, 0.0));
+        let result = run_normal_erl_v1(&network, &values).expect("zero reflection");
+        let port = &result.ports[0];
+        assert!(port.time_s.len() > 1);
+        assert!(port.impedance_ohm.iter().all(|value| *value == 100.0));
+        assert!(port.ptdr.iter().all(|value| *value == 0.0));
+        assert!((port.avg_port_impedance_ohm - 100.0).abs() < 1.0e-12);
+    }
+
+    #[test]
+    fn exact_zero_reflection_uses_the_requested_termination() {
+        let mut values = controls();
+        values.insert("Z_t".to_owned(), ResolvedDefaultV1::Scalar(55.0));
+        let controls = R480NormalErlControlsV1::from_values(&values).expect("controls");
+        let network = network();
+        let (_, impulse) = zero_reflection_tdr_window_v1(&network, &controls, 0.0, 1.0e-9)
+            .expect("zero reflection");
+        let impedance = cumulative_sum_v1(&impulse)
+            .into_iter()
+            .map(|reflection| (1.0 + reflection) / (1.0 - reflection) * controls.z_t_ohm * 2.0)
+            .collect::<Vec<_>>();
+        assert!(impedance.iter().all(|value| *value == 110.0));
+    }
+
+    #[test]
+    fn zero_reflection_fallback_stays_within_truncated_tdr_span() {
+        let mut values = controls();
+        values.insert("TR_TDR".to_owned(), ResolvedDefaultV1::Scalar(10_000.0));
+        let controls = R480NormalErlControlsV1::from_values(&values).expect("controls");
+        let network = network();
+        let max_time_s = r480_tdr_max_time_v1(&network, &controls).expect("max time");
+        let (time_s, zeros) = zero_reflection_tdr_window_v1(&network, &controls, 0.0, max_time_s)
+            .expect("zero window");
+        assert_eq!(time_s.len(), zeros.len());
+        assert!(time_s.len() > 1);
+        assert!(time_s.last().copied().expect("last") <= max_time_s);
+        assert!(zeros.iter().all(|value| *value == 0.0));
     }
 
     #[test]

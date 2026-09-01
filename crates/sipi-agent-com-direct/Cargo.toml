@@ -11,6 +11,9 @@ description = "Lane-local direct ports of the pinned Agent-COM compare, run, and
 # Opt-in, repository-only receipt sink used by the MATLAB TDILN array
 # diagnostic. It does not alter the public run JSON or the default binary.
 tdiln-diagnostic-sidecar = []
+# Opt-in, repository-only sink for normal-TDR waveform diagnosis.  Like the
+# TDILN sidecar, it is never part of the public result JSON or default binary.
+normal-erl-diagnostic-sidecar = []
 
 [dependencies]
 flate2 = "1"

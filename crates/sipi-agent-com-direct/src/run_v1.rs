@@ -1815,6 +1815,7 @@ fn run_with_workflow_token_origin(
         package_case_index.unwrap_or(0),
         tdiln_runtime.as_ref().map(|runtime| &runtime.result),
     )?;
+    write_normal_erl_diagnostic_sidecar_v1(normal_erl.as_ref().map(|(result, _)| result))?;
     Ok(DirectRunReportV1 {
         schema,
         workflow: vec!["load_config", "run_com", "write_artifacts"],
@@ -7385,6 +7386,79 @@ fn write_tdiln_diagnostic_sidecar_v1(
     let bytes = serde_json::to_vec_pretty(&manifest)
         .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
     atomic_write_v1(&manifest_path, &bytes, false)
+}
+
+// This is a private, opt-in diagnostic transport for the exact vectors whose
+// public result representation is intentionally hash-only.  It lets the
+// MATLAB comparison harness calculate numerical residuals without widening
+// the deployed COM wire.
+#[cfg(feature = "normal-erl-diagnostic-sidecar")]
+fn write_normal_erl_diagnostic_sidecar_v1(
+    result: Option<&R480NormalErlResultV1>,
+) -> Result<(), DirectRunErrorV1> {
+    let Some(root) = std::env::var_os("SIPI_COM_NORMAL_ERL_DIAGNOSTIC_SIDECAR_DIR") else {
+        return Ok(());
+    };
+    let root = PathBuf::from(root);
+    fs::create_dir_all(&root).map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    let manifest_path = root.join("manifest.json");
+    let Some(result) = result else {
+        let bytes = serde_json::to_vec_pretty(&json!({
+            "schema": "sipi.com.normal-erl-array-sidecar.v1",
+            "diagnostic_only": true,
+            "normal_erl_applicable": false,
+        }))
+        .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+        return atomic_write_v1(&manifest_path, &bytes, false);
+    };
+    let mut ports = Vec::with_capacity(result.ports.len());
+    for port in &result.ports {
+        let port_root = root.join(format!("port-{}", port.port));
+        fs::create_dir_all(&port_root)
+            .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+        let vectors = [
+            ("time_s", port.time_s.as_slice()),
+            ("impedance_ohm", port.impedance_ohm.as_slice()),
+            ("ptdr", port.ptdr.as_slice()),
+            ("gated", port.gated.as_slice()),
+        ];
+        let mut entries = serde_json::Map::new();
+        for (name, values) in vectors {
+            let bytes = values
+                .iter()
+                .flat_map(|value| value.to_le_bytes())
+                .collect::<Vec<_>>();
+            let file = format!("{name}.f64le");
+            atomic_write_v1(&port_root.join(&file), &bytes, false)?;
+            entries.insert(
+                name.to_owned(),
+                json!({
+                    "file": format!("port-{}/{}", port.port, file),
+                    "dtype": "f64le",
+                    "shape": [values.len()],
+                    "bytes": bytes.len(),
+                    "sha256": sha256_bytes_v1(&bytes),
+                }),
+            );
+        }
+        ports.push(json!({"port": port.port, "vectors": entries}));
+    }
+    let bytes = serde_json::to_vec_pretty(&json!({
+        "schema": "sipi.com.normal-erl-array-sidecar.v1",
+        "diagnostic_only": true,
+        "normal_erl_applicable": true,
+        "ports": ports,
+        "non_claims": ["not_public_result_wire", "not_channel_s_parameter_fit", "not_full_result_graph"],
+    }))
+    .map_err(|error| DirectRunErrorV1::Artifact(error.to_string()))?;
+    atomic_write_v1(&manifest_path, &bytes, false)
+}
+
+#[cfg(not(feature = "normal-erl-diagnostic-sidecar"))]
+fn write_normal_erl_diagnostic_sidecar_v1(
+    _result: Option<&R480NormalErlResultV1>,
+) -> Result<(), DirectRunErrorV1> {
+    Ok(())
 }
 
 #[cfg(not(feature = "tdiln-diagnostic-sidecar"))]
