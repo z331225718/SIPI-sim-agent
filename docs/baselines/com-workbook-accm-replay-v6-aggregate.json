@@ -1,0 +1,420 @@
+{
+  "acceptance": false,
+  "blockers": [],
+  "candidate": {
+    "archive": {
+      "bytes": 59648000,
+      "command": "git -c core.autocrlf=false archive --format=tar <candidate>",
+      "sha256": "4764945edce6f42b799b0a34f95816ecf52c1081af1895280efd797fb99b0631"
+    },
+    "commit": "b1cc58842bdf19b2085a4dcd3733788b11ee3af3",
+    "tree": "0f198735134f7dd03733006fa0e3b60b70854722"
+  },
+  "controls": [
+    {
+      "comparison": [
+        {
+          "array_receipts": {
+            "candidate": {
+              "channel_impulse": {
+                "sample_count": 6293,
+                "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+              },
+              "channel_pulse": {
+                "sample_count": 6293,
+                "sha256": "9e067f08adca98dfea395014ac538656bd287a4f01ea2e37854637bb06fb8e86"
+              }
+            },
+            "upstream": {
+              "equalized_pulse": {
+                "bytes": 50344,
+                "sample_count": 6293,
+                "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                "shape": [
+                  6293
+                ]
+              },
+              "frequency_hz": {
+                "bytes": 64008,
+                "sample_count": 8001,
+                "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                "shape": [
+                  8001
+                ]
+              },
+              "ptdr": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                "shape": [
+                  1117
+                ]
+              },
+              "ptdr_gated": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                "shape": [
+                  1117
+                ]
+              },
+              "tdr_time_s": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                "shape": [
+                  1117
+                ]
+              },
+              "unequalized_impulse": {
+                "bytes": 50344,
+                "sample_count": 6293,
+                "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                "shape": [
+                  6293
+                ]
+              }
+            }
+          },
+          "cursor_index_match": true,
+          "dfe": {
+            "candidate_published": true,
+            "status": "observed",
+            "upstream_published": true
+          },
+          "fom_db_abs_delta": 7.105427357601002e-14,
+          "metric_abs_delta": {
+            "COM_dB": 4.618527782440651e-14,
+            "FOM": 7.105427357601002e-14,
+            "VEC_dB": 4.263256414560601e-14,
+            "VEO_mV": 2.4868995751603507e-13,
+            "available_signal_v": null,
+            "impulse_sample_count": null,
+            "interference_noise_v": null,
+            "sigma_N_V": 7.589415207398531e-19,
+            "threshold_der": null
+          },
+          "numeric_within_tolerance": true,
+          "port_order_match": false,
+          "port_order_observed": false,
+          "port_order_public_result": "not_exposed_by_upstream",
+          "port_order_status": "not_observed",
+          "sigma_n_v_abs_delta": 7.589415207398531e-19
+        },
+        {
+          "array_receipts": {
+            "candidate": {
+              "channel_impulse": {
+                "sample_count": 7448,
+                "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+              },
+              "channel_pulse": {
+                "sample_count": 7448,
+                "sha256": "36bbe603eb8888e02edba0c5ebf53a4a7bc7c9935052d3ea78ddb04e55ee1d58"
+              }
+            },
+            "upstream": {
+              "equalized_pulse": {
+                "bytes": 59584,
+                "sample_count": 7448,
+                "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                "shape": [
+                  7448
+                ]
+              },
+              "frequency_hz": {
+                "bytes": 64008,
+                "sample_count": 8001,
+                "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                "shape": [
+                  8001
+                ]
+              },
+              "ptdr": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                "shape": [
+                  1117
+                ]
+              },
+              "ptdr_gated": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                "shape": [
+                  1117
+                ]
+              },
+              "tdr_time_s": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                "shape": [
+                  1117
+                ]
+              },
+              "unequalized_impulse": {
+                "bytes": 59584,
+                "sample_count": 7448,
+                "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                "shape": [
+                  7448
+                ]
+              }
+            }
+          },
+          "cursor_index_match": true,
+          "dfe": {
+            "candidate_published": true,
+            "status": "observed",
+            "upstream_published": true
+          },
+          "fom_db_abs_delta": 7.460698725481052e-14,
+          "metric_abs_delta": {
+            "COM_dB": 1.6697754290362354e-13,
+            "FOM": 7.460698725481052e-14,
+            "VEC_dB": 1.5720758028692217e-13,
+            "VEO_mV": 6.856737400084967e-13,
+            "available_signal_v": null,
+            "impulse_sample_count": null,
+            "interference_noise_v": null,
+            "sigma_N_V": 9.75781955236954e-19,
+            "threshold_der": null
+          },
+          "numeric_within_tolerance": true,
+          "port_order_match": false,
+          "port_order_observed": false,
+          "port_order_public_result": "not_exposed_by_upstream",
+          "port_order_status": "not_observed",
+          "sigma_n_v_abs_delta": 9.75781955236954e-19
+        }
+      ],
+      "vector": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "comparison": [
+        {
+          "array_receipts": {
+            "candidate": {
+              "channel_impulse": {
+                "sample_count": 6293,
+                "sha256": "db5aa2dcd88f391a34d79e38e80c26f0c7e9b41477773dbae5ac98fffee5b916"
+              },
+              "channel_pulse": {
+                "sample_count": 6293,
+                "sha256": "9e067f08adca98dfea395014ac538656bd287a4f01ea2e37854637bb06fb8e86"
+              }
+            },
+            "upstream": {
+              "equalized_pulse": {
+                "bytes": 50344,
+                "sample_count": 6293,
+                "sha256": "03eda06690e50a82898b0820c5f0f004466ef0c7cdea1f06f59326eaf83c34e1",
+                "shape": [
+                  6293
+                ]
+              },
+              "frequency_hz": {
+                "bytes": 64008,
+                "sample_count": 8001,
+                "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                "shape": [
+                  8001
+                ]
+              },
+              "ptdr": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                "shape": [
+                  1117
+                ]
+              },
+              "ptdr_gated": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                "shape": [
+                  1117
+                ]
+              },
+              "tdr_time_s": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                "shape": [
+                  1117
+                ]
+              },
+              "unequalized_impulse": {
+                "bytes": 50344,
+                "sample_count": 6293,
+                "sha256": "8fb930aeddfa8368f0058be9bce6d1fba69b856baf2729151cd0e56f16e0d57f",
+                "shape": [
+                  6293
+                ]
+              }
+            }
+          },
+          "cursor_index_match": true,
+          "dfe": {
+            "candidate_published": true,
+            "status": "observed",
+            "upstream_published": true
+          },
+          "fom_db_abs_delta": 7.105427357601002e-14,
+          "metric_abs_delta": {
+            "COM_dB": 4.618527782440651e-14,
+            "FOM": 7.105427357601002e-14,
+            "VEC_dB": 4.263256414560601e-14,
+            "VEO_mV": 2.4868995751603507e-13,
+            "available_signal_v": null,
+            "impulse_sample_count": null,
+            "interference_noise_v": null,
+            "sigma_N_V": 7.589415207398531e-19,
+            "threshold_der": null
+          },
+          "numeric_within_tolerance": true,
+          "port_order_match": false,
+          "port_order_observed": false,
+          "port_order_public_result": "not_exposed_by_upstream",
+          "port_order_status": "not_observed",
+          "sigma_n_v_abs_delta": 7.589415207398531e-19
+        },
+        {
+          "array_receipts": {
+            "candidate": {
+              "channel_impulse": {
+                "sample_count": 7448,
+                "sha256": "1b6a28d74bc18e00210b9e05ccffafc20a467fd49281929f8e4fd1fb4067fa60"
+              },
+              "channel_pulse": {
+                "sample_count": 7448,
+                "sha256": "36bbe603eb8888e02edba0c5ebf53a4a7bc7c9935052d3ea78ddb04e55ee1d58"
+              }
+            },
+            "upstream": {
+              "equalized_pulse": {
+                "bytes": 59584,
+                "sample_count": 7448,
+                "sha256": "68bfe235a91d166bc0f85ba9b26712ba3f66c14c873111a902382dba1cd609cb",
+                "shape": [
+                  7448
+                ]
+              },
+              "frequency_hz": {
+                "bytes": 64008,
+                "sample_count": 8001,
+                "sha256": "fe01eb8775c4c4086669ec768e21bc05ced517603f234dae23717cee90e0603f",
+                "shape": [
+                  8001
+                ]
+              },
+              "ptdr": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "7663f4521bc0fc1fba0219fc4a9796b67af6ea44bc05c0a217930d5a40775cb7",
+                "shape": [
+                  1117
+                ]
+              },
+              "ptdr_gated": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "65ccd31c4c8d87f844d7728d12597b877639579937a72e977ce3e42f96776690",
+                "shape": [
+                  1117
+                ]
+              },
+              "tdr_time_s": {
+                "bytes": 8936,
+                "sample_count": 1117,
+                "sha256": "777550b5fe46914cc4438d882b0661e9f15b50a5585b59809bd0e094e3066c22",
+                "shape": [
+                  1117
+                ]
+              },
+              "unequalized_impulse": {
+                "bytes": 59584,
+                "sample_count": 7448,
+                "sha256": "8f8eeb6e9d10b86531e8fb24becfc0513eb54511784216c626083062c83446d6",
+                "shape": [
+                  7448
+                ]
+              }
+            }
+          },
+          "cursor_index_match": true,
+          "dfe": {
+            "candidate_published": true,
+            "status": "observed",
+            "upstream_published": true
+          },
+          "fom_db_abs_delta": 7.460698725481052e-14,
+          "metric_abs_delta": {
+            "COM_dB": 1.6697754290362354e-13,
+            "FOM": 7.460698725481052e-14,
+            "VEC_dB": 1.5720758028692217e-13,
+            "VEO_mV": 6.856737400084967e-13,
+            "available_signal_v": null,
+            "impulse_sample_count": null,
+            "interference_noise_v": null,
+            "sigma_N_V": 9.75781955236954e-19,
+            "threshold_der": null
+          },
+          "numeric_within_tolerance": true,
+          "port_order_match": false,
+          "port_order_observed": false,
+          "port_order_public_result": "not_exposed_by_upstream",
+          "port_order_status": "not_observed",
+          "sigma_n_v_abs_delta": 9.75781955236954e-19
+        }
+      ],
+      "vector": [
+        0.0,
+        0.001
+      ]
+    }
+  ],
+  "matched": true,
+  "non_claims": [
+    "no S-parameter fit",
+    "channel uses one final FD-to-TD impulse",
+    "no full Agent-COM result-graph parity",
+    "no release or promotion claim",
+    "no generic COM profile claim"
+  ],
+  "runs": [
+    {
+      "basename": "report.json",
+      "bytes": 59682,
+      "nonce": "01ad0fb64cc046219665b8517da34c7319ea6dbbd89740e6b3c9ffe74a657d5a",
+      "run_id": "17bef3b1da194ee7b5cff442704f3acc1c75924ac17b47808cc2e91aa3cbe8a1",
+      "sha256": "0e0975a816be67acd62c7dd49e87123411ef570acdf71f4035f467daf1787fda",
+      "slot": "run1"
+    },
+    {
+      "basename": "report.json",
+      "bytes": 59682,
+      "nonce": "31ee1da72f2d45b99a19968821591c61f3f88840d3e644e0b39dbb2f8ced40b2",
+      "run_id": "82f6ea990ac849e4828c14d7a16158ba8e04cdfba3594483bba6e4d5c17dc699",
+      "sha256": "1c21a3d2dd23f4942102103b12d3d4b2ae844f746852a50521649ae11573c603",
+      "slot": "run2"
+    }
+  ],
+  "schema": "sipi.com.workbook-accm-replay.v6.aggregate",
+  "status": "scoped_numeric_parity_observed",
+  "upstream": {
+    "archive": {
+      "bytes": 43694080,
+      "command": "git -c core.autocrlf=false archive --format=tar <upstream>",
+      "sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    },
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+  }
+}

@@ -1,0 +1,32 @@
+schema: sipi.com.workbook-accm-replay.v6.formal
+status: scoped_numeric_parity_observed
+scope:
+  work_items: [COM-02, COM-04]
+  upstream_entrypoints: [run_com, load_config_run_com_write_artifacts]
+  matrix: two AC_CM_RMS vectors x two package cases
+  numeric_tolerance: 1.0e-9
+candidate:
+  commit: b1cc58842bdf19b2085a4dcd3733788b11ee3af3
+  tree: 0f198735134f7dd03733006fa0e3b60b70854722
+  archive_sha256: 4764945edce6f42b799b0a34f95816ecf52c1081af1895280efd797fb99b0631
+  archive_bytes: 59648000
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  archive_sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+  archive_bytes: 43694080
+harness:
+  commit: f98a71b1
+  runner: {path: tools/run_com_workbook_accm_replay_v6.py, sha256: 4ebded687e97345649bfb9cf9f145053c632c33476296799dafef79df4b3ad01}
+  aggregate: {path: tools/aggregate_com_workbook_accm_replay_v6.py, sha256: 99a639d7d4b07d97fc516a08394e4244c6930546b535a00e6a601b4d850616bf}
+runs:
+  - {path: docs/baselines/com-workbook-accm-replay-v6-run1.json, bytes: 59682, sha256: 0e0975a816be67acd62c7dd49e87123411ef570acdf71f4035f467daf1787fda, run_id: 17bef3b1da194ee7b5cff442704f3acc1c75924ac17b47808cc2e91aa3cbe8a1, nonce: 01ad0fb64cc046219665b8517da34c7319ea6dbbd89740e6b3c9ffe74a657d5a}
+  - {path: docs/baselines/com-workbook-accm-replay-v6-run2.json, bytes: 59682, sha256: 1c21a3d2dd23f4942102103b12d3d4b2ae844f746852a50521649ae11573c603, run_id: 82f6ea990ac849e4828c14d7a16158ba8e04cdfba3594483bba6e4d5c17dc699, nonce: 31ee1da72f2d45b99a19968821591c61f3f88840d3e644e0b39dbb2f8ced40b2}
+aggregate: {path: docs/baselines/com-workbook-accm-replay-v6-aggregate.json, bytes: 14968, sha256: 053cb58b054d1c0be79c547fb9761eaa68eca0cde20698bc195ab500ae6bae5b}
+claims:
+  selected_common_public_scalar_parity: true
+  current_dfe_publication_observed: true
+  port_order_public_result_comparison: not_exposed_by_upstream
+  acceptance: false
+non_claims: [full_result_graph_parity, generic_com_profile, release_or_promotion, s_parameter_fit]
+audit: docs/baselines/audits/2026-09-01-com-workbook-accm-replay-v6.md
