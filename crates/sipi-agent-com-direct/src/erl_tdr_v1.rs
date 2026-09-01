@@ -253,9 +253,12 @@ struct R480NormalTdrFiltersV1 {
 ///
 /// The outer caller is responsible for invoking this once per run (normally
 /// on package case zero) and copying the typed result to the package cases.
-pub(crate) fn run_normal_erl_v1(
+/// `fix_erl_best_phase` is the pinned `experimental_corrected` correction for
+/// non-normalized phase selection.
+pub(crate) fn run_normal_erl_with_profile_v1(
     network: &R480TdrDdNetworkV1,
     values: &BTreeMap<String, ResolvedDefaultV1>,
+    fix_erl_best_phase: bool,
 ) -> Result<R480NormalErlResultV1, DirectRunErrorV1> {
     validate_network(network)?;
     let controls = R480NormalErlControlsV1::from_values(values)?;
@@ -276,8 +279,24 @@ pub(crate) fn run_normal_erl_v1(
     }
     let max_time_s = r480_tdr_max_time_v1(network, &controls)?;
     let filters = normal_tdr_filters_v1(network, &controls)?;
-    let port1 = run_port_v1(network, &controls, &filters, 1, tfx_s[0], max_time_s)?;
-    let port2 = run_port_v1(network, &controls, &filters, 2, tfx_s[1], max_time_s)?;
+    let port1 = run_port_v1(
+        network,
+        &controls,
+        &filters,
+        1,
+        tfx_s[0],
+        max_time_s,
+        fix_erl_best_phase,
+    )?;
+    let port2 = run_port_v1(
+        network,
+        &controls,
+        &filters,
+        2,
+        tfx_s[1],
+        max_time_s,
+        fix_erl_best_phase,
+    )?;
     let input_is_ideal_match = network
         .s11
         .iter()
@@ -464,6 +483,7 @@ fn run_port_v1(
     port: u8,
     fixture_delay_s: f64,
     max_time_s: f64,
+    fix_erl_best_phase: bool,
 ) -> Result<R480NormalErlPortV1, DirectRunErrorV1> {
     if !fixture_delay_s.is_finite() {
         return Err(parameter_error("tfx must be finite"));
@@ -576,6 +596,7 @@ fn run_port_v1(
         controls.bin_size,
         controls.spec_ber,
         controls.rl_norm_test,
+        fix_erl_best_phase,
     )?;
     let avg_port_impedance_ohm = average_port_impedance_v1(
         &selected_time,
@@ -935,6 +956,7 @@ fn effective_return_loss_v1(
     bin_size: f64,
     spec_ber: f64,
     rl_norm_test: bool,
+    fix_erl_best_phase: bool,
 ) -> Result<(usize, Vec<f64>, f64, f64), DirectRunErrorV1> {
     if ptdr.is_empty() || samples_per_ui == 0 {
         return Err(parameter_error("normal ERL PTDR input is empty"));
@@ -990,6 +1012,8 @@ fn effective_return_loss_v1(
         -pdf.first_quantile(spec_ber).map_err(|error| {
             DirectRunErrorV1::Channel(format!("normal ERL selected quantile: {error:?}"))
         })?
+    } else if fix_erl_best_phase {
+        best_quantile
     } else {
         // This is the source r4.80 branch: best_erl is overwritten on every
         // phase while best_phase still records the strict winning selector.
@@ -1344,7 +1368,8 @@ mod tests {
         let mut values = controls();
         values.insert("TDR".to_owned(), ResolvedDefaultV1::Boolean(false));
         let network = network();
-        let error = run_normal_erl_v1(&network, &values).expect_err("TDR=false must fail closed");
+        let error = run_normal_erl_with_profile_v1(&network, &values, false)
+            .expect_err("TDR=false must fail closed");
         assert!(error.to_string().contains("requires TDR=true"));
     }
 
@@ -1355,7 +1380,7 @@ mod tests {
         let mut network = network();
         network.s11.fill(c(0.0, 0.0));
         network.s22.fill(c(0.0, 0.0));
-        let result = run_normal_erl_v1(&network, &values).expect("ideal input");
+        let result = run_normal_erl_with_profile_v1(&network, &values, false).expect("ideal input");
         assert!(result.input_is_ideal_match);
         assert!(result.ports.iter().all(|port| port.erl_db.is_infinite()));
     }
@@ -1369,7 +1394,8 @@ mod tests {
         // An exact zero must still publish the physical 100-ohm TDR window,
         // not a one-sample artifact of FD truncation.
         network.s11.fill(c(0.0, 0.0));
-        let result = run_normal_erl_v1(&network, &values).expect("zero reflection");
+        let result =
+            run_normal_erl_with_profile_v1(&network, &values, false).expect("zero reflection");
         let port = &result.ports[0];
         assert!(port.time_s.len() > 1);
         assert!(port.impedance_ohm.iter().all(|value| *value == 100.0));
@@ -1419,7 +1445,8 @@ mod tests {
                 c(0.1 * phase.cos(), 0.1 * phase.sin())
             })
             .collect();
-        let error = run_normal_erl_v1(&network, &values).expect_err("anti-causal input");
+        let error = run_normal_erl_with_profile_v1(&network, &values, false)
+            .expect_err("anti-causal input");
         assert!(error.to_string().contains("anti-causal"), "{error}");
     }
 
@@ -1436,7 +1463,8 @@ mod tests {
                 c(0.1 * phase.cos(), 0.1 * phase.sin())
             })
             .collect();
-        let result = run_normal_erl_v1(&network, &values).expect("DEBUG bypass");
+        let result =
+            run_normal_erl_with_profile_v1(&network, &values, false).expect("DEBUG bypass");
         assert!(result.ports[0].phase_slope_debug_bypassed);
         assert!(!result.ports[1].phase_slope_debug_bypassed);
         assert!(
@@ -1453,5 +1481,30 @@ mod tests {
         let time = vec![0.0, 1.0e-12, 2.0e-12];
         let gated = erl_gate_v1(&ptdr, &time, 1.0, 1.0, 0, 0.01, 0.618, 1, 0.0).expect("gate");
         assert_eq!(gated, ptdr);
+    }
+
+    #[test]
+    fn experimental_best_phase_fix_changes_only_non_normalized_erl_value() {
+        // Phase zero has the larger PDF quantile.  Pinned r4.80 publishes
+        // the last phase when `rl_norm_test=false`; the approved experimental
+        // profile instead keeps the selected phase's quantile.
+        let ptdr = [1.2, 0.1, 0.9, 0.05, 1.1, 0.1, 0.8, 0.05];
+        let r480 =
+            effective_return_loss_v1(&ptdr, 2, 4, 0.01, 1.0e-3, false, false).expect("r480 ERL");
+        let corrected = effective_return_loss_v1(&ptdr, 2, 4, 0.01, 1.0e-3, false, true)
+            .expect("corrected ERL");
+        assert_eq!(r480.0, 0);
+        assert_eq!(corrected.0, r480.0);
+        assert_eq!(corrected.1, r480.1);
+        assert_ne!(corrected.2.to_bits(), r480.2.to_bits());
+
+        let normalized_r480 =
+            effective_return_loss_v1(&ptdr, 2, 4, 0.01, 1.0e-3, true, false).expect("r480");
+        let normalized_corrected =
+            effective_return_loss_v1(&ptdr, 2, 4, 0.01, 1.0e-3, true, true).expect("corrected");
+        assert_eq!(
+            normalized_corrected.2.to_bits(),
+            normalized_r480.2.to_bits()
+        );
     }
 }

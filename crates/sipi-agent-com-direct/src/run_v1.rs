@@ -7,7 +7,9 @@
 //! PDF chain. Calibration, MMSE, and RxFFE publish their numeric payloads,
 //! rather than reducing those source branches to status-only diagnostics.
 
-use crate::erl_tdr_v1::{NORMAL_ERL_TDR_POLICY_V1, R480NormalErlResultV1, run_normal_erl_v1};
+use crate::erl_tdr_v1::{
+    NORMAL_ERL_TDR_POLICY_V1, R480NormalErlResultV1, run_normal_erl_with_profile_v1,
+};
 use crate::fd_runtime_v1::{
     FdRawNetworkSetV1, FdRawSdd21V1, FdRuntimeControlsV1, FdRuntimeDiagnosticsV1,
     FdRuntimeMetricsV1, compose_fd_metrics_v1,
@@ -1355,7 +1357,12 @@ fn run_with_workflow_token_origin(
             .as_bool()
             .expect("workbook boolean helper");
         let normal_erl = (
-            run_workbook_normal_erl_v1(&request.pulse, &loaded.values, &mut s4p_cache)?,
+            run_workbook_normal_erl_v1(
+                &request.pulse,
+                &loaded.values,
+                &request.profile,
+                &mut s4p_cache,
+            )?,
             tdr_w_txpkg,
         );
         let selected_port =
@@ -1677,7 +1684,12 @@ fn run_with_workflow_token_origin(
             .as_bool()
             .expect("workbook boolean helper");
         Some((
-            run_workbook_normal_erl_v1(&request.pulse, &loaded.values, &mut s4p_cache)?,
+            run_workbook_normal_erl_v1(
+                &request.pulse,
+                &loaded.values,
+                &request.profile,
+                &mut s4p_cache,
+            )?,
             tdr_w_txpkg,
         ))
     } else {
@@ -2095,9 +2107,9 @@ fn validate_request(request: &DirectRunRequestV1) -> Result<(), DirectRunErrorV1
             "artifact_id must be a single safe path component".to_owned(),
         ));
     }
-    if request.profile != "r480" {
+    if !matches!(request.profile.as_str(), "r480" | "experimental_corrected") {
         return Err(DirectRunErrorV1::Unsupported(format!(
-            "only profile r480 is admitted, got {}",
+            "only profile r480 or experimental_corrected is admitted, got {}",
             request.profile
         )));
     }
@@ -4520,6 +4532,7 @@ fn portable_branch_result_with_sigma_v1(
             .get("rl_norm_test")
             .and_then(Value::as_bool)
             .unwrap_or(true)
+            || request.is_some_and(|request| request.profile == "experimental_corrected")
         {
             best_quantile
         } else {
@@ -7570,6 +7583,7 @@ fn write_tdiln_diagnostic_sidecar_v1(
 fn run_workbook_normal_erl_v1(
     path: &Path,
     values: &BTreeMap<String, ResolvedDefaultV1>,
+    profile: &str,
     cache: &mut S4pLoadCacheV1,
 ) -> Result<R480NormalErlResultV1, DirectRunErrorV1> {
     let network = load_reordered_s4p_network_cached_v1(cache, path, values, true)?;
@@ -7578,7 +7592,7 @@ fn run_workbook_normal_erl_v1(
     // published cases rather than recomputing it per case.
     let tdr_network =
         assemble_r480_tdr_dd_network_v1(&network.frequency_hz, &network.samples, values, 0)?;
-    run_normal_erl_v1(&tdr_network, values)
+    run_normal_erl_with_profile_v1(&tdr_network, values, profile == "experimental_corrected")
 }
 
 fn load_s4p_package_impulse_v1(
@@ -10299,6 +10313,60 @@ mod tests {
         );
         assert!(case["metrics"]["ERL"].is_number());
         assert!(case["metrics"]["ERL_phase_index"].is_number());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn experimental_profile_reaches_erl_only_best_phase_fix() {
+        let root = temp_root("erl-only-experimental-profile");
+        let config = root.join("params.json");
+        let pulse = root.join("pulse.f64le");
+        let mut document = canonical_parameters();
+        document["portable"] = json!({
+            "erl_only": {
+                "samples_per_ui": 2,
+                "levels": 4,
+                "bin_size": 0.01,
+                "spec_ber": 1.0e-3,
+                "rl_norm_test": false
+            }
+        });
+        fs::write(&config, serde_json::to_vec(&document).unwrap()).unwrap();
+
+        let desired_ptdr: [f64; 8] = [1.2, 0.1, 0.9, 0.05, 1.1, 0.1, 0.8, 0.05];
+        let mut prior_impulse = 0.0;
+        let impulse = desired_ptdr
+            .iter()
+            .map(|value| {
+                let current = value - prior_impulse;
+                prior_impulse = current;
+                current
+            })
+            .collect::<Vec<_>>();
+        fs::write(
+            &pulse,
+            impulse
+                .iter()
+                .flat_map(|value| value.to_le_bytes())
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+
+        let r480 = run_com_v1(&DirectRunRequestV1::new(&config, &pulse, root.join("r480")))
+            .expect("r480 ERL-only run");
+        let mut corrected_request =
+            DirectRunRequestV1::new(&config, &pulse, root.join("experimental"));
+        corrected_request.profile = "experimental_corrected".to_owned();
+        corrected_request.reader = None;
+        let corrected = run_com_v1(&corrected_request).expect("corrected ERL-only run");
+        assert_ne!(
+            r480.result["cases"][0]["metrics"]["ERL"],
+            corrected.result["cases"][0]["metrics"]["ERL"]
+        );
+        assert_eq!(
+            r480.result["cases"][0]["metrics"]["ERL_phase_index"],
+            corrected.result["cases"][0]["metrics"]["ERL_phase_index"]
+        );
         let _ = fs::remove_dir_all(root);
     }
 
