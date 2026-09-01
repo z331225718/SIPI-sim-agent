@@ -1505,7 +1505,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             **candidate_info,
             "source_mode": "git_archive_at_immutable_commit",
             "inventory": candidate_inventory,
-            "cargo_lock_sha256": _sha256(_safe_file(candidate_root, CRATE_RELATIVE / "Cargo.lock").read_bytes()),
+            # This package participates in the repository workspace; Cargo resolves the
+            # lockfile from the workspace root rather than the crate directory.
+            "cargo_lock_sha256": _sha256(_safe_file(candidate_root, Path("Cargo.lock")).read_bytes()),
             "source_date_epoch": source_date_epoch,
             "build": build,
         }
