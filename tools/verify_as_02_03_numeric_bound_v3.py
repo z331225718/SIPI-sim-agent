@@ -102,6 +102,33 @@ def repo_file(value: object, prefix: str) -> Path | None:
     return path if path.is_file() else None
 
 
+def _head_commit() -> str | None:
+    try:
+        return subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def harness_binding_mode(path: str, expected_sha: str) -> str | None:
+    """Return the immutable identity used for a historical harness binding.
+
+    The v3 reports were produced before the later custody hardening changed the
+    live runner and aggregator.  Their evidence remains valid only when the
+    recorded candidate commit still contains the expected blobs.  A different
+    live file is therefore reported as historical source drift, not silently
+    treated as the current harness.
+    """
+    current_file = repo_file(path, "tools/")
+    candidate_sha = commit_blob_sha(CANDIDATE_SOURCE["commit"], path)
+    if current_file is None or candidate_sha != expected_sha:
+        return None
+    if sha(current_file) == expected_sha:
+        return "candidate_commit_and_live_tree"
+    if _head_commit() != CANDIDATE_SOURCE["commit"]:
+        return "historical_candidate_commit"
+    return None
+
+
 def has_absolute(value: object) -> bool:
     if isinstance(value, dict):
         return any(has_absolute(k) or has_absolute(v) for k, v in value.items())
@@ -132,17 +159,19 @@ def verify(path: Path, document: dict[str, object] | None = None) -> dict[str, o
     candidate_source = source.get("candidate", {})
     if source.get("upstream") != UPSTREAM_SOURCE or candidate_source != CANDIDATE_SOURCE:
         blockers.append("source binding")
-    for key, expected_path in (("runner", RUNNER_PATH), ("aggregator", AGGREGATOR_PATH)):
-        item = doc.get("harness", {}).get(key, {})
-        file = repo_file(item.get("path"), "tools/")
-        commit_sha = commit_blob_sha(CANDIDATE_SOURCE["commit"], expected_path)
-        if item.get("path") != expected_path or file is None or item.get("sha256") != HARNESS_SHA[expected_path] or sha(file) != HARNESS_SHA[expected_path] or commit_sha != HARNESS_SHA[expected_path]:
-            blockers.append(f"{key} binding")
     report_items = doc.get("reports", [])
     reports: list[dict[str, object]] = []
     report_hashes: list[str] = []
     report_ids: list[str] = []
     report_nonces: list[str] = []
+    harness_modes: dict[str, str] = {}
+    for key, expected_path in (("runner", RUNNER_PATH), ("aggregator", AGGREGATOR_PATH)):
+        item = doc.get("harness", {}).get(key, {})
+        mode = harness_binding_mode(expected_path, HARNESS_SHA[expected_path])
+        if item.get("path") != expected_path or item.get("sha256") != HARNESS_SHA[expected_path] or mode is None:
+            blockers.append(f"{key} binding")
+        else:
+            harness_modes[key] = mode
     for item in report_items:
         report_file = repo_file(item.get("path"), "docs/") if isinstance(item, dict) else None
         if report_file is None or item.get("sha256") != sha(report_file):
@@ -182,7 +211,7 @@ def verify(path: Path, document: dict[str, object] | None = None) -> dict[str, o
     else:
         value = json.loads(aggregate_file.read_text(encoding="utf-8"))
         expected_ids = [{"path": item["path"], "sha256": item["sha256"], "run_id": report.get("run_id"), "fresh_run_nonce": report.get("fresh_run_nonce")} for item, report in zip(report_items, reports)]
-        aggregate_binding = sha(ROOT / AGGREGATOR_PATH) == HARNESS_SHA[AGGREGATOR_PATH] and commit_blob_sha(CANDIDATE_SOURCE["commit"], AGGREGATOR_PATH) == HARNESS_SHA[AGGREGATOR_PATH]
+        aggregate_binding = "aggregator" in harness_modes
         if has_absolute(value) or value.get("schema") != AGGREGATE_SCHEMA or value.get("workflow") != workflow or value.get("status") != "completed_numeric_mismatch_open" or value.get("custody_valid") is not True or value.get("reports") != expected_ids or value.get("candidate") != candidate_source or value.get("upstream") != UPSTREAM_SOURCE or value.get("runner") != reports[0].get("runner") or value.get("toolchain") != reports[0].get("toolchain") or value.get("fixture") != reports[0].get("fixture") or value.get("metrics") != reports[0].get("metrics") or not aggregate_binding or not valid_metrics(workflow, value.get("metrics")):
             blockers.append("aggregate binding")
     audit = doc.get("audit", {})
@@ -192,7 +221,15 @@ def verify(path: Path, document: dict[str, object] | None = None) -> dict[str, o
     audit_binding = f"Aggregate path: `{aggregate_path_value}`; SHA256: `{aggregate_sha_value}`" in audit_file.read_text(encoding="utf-8") if audit_file is not None else False
     if audit.get("path") != AUDIT_PATH or audit_file is None or audit.get("sha256") != sha(audit_file) or not audit_binding:
         blockers.append("audit path/hash")
-    return {"valid": not blockers, "blockers": blockers}
+    if not harness_modes:
+        harness_binding = "unbound"
+    elif set(harness_modes.values()) == {"candidate_commit_and_live_tree"}:
+        harness_binding = "candidate_commit_and_live_tree"
+    elif set(harness_modes.values()) == {"historical_candidate_commit"}:
+        harness_binding = "historical_candidate_commit"
+    else:
+        harness_binding = "mixed_candidate_and_historical"
+    return {"valid": not blockers, "blockers": blockers, "harness_binding": harness_binding}
 
 
 if __name__ == "__main__":

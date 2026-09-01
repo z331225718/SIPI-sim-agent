@@ -18,6 +18,7 @@ class ScopedParityTests(unittest.TestCase):
     def test_manifest_is_valid(self):
         result = verifier.verify(verifier.MANIFEST)
         self.assertTrue(result["valid"], result["blockers"])
+        self.assertEqual(result["harness_binding"], "historical_candidate_commit")
 
     def test_scope_mutation_is_rejected(self):
         mutated = copy.deepcopy(self.document)

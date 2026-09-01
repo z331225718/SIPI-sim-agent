@@ -13,9 +13,11 @@ from tools import verify_as_02_03_numeric_bound_v3 as verifier
 
 
 class BoundV3MutationTests(unittest.TestCase):
-    def test_manifests_are_valid_after_clean_archive_replay(self):
+    def test_historical_manifests_are_valid_from_immutable_candidate_identity(self):
         for path in verifier.MANIFESTS.values():
-            self.assertTrue(verifier.verify(path)["valid"])
+            result = verifier.verify(path)
+            self.assertTrue(result["valid"], result)
+            self.assertEqual(result["harness_binding"], "historical_candidate_commit")
 
     def test_wrapper_policy_mutation_is_rejected(self):
         document = yaml.safe_load(verifier.MANIFESTS["AS-02"].read_text(encoding="utf-8"))

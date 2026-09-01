@@ -47,7 +47,11 @@ def verify(path: Path = MANIFEST, document: dict[str, object] | None = None) -> 
         blockers.append("scope contract")
     if doc.get("status") != "scoped_numeric_parity_observation" or doc.get("parity_claim") is not False or doc.get("scoped_observation_passed") is not True:
         blockers.append("scoped status")
-    return {"valid": not blockers, "blockers": blockers}
+    return {
+        "valid": not blockers,
+        "blockers": blockers,
+        "harness_binding": result.get("harness_binding", "unbound"),
+    }
 
 
 if __name__ == "__main__":

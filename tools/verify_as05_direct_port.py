@@ -78,8 +78,35 @@ def _git_blob(source: Path, commit: str, path: str) -> bytes:
     return result.stdout
 
 
+def _is_root_workspace_member(crate: Path, root: Path) -> bool:
+    """Accept the current root-workspace integration without claiming lane locality."""
+    try:
+        root_path = root.resolve(strict=True)
+        crate_path = crate.resolve(strict=True)
+        crate_path.relative_to(root_path)
+        cargo = tomllib.loads((root_path / "Cargo.toml").read_text(encoding="utf-8"))
+    except (OSError, ValueError, tomllib.TOMLDecodeError):
+        return False
+    workspace = cargo.get("workspace")
+    if not isinstance(workspace, dict):
+        return False
+    members = workspace.get("members", [])
+    if not isinstance(members, list):
+        return False
+    for member in members:
+        if not isinstance(member, str):
+            continue
+        try:
+            if (root_path / member).resolve(strict=True) == crate_path:
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def verify(document: dict[str, Any], source: Path | None = None, root: Path = ROOT) -> dict[str, Any]:
     blockers: list[str] = []
+    crate_integration: str | None = None
     if document.get("schema") != "sipi.as-05-run-hspice-direct-port.v1":
         blockers.append("schema mismatch")
     if document.get("status") != EXPECTED_DIRECT_PORT_STATUS:
@@ -207,11 +234,15 @@ def verify(document: dict[str, Any], source: Path | None = None, root: Path = RO
         package = cargo.get("package", {})
         if package.get("name") != "sipi-agent-spice-direct" or package.get("license") != "MIT":
             blockers.append("direct-port package identity/license drift")
-        # The lane-local crate is shared with the other AS rows.  Its reviewed
-        # Rust dependencies do not change this historical AS-05 admission
-        # record into a solver/parity claim.
-        if "workspace" not in cargo:
-            blockers.append("direct-port crate is no longer lane-local")
+        # This record predates root-workspace integration.  Accept either the
+        # historical nested workspace or the current explicit root member, but
+        # never turn that packaging fact into a solver/parity claim.
+        if "workspace" in cargo:
+            crate_integration = "lane_local_workspace"
+        elif _is_root_workspace_member(CRATE, root):
+            crate_integration = "root_workspace_member"
+        else:
+            blockers.append("direct-port crate is neither lane-local nor a root-workspace member")
         code = source_path.read_text(encoding="utf-8")
         commit_match = UPSTREAM_COMMIT_DECLARATION.search(code)
         if commit_match is None or commit_match.group(1) != EXPECTED_COMMIT:
@@ -263,6 +294,7 @@ def verify(document: dict[str, Any], source: Path | None = None, root: Path = RO
         "valid": not blockers,
         "status": document.get("status"),
         "workflow": WORKFLOW_NAME,
+        "crate_integration": crate_integration,
         "source_git_objects_checked": source_checked,
         "blockers": blockers,
     }

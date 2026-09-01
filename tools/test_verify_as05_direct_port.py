@@ -22,6 +22,20 @@ class VerifyAs05DirectPortTests(unittest.TestCase):
     def test_pinned_admission_is_valid(self):
         result = verifier.verify(copy.deepcopy(self.document))
         self.assertTrue(result["valid"], result)
+        self.assertEqual(result["crate_integration"], "root_workspace_member")
+
+    def test_root_workspace_membership_is_explicit_and_exact(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            crate = root / "crates" / "sipi-agent-spice-direct"
+            crate.mkdir(parents=True)
+            (root / "Cargo.toml").write_text(
+                '[workspace]\nmembers = ["crates/sipi-agent-spice-direct"]\n',
+                encoding="utf-8",
+            )
+            self.assertTrue(verifier._is_root_workspace_member(crate, root))
+            (root / "Cargo.toml").write_text('[workspace]\nmembers = []\n', encoding="utf-8")
+            self.assertFalse(verifier._is_root_workspace_member(crate, root))
 
     def test_source_commit_mutation_is_rejected(self):
         document = copy.deepcopy(self.document)
