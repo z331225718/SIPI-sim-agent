@@ -33,9 +33,9 @@ except ImportError:
 
 
 CANDIDATE = (
-    "fc0cdfefb8ce804787214034157c1d84e2e684eb",
-    "97aa03fdb79b83f12342d6d26fa51bbf2790e2b1",
-    "988c187d2de77f05b493b756c6bcbfca463e168c3da1981064a6edfb8c55d17f",
+    "bdc0dfd849a133cb04d871a7d32a73b34acebca1",
+    "9504de118a6f0e6197829a824c1315de83c3e34f",
+    "0902f6df6fe3666051719c8e624b258978a23c7a616d14bfbc67fa710e473108",
     59146240,
 )
 SCHEMA = "sipi.p5-06.original13-root-matrix.v7"
