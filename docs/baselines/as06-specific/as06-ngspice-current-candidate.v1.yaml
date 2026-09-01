@@ -1,0 +1,78 @@
+schema: sipi.as-06-ngspice-current-candidate-formal.v1
+status: passed_scoped_external_observation
+scope:
+  workflow: AS-06
+  backend: ngspice
+  evidence_class: current_candidate_immutable_external_observation
+  comparison: Rust direct RFM workflow versus pinned Agent-Spice ngspice workflow
+harness:
+  runner:
+    path: tools/run_as_06_ngspice_current_candidate.py
+    commit: 36621b76ff400aad406575dc9b392cc794d2e593
+    tree: d239226250e452c195e2cf1e708726661ad8eaa9
+    blob: 703ddead2dc8d8e1f6d66b3d8d6158c802450d0b
+    sha256: cafd4b98898dbac7a5b229aa0ed2ff2a38759679161c573dd0f9784a37ea4191
+    bytes: 12260
+candidate:
+  commit: a9543da167895a04077bb796c4942feec95e9b89
+  tree: c1ed1402410c25990e12c6ccdbe1dbb423660fd7
+  sha256: d0863f62973ba02a28c6fbe10718292bc0ab3f2dc5a2f43794c2edceab33385b
+  bytes: 59975680
+upstream:
+  commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+  tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+  sha256: a5014b006e703b2224382d5c7622f1a14eab82acd9ca2151df8245ab51945144
+  bytes: 120238080
+inputs:
+  deck_sha256: 4c9bcfe30462ca61c62d9ecba9c50d73311f5e18b57cc6afe7e58c76f2b56e5a
+  rfm_sha256: 894b5da3aba954d3d288689458be99d7434db966b4df4675db52165c4db2b55d
+  code_model_sha256: a23fa36d39328c8a000eb405a66cd293dae6015f3f50df09c4ea887faa104bab
+  ngspice_sha256: 86c9ea5f645ca919e305639fa7bdb522355364c424d14e197f1ade617feb3453
+records:
+  docs/baselines/as06-specific/as06-ngspice-current-candidate-run-01.v1.json:
+    sha256: c4005814660f0cfaaaaaac90f9c84defd77e4117606d90a0671d5a4f25b7cfe6
+    bytes: 7032
+    run_id: as06-a9543da1-run01
+    caller_challenge: 97df5eeb69a6ff4ccefc347e9a98c88d42e1c26c15ffcf0aa324cf89d7d36d01
+    fresh_run_nonce: 420223af26c9fed74d9766ff7caf24bda4bb0dae2a01dea5806529dd72d50b6b
+  docs/baselines/as06-specific/as06-ngspice-current-candidate-run-02.v1.json:
+    sha256: 3b1c15eaaf6e415ad843d19409b4d1c1661bc618a021fe9d8cb1c96151e4bd5b
+    bytes: 7032
+    run_id: as06-a9543da1-run02
+    caller_challenge: 3d3bc8c6d5b60b76c7b2866dcf864109051612139ef5fb4b0e5b050d4da330f8
+    fresh_run_nonce: 0945820d6e1a3657c414489c8ee129083de8bc7b2b5485d982f00422650a097a
+  docs/baselines/as06-specific/as06-ngspice-current-candidate-aggregate.v1.json:
+    sha256: 59647b791187c9d36676c9cf39cfa8ecec27ef04b3bb821b8043d38c7f572953
+    bytes: 9214
+audit:
+  path: docs/baselines/as06-specific/audit-2026-09-01-as06-ngspice-current-candidate.md
+  sha256: 3adfbcd06607b11c4a5331c1500889aed54e56d49bbdefe1ba5f17561a905487
+  bytes: 1725
+verification:
+  verifier:
+    path: tools/verify_as06_ngspice_current_candidate_formal.py
+    sha256: a086f12a8486468561aee88a833388e8c65665adf0755707f3fa0a17b2d8641e
+    bytes: 27200
+  tests:
+    path: tools/test_verify_as06_ngspice_current_candidate_formal.py
+    sha256: 95e38c516bf85dcd87b92ee02a55cc527556ed5730c06267d9b85d3a2d1f86ab
+    bytes: 2263
+result:
+  headers: [time, v(src), v(out)]
+  waveform_rows: 1029
+  float_bit_exact: true
+  max_abs_error: 0.0
+  logical_manifest_equal: true
+  runtime_semantics_equal: true
+  rust_reconstruction_rms: 0.0
+  upstream_reconstruction_rms: 0.0
+  rust_reconstruction_max: 0.0
+  upstream_reconstruction_max: 0.0
+claims:
+  external_solver_scoped_observation: true
+  solver_correctness: false
+  release_acceptance: false
+  s_parameter_fit: false
+  as05_xyce_xdm: false
+  environment_injection_resistance: false
+  hostile_writer_resistance: false
