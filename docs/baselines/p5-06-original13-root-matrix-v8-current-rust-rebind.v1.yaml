@@ -1,0 +1,36 @@
+{
+  "schema": "sipi.p5-06.original13-root-matrix-v8-current-rust-rebind.v1",
+  "status": "accepted_current_rust_rebind_against_fixed_r2024b_baseline",
+  "supersedes": {
+    "path": "docs/baselines/p5-06-original13-root-matrix-v7-acceptance.v1.yaml",
+    "kind": "current_candidate_rust_rebind_only"
+  },
+  "candidate": {
+    "commit": "db025081cc74f7d09f209c0fa3bc9619b104414d",
+    "tree": "e3b0d1b87ec2ff06a49ba13a2a9917f94690c775",
+    "archive_bytes": 59822080,
+    "archive_sha256": "6ccfdcb89e3afedc0a2a0a127241518908fc3ec99713a486395b063373d07b2c"
+  },
+  "fixed_matlab_baseline": {
+    "release": "R2024b",
+    "upstream": {
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"
+    },
+    "reports": [
+      {"path": "docs/baselines/p5-06-original13-root-matrix-v7-matlab-01.json", "bytes": 44158, "sha256": "0e1afd1dc50ce24e87ed35f08fe1204f63ac1e1dad50d7a66f6913f33e4e5858"},
+      {"path": "docs/baselines/p5-06-original13-root-matrix-v7-matlab-02.json", "bytes": 44158, "sha256": "5415687d6e1bb093786846eb9cf8f44ff397dfc448c6ff6593a53514090cae04"}
+    ]
+  },
+  "current_rust_reports": [
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v8-rust-01.json", "bytes": 50370, "sha256": "279dbd2e5376ce4015ceb23448a93ef9c5839c6566b52507931f19fdea08c201"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v8-rust-02.json", "bytes": 50369, "sha256": "468af16ed0dfee044b1460a0331114fcc80e0db3ab9e0d362de59faee42bcb26"}
+  ],
+  "reference_rust_report": {"path": "docs/baselines/p5-06-original13-root-matrix-v7-rust-01.json", "bytes": 50370, "sha256": "3b4b1cbe6be36ad64de085052444c3fbbb6a0f8a2c4336b55608304505d8b9c0"},
+  "matrix": {"workbooks": 13, "package_cases": 28, "scalar_slots": 509, "cross_tolerance": 1e-9, "rust_rayon_num_threads": 16},
+  "performance": {"matlab_best_total_wall_ns": 1578885291000, "rust_worst_total_wall_ns": 88551451600, "speedup_floor": 17.8301457793381},
+  "gates": {"rust_repeat_exact": true, "current_rust_vs_reference_rust_exact": true, "current_rust_vs_matlab_1e_9": true, "per_workbook_rust_not_slower": true, "total_rust_not_slower": true},
+  "claims": {"owner_selected_original13_acceptance": true, "performance_acceptance": true, "global_upstream_workflow_completion": false, "release": false, "s_parameter_fit": false}
+}
