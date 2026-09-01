@@ -17,24 +17,24 @@ except ImportError:
 ARTIFACTS = {
     "replay_01": (
         "docs/baselines/p5-06-tdiln-array-current-replay-01.v1.json",
-        "b76c3c854c4a09e13eb7091b2a08f3dac314a2459fd8445f03feaf91573edfea",
+        "6459743d8957d895d80a5ac62baa3c5f83d457ef9ca4f16ba1eae3335e84c2c4",
     ),
     "replay_02": (
         "docs/baselines/p5-06-tdiln-array-current-replay-02.v1.json",
-        "53e133ecd486d6bad16ffa23813c42a6588daf569e5b27059ccdf6e53cf0c2b0",
+        "68b56f3ac8899fbbc8d52d86abd480398c9e805d9470501b8486ba4e78685094",
     ),
     "aggregate": (
         "docs/baselines/p5-06-tdiln-array-current-replay-aggregate.v1.json",
-        "edc0329b18c236b91deab92bd461fa643ccb99bcfbe58674de2644358db2465e",
+        "5306c74a4872a1d86d377b2a0d4f2700ff1c2ef14a3fdafffcba481e3ff00018",
     ),
 }
 
 EXPECTED_SCOPE = {
     "candidate": {
-        "commit": "25c7ac5a348f5b5346ca6becd25b4e3dfbd4595f",
-        "tree": "7fb38b6b31f0b7d26eda3ca5149e8509e06f9734",
-        "archive_sha256": "1e379945bdbdc973443b9d508578b15a6fd4e8c4ab6db1d6de84156891123000",
-        "archive_bytes": 58234880,
+        "commit": "b456e9d57b2449787e22cdefdad6c0edc70d69dc",
+        "tree": "9cd25bd57387e571917cf5274952d8c4fffe44f5",
+        "archive_sha256": "dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8",
+        "archive_bytes": 58337280,
     },
     "upstream": {
         "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
@@ -59,9 +59,9 @@ GATES = {
     "total_rust_not_slower": True,
 }
 PERFORMANCE = {
-    "matlab_best_total_core_seconds": 1738.2513337999999,
-    "rust_worst_total_wall_seconds": 539.4338988000527,
-    "speedup_floor": 3.222362068210145,
+    "matlab_best_total_core_seconds": 1753.3723475,
+    "rust_worst_total_wall_seconds": 195.89563529996667,
+    "speedup_floor": 8.950543205391662,
 }
 CLAIMS = {
     "tdiln_named_intermediate_checkpoint_parity": True,

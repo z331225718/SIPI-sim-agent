@@ -1,28 +1,28 @@
 {
-  "aggregate_input_sha256": "b6844a136a295816600af5bb22adc23a5d220ed9a3726b340214be4920c03d80",
+  "aggregate_input_sha256": "3c454451814496b80823dda9467cac7aa0bcb5efafd94906a94393833de8eec0",
   "builds": [
     {
       "diagnostic_binary": {
-        "bytes": 7457280,
+        "bytes": 5867520,
         "name": "sipi-com-direct-run.exe",
-        "sha256": "4a4911a72405e1a22cb950ffa43189bac49e86808d0c407b776eafd219be84b6"
+        "sha256": "af692abb20f600cc658c6889812f46716850b89f0656e7881f8886ea4bd9e2bb"
       },
       "production_binary": {
-        "bytes": 7436800,
+        "bytes": 5856768,
         "name": "sipi-com-direct-run.exe",
-        "sha256": "5b8658d3d136bbcded44a867218526e93fc58406c48bf05f81ae2ef349cc3ff8"
+        "sha256": "01269cb4fbd9b984960ee5fba55b4ab87a8dec7f856f3908c0c3cb130b04d15e"
       }
     },
     {
       "diagnostic_binary": {
-        "bytes": 7457280,
+        "bytes": 5867520,
         "name": "sipi-com-direct-run.exe",
-        "sha256": "2a36797260be775e1b6199c7e0fbbc549e2f0f648210b7b719d7952ce159187f"
+        "sha256": "8cc18c34af7ecd4643011f39a5c656c7a63bdb59a78d841b59fcad354ee60ea1"
       },
       "production_binary": {
-        "bytes": 7436800,
+        "bytes": 5856768,
         "name": "sipi-com-direct-run.exe",
-        "sha256": "444e09af27b0c6be8d4d4527a729db104b6d3f213883f8bffb64b95ba5b58d16"
+        "sha256": "f4e29cbcd2cf8db6abdc08a564cb7e1690dc9368df080951ee472778bb3f3c5d"
       }
     }
   ],
@@ -48,115 +48,115 @@
     "system": "Windows"
   },
   "performance": {
-    "matlab_best_total_core_seconds": 1738.2513337999999,
+    "matlab_best_total_core_seconds": 1753.3723475,
     "per_workbook": [
       {
-        "matlab_best_core_seconds": 24.2487966,
+        "matlab_best_core_seconds": 24.3196326,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 11.114225999976043,
-        "speedup_floor": 2.181780053784426,
+        "rust_worst_wall_seconds": 3.038531700032763,
+        "speedup_floor": 8.003744900781443,
         "workbook_index": 0
       },
       {
-        "matlab_best_core_seconds": 29.8412858,
+        "matlab_best_core_seconds": 30.2683972,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 11.823721300053876,
-        "speedup_floor": 2.523848883334558,
+        "rust_worst_wall_seconds": 3.9385450999834575,
+        "speedup_floor": 7.68517217185786,
         "workbook_index": 1
       },
       {
-        "matlab_best_core_seconds": 662.2010263,
+        "matlab_best_core_seconds": 670.0202277,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 107.40654759999597,
-        "speedup_floor": 6.165369254453393,
+        "rust_worst_wall_seconds": 70.00783199997386,
+        "speedup_floor": 9.570646719930567,
         "workbook_index": 2
       },
       {
-        "matlab_best_core_seconds": 6.3717813,
+        "matlab_best_core_seconds": 6.5059626,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 0.18364819994894788,
-        "speedup_floor": 34.69558265080346,
+        "rust_worst_wall_seconds": 0.18557150004198775,
+        "speedup_floor": 35.05906132422246,
         "workbook_index": 3
       },
       {
-        "matlab_best_core_seconds": 7.074015,
+        "matlab_best_core_seconds": 7.1101432,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 0.18283569999039173,
-        "speedup_floor": 38.69055660558496,
+        "rust_worst_wall_seconds": 0.17995710001559928,
+        "speedup_floor": 39.51021215269456,
         "workbook_index": 4
       },
       {
-        "matlab_best_core_seconds": 6.282407,
+        "matlab_best_core_seconds": 6.3509785,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 0.17990879999706522,
-        "speedup_floor": 34.91995388831721,
+        "rust_worst_wall_seconds": 0.17462810000870377,
+        "speedup_floor": 36.368594170602876,
         "workbook_index": 5
       },
       {
-        "matlab_best_core_seconds": 34.0921588,
+        "matlab_best_core_seconds": 34.0877136,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 14.030161899980158,
-        "speedup_floor": 2.4299191301597323,
+        "rust_worst_wall_seconds": 5.892014799988829,
+        "speedup_floor": 5.785408685678222,
         "workbook_index": 6
       },
       {
-        "matlab_best_core_seconds": 33.7375136,
+        "matlab_best_core_seconds": 34.2182885,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 12.769099999975879,
-        "speedup_floor": 2.6421214964299544,
+        "rust_worst_wall_seconds": 4.831353599962313,
+        "speedup_floor": 7.082546907820393,
         "workbook_index": 7
       },
       {
-        "matlab_best_core_seconds": 162.9440291,
+        "matlab_best_core_seconds": 164.3439237,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 35.82491849997314,
-        "speedup_floor": 4.548343329800518,
+        "rust_worst_wall_seconds": 19.503111900005024,
+        "speedup_floor": 8.42654877552939,
         "workbook_index": 8
       },
       {
-        "matlab_best_core_seconds": 183.4036975,
+        "matlab_best_core_seconds": 184.8739251,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 48.59175400005188,
-        "speedup_floor": 3.7743790335249923,
+        "rust_worst_wall_seconds": 20.725481699977536,
+        "speedup_floor": 8.920126816652004,
         "workbook_index": 9
       },
       {
-        "matlab_best_core_seconds": 179.7183859,
+        "matlab_best_core_seconds": 181.003654,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 126.69769469997846,
-        "speedup_floor": 1.418481893656985,
+        "rust_worst_wall_seconds": 23.872207499982323,
+        "speedup_floor": 7.582191718136416,
         "workbook_index": 10
       },
       {
-        "matlab_best_core_seconds": 135.9764987,
+        "matlab_best_core_seconds": 136.4584211,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 49.50729550002143,
-        "speedup_floor": 2.746595169997544,
+        "rust_worst_wall_seconds": 21.593664299987722,
+        "speedup_floor": 6.31937309037807,
         "workbook_index": 11
       },
       {
-        "matlab_best_core_seconds": 269.5159881,
+        "matlab_best_core_seconds": 272.3618523,
         "rust_not_slower": true,
         "rust_semantic_repeat_exact": true,
-        "rust_worst_wall_seconds": 121.51731359999394,
-        "speedup_floor": 2.217922533962382,
+        "rust_worst_wall_seconds": 29.269365600019228,
+        "speedup_floor": 9.305355504521803,
         "workbook_index": 12
       }
     ],
-    "rust_worst_total_wall_seconds": 539.4338988000527,
-    "speedup_floor": 3.222362068210145
+    "rust_worst_total_wall_seconds": 195.89563529996667,
+    "speedup_floor": 8.950543205391662
   },
   "performance_policy": {
     "rust_not_slower_required": true,
@@ -164,23 +164,23 @@
   },
   "runs": [
     {
-      "nonce": "df30124c2f4852f3b241ee0395ec6c8b2bafa421349bda48413caf819c7522e4",
-      "report_sha256": "b76c3c854c4a09e13eb7091b2a08f3dac314a2459fd8445f03feaf91573edfea",
-      "run_id": "tdiln-array-ebf2add3a47d58892fac1092326b826da8057e4a9df0cd3d0c0d16bb9c2d23d1"
+      "nonce": "932b6add296a5863b16cd577c6362bb9fbd0aca4a9c06e953e19ddf4b0569609",
+      "report_sha256": "6459743d8957d895d80a5ac62baa3c5f83d457ef9ca4f16ba1eae3335e84c2c4",
+      "run_id": "tdiln-array-764672489165430d10b44ce60ec2491cb554cb2e2328baf5da2d09d2a969a9a2"
     },
     {
-      "nonce": "ef7fb482fbd975deddcdff16414ee088335f85d75bab534a2586748f77e02ae2",
-      "report_sha256": "53e133ecd486d6bad16ffa23813c42a6588daf569e5b27059ccdf6e53cf0c2b0",
-      "run_id": "tdiln-array-2b3411dd951ca8b0de78121cd59bff73cdf158826e7b63210b2df49cb6425d79"
+      "nonce": "d260a8cd9475cd75da8ab60de81519a55d7f58f638fa3bcf888b4b336c703c97",
+      "report_sha256": "68b56f3ac8899fbbc8d52d86abd480398c9e805d9470501b8486ba4e78685094",
+      "run_id": "tdiln-array-3edbb32f05467669498804e136a5cc75bf2bceb3f4dd53cbb9f57d9fc3766bff"
     }
   ],
   "schema": "sipi.p5-06.tdiln-array-replay-aggregate.v1",
   "source": {
     "candidate": {
-      "archive_bytes": 58234880,
-      "archive_sha256": "1e379945bdbdc973443b9d508578b15a6fd4e8c4ab6db1d6de84156891123000",
-      "commit": "25c7ac5a348f5b5346ca6becd25b4e3dfbd4595f",
-      "tree": "7fb38b6b31f0b7d26eda3ca5149e8509e06f9734"
+      "archive_bytes": 58337280,
+      "archive_sha256": "dfbf605916dccb0912a7dbc565eb49e58055efb869113ee0fc3704c598c0f0a8",
+      "commit": "b456e9d57b2449787e22cdefdad6c0edc70d69dc",
+      "tree": "9cd25bd57387e571917cf5274952d8c4fffe44f5"
     },
     "gate_tools": {
       "array_comparator": {
