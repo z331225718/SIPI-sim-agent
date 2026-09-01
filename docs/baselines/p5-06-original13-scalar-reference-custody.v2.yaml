@@ -1,0 +1,32 @@
+{
+  "schema": "sipi.p5-06.original13-scalar-reference-custody.v2",
+  "status": "accepted_current_original13_scalar_reference",
+  "basis": {"path": "docs/baselines/p5-06-original13-root-matrix-v6-acceptance.v1.yaml", "sha256": "8b692c8d4b21d129586dc5368b61246ad5d0d93ea885263f160aa29e1c1c183b"},
+  "scope": {"route": ["com", "run"], "workbooks": 13, "package_cases": 28, "scalar_slots": 303, "channels": ["THRU", "FEXT", "NEXT"]},
+  "normalized_inputs": {"encoding": "canonical-json-sha256-v1", "sha256": "f359534bd5c4176a4094983853c92f73fc1429c0e37850b11ba018807e200ef7"},
+  "oracle_runtime": {
+    "matlab": {"role": "matlab", "executable": "matlab.exe", "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633", "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca", "path_redacted": true, "release": "R2024b", "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread"},
+    "python": {"role": "python", "executable": "python.exe", "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d", "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e", "path_redacted": true},
+    "upstream": {"commit": "5272ffe74702cd585054d975559b06f8afae7b6e", "tree": "7094ab6e84989b218730c52432c70da10261f8ea", "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf", "archive_bytes": 43694080},
+    "harness": {"path": "tools/sipi_com_final_surface_oracle_v3.m", "bytes": 4644, "sha256": "5f2325766f089f9cf19aed4fcff753864dc7fa72ec0e2cb83860eb753d3a7494"}
+  },
+  "reference_bundle": {"encoding": "domain-separated-scalar-slots-v2-f64le", "matlab_sha256": "4e5b877dfe500185f3305c384fcb0f39d56ada04726bd1897635a67263596665", "rust_sha256": "d5db569594fc2e56dcddeb4380e8c1df0d4abb100b7e77e019358eacf5c04462"},
+  "comparison_policy": {"matlab_repeat_tolerance": 1e-12, "rust_repeat": "exact", "cross_tolerance": 1e-9, "slot_order": "workbook_index,case_index,runner_METRICS_order", "finite_only": true, "same_sign_infinity_only": true, "nan": "rejected", "alignment": "forbidden"},
+  "custody": {"report_paths_distinct": true, "report_sha256_distinct": true, "root_id_distinct": true, "run_id_distinct": true, "nonce_distinct": true, "source_inventory_unchanged": true, "paths": "redacted_or_repo_relative", "payload_location": "docs/baselines"},
+  "reports": [
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-matlab-01.json", "engine": "matlab", "bytes": 34629, "sha256": "12459edb27b387a05b9e0f55753b428dc81f624d1e6613e48dfd9751943aefd4"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-matlab-02.json", "engine": "matlab", "bytes": 34629, "sha256": "2d8d6e23e4d20619b55e83e319ddb7f8007df1f26b57afc1ba176ee4aea88034"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-rust-01.json", "engine": "rust", "bytes": 40843, "sha256": "3f684ae9707d64b1baf8f35639dcda53caef788bcafd64d9f688276baec0e24d"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-rust-02.json", "engine": "rust", "bytes": 40844, "sha256": "f4e79f8f8b33b818a17ed2a20136501b94dafbe028cc73a152c463cebdcaf60d"}
+  ],
+  "aggregate": {"path": "docs/baselines/p5-06-original13-root-matrix-v6-aggregate.json", "bytes": 8185, "sha256": "9f36c8f3e7660803347802362666938c50b3f4b71937962b3bbd606a2f5e2675"},
+  "audit": {"path": "docs/baselines/audits/2026-09-01-p5-06-original13-scalar-reference-custody.md", "bytes": 959, "sha256": "1a49daf5f93d9fc3ac12285e4d1e12bb1adc9a7299a51ffeb425593d087cd614"},
+  "gate_tools": {
+    "runner": {"path": "tools/run_p5_06_original13_root_matrix_v6.py", "bytes": 18600, "sha256": "79fc64534c64ef9131edca5398214bb7d03edc3b45e885f28a870152f8b27af6"},
+    "aggregate": {"path": "tools/aggregate_p5_06_original13_root_matrix_v6.py", "bytes": 7132, "sha256": "e971739edcbf4f876f4b65b63eaffae5dbdfb3a38f9aa2d6deaa06a1c0ddd2ab"},
+    "report_verifier": {"path": "tools/verify_p5_06_original13_root_matrix_v6.py", "bytes": 11776, "sha256": "d22264bdbaca41773e16f464f36c9c2d260a4d66cd708a0d2c9ef0b48c298596"},
+    "tests": {"path": "tools/test_verify_p5_06_original13_root_matrix_v6.py", "bytes": 8904, "sha256": "fdfd25f33778218700dbc563c55bb2f8f73f38c9778fb04ac09388e2a1f7df50"}
+  },
+  "claims": {"current_original13_scalar_reference": true, "matlab_one_to_one": true, "public_root_route": true, "array_acceptance": false, "warning_or_full_result_graph_acceptance": false, "release": false},
+  "non_claims": ["no_legacy_three_metric_contract_claim", "no_array_or_intermediate_checkpoint_acceptance", "no_warning_or_full_result_graph_acceptance", "no_generalized_com_acceptance", "no_ieee_certification", "no_release"]
+}
