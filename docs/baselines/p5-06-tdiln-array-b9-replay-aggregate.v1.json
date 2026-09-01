@@ -1,0 +1,253 @@
+{
+  "aggregate_input_sha256": "ebe31f16f8b52a98f98fc3b3fdce4f2d4b78664c517e15155191c77b1b849b81",
+  "builds": [
+    {
+      "diagnostic_binary": {
+        "bytes": 5872640,
+        "name": "sipi-com-direct-run.exe",
+        "sha256": "2b6a445e5ee0edaacfed835f6bcd213b0b953f32a4d4c8ebc12bde231df86d6d"
+      },
+      "production_binary": {
+        "bytes": 5861888,
+        "name": "sipi-com-direct-run.exe",
+        "sha256": "140334b81629f1655756c3d7fcd62a8c77010b613f99c855f9c500a47b9284d9"
+      }
+    },
+    {
+      "diagnostic_binary": {
+        "bytes": 5872640,
+        "name": "sipi-com-direct-run.exe",
+        "sha256": "2150849ba41cecd991982cd057fdeaf0a27a8f73fe1e2687ddb812492295260b"
+      },
+      "production_binary": {
+        "bytes": 5861888,
+        "name": "sipi-com-direct-run.exe",
+        "sha256": "8063cec0d6607e841a996e71a3218875d5ac1548777fab1547980ab7e6eede3b"
+      }
+    }
+  ],
+  "claims": {
+    "channel_s_parameter_fit": false,
+    "complete_warning_catalog": false,
+    "full_result_graph": false,
+    "performance_acceptance_checkpoint": true,
+    "release": false,
+    "tdiln_named_intermediate_checkpoint_parity": true
+  },
+  "diagnostic_only": true,
+  "gates": {
+    "per_workbook_rust_not_slower": true,
+    "rust_semantic_repeat_exact": true,
+    "total_rust_not_slower": true,
+    "two_fresh_replays": true
+  },
+  "host": {
+    "logical_cpus": 16,
+    "machine": "AMD64",
+    "rayon_threads": 16,
+    "system": "Windows"
+  },
+  "performance": {
+    "matlab_best_total_core_seconds": 1758.8355904,
+    "per_workbook": [
+      {
+        "matlab_best_core_seconds": 24.2656461,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 3.0788771999650635,
+        "speedup_floor": 7.881329628955434,
+        "workbook_index": 0
+      },
+      {
+        "matlab_best_core_seconds": 30.1707537,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 3.9003153999801725,
+        "speedup_floor": 7.735465111399292,
+        "workbook_index": 1
+      },
+      {
+        "matlab_best_core_seconds": 671.2664764,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 62.78343800001312,
+        "speedup_floor": 10.691776331201545,
+        "workbook_index": 2
+      },
+      {
+        "matlab_best_core_seconds": 6.6701805,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 0.18018470000242814,
+        "speedup_floor": 37.018573163593324,
+        "workbook_index": 3
+      },
+      {
+        "matlab_best_core_seconds": 7.0555417,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 0.16935570002533495,
+        "speedup_floor": 41.66108196502697,
+        "workbook_index": 4
+      },
+      {
+        "matlab_best_core_seconds": 6.6597819,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 0.17938370001502335,
+        "speedup_floor": 37.12590329802676,
+        "workbook_index": 5
+      },
+      {
+        "matlab_best_core_seconds": 34.318472,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 5.898182299977634,
+        "speedup_floor": 5.818482755293972,
+        "workbook_index": 6
+      },
+      {
+        "matlab_best_core_seconds": 34.352644,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 4.829563000006601,
+        "speedup_floor": 7.112992210672693,
+        "workbook_index": 7
+      },
+      {
+        "matlab_best_core_seconds": 165.2992336,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 15.132407299999613,
+        "speedup_floor": 10.923525274131647,
+        "workbook_index": 8
+      },
+      {
+        "matlab_best_core_seconds": 185.8591309,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 20.69883970002411,
+        "speedup_floor": 8.979205288486945,
+        "workbook_index": 9
+      },
+      {
+        "matlab_best_core_seconds": 182.1793084,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 25.09305960003985,
+        "speedup_floor": 7.260147279916024,
+        "workbook_index": 10
+      },
+      {
+        "matlab_best_core_seconds": 136.4599177,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 21.68020219996106,
+        "speedup_floor": 6.294217943236946,
+        "workbook_index": 11
+      },
+      {
+        "matlab_best_core_seconds": 272.0488662,
+        "rust_not_slower": true,
+        "rust_semantic_repeat_exact": true,
+        "rust_worst_wall_seconds": 27.85858930001268,
+        "speedup_floor": 9.765349683369509,
+        "workbook_index": 12
+      }
+    ],
+    "rust_worst_total_wall_seconds": 190.41138859995408,
+    "speedup_floor": 9.237029377981356
+  },
+  "performance_policy": {
+    "rust_not_slower_required": true,
+    "scope": "default-production Rust process plus normal artifacts; TDILN diagnostic sidecar I/O excluded; MATLAB source core after engine start"
+  },
+  "runs": [
+    {
+      "nonce": "2a73faed1ae7a754e0a5fa0fc4b7afe78825e65ce825a80f383537d618c3fe97",
+      "report_sha256": "8f37dfac1b5c1d4bd5f8f9bd3475b2c709d6d85d35e9046f87dac87cc2e4e3d7",
+      "run_id": "tdiln-array-f7b43ff6111cdca0172f3ec5314da6e56c59789be0ad98f451401548b5f74dbd"
+    },
+    {
+      "nonce": "d60273738acd94ef23df1bd31289d52f257871a49996bd4244bffb7aa10cbd89",
+      "report_sha256": "61e8a8aa62a5e873e3682caeb0674c1b1d9723fb97c9b3359582695c82763b89",
+      "run_id": "tdiln-array-239fb23ef872044230f1f02c9dcb4d10f29ba22d3e537602b7993702f591f4c7"
+    }
+  ],
+  "schema": "sipi.p5-06.tdiln-array-replay-aggregate.v1",
+  "source": {
+    "candidate": {
+      "archive_bytes": 58705920,
+      "archive_sha256": "4e40155745d439a721e0f9923a36a60c9daf2404ff24f574b12a4fd7d425a8a2",
+      "commit": "b9b195a19d3d209a37a52ba29c730759361dba03",
+      "tree": "becca5842b55eeb1d1a310b2c3174458936ec901"
+    },
+    "gate_tools": {
+      "array_comparator": {
+        "bytes": 8099,
+        "name": "compare_com_tdiln_sidecars.py",
+        "sha256": "444a6667008e7b96222fa0709df52109c638d3ab3350f91f3b8ddc5e28161dba"
+      },
+      "diagnostic_runner": {
+        "bytes": 18869,
+        "name": "run_com_tdiln_original13_diagnostic.py",
+        "sha256": "be9cf6dac7f593f2ddd50dea3282137b10a5e365d065c4a94418877fe9dae024"
+      },
+      "matlab_harness": {
+        "bytes": 12933,
+        "name": "sipi_com_tdiln_matrix_diagnostic_v1.m",
+        "sha256": "b84149fbe6d5d42988870f97ca25801907edf10a6ebc6d02130a128d04ee0602"
+      },
+      "runner": {
+        "bytes": 10097,
+        "name": "run_p5_06_tdiln_array_replay.py",
+        "sha256": "40ed9c14e7ffa0c5608723a5f10909b7da143d2657c58321dff16f518233cf26"
+      }
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_sha256": "536624a00003544be3a7a5bb0d22893dc5b696c802ca6b3a5efd00abf53e3a50"
+      },
+      "matlab": {
+        "executable": "matlab.exe",
+        "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+        "path_redacted": true,
+        "release": "R2024b",
+        "role": "matlab",
+        "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca"
+      },
+      "python": {
+        "executable": "python.exe",
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb"
+      },
+      "uv": {
+        "executable": "uv.exe",
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "upstream": {
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    }
+  },
+  "status": "accepted_diagnostic_checkpoint"
+}

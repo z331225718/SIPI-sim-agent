@@ -1,0 +1,29 @@
+{
+  "schema": "sipi.p5-06.tdiln-array-b9-acceptance.v1",
+  "status": "accepted_current_named_tdiln_array_checkpoint",
+  "scope": {
+    "candidate": {"commit": "b9b195a19d3d209a37a52ba29c730759361dba03", "tree": "becca5842b55eeb1d1a310b2c3174458936ec901", "archive_sha256": "4e40155745d439a721e0f9923a36a60c9daf2404ff24f574b12a4fd7d425a8a2", "archive_bytes": 58705920},
+    "upstream": {"commit": "5272ffe74702cd585054d975559b06f8afae7b6e", "tree": "7094ab6e84989b218730c52432c70da10261f8ea", "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf", "archive_bytes": 43694080},
+    "matlab_release": "R2024b",
+    "workbooks": 13,
+    "channel_roles": ["THRU", "FEXT", "NEXT"],
+    "vectors": {
+      "time_s": "exact_f64_little_endian",
+      "iln_pulse": {"atol": 5e-12, "rtol": 1e-9},
+      "reference_pulse": {"atol": 5e-12, "rtol": 1e-9},
+      "fitted_pulse": {"atol": 5e-12, "rtol": 1e-9},
+      "pdf_axis": {"atol": 5e-12, "rtol": 1e-9},
+      "pdf_probability": {"atol": 5e-12, "rtol": 1e-9}
+    }
+  },
+  "artifacts": {
+    "replay_01": {"path": "docs/baselines/p5-06-tdiln-array-b9-replay-01.v1.json", "sha256": "8f37dfac1b5c1d4bd5f8f9bd3475b2c709d6d85d35e9046f87dac87cc2e4e3d7"},
+    "replay_02": {"path": "docs/baselines/p5-06-tdiln-array-b9-replay-02.v1.json", "sha256": "61e8a8aa62a5e873e3682caeb0674c1b1d9723fb97c9b3359582695c82763b89"},
+    "aggregate": {"path": "docs/baselines/p5-06-tdiln-array-b9-replay-aggregate.v1.json", "sha256": "727455c104dd79a231e141f6e461f1886cd800d0e7b8dd2d47e04f2b027d5349"}
+  },
+  "gates": {"two_fresh_replays": true, "rust_semantic_repeat_exact": true, "per_workbook_rust_not_slower": true, "total_rust_not_slower": true},
+  "performance": {"matlab_best_total_core_seconds": 1758.8355904, "rust_worst_total_wall_seconds": 190.41138859995408, "speedup_floor": 9.237029377981356},
+  "claims": {"tdiln_named_intermediate_checkpoint_parity": true, "performance_acceptance_checkpoint": true, "full_result_graph": false, "complete_warning_catalog": false, "release": false, "p5_06_main_closed": false},
+  "non_claims": ["public_tdiln_sidecar_wire", "complete_warning_catalog", "full_result_graph", "ieee_certification", "release"],
+  "audit": {"path": "docs/baselines/audits/2026-09-01-p5-06w7-current-tdiln-rebind.md", "bytes": 1006, "sha256": "88078fdb0cbc9eb63da8c0fd7f01b13c024e83fbabd9ec11f4fa5045a74089fe"}
+}
