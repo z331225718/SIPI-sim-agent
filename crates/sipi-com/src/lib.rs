@@ -169,7 +169,8 @@ pub use dfe_v1::{
     apply_tail_rss_bounds_v1, clip_dfe_v1, find_dfe_bank_locations_v1,
 };
 pub use discrete_pdf_v1::{
-    DISCRETE_PDF_POLICY_V1, DiscretePdfV1, PdfErrorV1, convolve_v1, normal_pdf_v1,
+    DISCRETE_PDF_POLICY_V1, DirectPdfConvolutionTraceV1, DiscretePdfV1, PdfErrorV1, convolve_v1,
+    normal_pdf_v1, take_direct_pdf_convolution_trace_v1,
 };
 pub use equalization_apply_v1::{
     EQUALIZATION_APPLY_POLICY_V1, EqualizationApplyErrorV1, EqualizedChannelsV1,

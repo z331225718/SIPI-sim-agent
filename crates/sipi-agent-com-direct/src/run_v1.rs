@@ -73,6 +73,7 @@ struct PerformanceTraceV1 {
     started: Instant,
     previous: Instant,
     stages: Vec<(&'static str, u128)>,
+    pdf_convolutions: Vec<Value>,
 }
 
 impl PerformanceTraceV1 {
@@ -83,6 +84,7 @@ impl PerformanceTraceV1 {
                 started: now,
                 previous: now,
                 stages: Vec::new(),
+                pdf_convolutions: Vec::new(),
             }
         })
     }
@@ -92,6 +94,23 @@ impl PerformanceTraceV1 {
         self.stages
             .push((stage, now.duration_since(self.previous).as_nanos()));
         self.previous = now;
+    }
+
+    fn record_pdf_convolutions(&mut self, records: Vec<sipi_com::DirectPdfConvolutionTraceV1>) {
+        self.pdf_convolutions
+            .extend(records.into_iter().map(|record| {
+                json!({
+                    "backend": "direct_source_order",
+                    "ordinal": record.ordinal,
+                    "left_len": record.left_len,
+                    "right_len": record.right_len,
+                    "left_nonzero_count": record.left_nonzero_count,
+                    "right_nonzero_count": record.right_nonzero_count,
+                    "output_len": record.output_len,
+                    "estimated_output_allocation_bytes": record.estimated_output_allocation_bytes,
+                    "elapsed_ns": record.elapsed_ns,
+                })
+            }));
     }
 
     fn finish(mut self, package_case_index: Option<usize>) {
@@ -116,6 +135,7 @@ impl PerformanceTraceV1 {
             "schema": "sipi.com.performance-trace.v1",
             "package_case_index": package_case_index,
             "stages": stages,
+            "pdf_convolutions": self.pdf_convolutions,
             "total_elapsed_ns": self.started.elapsed().as_nanos(),
         });
         let _ = fs::write(path, serde_json::to_vec(&trace).unwrap_or_default());
@@ -1838,6 +1858,11 @@ fn run_with_workflow_token_origin(
         .iter()
         .map(Vec::as_slice)
         .collect::<Vec<_>>();
+    if performance_trace.is_some() {
+        // Search work may invoke the same direct kernel. Keep this receipt scoped
+        // to the final COM envelope on the package-case worker.
+        let _ = sipi_com::take_direct_pdf_convolution_trace_v1();
+    }
     let envelope = if let Some(metrics) = branches.erl_only_metrics.as_ref() {
         sipi_com::erl_only_envelope_v1(metrics)
             .map_err(|error| DirectRunErrorV1::Parameters(error.to_owned()))
@@ -1863,6 +1888,9 @@ fn run_with_workflow_token_origin(
         )
         .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))
     }?;
+    if let Some(trace) = performance_trace.as_mut() {
+        trace.record_pdf_convolutions(sipi_com::take_direct_pdf_convolution_trace_v1());
+    }
     mark_performance_trace_v1(&mut performance_trace, "com_envelope");
     if !envelope.admitted() {
         return Err(DirectRunErrorV1::Execution(

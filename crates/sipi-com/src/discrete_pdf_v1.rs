@@ -27,6 +27,38 @@ pub struct DiscretePdfV1 {
     probability: Vec<f64>,
 }
 
+/// Diagnostic-only receipt for one direct dense PDF convolution.
+/// It is emitted only when the direct COM performance trace is enabled and
+/// never participates in a result artifact or numerical decision.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DirectPdfConvolutionTraceV1 {
+    pub ordinal: usize,
+    pub left_len: usize,
+    pub right_len: usize,
+    pub left_nonzero_count: usize,
+    pub right_nonzero_count: usize,
+    pub output_len: usize,
+    pub estimated_output_allocation_bytes: usize,
+    pub elapsed_ns: u128,
+}
+
+thread_local! {
+    static DIRECT_PDF_CONVOLUTION_TRACE: RefCell<Vec<DirectPdfConvolutionTraceV1>> = const { RefCell::new(Vec::new()) };
+}
+
+fn direct_pdf_trace_enabled_v1() -> bool {
+    std::env::var_os("SIPI_COM_PERFORMANCE_TRACE_DIR").is_some()
+}
+
+/// Drain the current worker's direct PDF trace records.
+///
+/// The direct-run crate calls this immediately after its COM envelope returns,
+/// preserving the package-case worker boundary without adding fields to the
+/// public result wire.
+pub fn take_direct_pdf_convolution_trace_v1() -> Vec<DirectPdfConvolutionTraceV1> {
+    DIRECT_PDF_CONVOLUTION_TRACE.with(|records| std::mem::take(&mut *records.borrow_mut()))
+}
+
 impl DiscretePdfV1 {
     pub fn try_new(bin_size: f64, min_bin: i64, probability: Vec<f64>) -> Result<Self, PdfErrorV1> {
         if !(bin_size > 0.0)
@@ -175,18 +207,71 @@ pub fn convolve_v1(
         return Ok(other
             .renormalized_shifted_clone(matlab_round(other.min_bin as f64 + single_min as f64)));
     }
+    let trace_enabled = direct_pdf_trace_enabled_v1();
+    let started = trace_enabled.then(std::time::Instant::now);
     let size = left.probability.len() + right.probability.len() - 1;
-    let mut result = vec![0.0_f64; size];
-    for (left_index, left_value) in left.probability.iter().enumerate() {
-        for (right_index, right_value) in right.probability.iter().enumerate() {
-            result[left_index + right_index] += left_value * right_value;
+    let result = if let Some(indices) = sparse_indices_at_most_four(&right.probability) {
+        // Keep the public kernel's left-outer/right-inner evaluation order.
+        // Skipping zero-mass right bins leaves every nonzero multiply/add at
+        // exactly its original position in the accumulation sequence.
+        source_order_sparse_right_convolution(
+            &left.probability,
+            &right.probability,
+            indices.as_slice(),
+        )
+    } else {
+        let mut result = vec![0.0_f64; size];
+        for (left_index, left_value) in left.probability.iter().enumerate() {
+            for (right_index, right_value) in right.probability.iter().enumerate() {
+                result[left_index + right_index] += left_value * right_value;
+            }
         }
-    }
-    DiscretePdfV1::try_new(
+        result
+    };
+    let convolved = DiscretePdfV1::try_new(
         left.bin_size,
         matlab_round(left.min_bin as f64 + right.min_bin as f64),
         result,
-    )
+    )?;
+    if let Some(started) = started {
+        DIRECT_PDF_CONVOLUTION_TRACE.with(|records| {
+            let mut records = records.borrow_mut();
+            let ordinal = records.len();
+            records.push(DirectPdfConvolutionTraceV1 {
+                ordinal,
+                left_len: left.probability.len(),
+                right_len: right.probability.len(),
+                left_nonzero_count: left
+                    .probability
+                    .iter()
+                    .filter(|value| **value != 0.0)
+                    .count(),
+                right_nonzero_count: right
+                    .probability
+                    .iter()
+                    .filter(|value| **value != 0.0)
+                    .count(),
+                output_len: size,
+                estimated_output_allocation_bytes: size.saturating_mul(std::mem::size_of::<f64>()),
+                elapsed_ns: started.elapsed().as_nanos(),
+            });
+        });
+    }
+    Ok(convolved)
+}
+
+fn source_order_sparse_right_convolution(
+    left: &[f64],
+    right: &[f64],
+    right_nonzero_indices: &[usize],
+) -> Vec<f64> {
+    let mut result = vec![0.0_f64; left.len() + right.len() - 1];
+    for (left_index, left_value) in left.iter().enumerate() {
+        for &right_index in right_nonzero_indices {
+            result[left_index + right_index] += left_value * right[right_index];
+        }
+    }
+    result
 }
 
 /// Bounded C2M-search convolution backend.
@@ -344,6 +429,16 @@ pub const DISCRETE_PDF_POLICY_V1: &str = "sipi.p5-04d.discrete-pdf-v1.normal-con
 mod tests {
     use super::*;
 
+    fn dense_source_order_convolution(left: &[f64], right: &[f64]) -> Vec<f64> {
+        let mut result = vec![0.0_f64; left.len() + right.len() - 1];
+        for (left_index, left_value) in left.iter().enumerate() {
+            for (right_index, right_value) in right.iter().enumerate() {
+                result[left_index + right_index] += left_value * right_value;
+            }
+        }
+        result
+    }
+
     fn legacy_sparse_indices(values: &[f64]) -> Option<Vec<usize>> {
         let indices: Vec<usize> = values
             .iter()
@@ -483,6 +578,93 @@ mod tests {
             let actual =
                 sparse_indices_at_most_four(&values).map(|indices| indices.as_slice().to_vec());
             assert_eq!(actual, expected, "classification drift for {values:?}");
+        }
+    }
+
+    #[test]
+    fn source_order_sparse_right_convolution_preserves_direct_bits() {
+        let cases = [
+            (
+                vec![0.125, 0.0, 0.375, 0.5, -0.0],
+                vec![-0.0, 0.25, 0.0, 0.0, 0.75],
+            ),
+            (vec![0.2, 0.1, 0.0, 0.3, 0.4], vec![0.0, -0.0, 1.0, 0.0]),
+            (vec![0.25, 0.25, 0.25, 0.25], vec![0.4, 0.0, 0.3, -0.0, 0.3]),
+        ];
+        for (left, right) in cases {
+            let indices = sparse_indices_at_most_four(&right).expect("right is sparse");
+            let direct = dense_source_order_convolution(&left, &right);
+            let sparse = source_order_sparse_right_convolution(&left, &right, indices.as_slice());
+            assert_eq!(
+                direct
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+                sparse
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+            );
+
+            let left_pdf = DiscretePdfV1::try_new(0.125, -3, left).expect("left PDF");
+            let right_pdf = DiscretePdfV1::try_new(0.125, 2, right).expect("right PDF");
+            let legacy = DiscretePdfV1::try_new(
+                left_pdf.bin_size(),
+                matlab_round(left_pdf.min_bin() as f64 + right_pdf.min_bin() as f64),
+                dense_source_order_convolution(left_pdf.probability(), right_pdf.probability()),
+            )
+            .expect("legacy PDF");
+            let actual = convolve_v1(&left_pdf, &right_pdf).expect("public convolution");
+            assert_eq!(legacy.min_bin(), actual.min_bin());
+            assert_eq!(
+                legacy
+                    .probability()
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+                actual
+                    .probability()
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+            );
+        }
+
+        let mut state = 0x6a09_e667_f3bc_c909_u64;
+        for case_index in 0..128 {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let left_len = 2 + (state as usize % 31);
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let right_len = 1 + (state as usize % 29);
+            let mut left = vec![0.0; left_len];
+            for value in &mut left {
+                state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+                if state & 3 != 0 {
+                    *value = ((state >> 11) as f64 + 1.0) / (u64::MAX >> 11) as f64;
+                }
+            }
+            let mut right = (0..right_len)
+                .map(|index| (index & 1 == 0).then_some(0.0).unwrap_or(-0.0))
+                .collect::<Vec<_>>();
+            for _ in 0..=case_index % 4 {
+                state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+                let index = state as usize % right_len;
+                right[index] = ((state >> 11) as f64 + 1.0) / (u64::MAX >> 11) as f64;
+            }
+            let indices = sparse_indices_at_most_four(&right).expect("right remains sparse");
+            let direct = dense_source_order_convolution(&left, &right);
+            let sparse = source_order_sparse_right_convolution(&left, &right, indices.as_slice());
+            assert_eq!(
+                direct
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+                sparse
+                    .iter()
+                    .map(|value| value.to_bits())
+                    .collect::<Vec<_>>(),
+                "generated case {case_index}",
+            );
         }
     }
 
