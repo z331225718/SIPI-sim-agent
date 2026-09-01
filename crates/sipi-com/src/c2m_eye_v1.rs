@@ -12,6 +12,7 @@ use crate::discrete_pdf_v1::{
     DiscretePdfV1, PdfErrorV1, convolve_c2m_accelerated_v1, normal_pdf_v1,
 };
 use crate::sampled_signal_pdf_v1::sampled_signal_pdf_owned_v1;
+use rayon::prelude::*;
 use std::cell::RefCell;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
@@ -326,6 +327,58 @@ fn shift_residual_columns(
 struct SignalLevelPdfData {
     probability: Vec<f64>,
     origins: Vec<i64>,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase_signal_level_pdf_data_v1(
+    phase_position: usize,
+    shifted_residual: &[Vec<f64>],
+    jitter: &[Vec<f64>],
+    available_signal: &[f64],
+    phase_indices: &[i64],
+    levels: usize,
+    bin_size: f64,
+    sigma_rj_s: f64,
+    sigma_x: f64,
+    sigma_n_v: f64,
+    sigma_tx_v: f64,
+    ber_q: f64,
+    ne_noise_pdf: &DiscretePdfV1,
+    cci_pdf: &DiscretePdfV1,
+    amplitude_dd_v: f64,
+    symbol_levels: &[f64],
+) -> Result<SignalLevelPdfData, C2mEyeErrorV1> {
+    let column: Vec<f64> = (0..shifted_residual.len())
+        .map(|row| shifted_residual[row][phase_position])
+        .collect();
+    let self_pdf = sampled_signal_pdf_owned_v1(column, levels as u32, bin_size, true)
+        .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
+    let jitter_norm: f64 = jitter
+        .iter()
+        .map(|row| row[phase_position] * row[phase_position])
+        .sum::<f64>()
+        .sqrt();
+    let gaussian_std = ((sigma_rj_s * sigma_x * jitter_norm).powi(2)
+        + sigma_n_v * sigma_n_v
+        + sigma_tx_v * sigma_tx_v)
+        .sqrt();
+    let gaussian =
+        normal_pdf_v1(gaussian_std, ber_q, bin_size).map_err(|_| C2mEyeErrorV1::InvalidControls)?;
+    let dual_dirac_values: Vec<f64> = (0..jitter.len())
+        .map(|row| amplitude_dd_v * jitter[row][phase_position])
+        .collect();
+    let dual_dirac = sampled_signal_pdf_owned_v1(dual_dirac_values, levels as u32, bin_size, true)
+        .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
+    let gaussian = convolve_c2m_accelerated_v1(&gaussian, ne_noise_pdf)?;
+    let noise = convolve_c2m_accelerated_v1(&gaussian, &dual_dirac)?;
+    let phase_abs = phase_indices[phase_position];
+    signal_level_pdf_data(
+        &self_pdf,
+        cci_pdf,
+        &noise,
+        available_signal[phase_abs as usize] * (levels as f64 - 1.0),
+        symbol_levels,
+    )
 }
 
 fn signal_level_pdf_data(
@@ -649,46 +702,35 @@ fn calculate_c2m_vertical_eye_inner_v1(
     let symbol_levels: Vec<f64> = (0..levels)
         .map(|i| 2.0 * i as f64 / (levels as f64 - 1.0) - 1.0)
         .collect();
-    let mut per_phase = Vec::with_capacity(phase_indices.len());
-    for phase_position in 0..phase_indices.len() {
-        let phase_started = performance_trace_enabled_v1().then(Instant::now);
-        let column: Vec<f64> = (0..shifted_residual.len())
-            .map(|r| shifted_residual[r][phase_position])
-            .collect();
-        let self_pdf = sampled_signal_pdf_owned_v1(column, levels as u32, bin_size, true)
-            .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
-        let jitter_norm: f64 = rj
-            .jitter
-            .iter()
-            .map(|row| row[phase_position] * row[phase_position])
-            .sum::<f64>()
-            .sqrt();
-        let gaussian_std = ((sigma_rj_s * sigma_x * jitter_norm).powi(2)
-            + sigma_n_v * sigma_n_v
-            + sigma_tx_v * sigma_tx_v)
-            .sqrt();
-        let gaussian = normal_pdf_v1(gaussian_std, ber_q, bin_size)
-            .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
-        let dual_dirac_values: Vec<f64> = (0..rj.jitter.len())
-            .map(|r| amplitude_dd_v * rj.jitter[r][phase_position])
-            .collect();
-        let dual_dirac =
-            sampled_signal_pdf_owned_v1(dual_dirac_values, levels as u32, bin_size, true)
-                .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
-        let gaussian = convolve_c2m_accelerated_v1(&gaussian, ne_noise_pdf)?;
-        let noise = convolve_c2m_accelerated_v1(&gaussian, &dual_dirac)?;
-        let phase_abs = phase_indices[phase_position];
-        let data = signal_level_pdf_data(
-            &self_pdf,
-            cci_pdf,
-            &noise,
-            rj.available_signal[phase_abs as usize] * (levels as f64 - 1.0),
-            &symbol_levels,
-        )?;
-        per_phase.push(data);
-        if let Some(started) = phase_started {
-            record_c2m_timing_v1(|profile| profile.phase_pdf += started.elapsed());
-        }
+    let phase_started = performance_trace_enabled_v1().then(Instant::now);
+    // Each phase owns its sampled-signal/PDF work.  `collect` retains source
+    // phase order for the reduction, so no arithmetic or winner ordering is
+    // changed while the independent leaves use the configured Rayon pool.
+    let per_phase: Vec<SignalLevelPdfData> = (0..phase_indices.len())
+        .into_par_iter()
+        .map(|phase_position| {
+            phase_signal_level_pdf_data_v1(
+                phase_position,
+                &shifted_residual,
+                &rj.jitter,
+                &rj.available_signal,
+                &phase_indices,
+                levels,
+                bin_size,
+                sigma_rj_s,
+                sigma_x,
+                sigma_n_v,
+                sigma_tx_v,
+                ber_q,
+                ne_noise_pdf,
+                cci_pdf,
+                amplitude_dd_v,
+                &symbol_levels,
+            )
+        })
+        .collect::<Result<_, _>>()?;
+    if let Some(started) = phase_started {
+        record_c2m_timing_v1(|profile| profile.phase_pdf += started.elapsed());
     }
     let reduction_started = performance_trace_enabled_v1().then(Instant::now);
     let result = vertical_eye_window_from_shared_levels(
