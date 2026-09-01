@@ -1,0 +1,27 @@
+{
+  "schema": "sipi.p5-06.original13-root-matrix-v6-acceptance.v1",
+  "status": "accepted_stage1_public_root_scalar_and_per_workbook_performance",
+  "supersedes": {"path": "docs/baselines/p5-06-original13-root-matrix-v5-acceptance.v1.yaml", "kind": "current_candidate_rebinding"},
+  "candidate": {"commit": "b9b195a19d3d209a37a52ba29c730759361dba03", "tree": "becca5842b55eeb1d1a310b2c3174458936ec901", "archive_bytes": 58705920, "archive_sha256": "4e40155745d439a721e0f9923a36a60c9daf2404ff24f574b12a4fd7d425a8a2"},
+  "upstream": {"commit": "5272ffe74702cd585054d975559b06f8afae7b6e", "tree": "7094ab6e84989b218730c52432c70da10261f8ea", "archive_bytes": 43694080, "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf"},
+  "public_route": {"binary": "sipi.exe", "manifest": "crates/sipi-cli/Cargo.toml", "feature": "com-direct-integration", "argv": ["com", "run"], "receipt_schema": "sipi.com.r480-cli-receipt.v1"},
+  "matrix": {"workbooks": 13, "package_cases": 28, "scalar_slots": 303, "channels": ["THRU", "FEXT", "NEXT"], "matlab_release": "R2024b", "matlab_launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread", "rust_rayon_num_threads": 16, "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write", "timing_clock": "perf_counter_ns"},
+  "reports": [
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-matlab-01.json", "engine": "matlab", "bytes": 34629, "sha256": "12459edb27b387a05b9e0f55753b428dc81f624d1e6613e48dfd9751943aefd4"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-matlab-02.json", "engine": "matlab", "bytes": 34629, "sha256": "2d8d6e23e4d20619b55e83e319ddb7f8007df1f26b57afc1ba176ee4aea88034"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-rust-01.json", "engine": "rust", "bytes": 40843, "sha256": "3f684ae9707d64b1baf8f35639dcda53caef788bcafd64d9f688276baec0e24d"},
+    {"path": "docs/baselines/p5-06-original13-root-matrix-v6-rust-02.json", "engine": "rust", "bytes": 40844, "sha256": "f4e79f8f8b33b818a17ed2a20136501b94dafbe028cc73a152c463cebdcaf60d"}
+  ],
+  "aggregate": {"path": "docs/baselines/p5-06-original13-root-matrix-v6-aggregate.json", "bytes": 8185, "sha256": "9f36c8f3e7660803347802362666938c50b3f4b71937962b3bbd606a2f5e2675"},
+  "audit": {"path": "docs/baselines/audits/2026-09-01-p5-06-original13-root-matrix-v6-acceptance.md", "bytes": 1095, "sha256": "b8f4c2ccf67baad0b8c6752ea3190068e66a9149c6ac02ac0a72ec2044bc7a3a"},
+  "gate_tools": {
+    "runner": {"path": "tools/run_p5_06_original13_root_matrix_v6.py", "bytes": 18600, "sha256": "79fc64534c64ef9131edca5398214bb7d03edc3b45e885f28a870152f8b27af6"},
+    "aggregate": {"path": "tools/aggregate_p5_06_original13_root_matrix_v6.py", "bytes": 7132, "sha256": "e971739edcbf4f876f4b65b63eaffae5dbdfb3a38f9aa2d6deaa06a1c0ddd2ab"},
+    "report_verifier": {"path": "tools/verify_p5_06_original13_root_matrix_v6.py", "bytes": 11776, "sha256": "d22264bdbaca41773e16f464f36c9c2d260a4d66cd708a0d2c9ef0b48c298596"},
+    "tests": {"path": "tools/test_verify_p5_06_original13_root_matrix_v6.py", "bytes": 8904, "sha256": "fdfd25f33778218700dbc563c55bb2f8f73f38c9778fb04ac09388e2a1f7df50"}
+  },
+  "performance": {"matlab_best_total_wall_ns": 1587021421800, "rust_worst_total_wall_ns": 114256286500, "speedup_floor": 13.8900140238673},
+  "gates": {"matlab_repeat_1e_12": true, "rust_repeat_exact": true, "rust_vs_matlab_1e_9": true, "per_workbook_rust_not_slower": true, "total_rust_not_slower": true, "s_parameter_fit": false, "one_final_fd_to_td_impulse": true},
+  "claims": {"stage1_scalar_acceptance": true, "public_root_route_exercised": true, "performance_acceptance": true, "array_acceptance": false, "release": false, "p5_06_main_closed": false},
+  "non_claims": ["no_single_thread_algorithm_comparison", "no_array_or_checkpoint_acceptance", "no_warning_or_full_surface_acceptance_beyond_303_scalar_slots", "no_ieee_certification", "no_release"]
+}

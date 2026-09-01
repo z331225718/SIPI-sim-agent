@@ -1,0 +1,1105 @@
+{
+  "channels": [
+    {
+      "bytes": 6393177,
+      "path": "fixtures/synthetic/thru_10db_at_26p56ghz.s4p",
+      "role": "THRU",
+      "sha256": "fcbcce086dbae6bbb9a1f8ca5df775073ebb6303f80a9f062caf1f2ab5607361"
+    },
+    {
+      "bytes": 6393140,
+      "path": "fixtures/synthetic/fext_m40db_at_26p56ghz.s4p",
+      "role": "FEXT",
+      "sha256": "cc5968bacd5bd40d6ccd7db4927dbb1dd3f20d82f4d3ad5a3193ad86e0e9ca04"
+    },
+    {
+      "bytes": 6392860,
+      "path": "fixtures/synthetic/next_m40db_at_26p56ghz.s4p",
+      "role": "NEXT",
+      "sha256": "882819542f43b8fb5f174c7e984b418ceb0f56e068654c9be362a84547b93e65"
+    }
+  ],
+  "claims": {
+    "acceptance": false,
+    "one_final_fd_to_td_impulse": true,
+    "performance_acceptance": false,
+    "release": false,
+    "s_parameter_fit": false
+  },
+  "engine": "rust",
+  "host_fingerprint": "b2195549e387ffae49faf8b25614a5e98c48e4cdabb8cd8953a9f741290e6f30",
+  "nonce": "59f40e38aa08ccd2d2f42f9c6f05fede8fdc0e5b0d60139fc9f9fd6f7fbe8e18",
+  "records": [
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 613204300,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": -12.165899453240417,
+          "CTLE_DC_gain_dB": 0.0,
+          "ERL": 17.310082883306528,
+          "FOM": -4.166327806609443,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 229.75,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -346.26242949768255,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": -13.892359256573496,
+          "CTLE_DC_gain_dB": 0.0,
+          "ERL": 17.310082883306528,
+          "FOM": -5.4597316901276844,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 234.33,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -373.98399468559955,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 27771,
+            "name": "result.json",
+            "sha256": "43c0a1ca5d253bfc4533d37a720dd66622ead3830decd9cb99422a02a9a17b70"
+          },
+          {
+            "byte_length": 27858,
+            "name": "report.html",
+            "sha256": "04fd8867fa5624928f9421372023f566e049fcd270f0259c3a136f0a52d743f6"
+          },
+          {
+            "byte_length": 18493,
+            "name": "diagnostics.json",
+            "sha256": "a97b26ad785c012d0408cbd2d5997ffd09ab16304bb1ef8178b18d3ab742e621"
+          }
+        ],
+        "case_count": 2,
+        "config_sha256": "1a33f8e93af6f0936c02e1bdb8e278e9fea1fef8b7a959c6047f07f389709d27",
+        "impulse_sha256": "b3baf9ef2704c6a27ccd3b38005d80f01456ca33e276ee1e56dff9d5b02ea30f",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67151,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA _TP0V_08_17_2022.xlsx",
+        "sha256": "54562fa2bbe856f1fb6e96b7c1c873d2b399555b1fb38e50cd6f4ad3ddc69f0a"
+      },
+      "workbook_index": 0
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 1551313100,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 5.59394173045245,
+          "CTLE_DC_gain_dB": -5.0,
+          "ERL": "+Inf",
+          "FOM": 18.0739567993256,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 14.700000000000001,
+          "VEC_dB": 6.469303451302749,
+          "VEO_mV": 26.58148529439759,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 5.804046318121149,
+          "CTLE_DC_gain_dB": -8.0,
+          "ERL": "+Inf",
+          "FOM": 18.263067551390137,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 9.4,
+          "VEC_dB": 6.24269089818684,
+          "VEO_mV": 17.874159138607364,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 28848,
+            "name": "result.json",
+            "sha256": "02d19abdf7fac207b3867c4e5ffc3ee83ae6968190a12f39e537a1dd38b9f517"
+          },
+          {
+            "byte_length": 28935,
+            "name": "report.html",
+            "sha256": "c3ed9ec94ab538ac37e43ea2f1558c74e2acf5d58603d0d61b3194b5fdd6e2cb"
+          },
+          {
+            "byte_length": 19570,
+            "name": "diagnostics.json",
+            "sha256": "7dc9fa215c669f83361fccc86cb8add1c3e95dbf77da26497157744d76237a34"
+          }
+        ],
+        "case_count": 2,
+        "config_sha256": "0c7e40dca282473577b7434274ae80ace5ce4bcd921907e3fc95d005af412c0f",
+        "impulse_sha256": "9509d167242444c888cbf73955cc5a0eb644a4c802091e7b179dc626fe8576c9",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67087,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120F_C2C_08_17_2022.xlsx",
+        "sha256": "e676b3fb3cb3048f80c98deaa8faca1d03c13daa216c6259de26885e715ca925"
+      },
+      "workbook_index": 1
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 49947975400,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 5.19019159980873,
+          "CTLE_DC_gain_dB": -3.0,
+          "ERL": 16.742740133561476,
+          "FOM": 6.029923244850497,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 57.188482784991685,
+          "VEC_dB": 6.938873046658146,
+          "VEO_mV": 46.76000000000001,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -0.5,
+          "itick": 0
+        },
+        {
+          "COM_dB": 4.877647775233835,
+          "CTLE_DC_gain_dB": -3.0,
+          "ERL": 16.742740133561476,
+          "FOM": 5.858374500465717,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 49.827078669140604,
+          "VEC_dB": 7.337070919529438,
+          "VEO_mV": 37.540000000000006,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -0.5,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 28323,
+            "name": "result.json",
+            "sha256": "84eb1285f61a8efc47b9af1b2496e8f83d4cd5e7d9b47f94ab201652a0b3f5b3"
+          },
+          {
+            "byte_length": 28410,
+            "name": "report.html",
+            "sha256": "28abf2da4117de0c7c5ea51ed73b70b5ef6f3dfb776250f62742b3f69e265880"
+          },
+          {
+            "byte_length": 19045,
+            "name": "diagnostics.json",
+            "sha256": "ed6a4b92a0e727281b2edbaf8df29cc32dd94682555a375cc41defce2fa3bd59"
+          }
+        ],
+        "case_count": 2,
+        "config_sha256": "23465baf3cfd60e10ea9c2d0f7e1e12eeeb3c4689096c5ae46ec153c6a971d9f",
+        "impulse_sha256": "d21e3109c98ff7e004a968814d204ec17e81363579f3f88c0d7755f07848f344",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 63311,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120g_C2M_tp1a_08_17_2022.xlsx",
+        "sha256": "f2c4c92f9549e720fff2843df6dc861aca7a503d59b2208898c2b67fa6fc0fc9"
+      },
+      "workbook_index": 2
+    },
+    {
+      "case_count": 1,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 181427900,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "ERL": "+Inf"
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 8710,
+            "name": "result.json",
+            "sha256": "e0b7cac390397c6ddd996782648d45c00f0325b28239a26d99a5026b6adc9aba"
+          },
+          {
+            "byte_length": 8797,
+            "name": "report.html",
+            "sha256": "7e80f13fdbd46814bff39bdec1a5175056dcf15797cda758aa33dc06f7548c2e"
+          },
+          {
+            "byte_length": 2925,
+            "name": "diagnostics.json",
+            "sha256": "c03d0f819a7861daea0a3b9265dac5553b7644bf764cee1757c9bdb28f6e22e1"
+          }
+        ],
+        "case_count": 1,
+        "config_sha256": "a344a37bebe71a74ddf95391093611fd835de56c8b797c2a78e0a38f6528fd9e",
+        "impulse_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67009,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120G_ERL_HOST_10_26_2022.xlsx",
+        "sha256": "3c95f728ba03442ac11b4b3834c0ee426a8a5b41eef6f7acd8390dc4b813c8c2"
+      },
+      "workbook_index": 3
+    },
+    {
+      "case_count": 1,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 184239800,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "ERL": "+Inf"
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 8708,
+            "name": "result.json",
+            "sha256": "bdf59d4bcca07df9665d05cf0d785c4404f776f4d94ed3ba6ec855e0f04330e7"
+          },
+          {
+            "byte_length": 8795,
+            "name": "report.html",
+            "sha256": "9c456cc71d4580470088fee33ad9c637445cd1d7e214ea62076dcd408e3e84ce"
+          },
+          {
+            "byte_length": 2923,
+            "name": "diagnostics.json",
+            "sha256": "593caf6c517816556f1a9332006419e4123c985afb5c829c471780569ca6a7be"
+          }
+        ],
+        "case_count": 1,
+        "config_sha256": "0b251f92f39d7199c59015869bc86c657edaf2859c87b51bb0e0d795b0234b3f",
+        "impulse_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67208,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_120G_ERL_MODULE_10_26_2022.xlsx",
+        "sha256": "bebc7cbb9701fcbd6b6645e0a5d9b68a8ee05ded305dfde2720042ce3823df0b"
+      },
+      "workbook_index": 4
+    },
+    {
+      "case_count": 1,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 187116200,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "ERL": "+Inf"
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 8710,
+            "name": "result.json",
+            "sha256": "020a51f15e64a16f8f590e38949b971e134cd7ac0b11cc088c056ab2d5532e31"
+          },
+          {
+            "byte_length": 8797,
+            "name": "report.html",
+            "sha256": "0c80bcc929ca91daf79049e2ade90ba7816dd097b10aed1e0786ba2787b8eb10"
+          },
+          {
+            "byte_length": 2925,
+            "name": "diagnostics.json",
+            "sha256": "b745dac7368e0336c607d8025a08dbc6ff21490aba13e7ee77572de49adc47ac"
+          }
+        ],
+        "case_count": 1,
+        "config_sha256": "37df9379cdcac43e60fa28c933509f4d0f5eb7ed89378fce3cedfe054bb30c3f",
+        "impulse_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67022,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_162_ERL_HOST_10_26_2022 .xlsx",
+        "sha256": "7512e0dba337e881a4b27db9e3f8119e1642e6f29db0b69b4f188c17ccc8b66d"
+      },
+      "workbook_index": 5
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 3463740300,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 6.923722853321147,
+          "CTLE_DC_gain_dB": -8.0,
+          "ERL": "+Inf",
+          "FOM": 18.13144987710471,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.500000000000001,
+          "VEC_dB": 5.20259877901628,
+          "VEO_mV": 13.410620995796378,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 6.411442067757623,
+          "CTLE_DC_gain_dB": -12.0,
+          "ERL": "+Inf",
+          "FOM": 17.613122668773343,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.8662832255338846,
+          "VEC_dB": 5.646589939954757,
+          "VEO_mV": 8.444350810580284,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 30751,
+            "name": "result.json",
+            "sha256": "fedbbad2c5b424298369f743f67da3e8242617564e6de65f4fd0d2ae6fce88f0"
+          },
+          {
+            "byte_length": 30838,
+            "name": "report.html",
+            "sha256": "308414e94b3a117994674c98cb6b646dd79f086aa89228554ab78c3a5437e50a"
+          },
+          {
+            "byte_length": 21473,
+            "name": "diagnostics.json",
+            "sha256": "ead3d8d4d840ff05d35f2d3cfb981442eb745992465ce7f29998d242a088af69"
+          }
+        ],
+        "case_count": 2,
+        "config_sha256": "61acaf8fd9b69a80df429a6d1ff5f30026bc461accd57622854b032d5135492b",
+        "impulse_sha256": "9480045f9147ae89c8886cf45129ac2c98f4d732c24076e8d2ec00b033f582b7",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67030,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_CR_CA_08_17_2022.xlsx",
+        "sha256": "06a62ad17fcaf51fffb2060e9d37e7192cd0fd5a95cf5920b0aba46786ad4b53"
+      },
+      "workbook_index": 6
+    },
+    {
+      "case_count": 2,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 2418375500,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 7.669595868723347,
+          "CTLE_DC_gain_dB": -5.0,
+          "ERL": "+Inf",
+          "FOM": 19.019280550447608,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 11.620000000000001,
+          "VEC_dB": 4.6352699196533145,
+          "VEO_mV": 32.95736039939194,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 7.63112175778117,
+          "CTLE_DC_gain_dB": -7.0,
+          "ERL": "+Inf",
+          "FOM": 18.925112064971543,
+          "ICN_mV": 4.601554213273622,
+          "IL_dB_channel_only_at_Fnq": 10.000735704402237,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 7.95,
+          "VEC_dB": 4.662502898575203,
+          "VEO_mV": 22.378350273045616,
+          "fitted_IL_dB_at_Fnq": 9.834912844951505,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 30688,
+            "name": "result.json",
+            "sha256": "bc8a1fb6614fc049ad74505b743368efa6a1570012f56ad4833563370e367075"
+          },
+          {
+            "byte_length": 30775,
+            "name": "report.html",
+            "sha256": "c2b4f9e467f45223e811dc5a397c252bad7c2d30e7803f4b233990099575b57a"
+          },
+          {
+            "byte_length": 21410,
+            "name": "diagnostics.json",
+            "sha256": "4bd8b99287f24273943a62bf774cb005779d7f6441bdae16edb4749331e458f1"
+          }
+        ],
+        "case_count": 2,
+        "config_sha256": "56598c3cdf75f0e7d13c3eda23cd74f680fba74e0e16f866231afc35980d03ad",
+        "impulse_sha256": "3f9fd501acd2231353cb2f321db786ae5eab7154d71ae39f7b40a299e314f1e2",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 0
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 67620,
+        "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA_KR_08_17_2022.xlsx",
+        "sha256": "8247d4c950009293187b82999e780c5aa4bca1c21c448fd1b5557fd185b5e989"
+      },
+      "workbook_index": 7
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 9817227100,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 1.8086961768612944,
+          "CTLE_DC_gain_dB": -11.0,
+          "ERL": 20.078526910294492,
+          "FOM": 11.600383282206884,
+          "ICN_mV": 3.3079990923479965,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 18.315246681004115,
+          "VEC_dB": 14.517634492708238,
+          "VEO_mV": 4.240000000000001,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 0.6584053171100583,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 9.828875997070575,
+          "ICN_mV": 3.3079990923479965,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 15.553925923999824,
+          "VEC_dB": 22.73354279759088,
+          "VEO_mV": 1.2248506930442153,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": -1.6377427884709947,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 7.673275900374971,
+          "ICN_mV": 3.3079990923479965,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.342631661995526,
+          "VEC_dB": -313.07119549054045,
+          "VEO_mV": -2.8083611344629986,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -5.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 51095,
+            "name": "result.json",
+            "sha256": "158ee92d6a8f9ffa6b36bd2ab3411a68e8872fea0d15e86481762b2d87fd6cb3"
+          },
+          {
+            "byte_length": 51182,
+            "name": "report.html",
+            "sha256": "9c8a2cdb75c5a639fe808d75b03406bb8557479c39304dd13e84d89b4c8fec1c"
+          },
+          {
+            "byte_length": 37180,
+            "name": "diagnostics.json",
+            "sha256": "fd9841b7b2eb6bc0620af78add77484590ad0eec4b570f7bb54abfde3ddd9746"
+          }
+        ],
+        "case_count": 3,
+        "config_sha256": "5607776753e1ad8d46e4cc6954fd902f7effcd42f0849f7961359ff2e157b940",
+        "impulse_sha256": "0782d50a0cbb1ad0bdf45463bb4915b64afe5973709b73bdbc638a826f784a88",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 3
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 45881,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_fr55_C2M_TP1a_11_2022.xlsx",
+        "sha256": "17cda9b0fa4aed850b9534631d4fe7f65950517392edc19407b1668dba8c2482"
+      },
+      "workbook_index": 8
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 11819755600,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 2.8775111151539923,
+          "CTLE_DC_gain_dB": -12.0,
+          "ERL": "+Inf",
+          "FOM": 13.144788793970337,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 6.578293251317651,
+          "VEC_dB": 10.995017833612781,
+          "VEO_mV": 5.167350130561495,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 1.3708425862198985,
+          "CTLE_DC_gain_dB": -14.0,
+          "ERL": "+Inf",
+          "FOM": 11.284363855430946,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.629311176298949,
+          "VEC_dB": 16.71294288431126,
+          "VEO_mV": 1.9247761867439028,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": -0.1549555600147989,
+          "CTLE_DC_gain_dB": -16.0,
+          "ERL": "+Inf",
+          "FOM": 9.891823871086716,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.784849699256202,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -0.20457228798941365,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -2.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 52334,
+            "name": "result.json",
+            "sha256": "64fe2d60fa668a40accba0dacb595193000953691d9d4d4a2b3dc26f3072a1fe"
+          },
+          {
+            "byte_length": 52421,
+            "name": "report.html",
+            "sha256": "a588e5a0c557d6a881d4b67e9c147e4755436b148ccb06660adf889232c34831"
+          },
+          {
+            "byte_length": 38419,
+            "name": "diagnostics.json",
+            "sha256": "957a31ce437a9836b1ee7d5a0def98c0e9a285c1953480b7150010787645277c"
+          }
+        ],
+        "case_count": 3,
+        "config_sha256": "57bfb591aa914286bd3928ac26a8ad1ed2cd8c9459cac5aaabe312ae408d7bfe",
+        "impulse_sha256": "5182707c1f8e0f3712a9dff8148f99c913950c01b3b6466019bdb14b4c7f892d",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 3
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 45859,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_C2C_11_2022.xlsx",
+        "sha256": "b259c3c647bbb5d1fd136703d8d47e2e818a2ce70aa965fc9819013954ac3548"
+      },
+      "workbook_index": 9
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 9223600300,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 1.9370098673805634,
+          "CTLE_DC_gain_dB": -11.0,
+          "ERL": 20.078526910294492,
+          "FOM": 12.942936594089394,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 19.61343909343497,
+          "VEC_dB": 13.9841632899355,
+          "VEO_mV": 4.900000000000001,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 0.5791241632794266,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 11.066420603365554,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.818188584336,
+          "VEC_dB": 23.80880570729463,
+          "VEO_mV": 1.1595651135111427,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": -1.5763836619769733,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 8.719360710154177,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 16.28461908068107,
+          "VEC_dB": -313.07119549054045,
+          "VEO_mV": -2.702784985033806,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -4.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 51100,
+            "name": "result.json",
+            "sha256": "9fdcd7df8993eb2842a864d7cb4629810939ceb81daf650d3bb86073283b774f"
+          },
+          {
+            "byte_length": 51187,
+            "name": "report.html",
+            "sha256": "5b97b117a97fe6761ccf59c3a0ca17542bb47e16e2f12ff7cadd9c4cc229a551"
+          },
+          {
+            "byte_length": 37185,
+            "name": "diagnostics.json",
+            "sha256": "6f3ad7541feb34d8e38e46a54db3237bfdaf4ca8ac94e861024ca1469fc2f43b"
+          }
+        ],
+        "case_count": 3,
+        "config_sha256": "74916246e661c0b885e5520acd6e4938ddd8fd6ee4302c373286085b1d5256f6",
+        "impulse_sha256": "72649b2f6d96bcf6f2e297c49ff084795556d24656f26f3a995b782c286e606a",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 3
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 45883,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_C2M_TP1a_11_2022.xlsx",
+        "sha256": "4b9a7157652bdbfd2df199f2424d6ec8e0f257ebb49b51d728eb10d1b0377b06"
+      },
+      "workbook_index": 10
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 12766022700,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 3.2608652588089915,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": "+Inf",
+          "FOM": 13.584439244956606,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 5.3883218130840005,
+          "VEC_dB": 10.089113249071032,
+          "VEO_mV": 4.909882758356018,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": 0.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 1.7449339265735406,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": "+Inf",
+          "FOM": 11.99049971905065,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.211493490356931,
+          "VEC_dB": 14.798572240298501,
+          "VEO_mV": 1.429075342897217,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -4.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": -1.712945765937131,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": "+Inf",
+          "FOM": 8.75781334097722,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 3.244890358465212,
+          "VEC_dB": 313.07119549054045,
+          "VEO_mV": -1.161553527332375,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -6.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 52349,
+            "name": "result.json",
+            "sha256": "7276c7d5d80940fcede132d98c28ea1803bc601f93996657b3137245ee3aaf1b"
+          },
+          {
+            "byte_length": 52436,
+            "name": "report.html",
+            "sha256": "f5814f84665183ad6f98a02715c2c078d9c40185928ad984d89907d580749f0e"
+          },
+          {
+            "byte_length": 38434,
+            "name": "diagnostics.json",
+            "sha256": "f8565d5cfdd466a409db86d9e7d004bafeaacfda38a7842f4f1c741ae23b6b1d"
+          }
+        ],
+        "case_count": 3,
+        "config_sha256": "c1d1f000e6e951e2e43c4c1aae128ff998c76be6839ce494d09d2809f174c7a2",
+        "impulse_sha256": "f348f74ee22fd2022a0d5e06ab7cc10625cab05864837a69c13485352dff8d93",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 3
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 45800,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_CAKR_11_2022.xlsx",
+        "sha256": "49983d6cae96220b983bdc0b47ac5994bb3c7aac097798b94e18f327e97b2cd9"
+      },
+      "workbook_index": 11
+    },
+    {
+      "case_count": 3,
+      "config_materialization": {
+        "comparison": "not_run_for_rust_result_replay"
+      },
+      "detail_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_wall_ns": 9008468100,
+      "exit_code": 0,
+      "metrics": [
+        {
+          "COM_dB": 2.295521131823076,
+          "CTLE_DC_gain_dB": -11.0,
+          "ERL": 20.078526910294492,
+          "FOM": 13.435493824941007,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 21.421843429140882,
+          "VEC_dB": 12.68115782953407,
+          "VEO_mV": 6.4799999999999995,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -1.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": 0.6457589112547774,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 11.483726500681467,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 19.435296486566532,
+          "VEC_dB": 22.895757134243915,
+          "VEO_mV": 1.4999999999999978,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -2.0,
+          "itick": 0
+        },
+        {
+          "COM_dB": -1.1533220781965845,
+          "CTLE_DC_gain_dB": -13.0,
+          "ERL": 20.078526910294492,
+          "FOM": 9.341078747595388,
+          "ICN_mV": 3.368928301997896,
+          "IL_dB_channel_only_at_Fnq": 15.682812645740873,
+          "Peak_ISI_XTK_and_Noise_interference_at_BER_mV": 18.802752301964645,
+          "VEC_dB": -313.07119549054045,
+          "VEO_mV": -2.337995470121699,
+          "fitted_IL_dB_at_Fnq": 16.231300142002567,
+          "g_DC_HP": -3.0,
+          "itick": 0
+        }
+      ],
+      "root_cli_receipt": {
+        "artifacts": [
+          {
+            "byte_length": 51085,
+            "name": "result.json",
+            "sha256": "e6984326180c2a0277c6dfb3c6582a0996c6f54a288f5521af82514fd9ff8206"
+          },
+          {
+            "byte_length": 51172,
+            "name": "report.html",
+            "sha256": "a8069601f83dc665324c3a88d06ef094d1c4601cbfce9058158d2ae24847b68d"
+          },
+          {
+            "byte_length": 37170,
+            "name": "diagnostics.json",
+            "sha256": "3d89ea539ff938352ab5f0fd5e81d6625f8a575f85a1b1aef37e11f8f708ee3e"
+          }
+        ],
+        "case_count": 3,
+        "config_sha256": "23d1f296513ce52cbcee7bad09fe72e90cf49077cab901734a39c856e0e02aa2",
+        "impulse_sha256": "05d7ad7953ad6caa24153f39a55826dd670ca5c54a6b21d93e30cc51b8fb767d",
+        "profile": "r4.80",
+        "schema": "sipi.com.r480-cli-receipt.v1",
+        "status": "completed",
+        "warning_count": 3
+      },
+      "source_inventory_unchanged": true,
+      "status": "passed",
+      "timed_out": false,
+      "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+      "workbook": {
+        "bytes": 45894,
+        "path": "matlab_src/Config_spreadsheets_200G_exploratory/config_com_ieee8023_93a=df_200G_PAM4_RCos_Txpre_C2M_TP1a_11_2022.xlsx",
+        "sha256": "15b2b454d0c8a305628e04b579b47cedcdb315ff57981c6e2284c57d15c0ce5f"
+      },
+      "workbook_index": 12
+    }
+  ],
+  "root_id": "5d3160daca8c57c1b1872f5fc5f6886a73c497bc524cb59d931d57d9525d6456",
+  "run_id": "original13-root-v6-rust-59f40e38aa08ccd2d2f42f9c6f05fede8fdc0e5b0d60139fc9f9fd6f7fbe8e18",
+  "schema": "sipi.p5-06.original13-root-matrix.v6",
+  "selection_count": 13,
+  "source": {
+    "candidate": {
+      "archive_bytes": 58705920,
+      "archive_sha256": "4e40155745d439a721e0f9923a36a60c9daf2404ff24f574b12a4fd7d425a8a2",
+      "commit": "b9b195a19d3d209a37a52ba29c730759361dba03",
+      "tree": "becca5842b55eeb1d1a310b2c3174458936ec901"
+    },
+    "config_validator_binary": {
+      "bytes": 3201024,
+      "path": "target/release/sipi-com-direct-config-validate.exe",
+      "sha256": "a01cc2dca95e5f99dcf95f6e27f617861aef273fd9b94747e8c4dee2ce853885"
+    },
+    "gate_tools": {
+      "matlab_harness": {
+        "bytes": 4644,
+        "path": "tools/sipi_com_final_surface_oracle_v3.m",
+        "sha256": "5f2325766f089f9cf19aed4fcff753864dc7fa72ec0e2cb83860eb753d3a7494"
+      },
+      "runner": {
+        "bytes": 18600,
+        "path": "tools/run_p5_06_original13_root_matrix_v6.py",
+        "sha256": "79fc64534c64ef9131edca5398214bb7d03edc3b45e885f28a870152f8b27af6"
+      },
+      "worker": {
+        "bytes": 23483,
+        "path": "tools/run_p5_06_original13_fresh_matrix.py",
+        "sha256": "4d921a7a374d61a613f0e2b8bcf6669ed8408c5100101252bebe5e60ee78d3ae"
+      }
+    },
+    "root_cli": {
+      "feature": "com-direct-integration",
+      "manifest": "crates/sipi-cli/Cargo.toml",
+      "receipt_schema": "sipi.com.r480-cli-receipt.v1",
+      "route": [
+        "com",
+        "run"
+      ]
+    },
+    "root_cli_binary": {
+      "bytes": 7696896,
+      "path": "target/release/sipi.exe",
+      "sha256": "1eca7a0d1b59a2e28ee9ed6a6fcbae7528b204786bce56b8f83ea929f206b1fa"
+    },
+    "toolchain": {
+      "cargo": {
+        "executable": "cargo.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "cargo",
+        "version_sha256": "536624a00003544be3a7a5bb0d22893dc5b696c802ca6b3a5efd00abf53e3a50"
+      },
+      "matlab": {
+        "executable": "matlab.exe",
+        "file_sha256": "4b0fcf8112211ad1ae6ef5e51df0801d7afbe89c4daaac45473a46e1de16e633",
+        "launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+        "path_redacted": true,
+        "release": "R2024b",
+        "role": "matlab",
+        "version_sha256": "905d468be26f24d87d64d17df71a8cb26c7131cb7601192a01365311bc6824ca"
+      },
+      "python": {
+        "executable": "python.exe",
+        "file_sha256": "fc5d5b5bad3521cb5f6ebfbc333c42ca6efc212192cf6524ca67ee926f6de88d",
+        "path_redacted": true,
+        "role": "python",
+        "version_sha256": "2dc0d5541cf70196cb92df8ad4223b66b7c62eb932b290936086e003b1e6f76e"
+      },
+      "rustc": {
+        "executable": "rustc.exe",
+        "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+        "path_redacted": true,
+        "role": "rustc",
+        "version_sha256": "f3c960598a5e9037c4cf8e4aa06c018171abf07c381d165c3986c6a954dea1bb"
+      },
+      "uv": {
+        "executable": "uv.exe",
+        "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+        "path_redacted": true,
+        "role": "uv",
+        "version_sha256": "f3861932b42388fcf23b9abdd7148fc9165aac88d46273c9c98c126931f529ab"
+      }
+    },
+    "upstream": {
+      "archive_bytes": 43694080,
+      "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+      "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+      "tree": "7094ab6e84989b218730c52432c70da10261f8ea"
+    }
+  },
+  "status": "fresh_matrix_run",
+  "thread_policy": {
+    "matlab_launch_mode": "python_engine_per_workbook_noFigureWindows_singleCompThread",
+    "rust_rayon_num_threads": 16
+  },
+  "timing_clock": "perf_counter_ns",
+  "timing_scope": "model-subprocess-only:engine-start-run-quit-or-rust-run-write",
+  "total_execution_wall_ns": 111182466300
+}
