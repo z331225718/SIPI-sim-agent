@@ -406,7 +406,7 @@ print(MARKER+json.dumps({"schema":"sipi.as-03-openblas-oracle-python.v1","cases"
 
 
 RUST_PROBE_SUFFIX = r'''
- 
+
     #[test]
     fn as03_openblas_oracle_corpus_probe_v1() {
         use serde_json::json;
