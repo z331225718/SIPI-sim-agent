@@ -1,0 +1,61 @@
+schema: sipi.upstream-owner-exclusion.v1
+status: owner_decided_historical_quarantine
+decision:
+  disposition: excluded_by_owner
+  historical_quarantine_not_product_reachable: true
+  parity_claim: none
+  release_claim: none
+  product_capability_claim: none
+  acceptance: false
+  reason: legacy_yfit_workflows_are_not_accepted_for_product_integration
+  production_change: none
+scope:
+  repository: agent_spice
+  rows: [AS-03, AS-04]
+  public_entrypoints: [fit-yparam, tune-yparam-tran]
+  excluded_routes_fail_closed: true
+  no_new_domain_feature: true
+candidate:
+  commit: ad797d8c6421c51b9607a2624cf4572c9c8b0b50
+  tree: d305cbfd27960926c969db9abbaeac81d8b1e988
+  archive_sha256: 149c1162f8ba697a7d9509cb0950afff3fdad8c5977af051c6bd279b29cd1b30
+  archive_bytes: 62822400
+  materialization: clean_git_archive
+  autocrlf: true
+  worktree_overlay: false
+historical_evidence:
+  AS-03:
+    path: docs/baselines/as-03-power-wave-solve-replay.v1.yaml
+    sha256: 6f75c64caa30e2b49b1fc4851ddc5a9f8601687ae8028c11686cfc9da1e9ffa1
+    disposition: preserved_immutable_historical_only
+  AS-04:
+    path: docs/baselines/as-04-tune-yparam-tran-direct-port.v2.yaml
+    sha256: 3e42e662be21b1814f0b37fb915a66441d0af2bcc0ab7ddd1ca77d1fac4883c8
+    disposition: preserved_immutable_historical_only
+predecessors:
+  ledger:
+    path: docs/baselines/upstream-integration-ledger.v14.yaml
+    sha256: 263ab532e36959ae4d2a2b03a5da7896debd823e11680f84fceef142ee6aef63
+  inventory:
+    path: docs/baselines/upstream-migration-inventory.v1.yaml
+    sha256: 1d1a3fc2e43be26884554ca8a1d94217ade6142c0e1ae92a686eaba9b6ca5a86
+successors:
+  ledger: docs/baselines/upstream-integration-ledger.v15.yaml
+  inventory: docs/baselines/upstream-migration-inventory.v2.yaml
+invariants:
+  AS-01: unchanged
+  AS-02: unchanged
+  AS-05: unchanged
+  AS-06: unchanged
+  s_parameter_fit: forbidden
+  channel_policy: one_final_fd_to_td_impulse
+  release_ready: false
+  product_capability_promoted: false
+  numerical_policy_changed: false
+harness:
+  verifier:
+    path: tools/verify_as03_as04_owner_exclusion.py
+    sha256: df41a6f2a1d8694dc69b2202daa62fc4f2360a2e623e0c485073fe40a40511b8
+  mutation_tests:
+    path: tools/test_verify_as03_as04_owner_exclusion.py
+    sha256: b0c6b80618e53c1214fbad21ff8ceedf9402f7920e54fbaa7983a89eeba1e9bb

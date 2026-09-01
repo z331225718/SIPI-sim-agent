@@ -1,0 +1,655 @@
+schema: sipi.upstream-integration-ledger.v15
+status: current_clean_candidate_open_no_release
+successor:
+  predecessor: docs/baselines/upstream-integration-ledger.v14.yaml
+  predecessor_sha256: 263ab532e36959ae4d2a2b03a5da7896debd823e11680f84fceef142ee6aef63
+  reason: additive v15 owner-disposition successor; v1-v14 remain immutable historical ledgers
+candidate:
+  commit: ad797d8c6421c51b9607a2624cf4572c9c8b0b50
+  tree: d305cbfd27960926c969db9abbaeac81d8b1e988
+  archive_sha256: 149c1162f8ba697a7d9509cb0950afff3fdad8c5977af051c6bd279b29cd1b30
+  archive_bytes: 62822400
+  materialization: clean_git_archive
+  autocrlf: true
+  worktree_overlay: false
+policy:
+  new_domain_features_allowed: false
+  direct_rust_port_requires_named_upstream_behavior: true
+  external_runtime_is_not_parity: true
+  scoped_observation_is_not_global_parity: true
+  release_promotion_requires_branch_complete_evidence: true
+  s_parameter_fit: forbidden
+  channel_policy: one_final_fd_to_td_impulse
+owner_exclusion:
+  record:
+    path: docs/baselines/as03-as04-owner-exclusion.v1.yaml
+    sha256: 0c304947a0390fc37b3ce27c1b56d4bca800813d70f82e91e85e114ea776b22e
+  audit:
+    path: docs/baselines/audits/2026-09-02-as03-as04-owner-exclusion.md
+    sha256: 25f8b0f72fdf1321317cb421f6852083c6f1856e2aa529f878f58ce3e3c6539d
+allowed_values:
+  integration_disposition:
+  - direct_rust_port
+  - retained_external_runtime
+  - external_asset
+  - oracle_only
+  - excluded_fail_closed
+  runtime_availability:
+  - portable
+  - external_solver_required
+  - external_asset_required
+  - unavailable
+  parity_evidence:
+  - scoped_numeric_mismatch_open
+  - scoped_observation
+  - numeric_observation
+  - external_blocker_observed
+  - external_solver_not_verified
+  - external_vendor_numeric_parity_unverified
+  - upstream_only_timeout
+  - historical_only
+  release_state:
+  - open_no_release
+  - scoped_only_no_release
+  - excluded_no_release
+source_authority:
+  agent_spice:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    license: MIT
+    license_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+    license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+  pybert:
+    commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+    license: BSD-3-Clause
+    license_blob_sha1: 64d198ba43675ede5fbdef1ec918a63954951640
+    license_sha256: 4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c
+  agent_com:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+    license: MIT
+    license_blob_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+    license_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+change_commits:
+  as05_staging: 01323d9c6c416fe1ae51cfbae8bdd28135c5b558
+  pb_stage2_output: 6f52e53f99f66e12c4371392e6c82114d4ac6028
+  pb_stage2_duo_semantics: d55cce1be2b55143235e416ac20e4360564371ce
+  as06_rfm: 859553899a9daaadd82362e64ee30686b692b95d
+  com_workbook_order: f50dc6b01e5ca4b135e2c9af7c2d36d8647aa3b8
+  com_opaque_winner_metrics: f628d7f0660667fe6a79b7a39ea5a3e3b4500a4e
+  com_do_white_noise_boundary: e4094ccb4d2fcac74a69ac669ef257713962dd1e
+  as04_best_trial_custody: ef648cd2afb1b866f0897d486cefebbce7baa314
+  pb01_class_pickle_compatibility: e7e9882e5a7c3b058ee3e1cc7830da5ac60dd82d
+  pb_current_scoped_replays: c43852176ad21cc13e6376734e0b1e0be12d0025
+  com_formal_replay_v5: a6db3dafb1c52309bdc701db31bae47e4d340cbb
+  as03_power_wave_formal_record: 189ffaa85f8f21ae7cdc7b2ca8f126122d9b335f
+  pb_portable_matrix_formal_record: 6a9b2cbe96eb51b4e406cb94be9ef11a3a487944
+  com01_fingerprint_formal_record: 0743d86629c4813fc6da88d20da8df64bcb00730
+  as06_scoped_external_record: 1e2f1be2d9be730ca38cf21ce8393de02c295f6a
+  com02_04_result_surface_record: 2dea3bbe6039224704f1e07aebc3ebd6c178abed
+  pb01_02_candidate_matrix_record: beb5b764f471ec4c9cda81dc233ac1a3d984669e
+current_sources:
+  as01_notice:
+    path: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-01.txt
+    sha256: d43d8a5e91aa303434466ede2fcf4237860eae53148732f6cb87dc8de0b88dbc
+  as03_source_map:
+    path: docs/baselines/as-03-fit-yparam-source-map.v1.yaml
+    sha256: 8b8b2a822690dcda4e2d711aaa0425bcb03bbecca697ef0ac712ec444526e815
+  as03_notice:
+    path: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-03.md
+    sha256: 0d8cdee1b93f8e8ea51df76653233fea5c8a8e3d5f32b15d276c23c0686b908a
+  as04_source_map:
+    path: docs/baselines/as-04-tune-yparam-tran-source-map.v2.yaml
+    sha256: c588f5c7dec7c843ceded6ac7dee43b8a9386c1e91838df7e3fa976f93d9cc73
+  as04_notice:
+    path: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-04-v2.md
+    sha256: dca095b53d9436abf940a102cf5bf17d7d67cf95da9a58c53b267993df2042d9
+  as05_source_map:
+    path: docs/baselines/as-05-run-hspice-staging-source-map.v1.yaml
+    sha256: 965fbd1ad692389a77ea91d0b6b9a052653d1c73c19d7b9c727429c3966d71e6
+  as05_staging_notice:
+    path: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-05-STAGING.txt
+    sha256: 07f0db2dd38162b4cc77c64944853930664509b27982f4d1f58a934930d62920
+  as05_external_observation:
+    path: docs/baselines/as-05-ngspice-scoped-observation-v2.manifest.json
+    sha256: 47656c53fda3d39a29b3577945471dbfd21e68dc2f167ad43bfab72aeacb9a55
+  as06_source_map:
+    path: docs/baselines/as-06-run-rfm-source-map.v3.yaml
+    sha256: 866950c2a9e7ebd366044a392fbe35a79a948927ed62192723a2ff87e9c70d6e
+  as06_notice:
+    path: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-06-v3.md
+    sha256: ae1e01212153b4060637087eac4bc6fae3ffb3af385ffdcf15500d3d2d105053
+  pb_stage2_source_map:
+    path: crates/sipi-pybert-direct/SOURCE-MAP-PB-STAGE2.md
+    sha256: acc3ac30126dbd98aa4c474eda27bd27e05a39c42490b40c0fff0414810e9bba
+  pb_stage2_runner_source_map:
+    path: crates/sipi-pybert-direct/SOURCE-MAP-PB-STAGE2-RUNNER.md
+    sha256: a30e23e85f5dd0e6d3986ff812cdfa70e4286384968264a5c19af9a53ded837e
+  pb01_class_pickle_source_map:
+    path: crates/sipi-pybert-direct/SOURCE-MAP-PB01-CLASS-PICKLE.md
+    sha256: a0b8a1bf39bce5d9e78e2646bafe9c8d0f94ad7efd9f74e305113e15450647c9
+  pb01_class_pickle_notice:
+    path: crates/sipi-pybert-direct/NOTICE-PYBERT-PB01-CLASS-PICKLE.md
+    sha256: ea8949dc9267b18ef01a255120bd73d214a7f559dff883c57abb068d7d0d733b
+  pb_ami_source_map:
+    path: crates/sipi-pybert-direct/SOURCE-MAP-PB-AMI-MATERIALIZER.md
+    sha256: 29e846a7655ed1144a8771074d4bc313ecdc350b51a89a0d9e95a3434201007a
+  pb_external_host_source_map:
+    path: crates/sipi-pybert-direct/SOURCE-MAP-PB-EXTERNAL-HOST.md
+    sha256: 3f5cd91d1f4c44d9103744667f6eada513740dc40bcdc77192fa614d5dcdf894
+  pb_pybert_notice:
+    path: crates/sipi-pybert-direct/NOTICE-PYBERT-LICENSE-BOUNDARY.md
+    sha256: 77c20eb0cc8411b7826666e6673b7c388ce508fd80029e0d302a116fa5d237e6
+  pb_pyami_notice:
+    path: crates/sipi-pybert-direct/NOTICE-PYAMI-LICENSE-BOUNDARY.md
+    sha256: 319865189948b21164849b6be38ba369d5d4c427dcb63baaa018597a15b8f505
+  com_source_map:
+    path: crates/sipi-agent-com-direct/SOURCE-MAP-COM-02.md
+    sha256: 59ccf47dd554b29f5e958742a238f5cad798d7161ff9ad2dc96914abf3785bf2
+  com_notice:
+    path: crates/sipi-agent-com-direct/NOTICE-AGENT-COM-MIT.md
+    sha256: 04344354a492e4afa55a71fe6fd39047f8ee52f78370ea0ea4fb243d9104817f
+  com_td_source_map:
+    path: crates/sipi-com/SOURCE-MAP-COM-TD-INPUT.md
+    sha256: 767046cd9bf475d184864efe70d8330c7fb2b6299fbd56049e626344ca51c082
+  com_td_notice:
+    path: crates/sipi-com/NOTICE-AGENT-COM-TD-INPUT-MIT.md
+    sha256: 7b97c72c3e2f88adf0f27cf94a615a1f47c087f5768d7134165e90905c485c7f
+  com01_source_map:
+    path: crates/sipi-agent-com-direct/SOURCE-MAP-COM-01.md
+    sha256: ec424d0cf8f407d35696011ddc5751f5c147dd02d0769226e4784f60130fc326
+  as03_power_wave_replay:
+    path: docs/baselines/as-03-power-wave-solve-replay.v1.yaml
+    sha256: 6f75c64caa30e2b49b1fc4851ddc5a9f8601687ae8028c11686cfc9da1e9ffa1
+  pb_portable_matrix_formal:
+    path: docs/baselines/pb-01-02-portable-matrix.v1.yaml
+    sha256: 8029fedea415feeb52604d022b4fb7c437e532d938beb3788a6b7ffc23a35fed
+  com01_fingerprint_stage2:
+    path: com-01-fingerprint-current-replay-stage2.manifest.json
+    sha256: 893f31889ff2e9d736a90efcb8f6687c8aa81e78babcf85f0df543119cfe2a30
+  com03_current_replay:
+    path: docs/baselines/com-03-current-candidate-replay.v1.yaml
+    sha256: 2713a24151c802ef989dd6b3cb878c1ec0cf8b77031b6b68902e45bca1d6022c
+  as06_formal: &id001
+    path: docs/baselines/as-06-ngspice-result-parity.v2.yaml
+    sha256: 327a1690755dbde76698a9aa7f8cb9705bf1f1902b5161185fb2bfaf210ae0b9
+  com02_04_formal: &id003
+    path: docs/baselines/com-02-04-result-surface-formal.v1.yaml
+    sha256: 74a3dba2a02f31306db776a9ceb31acb19ad0b9eb668fdb9fe5cf8da88cab951
+  pb01_02_formal: &id002
+    path: docs/baselines/pb-01-02-candidate-matrix-formal.v1.yaml
+    sha256: 1046da4884fa2cd533ee9ecf119500177e378dfaec33d2afd94c2ce05184b297
+rows:
+- id: AS-01
+  repo: agent_spice
+  public_entrypoint: fit-sparam
+  integration_disposition: excluded_fail_closed
+  runtime_availability: unavailable
+  parity_evidence: historical_only
+  release_state: excluded_no_release
+  evidence:
+    path: docs/baselines/as-01-fit-sparam-bound-clean-archive-v3.yaml
+    sha256: 7b1e82ea428f0fe6f5a9fd39157ad3251c416e97929f82de7129c7098dcb01b8
+  non_claims:
+  - owner_excluded_no_s_parameter_fit
+  - historical_only
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_release
+- id: AS-02
+  repo: agent_spice
+  public_entrypoint: fit-sparam-cascade
+  integration_disposition: excluded_fail_closed
+  runtime_availability: unavailable
+  parity_evidence: historical_only
+  release_state: excluded_no_release
+  evidence:
+    path: docs/baselines/as-02-fit-sparam-cascade-numeric-bound-v3.yaml
+    sha256: 65b2ef5908a3920a18a209c56e5f73be50db5ac6ae2aeeb37a43b775cde843ee
+  non_claims:
+  - owner_excluded_no_s_parameter_fit
+  - historical_only
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_release
+- id: AS-03
+  repo: agent_spice
+  public_entrypoint: fit-yparam
+  integration_disposition: excluded_fail_closed
+  runtime_availability: unavailable
+  parity_evidence: historical_only
+  release_state: excluded_no_release
+  evidence:
+    path: docs/baselines/as-03-power-wave-solve-replay.v1.yaml
+    sha256: 6f75c64caa30e2b49b1fc4851ddc5a9f8601687ae8028c11686cfc9da1e9ffa1
+  current_observation:
+    status: excluded_by_owner
+    owner_reason: legacy_yfit_not_accepted_for_product_integration
+    historical_quarantine_not_product_reachable: true
+    historical_evidence_preserved: true
+    parity_claim: none
+    acceptance: false
+    product_capability_promoted: false
+    release_ready: false
+    no_s_parameter_fit: true
+    channel_policy: one_final_fd_to_td_impulse
+  non_claims:
+  - excluded_by_owner
+  - historical_quarantine_not_product_reachable
+  - historical_only
+  - no_parity_claim
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_release
+  - no_s_parameter_fit
+  - one_final_fd_to_td_impulse
+- id: AS-04
+  repo: agent_spice
+  public_entrypoint: tune-yparam-tran
+  integration_disposition: excluded_fail_closed
+  runtime_availability: unavailable
+  parity_evidence: historical_only
+  release_state: excluded_no_release
+  evidence:
+    path: docs/baselines/as-04-tune-yparam-tran-direct-port.v2.yaml
+    sha256: 3e42e662be21b1814f0b37fb915a66441d0af2bcc0ab7ddd1ca77d1fac4883c8
+  current_observation:
+    status: excluded_by_owner
+    owner_reason: legacy_yfit_tran_not_accepted_for_product_integration
+    historical_quarantine_not_product_reachable: true
+    historical_evidence_preserved: true
+    parity_claim: none
+    acceptance: false
+    product_capability_promoted: false
+    release_ready: false
+    no_s_parameter_fit: true
+    channel_policy: one_final_fd_to_td_impulse
+  non_claims:
+  - excluded_by_owner
+  - historical_quarantine_not_product_reachable
+  - historical_only
+  - no_parity_claim
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_release
+  - no_s_parameter_fit
+  - one_final_fd_to_td_impulse
+- id: AS-05
+  repo: agent_spice
+  public_entrypoint: run-hspice
+  integration_disposition: direct_rust_port
+  runtime_availability: external_solver_required
+  parity_evidence: external_solver_not_verified
+  release_state: open_no_release
+  evidence:
+    path: docs/baselines/as-05-run-hspice-rust-control-direct-port.v2.yaml
+    sha256: 6ba0b596ba96b1cf41fb556027f25c60852917b90cf78c6ccce77c10f3856015
+  current_observation:
+    staging_source_map:
+      path: docs/baselines/as-05-run-hspice-staging-source-map.v1.yaml
+      sha256: 965fbd1ad692389a77ea91d0b6b9a052653d1c73c19d7b9c727429c3966d71e6
+    staging_notice:
+      path: crates/sipi-agent-spice-direct/NOTICE-AGENT-SPICE-AS-05-STAGING.txt
+      sha256: 07f0db2dd38162b4cc77c64944853930664509b27982f4d1f58a934930d62920
+    external_observation:
+      path: docs/baselines/as-05-ngspice-scoped-observation-v2.manifest.json
+      sha256: 47656c53fda3d39a29b3577945471dbfd21e68dc2f167ad43bfab72aeacb9a55
+    existing_run_hspice_staging: retained
+    existing_implementation: retained_without_rollback
+    owner_decision: owner_excluded_not_required
+    xyce_xdm_extension: no_xyce_xdm_extension
+  non_claims:
+  - portable_staging_only
+  - external_solver_retained
+  - trusted_non_concurrent_roots
+  - external_solver_not_verified
+  - no_solver_result
+  - no_numeric_parity
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_migration_row_close
+  - owner_excluded_not_required
+  - no_xyce_xdm_extension
+  - no_xyce_xdm_claim
+  - no_release
+- id: AS-06
+  repo: agent_spice
+  public_entrypoint: run-rfm
+  integration_disposition: direct_rust_port
+  runtime_availability: external_solver_required
+  parity_evidence: scoped_observation
+  release_state: open_no_release
+  evidence: *id001
+  current_observation:
+    formal_record: as06
+    status: passed_scoped_external_observation
+    external_solver_observed: true
+    solver_correctness: false
+    acceptance: false
+    release_ready: false
+    s_parameter_fit: false
+    as05_xyce_xdm: false
+  non_claims:
+  - scoped_external_observation_only
+  - no_solver_correctness
+  - no_acceptance
+  - no_release
+  - no_s_parameter_fit
+  - no_as05_xyce_xdm
+- id: PB-01
+  repo: pybert
+  public_entrypoint: sim
+  integration_disposition: direct_rust_port
+  runtime_availability: portable
+  parity_evidence: scoped_observation
+  release_state: scoped_only_no_release
+  evidence: *id002
+  current_observation:
+    formal_record: pb01_02
+    status: blocked_scoped
+    duobinary_selected_array_parity: true
+    scope: selected_arrays_only
+    whole_payload_parity: false
+    acceptance: false
+    release_ready: false
+  non_claims:
+  - duobinary_selected_arrays_only
+  - no_whole_payload_parity
+  - no_acceptance
+  - no_release
+- id: PB-02
+  repo: pybert
+  public_entrypoint: sim-native
+  integration_disposition: direct_rust_port
+  runtime_availability: portable
+  parity_evidence: scoped_observation
+  release_state: scoped_only_no_release
+  evidence: *id002
+  current_observation:
+    formal_record: pb01_02
+    status: blocked
+    blocker_count: 13
+    complete_typed_output_parity: false
+    acceptance: false
+    release_ready: false
+  non_claims:
+  - thirteen_blockers_open
+  - complete_typed_output_false
+  - no_acceptance
+  - no_release
+- id: PB-03
+  repo: pybert
+  public_entrypoint: sim-rust
+  integration_disposition: direct_rust_port
+  runtime_availability: portable
+  parity_evidence: scoped_observation
+  release_state: scoped_only_no_release
+  evidence:
+    path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e.v1.yaml
+    sha256: 32763b2bc0f4f14dc3c291ca91fa9cb0b260ad9606cc48d556e69f3811b7966e
+  current_observation:
+    formal_manifest:
+      path: docs/baselines/pb-01-03-current-scoped-replay-bc882d2e.v1.yaml
+      sha256: 32763b2bc0f4f14dc3c291ca91fa9cb0b260ad9606cc48d556e69f3811b7966e
+    audit:
+      path: docs/baselines/audits/2026-08-26-pb-01-03-current-scoped-replay-bc882d2e.md
+      sha256: ae0a25f90f5dd310af8fb62f8624d7979a7ea2b33636b18dccbe8af068283cce
+    stable_subset_member_count: 44
+    candidate_total_member_count: 113
+    oracle_total_member_count: 150
+    whole_payload_parity: false
+    comparison_status: passed_scoped_subset_only
+    release_ready: false
+  non_claims:
+  - scoped_only
+  - stable_subset_only
+  - no_whole_payload_parity
+  - no_independent_implementation
+  - no_global_parity
+  - no_branch_completion
+  - no_product_capability_promotion
+  - no_release
+- id: PB-04
+  repo: pybert
+  public_entrypoint: sim-auto
+  integration_disposition: retained_external_runtime
+  runtime_availability: external_asset_required
+  parity_evidence: external_vendor_numeric_parity_unverified
+  release_state: open_no_release
+  evidence:
+    path: docs/baselines/pb-04-direct-port.current-bound.v1.yaml
+    sha256: b13a8d42946d5685344f8e03c78dff3d8c40c51e1f57f52a093b69571742f8b1
+  current_observation:
+    source_map:
+      path: crates/sipi-pybert-direct/SOURCE-MAP-PB-AMI-MATERIALIZER.md
+      sha256: 29e846a7655ed1144a8771074d4bc313ecdc350b51a89a0d9e95a3434201007a
+    external_host_source_map:
+      path: crates/sipi-pybert-direct/SOURCE-MAP-PB-EXTERNAL-HOST.md
+      sha256: 3f5cd91d1f4c44d9103744667f6eada513740dc40bcdc77192fa614d5dcdf894
+    notice:
+      path: crates/sipi-pybert-direct/NOTICE-PYAMI-LICENSE-BOUNDARY.md
+      sha256: 319865189948b21164849b6be38ba369d5d4c427dcb63baaa018597a15b8f505
+  non_claims:
+  - external_asset_branch_retained
+  - mock_dll_receipt_only
+  - bounded_example_rx_control_semantics_only
+  - no_vendor_dll_numeric_parity
+  - no_external_asset
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_migration_row_close
+  - no_release
+- id: PB-05
+  repo: pybert
+  public_entrypoint: sim-compare
+  integration_disposition: retained_external_runtime
+  runtime_availability: external_asset_required
+  parity_evidence: external_vendor_numeric_parity_unverified
+  release_state: open_no_release
+  evidence:
+    path: docs/baselines/pb-05-direct-port.current-bound.v1.yaml
+    sha256: 3876ae5a1e827d80ccfc08fdbb72a3b3bb743130d2efcccc2533de7c8439a39d
+  current_observation:
+    source_map:
+      path: crates/sipi-pybert-direct/SOURCE-MAP-PB-AMI-MATERIALIZER.md
+      sha256: 29e846a7655ed1144a8771074d4bc313ecdc350b51a89a0d9e95a3434201007a
+    external_host_source_map:
+      path: crates/sipi-pybert-direct/SOURCE-MAP-PB-EXTERNAL-HOST.md
+      sha256: 3f5cd91d1f4c44d9103744667f6eada513740dc40bcdc77192fa614d5dcdf894
+    notice:
+      path: crates/sipi-pybert-direct/NOTICE-PYAMI-LICENSE-BOUNDARY.md
+      sha256: 319865189948b21164849b6be38ba369d5d4c427dcb63baaa018597a15b8f505
+  non_claims:
+  - external_asset_branch_retained
+  - mock_dll_receipt_only
+  - bounded_example_rx_control_semantics_only
+  - no_vendor_dll_numeric_parity
+  - no_external_asset
+  - no_global_parity
+  - no_product_capability_promotion
+  - no_migration_row_close
+  - no_release
+- id: COM-01
+  repo: agent_com
+  public_entrypoint: config-validate
+  integration_disposition: direct_rust_port
+  runtime_availability: unavailable
+  parity_evidence: scoped_observation
+  release_state: open_no_release
+  evidence:
+    path: com-01-fingerprint-current-replay-stage2.manifest.json
+    sha256: 893f31889ff2e9d736a90efcb8f6687c8aa81e78babcf85f0df543119cfe2a30
+  non_claims:
+  - scoped_exact_fingerprint_only
+  - raw_sha256_per_replay_only
+  - no_complete_com_parity
+  - no_global_migration_row_close
+  - no_product_capability_promotion
+  - no_release_readiness
+  - no_configuration_value_payloads_committed
+  - no_s_parameter_fit
+  - channel_impulse_only_policy_unchanged
+  - no_canonical_pe_or_bit_reproducibility
+  current_observation:
+    formal_manifest:
+      path: com-01-fingerprint-current-replay-stage2.manifest.json
+      sha256: 893f31889ff2e9d736a90efcb8f6687c8aa81e78babcf85f0df543119cfe2a30
+    audit:
+      path: docs/baselines/audits/2026-08-28-com-01-fingerprint-current-replay-stage2.md
+      sha256: 4c2f041725735b4340cfe2d67c8dac1cf55d9486e442c9f462f4706f19f57360
+    status: scoped_exact_materialized_fingerprint_stage2_formal_record
+    fresh_replay_count: 2
+    parity_claim: scoped_exact_fingerprint_only
+    binary_claim: raw_sha256_per_replay_only
+    acceptance: false
+    complete_com_parity: false
+    global_migration_row_closed: false
+    product_capability_promoted: false
+    release_ready: false
+    no_s_parameter_fit: true
+    channel_policy: one_final_fd_to_td_impulse
+- id: COM-02
+  repo: agent_com
+  public_entrypoint: run
+  integration_disposition: direct_rust_port
+  runtime_availability: external_asset_required
+  parity_evidence: scoped_observation
+  release_state: open_no_release
+  evidence: *id003
+  current_observation:
+    formal_record: com02_04
+    status: passed_scoped
+    dfe_winner_taps_published: true
+    configured_port_order_execution_observed: true
+    upstream_numeric_parity: false
+    port_order_result_wire: false
+    acceptance: false
+    release_ready: false
+    channel_policy: one_final_fd_to_td_impulse
+  non_claims:
+  - scoped_result_surface_only
+  - no_upstream_numeric_parity
+  - no_port_order_result_wire
+  - no_acceptance
+  - no_release
+  - no_s_parameter_fit
+  - one_final_fd_to_td_impulse
+- id: COM-03
+  repo: agent_com
+  public_entrypoint: compare
+  integration_disposition: direct_rust_port
+  runtime_availability: unavailable
+  parity_evidence: scoped_observation
+  release_state: open_no_release
+  evidence:
+    path: docs/baselines/com-03-current-candidate-replay.v1.yaml
+    sha256: 2713a24151c802ef989dd6b3cb878c1ec0cf8b77031b6b68902e45bca1d6022c
+  non_claims:
+  - scoped_current_candidate_only
+  - no_complete_com_parity
+  - no_global_migration_row_close
+  - no_product_capability_promotion
+  - no_release_readiness
+  - no_s_parameter_fit
+  - channel_impulse_only_policy_unchanged
+  - no_raw_result_payloads_in_evidence
+  current_observation:
+    formal_manifest:
+      path: docs/baselines/com-03-current-candidate-replay.v1.yaml
+      sha256: 2713a24151c802ef989dd6b3cb878c1ec0cf8b77031b6b68902e45bca1d6022c
+    audit:
+      path: docs/baselines/audits/2026-08-27-com-03-current-candidate-replay.md
+      sha256: f024a2d4e78221b16aac3a35fc5a5cea3e778cc325b72bc411b14b038dd8972d
+    status: scoped_current_candidate_observed
+    scenario_count: 23
+    matched_case_count: 23
+    success_match_count: 7
+    error_match_count: 16
+    complete_com_parity: false
+    global_migration_row_closed: false
+    product_capability_promoted: false
+    release_ready: false
+    no_s_parameter_fit: true
+    channel_policy: one_final_fd_to_td_impulse
+- id: COM-04
+  repo: agent_com
+  public_entrypoint: load_config-run_com-write_artifacts
+  integration_disposition: direct_rust_port
+  runtime_availability: external_asset_required
+  parity_evidence: scoped_observation
+  release_state: open_no_release
+  evidence: *id003
+  current_observation:
+    formal_record: com02_04
+    status: passed_scoped
+    dfe_winner_taps_published: true
+    configured_port_order_execution_observed: true
+    upstream_numeric_parity: false
+    port_order_result_wire: false
+    acceptance: false
+    release_ready: false
+    channel_policy: one_final_fd_to_td_impulse
+  non_claims:
+  - scoped_result_surface_only
+  - no_upstream_numeric_parity
+  - no_port_order_result_wire
+  - no_acceptance
+  - no_release
+  - no_s_parameter_fit
+  - one_final_fd_to_td_impulse
+summary:
+  rows: 15
+  direct_rust_port: 9
+  retained_external_runtime: 2
+  external_asset: 0
+  oracle_only: 0
+  excluded_fail_closed: 4
+  release_ready: 0
+plan:
+  path: PLAN.md
+  sha256: 9f4db9b49a7b24bba6c0b09837ddb849665def66438dc3a60fd2b664c6db4225
+audit:
+  path: docs/baselines/audits/2026-09-02-as03-as04-owner-exclusion.md
+  sha256: 25f8b0f72fdf1321317cb421f6852083c6f1856e2aa529f878f58ce3e3c6539d
+harness:
+  verifier:
+    path: tools/verify_as03_as04_owner_exclusion.py
+    sha256: df41a6f2a1d8694dc69b2202daa62fc4f2360a2e623e0c485073fe40a40511b8
+  mutation_tests:
+    path: tools/test_verify_as03_as04_owner_exclusion.py
+    sha256: b0c6b80618e53c1214fbad21ff8ceedf9402f7920e54fbaa7983a89eeba1e9bb
+formal_records:
+  as06:
+    manifest: *id001
+    audit:
+      path: docs/baselines/audits/2026-08-29-as-06-ngspice-result-parity-v2.md
+      sha256: a025727ecec1ac7479cbb2260df10a1c538e6d389ae08cd1c1dc973562cf7bfb
+    gate:
+      commit: 591a2563179713a97a7b2346597a986f42bb1af9
+      tree: 0d6c50580cd7acd5321768f98e04776677882db0
+    record:
+      commit: 1e2f1be2d9be730ca38cf21ce8393de02c295f6a
+      tree: 2bd39e64b193e79cd0a57eea0d33e06bbe54f383
+  com02_04:
+    manifest: *id003
+    audit:
+      path: docs/baselines/audits/2026-08-29-com-02-04-result-surface-formal.md
+      sha256: 7f4cc983f9e8a2a0e441176bed180a39837e3541986cc35494c1e009ea66e495
+    gate:
+      commit: e5d9bfe5fa946ee88b9eb06df1db3b574dd43c05
+      tree: 2906da5e5c7d6169ba1f01493e2d6a3231595aac
+    record:
+      commit: 2dea3bbe6039224704f1e07aebc3ebd6c178abed
+      tree: 2d680777f93c86373104c9b294cc833e28ea1cba
+  pb01_02:
+    manifest: *id002
+    audit:
+      path: docs/baselines/audits/2026-08-29-pb-01-02-candidate-matrix-formal.md
+      sha256: 508cb84aeabc3999d67baec832a593e9a1ef163b48a32622bd98117e8b548a5f
+    gate:
+      commit: b738e983a430f98b04da066f3e9c42b8f3ee58e6
+      tree: 2abea453b906e2efdbfcbae99f0ccc98893ce83c
+    record:
+      commit: beb5b764f471ec4c9cda81dc233ac1a3d984669e
+      tree: 18ff08dee5b7a11da3120b7542354b0709f19275

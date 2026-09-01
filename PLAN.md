@@ -106,7 +106,7 @@ Owner 已明确纠偏：当前阶段不增加新的领域功能。先完整覆�
 Agent-Spice、PyBERT、Agent-COM 三个固定提交已经公开实现的稳定工作流，
 再逐项以 Rust 替换；迁移、机械重构、算法改进和发布必须分开。
 
-- 当前实现主账本：[upstream-migration-inventory.v1](docs/baselines/upstream-migration-inventory.v1.yaml)。15 行均已有严格的 process-external adapter 和统一 `sipi upstream ...` CLI 路由；15 行 Rust branch-complete parity 与最终 completion 仍全部 open。
+- 当前实现主账本：[upstream-migration-inventory.v2](docs/baselines/upstream-migration-inventory.v2.yaml)（v1 保持 immutable 历史）。15 行均已有严格的 process-external adapter 和统一 `sipi upstream ...` CLI 路由；AS-03/AS-04 按 owner 决议为 `excluded_by_owner`，其余 13 行仍按各自状态推进。
 - 首轮整合证据：[upstream-cli-integration.v1](docs/baselines/upstream-cli-integration.v1.yaml) 与 [upstream-rust-candidate-coverage.v1](docs/baselines/upstream-rust-candidate-coverage.v1.yaml)。它们只声明固定 Git object 的可达 transport，不把外部 Python/native runtime 冒充 Rust 产品能力。
 - 发布阻断账本：[release-blockers-ledger.v1](docs/baselines/release-blockers-ledger.v1.yaml)，9 项全部延后到 consolidated candidate 冻结之后。
 - v0.2 的 19 项去向：[v0.2-v0.3 reconciliation](docs/baselines/v0.2-v0.3-migration-reconciliation.v1.yaml)。旧 ledger 与历史 evidence 不改写。
@@ -1002,6 +1002,15 @@ predecessor、candidate archive、scope counts、COM blocker 或 release gate �
 `beb5b764` clean candidate 与 AS-06、COM-02/04、PB-01/02 的最新 scoped formal records。
 15 条 upstream rows 仍全部 open/scoped，`release_ready=0`；AS-05 Xyce/XDM 明确排除，
 S 参数保持 no-fit，channel 仅允许 one-final FD-to-TD impulse。
+
+**2026-09-02 owner disposition successor (v15/v2)：** owner 决议跳过 Agent-Spice
+`fit-yparam` (AS-03) 与 `tune-yparam-tran` (AS-04)，两行在 additive successor 中标记
+为 `excluded_by_owner` / `historical_quarantine_not_product_reachable`。两行仍保留
+历史 evidence，但不再作为产品可达能力，不提出 parity、acceptance、product capability
+或 release claim；对应记录见
+[`as03-as04-owner-exclusion.v1`](docs/baselines/as03-as04-owner-exclusion.v1.yaml)。
+v14、v1 及其旧 evidence 保持 immutable；AS-01、AS-02、AS-05、AS-06 不变，AS-05
+继续不做 Xyce/XDM，S 参数保持 no-fit，channel 仅允许 one-final FD-to-TD impulse。
 
 ## 19. 完成定义
 

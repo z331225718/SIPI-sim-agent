@@ -1,0 +1,97 @@
+schema: sipi.upstream-migration-inventory.v2
+status: active_upstream_integration_before_rust_consolidation
+successor:
+  predecessor: docs/baselines/upstream-migration-inventory.v1.yaml
+  predecessor_sha256: 1d1a3fc2e43be26884554ca8a1d94217ade6142c0e1ae92a686eaba9b6ca5a86
+  reason: additive v2 owner-disposition successor; v1 remains immutable historical inventory
+candidate:
+  commit: ad797d8c6421c51b9607a2624cf4572c9c8b0b50
+  tree: d305cbfd27960926c969db9abbaeac81d8b1e988
+  archive_sha256: 149c1162f8ba697a7d9509cb0950afff3fdad8c5977af051c6bd279b29cd1b30
+  archive_bytes: 62822400
+  materialization: clean_git_archive
+  autocrlf: true
+  worktree_overlay: false
+policy: sipi.upstream-capability-first-rust-consolidation.v1
+adr: docs/adr/ADR-015-upstream-capability-first-rust-consolidation.md
+feature_policy:
+  new_domain_features_allowed: false
+  allowed_change: named_upstream_workflow_integration_or_rust_replacement_only
+  adapter_semantics: strict_transport_artifact_provenance_and_error_mapping_only
+  silent_fallback: forbidden
+  numerical_policy_change: separate_future_review
+completion_states: [rust_parity_accepted, retained_external_runtime, excluded_by_owner]
+reachable_inventory_states: [pinned_reachable_inventory_bound, historical_quarantine_not_product_reachable]
+integration_evidence:
+  path: docs/baselines/upstream-cli-integration.v1.yaml
+  sha256: 567d853f375f535c1c3c5c2172b3486c1e49a57fc1b842b1ffe4028e0ec874ae
+source_repositories:
+  agent_spice:
+    commit: 2cc92316c2fb89a159f18fcb1ff2ba249f0e22f5
+    tree: b6bde97128030d6cea0d68b2f0a35d807be8c402
+    cli_path: src/agent_spice/cli.py
+    cli_blob_oid_sha1: 321a32b860f969f0be74f883bedbbae3f67d6284
+    cli_content_sha256: 908489c8c3a4826d49175c66b3d533413db4624b10fc3c797795b723b62262e1
+    license_path: LICENSE
+    license_blob_oid_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+    license_content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+    declared_root_license: MIT
+    per_path_review_required: true
+  pybert:
+    commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+    tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+    cli_path: src/pybert/cli.py
+    cli_blob_oid_sha1: 4c1116007d31bcebf8db3252363eed7774c7b349
+    cli_content_sha256: 3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9
+    license_path: LICENSE
+    license_blob_oid_sha1: 64d198ba43675ede5fbdef1ec918a63954951640
+    license_content_sha256: 4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1
+    declared_root_license: BSD-3-Clause
+    per_path_review_required: true
+  agent_com:
+    commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+    tree: 7094ab6e84989b218730c52432c70da10261f8ea
+    cli_path: src/agent_com/cli.py
+    cli_blob_oid_sha1: 7964d84bd52d60731bbf56ab9847bf4c190eacf9
+    cli_content_sha256: 3ca1d26c097abaaa6197682a2c095dc2bc9d5810177429662a40463096fb51ca
+    license_path: LICENSE
+    license_blob_oid_sha1: 55aac2e4f8c36a978d315efb02815972579b8293
+    license_content_sha256: d0807e4df734f0fadc658f4ea3be7bfe4b81c3e85a2b053b069a23189c6034c2
+    declared_root_license: MIT
+    per_path_review_required: true
+owner_exclusion:
+  record:
+    path: docs/baselines/as03-as04-owner-exclusion.v1.yaml
+    sha256: 0c304947a0390fc37b3ce27c1b56d4bca800813d70f82e91e85e114ea776b22e
+  audit:
+    path: docs/baselines/audits/2026-09-02-as03-as04-owner-exclusion.md
+    sha256: 25f8b0f72fdf1321317cb421f6852083c6f1856e2aa529f878f58ce3e3c6539d
+plan:
+  path: PLAN.md
+  sha256: 9f4db9b49a7b24bba6c0b09837ddb849665def66438dc3a60fd2b664c6db4225
+entries:
+  - {id: AS-01, repo: agent_spice, public_entrypoint: fit-sparam, source_path: src/agent_spice/cli.py, target_crates: [sipi-touchstone, sipi-channel], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: open}
+  - {id: AS-02, repo: agent_spice, public_entrypoint: fit-sparam-cascade, source_path: src/agent_spice/cli.py, target_crates: [sipi-touchstone, sipi-channel], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: open}
+  - {id: AS-03, repo: agent_spice, public_entrypoint: fit-yparam, source_path: src/agent_spice/cli.py, target_crates: [sipi-touchstone, sipi-channel], adapter_status: integrated_external_cli_route, rust_replacement_status: excluded_by_owner, reachable_inventory: historical_quarantine_not_product_reachable, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: excluded_by_owner}
+  - {id: AS-04, repo: agent_spice, public_entrypoint: tune-yparam-tran, source_path: src/agent_spice/cli.py, target_crates: [sipi-channel, sipi-tran], adapter_status: integrated_external_cli_route, rust_replacement_status: excluded_by_owner, reachable_inventory: historical_quarantine_not_product_reachable, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: excluded_by_owner}
+  - {id: AS-05, repo: agent_spice, public_entrypoint: run-hspice, source_path: src/agent_spice/cli.py, target_crates: [sipi-tran], adapter_status: integrated_external_cli_route, rust_replacement_status: fixed_profile_candidate_only, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: profile_only_not_workflow_parity, completion: open}
+  - {id: AS-06, repo: agent_spice, public_entrypoint: run-rfm, source_path: src/agent_spice/cli.py, target_crates: [sipi-channel, sipi-tran], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: open}
+  - {id: PB-01, repo: pybert, public_entrypoint: sim, source_path: src/pybert/cli.py, target_crates: [sipi-link, sipi-channel, sipi-compare], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+  - {id: PB-02, repo: pybert, public_entrypoint: sim-native, source_path: src/pybert/cli.py, target_crates: [sipi-link, sipi-channel, sipi-compare], adapter_status: integrated_external_cli_route, rust_replacement_status: upstream_native_candidate_not_integrated, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: open}
+  - {id: PB-03, repo: pybert, public_entrypoint: sim-rust, source_path: src/pybert/cli.py, target_crates: [sipi-link, sipi-channel, sipi-compare], adapter_status: integrated_external_cli_route, rust_replacement_status: upstream_native_candidate_not_integrated, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+  - {id: PB-04, repo: pybert, public_entrypoint: sim-auto, source_path: src/pybert/cli.py, target_crates: [sipi-link, sipi-channel, sipi-compare], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: pending, parity_status: not_evaluated, completion: open}
+  - {id: PB-05, repo: pybert, public_entrypoint: sim-compare, source_path: src/pybert/cli.py, target_crates: [sipi-link, sipi-channel, sipi-compare], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+  - {id: COM-01, repo: agent_com, public_entrypoint: config-validate, source_path: src/agent_com/cli.py, target_crates: [sipi-com], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+  - {id: COM-02, repo: agent_com, public_entrypoint: run, source_path: src/agent_com/cli.py, target_crates: [sipi-com, sipi-ieee-com-sparam], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+  - {id: COM-03, repo: agent_com, public_entrypoint: compare, source_path: src/agent_com/cli.py, target_crates: [sipi-com, sipi-compare], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+  - {id: COM-04, repo: agent_com, public_entrypoint: load_config-run_com-write_artifacts, source_path: src/agent_com/__init__.py, target_crates: [sipi-com, sipi-artifacts], adapter_status: integrated_external_cli_route, rust_replacement_status: candidate_present_parity_unbound, reachable_inventory: pinned_reachable_inventory_bound, license_review: external_runtime_boundary_bound_direct_port_not_started, oracle_corpus: partial, parity_status: not_evaluated, completion: open}
+accounted_not_initial_numeric_completion:
+  agent_spice: [probe-idem-family, fit-idem-like-family, fit-modal-z, benchmark-sparam, preflight-sparam-corpus, compare-sparam-bands]
+  pybert: [web-fastapi, redis-worker, desktop-gui, operational-storage]
+  agent_com: [matlab-runtime, workbook-bytes, golden-payloads]
+summary:
+  migration_rows: 15
+  external_adapter_routes_integrated: 15
+  open: 13
+  complete: 2
+  new_feature_freeze: true
