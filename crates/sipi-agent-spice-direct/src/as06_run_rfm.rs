@@ -10,6 +10,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use num_complex::Complex64 as Complex;
+use rayon::prelude::*;
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
@@ -21,6 +22,7 @@ const MAX_RFM_BYTES: usize = 16 * 1024 * 1024;
 const MAX_PORTS: usize = 64;
 const RESPONSE_SAMPLES: usize = 65;
 const MAX_ARTIFACT_BYTES: usize = 8 * 1024 * 1024;
+const PARALLEL_FREQUENCY_THRESHOLD: usize = 4_096;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RfmBackend {
@@ -116,10 +118,37 @@ impl RfmModel {
                 "frequency vector values must be finite".to_owned(),
             ));
         }
-        Ok(frequencies_hz
+        // Keep short calls serial so a caller paying for a few samples does
+        // not pay for the global Rayon pool; large sweeps are independent by
+        // frequency and retain the scalar evaluator's exact operation order.
+        if frequencies_hz.len() >= PARALLEL_FREQUENCY_THRESHOLD {
+            return Ok(frequencies_hz
+                .par_iter()
+                .map(|frequency| self.evaluate_s(*frequency))
+                .collect());
+        }
+        let response_count = self.response_count();
+        let mut output = frequencies_hz
             .iter()
-            .map(|frequency| self.evaluate_s(*frequency))
-            .collect())
+            .map(|_| vec![Complex::new(0.0, 0.0); response_count])
+            .collect::<Vec<_>>();
+        for (frequency_index, frequency_hz) in frequencies_hz.iter().enumerate() {
+            let s = Complex::new(0.0, 2.0 * std::f64::consts::PI * frequency_hz);
+            let row = &mut output[frequency_index];
+            for (response, output_value) in row.iter_mut().enumerate() {
+                let mut sum = Complex::new(0.0, 0.0);
+                for (residue, pole) in self.residues[response].iter().zip(&self.poles) {
+                    let primary = *residue / (s - *pole);
+                    sum += if pole.im != 0.0 {
+                        primary + residue.conj() / (s - pole.conj())
+                    } else {
+                        primary
+                    };
+                }
+                *output_value = self.constant[response] + sum;
+            }
+        }
+        Ok(output)
     }
 }
 
@@ -2626,6 +2655,65 @@ mod tests {
         assert_eq!(samples[0].len(), 4);
         assert_eq!(samples[0], model.constant);
         assert_eq!(model.proportional_coeff(), vec![0.0; 4]);
+    }
+
+    #[test]
+    fn batch_kernel_is_bitwise_equal_to_scalar_kernel_on_65536_point_fixture() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/circuit/rfm-deck/models/channel.rfm");
+        let model = parse_cadence_rfm(&path).unwrap();
+        let frequency_count = 65_536_usize;
+        let frequencies = (0..frequency_count)
+            .map(|index| 200.0e9 * (index as f64) / ((frequency_count - 1) as f64))
+            .collect::<Vec<_>>();
+        let batch = model.evaluate_s_many(&frequencies).unwrap();
+        assert_eq!(batch.len(), frequencies.len());
+        for (frequency_index, (frequency, row)) in frequencies.iter().zip(&batch).enumerate() {
+            let scalar = model.evaluate_s(*frequency);
+            assert_eq!(row.len(), scalar.len());
+            for (response_index, (actual, expected)) in row.iter().zip(&scalar).enumerate() {
+                assert_eq!(
+                    actual.re.to_bits(),
+                    expected.re.to_bits(),
+                    "real mismatch at frequency {frequency_index}, response {response_index}"
+                );
+                assert_eq!(
+                    actual.im.to_bits(),
+                    expected.im.to_bits(),
+                    "imag mismatch at frequency {frequency_index}, response {response_index}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn serial_batch_kernel_is_bitwise_equal_to_scalar_kernel_below_parallel_threshold() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/circuit/rfm-deck/models/channel.rfm");
+        let model = parse_cadence_rfm(&path).unwrap();
+        let frequency_count = PARALLEL_FREQUENCY_THRESHOLD - 1;
+        let frequencies = (0..frequency_count)
+            .map(|index| 200.0e9 * (index as f64) / ((frequency_count - 1) as f64))
+            .collect::<Vec<_>>();
+        let batch = model.evaluate_s_many(&frequencies).unwrap();
+        for (frequency_index, (frequency, row)) in frequencies.iter().zip(&batch).enumerate() {
+            for (response_index, (actual, expected)) in row
+                .iter()
+                .zip(model.evaluate_s(*frequency).iter())
+                .enumerate()
+            {
+                assert_eq!(
+                    actual.re.to_bits(),
+                    expected.re.to_bits(),
+                    "real mismatch at frequency {frequency_index}, response {response_index}"
+                );
+                assert_eq!(
+                    actual.im.to_bits(),
+                    expected.im.to_bits(),
+                    "imaginary mismatch at frequency {frequency_index}, response {response_index}"
+                );
+            }
+        }
     }
 
     #[test]
