@@ -220,6 +220,60 @@ pub fn jitter_response_v1(
 }
 
 /// Port of `_jitter_sigma`.
+///
+/// Candidate search only needs the squared norm of the jitter response.  The
+/// full `jitter_response_v1` vector remains the public checkpoint API, while
+/// this private path retains its sample order and arithmetic without allocating
+/// three temporary vectors for every rejected TX-FFE candidate.
+fn jitter_response_squared_sum_v1(
+    sbr: &[f64],
+    cursor_index: usize,
+    samples_per_ui: usize,
+    dfe_tap_count: i64,
+    limit_to_dfe_span: bool,
+) -> Result<f64, CandidateErrorV1> {
+    let scale = samples_per_ui as f64 / 2.0;
+    let mut sum = 0.0;
+    if limit_to_dfe_span {
+        if dfe_tap_count < 0 {
+            return Err(CandidateErrorV1::JitterDfeSpan);
+        }
+        for offset in -1_i64..=dfe_tap_count {
+            let early_index = cursor_index as i64 - 1 + samples_per_ui as i64 * offset;
+            let late_index = cursor_index as i64 + 1 + samples_per_ui as i64 * offset;
+            if early_index < 0 || late_index >= sbr.len() as i64 {
+                return Err(CandidateErrorV1::JitterDfeSpan);
+            }
+            let value = (sbr[late_index as usize] - sbr[early_index as usize]) * scale;
+            sum += value * value;
+        }
+        return Ok(sum);
+    }
+    let mut sampling_offset = (cursor_index + 1) % samples_per_ui;
+    if sampling_offset <= 1 {
+        sampling_offset += samples_per_ui;
+    }
+    let early_start = sampling_offset - 2;
+    let late_start = sampling_offset;
+    let early_count = if early_start >= sbr.len() {
+        0
+    } else {
+        1 + (sbr.len() - 1 - early_start) / samples_per_ui
+    };
+    let late_count = if late_start >= sbr.len() {
+        0
+    } else {
+        1 + (sbr.len() - 1 - late_start) / samples_per_ui
+    };
+    for index in 0..early_count.min(late_count) {
+        let value = (sbr[late_start + index * samples_per_ui]
+            - sbr[early_start + index * samples_per_ui])
+            * scale;
+        sum += value * value;
+    }
+    Ok(sum)
+}
+
 pub fn jitter_sigma_v1(
     sbr: &[f64],
     cursor_index: usize,
@@ -230,15 +284,14 @@ pub fn jitter_sigma_v1(
     dfe_tap_count: i64,
     limit_to_dfe_span: bool,
 ) -> Result<f64, CandidateErrorV1> {
-    let h_j = jitter_response_v1(
+    let norm_j = jitter_response_squared_sum_v1(
         sbr,
         cursor_index,
         samples_per_ui,
         dfe_tap_count,
         limit_to_dfe_span,
-        None,
-    )?;
-    let norm_j = h_j.iter().map(|value| value * value).sum::<f64>().sqrt();
+    )?
+    .sqrt();
     let norm_ad = (a_dd * a_dd + sigma_rj * sigma_rj).sqrt();
     Ok(norm_ad * sigma_x * norm_j)
 }
@@ -322,12 +375,28 @@ mod tests {
         let pulse = pulse();
         let response = jitter_response_v1(&pulse, 80, 8, 2, false, None).expect("jitter");
         assert!(!response.is_empty());
+        assert_eq!(
+            jitter_response_squared_sum_v1(&pulse, 80, 8, 2, false).expect("squared sum"),
+            response.iter().map(|value| value * value).sum::<f64>()
+        );
         let limited = jitter_response_v1(&pulse, 80, 8, 2, true, None).expect("limited");
         assert_eq!(limited.len(), 4);
+        assert_eq!(
+            jitter_response_squared_sum_v1(&pulse, 80, 8, 2, true).expect("limited squared sum"),
+            limited.iter().map(|value| value * value).sum::<f64>()
+        );
         let padded = jitter_response_v1(&pulse, 80, 8, 2, true, Some(10)).expect("padded");
         assert_eq!(padded.len(), 10);
         assert!(jitter_response_v1(&pulse, 80, 8, 2, true, Some(0)).is_err());
         let sigma = jitter_sigma_v1(&pulse, 80, 8, 0.4, 1e-4, 0.03, 2, false).expect("sigma");
+        let expected_sigma = (0.4_f64 * 0.4 + 1e-4 * 1e-4).sqrt()
+            * 0.03
+            * response
+                .iter()
+                .map(|value| value * value)
+                .sum::<f64>()
+                .sqrt();
+        assert_eq!(sigma, expected_sigma);
         assert!(sigma.is_finite() && sigma > 0.0);
     }
 

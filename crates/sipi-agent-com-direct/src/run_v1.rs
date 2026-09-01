@@ -45,6 +45,7 @@ use std::fs;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Instant;
 
 pub const COM_02_DIRECT_PORT_SCHEMA_V1: &str = "sipi.com-02.direct-port.v1";
 pub const COM_04_DIRECT_PORT_SCHEMA_V1: &str = "sipi.com-04.direct-port.v1";
@@ -61,6 +62,69 @@ pub const MAX_CROSSTALK_CHANNELS_V1: usize = 64;
 pub const MAX_SEARCH_FREQUENCY_POINTS_V1: usize = 262_144;
 pub const MAX_SEARCH_TX_FFE_CANDIDATES_V1: u64 = 1_000_000;
 const MAX_WORKBOOK_CASE_SNAPSHOT_BYTES_V1: u64 = 128 * 1024 * 1024;
+
+/// Opt-in stage timing for local performance work.  The public result contract
+/// never contains these observations, so collecting them cannot alter numeric
+/// output or artifact bytes.  It is intentionally best-effort: a diagnostic
+/// directory problem must not turn a valid COM execution into a failed one.
+struct PerformanceTraceV1 {
+    started: Instant,
+    previous: Instant,
+    stages: Vec<(&'static str, u128)>,
+}
+
+impl PerformanceTraceV1 {
+    fn from_environment() -> Option<Self> {
+        std::env::var_os("SIPI_COM_PERFORMANCE_TRACE_DIR").map(|_| {
+            let now = Instant::now();
+            Self {
+                started: now,
+                previous: now,
+                stages: Vec::new(),
+            }
+        })
+    }
+
+    fn mark(&mut self, stage: &'static str) {
+        let now = Instant::now();
+        self.stages
+            .push((stage, now.duration_since(self.previous).as_nanos()));
+        self.previous = now;
+    }
+
+    fn finish(mut self, package_case_index: Option<usize>) {
+        self.mark("artifact_write");
+        let Some(root) = std::env::var_os("SIPI_COM_PERFORMANCE_TRACE_DIR") else {
+            return;
+        };
+        let root = PathBuf::from(root);
+        if fs::create_dir_all(&root).is_err() {
+            return;
+        }
+        let case = package_case_index
+            .map(|value| format!("package-case-{value}"))
+            .unwrap_or_else(|| "standalone".to_owned());
+        let path = root.join(format!("{case}-{}.json", std::process::id()));
+        let stages = self
+            .stages
+            .into_iter()
+            .map(|(stage, elapsed_ns)| json!({"stage": stage, "elapsed_ns": elapsed_ns}))
+            .collect::<Vec<_>>();
+        let trace = json!({
+            "schema": "sipi.com.performance-trace.v1",
+            "package_case_index": package_case_index,
+            "stages": stages,
+            "total_elapsed_ns": self.started.elapsed().as_nanos(),
+        });
+        let _ = fs::write(path, serde_json::to_vec(&trace).unwrap_or_default());
+    }
+}
+
+fn mark_performance_trace_v1(trace: &mut Option<PerformanceTraceV1>, stage: &'static str) {
+    if let Some(trace) = trace {
+        trace.mark(stage);
+    }
+}
 
 fn validate_workbook_snapshot_budget_v1(
     source_len: usize,
@@ -1138,6 +1202,7 @@ fn run_with_workflow_token_origin(
     package_case_index: Option<usize>,
     origin_override: Option<ConfigOriginV1>,
 ) -> Result<DirectRunReportV1, DirectRunErrorV1> {
+    let mut performance_trace = PerformanceTraceV1::from_environment();
     validate_request(request)?;
     if package_case_index.is_none() {
         if let Some(package_cases) = package_cases_from_config_v1(request)? {
@@ -1148,6 +1213,7 @@ fn run_with_workflow_token_origin(
         }
     }
     let loaded = load_config_v1_with_origin(request, origin_override)?;
+    mark_performance_trace_v1(&mut performance_trace, "config_load");
     let mut document = loaded.document.clone();
     validate_output_input_custody_v1(request, Some(&document))?;
     let trusted_workbook =
@@ -1240,6 +1306,7 @@ fn run_with_workflow_token_origin(
             document["portable"]["search"]["package_case_index"] = json!(case_index);
         }
     }
+    mark_performance_trace_v1(&mut performance_trace, "workbook_search_materialization");
     let mut input_impulse = if workbook_run_mode == TrustedWorkbookRunModeV1::ErlOnly {
         // ERL-only owns its own raw S4P-to-TDR projection.  Do not construct
         // the ordinary package VTF/FD-to-TD impulse just to populate a COM
@@ -1341,6 +1408,9 @@ fn run_with_workflow_token_origin(
             request.overwrite,
             request.legacy_csv,
         )?;
+        if let Some(trace) = performance_trace {
+            trace.finish(package_case_index);
+        }
         return Ok(DirectRunReportV1 {
             schema,
             workflow: vec!["load_config", "run_normal_erl", "write_artifacts"],
@@ -1576,6 +1646,7 @@ fn run_with_workflow_token_origin(
     input_impulse.ac_common_mode_transfer =
         (!ac_common_mode_transfers.is_empty()).then_some(ac_common_mode_transfers);
     input_impulse.ac_common_mode_frequency_hz = ac_common_mode_frequency_hz;
+    mark_performance_trace_v1(&mut performance_trace, "channel_load_and_projection");
     let fd_runtime = if package_s4p
         && trusted_workbook
         && workbook_bool_json_v1(&loaded.values, &["GET_FD"], "GET_FD")?
@@ -1591,6 +1662,7 @@ fn run_with_workflow_token_origin(
     } else {
         None
     };
+    mark_performance_trace_v1(&mut performance_trace, "fd_metrics");
     let normal_erl = if package_s4p
         && trusted_workbook
         && resolved_package_case_index == 0
@@ -1607,6 +1679,7 @@ fn run_with_workflow_token_origin(
     } else {
         None
     };
+    mark_performance_trace_v1(&mut performance_trace, "normal_erl");
     // The pinned source leaves TDILN empty for CSV/TD inputs.  Only its
     // explicit option plus an admitted raw S4P network activates this private
     // composition route.
@@ -1622,6 +1695,7 @@ fn run_with_workflow_token_origin(
     } else {
         None
     };
+    mark_performance_trace_v1(&mut performance_trace, "tdiln");
     let branches = portable_branch_result_with_sigma_v1(
         &document,
         &input_impulse,
@@ -1630,6 +1704,7 @@ fn run_with_workflow_token_origin(
         None,
         trusted_workbook,
     )?;
+    mark_performance_trace_v1(&mut performance_trace, "equalization_and_search");
     if trusted_workbook {
         controls = workbook_controls_from_search_v1(
             &loaded.values,
@@ -1772,6 +1847,7 @@ fn run_with_workflow_token_origin(
         )
         .map_err(|error| DirectRunErrorV1::Execution(format!("{error:?}")))
     }?;
+    mark_performance_trace_v1(&mut performance_trace, "com_envelope");
     if !envelope.admitted() {
         return Err(DirectRunErrorV1::Execution(
             envelope
@@ -1805,6 +1881,7 @@ fn run_with_workflow_token_origin(
         normal_erl.as_ref(),
         tdiln_runtime.as_ref(),
     );
+    mark_performance_trace_v1(&mut performance_trace, "result_composition");
     let artifacts = write_run_artifacts_internal_v1(
         &request.output_dir,
         &result,
@@ -1816,6 +1893,9 @@ fn run_with_workflow_token_origin(
         tdiln_runtime.as_ref().map(|runtime| &runtime.result),
     )?;
     write_normal_erl_diagnostic_sidecar_v1(normal_erl.as_ref().map(|(result, _)| result))?;
+    if let Some(trace) = performance_trace {
+        trace.finish(package_case_index);
+    }
     Ok(DirectRunReportV1 {
         schema,
         workflow: vec!["load_config", "run_com", "write_artifacts"],
