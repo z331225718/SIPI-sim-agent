@@ -517,7 +517,7 @@ def _known_document_records(workspace: Path) -> list[dict[str, object]]:
                 "can_satisfy_required_files": False,
                 "explicitly_not_original_inputs": True,
                 "markers": [marker for marker in SEARCH_MARKERS if marker in text],
-                "explicitly_not_original_inputs": (
+                "caveat_markers_present": (
                     "not tracked" in text.lower()
                     or "synthetic" in text.lower()
                     or "no numerical parity" in text.lower()

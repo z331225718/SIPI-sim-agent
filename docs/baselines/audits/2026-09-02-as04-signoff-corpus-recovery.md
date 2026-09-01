@@ -4,7 +4,7 @@
 审计工具：[audit_as04_signoff_corpus_recovery.py](../../../tools/audit_as04_signoff_corpus_recovery.py)  
 审计范围：本机候选仓库、Agent-Spice checkout、已存在的 Git worktree/snapshot、AS-04 相关 Temp 回放目录，以及两仓库的 Git refs/reflog/all-object 数据库。未联网，未运行 150 次优化，未运行 HSPICE 作业，未修改生产 Rust、CLI、PLAN、ledger 或 AS policy。
 
-本次机器输出保留在 `C:/Users/z3312/AppData/Local/Temp/as04-signoff-corpus-recovery-20260902.json`，bytes SHA-256 为 `ca0607ed4b6853ec1f4f662a99f328d23f0caa92cd2781b26a3e4e271c0504ae`。运行命令为：
+本次机器输出保留在 `C:/Users/z3312/AppData/Local/Temp/as04-signoff-corpus-recovery-20260902.json`，bytes SHA-256 为 `136a03f480041d89c3dc67e06945121943fea69bd8ec25aa940f9290dac63d04`。运行命令为：
 
 ```powershell
 python tools/audit_as04_signoff_corpus_recovery.py `
