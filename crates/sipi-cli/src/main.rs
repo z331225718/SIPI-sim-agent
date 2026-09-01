@@ -4678,6 +4678,20 @@ mod tests {
         assert_eq!(dispatch(&args(&["com", "config", "validate"])).code, 2);
     }
 
+    #[cfg(feature = "com-direct-integration")]
+    #[test]
+    fn root_com_compare_is_discoverable_and_requires_both_result_paths() {
+        let manifest = command_manifest_json();
+        assert!(manifest.contains(
+            "\"id\":\"com.compare\",\"route\":[\"com\",\"compare\"],\"availability\":\"available\""
+        ));
+        assert_eq!(dispatch(&args(&["com", "compare"])).code, 2);
+        assert_eq!(
+            dispatch(&args(&["com", "compare", "--golden", "golden.json"])).code,
+            2
+        );
+    }
+
     #[test]
     fn specified_com_request_result_and_cli_route_share_one_bounded_schema() {
         let nonce = TEST_NONCE.fetch_add(1, Ordering::Relaxed);
