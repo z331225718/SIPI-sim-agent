@@ -11,10 +11,47 @@ use crate::dfe_v1::clip_dfe_v1;
 use crate::discrete_pdf_v1::{
     DiscretePdfV1, PdfErrorV1, convolve_c2m_accelerated_v1, normal_pdf_v1,
 };
-use crate::sampled_signal_pdf_v1::sampled_signal_pdf_v1;
+use crate::sampled_signal_pdf_v1::sampled_signal_pdf_owned_v1;
+use std::cell::RefCell;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 
 /// Explicit scope policy of the C2M vertical-eye primitive.
 pub const C2M_EYE_POLICY_V1: &str = "sipi.p5-04r.c2m-vertical-eye.v1.signal-pdf-reduction";
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct C2mPerformanceSnapshotV1 {
+    pub call_count: usize,
+    pub elapsed: Duration,
+    pub residual_preparation: Duration,
+    pub phase_pdf: Duration,
+    pub final_reduction: Duration,
+}
+
+thread_local! {
+    static C2M_PERFORMANCE_PROFILE_V1: RefCell<C2mPerformanceSnapshotV1> = RefCell::new(C2mPerformanceSnapshotV1::default());
+}
+
+fn performance_trace_enabled_v1() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("SIPI_COM_PERFORMANCE_TRACE_DIR").is_some())
+}
+
+fn record_c2m_timing_v1(update: impl FnOnce(&mut C2mPerformanceSnapshotV1)) {
+    if performance_trace_enabled_v1() {
+        C2M_PERFORMANCE_PROFILE_V1.with_borrow_mut(update);
+    }
+}
+
+pub(crate) fn reset_c2m_performance_snapshot_v1() {
+    if performance_trace_enabled_v1() {
+        C2M_PERFORMANCE_PROFILE_V1.set(C2mPerformanceSnapshotV1::default());
+    }
+}
+
+pub(crate) fn c2m_performance_snapshot_v1() -> C2mPerformanceSnapshotV1 {
+    C2M_PERFORMANCE_PROFILE_V1.with_borrow(|profile| *profile)
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum C2mEyeErrorV1 {
@@ -486,6 +523,67 @@ pub fn calculate_c2m_vertical_eye_v1(
     histogram_window: &str,
     ql: f64,
 ) -> Result<(Option<f64>, Option<f64>), C2mEyeErrorV1> {
+    let started = performance_trace_enabled_v1().then(Instant::now);
+    let result = calculate_c2m_vertical_eye_inner_v1(
+        pulse_response,
+        cursor_index,
+        samples_per_ui,
+        samples_for_c2m,
+        levels,
+        bin_size,
+        r_lm_ohm,
+        dfe_tap_count,
+        dfe_max,
+        dfe_min,
+        dfe_step,
+        sigma_rj_s,
+        sigma_x,
+        sigma_n_v,
+        sigma_tx_v,
+        ber_q,
+        ne_noise_pdf,
+        cci_pdf,
+        amplitude_dd_v,
+        spec_ber,
+        t_o_mui,
+        histogram_window,
+        ql,
+    );
+    if let Some(started) = started {
+        C2M_PERFORMANCE_PROFILE_V1.with_borrow_mut(|profile| {
+            profile.call_count += 1;
+            profile.elapsed += started.elapsed();
+        });
+    }
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+fn calculate_c2m_vertical_eye_inner_v1(
+    pulse_response: &[f64],
+    cursor_index: usize,
+    samples_per_ui: usize,
+    samples_for_c2m: usize,
+    levels: usize,
+    bin_size: f64,
+    r_lm_ohm: f64,
+    dfe_tap_count: i64,
+    dfe_max: &[f64],
+    dfe_min: &[f64],
+    dfe_step: f64,
+    sigma_rj_s: f64,
+    sigma_x: f64,
+    sigma_n_v: f64,
+    sigma_tx_v: f64,
+    ber_q: f64,
+    ne_noise_pdf: &DiscretePdfV1,
+    cci_pdf: &DiscretePdfV1,
+    amplitude_dd_v: f64,
+    spec_ber: f64,
+    t_o_mui: f64,
+    histogram_window: &str,
+    ql: f64,
+) -> Result<(Option<f64>, Option<f64>), C2mEyeErrorV1> {
     if t_o_mui == 0.0 {
         return Ok((None, None));
     }
@@ -525,6 +623,7 @@ pub fn calculate_c2m_vertical_eye_v1(
     let start = center - span;
     let stop = center + span;
     let phase_indices: Vec<i64> = (start as i64..=stop as i64).collect();
+    let residual_started = performance_trace_enabled_v1().then(Instant::now);
     let rj = c2m_residual_and_jitter(
         pulse,
         cursor_index,
@@ -538,6 +637,9 @@ pub fn calculate_c2m_vertical_eye_v1(
         dfe_step,
         &phase_indices,
     )?;
+    if let Some(started) = residual_started {
+        record_c2m_timing_v1(|profile| profile.residual_preparation += started.elapsed());
+    }
     let shifted_residual = shift_residual_columns(
         &rj.residual_matrix,
         rj.cursor,
@@ -549,10 +651,11 @@ pub fn calculate_c2m_vertical_eye_v1(
         .collect();
     let mut per_phase = Vec::with_capacity(phase_indices.len());
     for phase_position in 0..phase_indices.len() {
+        let phase_started = performance_trace_enabled_v1().then(Instant::now);
         let column: Vec<f64> = (0..shifted_residual.len())
             .map(|r| shifted_residual[r][phase_position])
             .collect();
-        let self_pdf = sampled_signal_pdf_v1(&column, levels as u32, bin_size, true)
+        let self_pdf = sampled_signal_pdf_owned_v1(column, levels as u32, bin_size, true)
             .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
         let jitter_norm: f64 = rj
             .jitter
@@ -569,8 +672,9 @@ pub fn calculate_c2m_vertical_eye_v1(
         let dual_dirac_values: Vec<f64> = (0..rj.jitter.len())
             .map(|r| amplitude_dd_v * rj.jitter[r][phase_position])
             .collect();
-        let dual_dirac = sampled_signal_pdf_v1(&dual_dirac_values, levels as u32, bin_size, true)
-            .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
+        let dual_dirac =
+            sampled_signal_pdf_owned_v1(dual_dirac_values, levels as u32, bin_size, true)
+                .map_err(|_| C2mEyeErrorV1::InvalidControls)?;
         let gaussian = convolve_c2m_accelerated_v1(&gaussian, ne_noise_pdf)?;
         let noise = convolve_c2m_accelerated_v1(&gaussian, &dual_dirac)?;
         let phase_abs = phase_indices[phase_position];
@@ -582,8 +686,12 @@ pub fn calculate_c2m_vertical_eye_v1(
             &symbol_levels,
         )?;
         per_phase.push(data);
+        if let Some(started) = phase_started {
+            record_c2m_timing_v1(|profile| profile.phase_pdf += started.elapsed());
+        }
     }
-    vertical_eye_window_from_shared_levels(
+    let reduction_started = performance_trace_enabled_v1().then(Instant::now);
+    let result = vertical_eye_window_from_shared_levels(
         &per_phase,
         bin_size,
         levels,
@@ -591,7 +699,11 @@ pub fn calculate_c2m_vertical_eye_v1(
         histogram_window,
         ql,
         spec_ber,
-    )
+    );
+    if let Some(started) = reduction_started {
+        record_c2m_timing_v1(|profile| profile.final_reduction += started.elapsed());
+    }
+    result
 }
 
 #[cfg(test)]

@@ -165,10 +165,21 @@ pub fn sampled_signal_pdf_v1(
     bin_size: f64,
     sparse_pam: bool,
 ) -> Result<DiscretePdfV1, PdfErrorV1> {
+    sampled_signal_pdf_owned_v1(samples.to_vec(), levels, bin_size, sparse_pam)
+}
+
+/// Owned-input form used by the C2M candidate loop, which already builds
+/// transient columns.  It preserves the public helper's filtering, sorting,
+/// and normalization order while avoiding a second full copy of that column.
+pub(crate) fn sampled_signal_pdf_owned_v1(
+    mut values: Vec<f64>,
+    levels: u32,
+    bin_size: f64,
+    sparse_pam: bool,
+) -> Result<DiscretePdfV1, PdfErrorV1> {
     if levels < 2 || !(bin_size > 0.0) {
         return Err(PdfErrorV1::InvalidSampledControls);
     }
-    let mut values = samples.to_vec();
     if values.is_empty() {
         return Err(PdfErrorV1::InvalidSampledControls);
     }
@@ -243,6 +254,15 @@ mod tests {
         assert_eq!(pdf.probability().len(), 1);
         assert!((pdf.probability()[0] - 1.0).abs() < 1e-15);
         assert_eq!(pdf.min_bin(), 0);
+    }
+
+    #[test]
+    fn owned_input_preserves_public_pdf_bits() {
+        let samples = vec![0.42, -0.15, 0.03, -0.42, 0.15, -0.03];
+        let borrowed = sampled_signal_pdf_v1(&samples, 4, 0.01, true).expect("borrowed");
+        let owned = sampled_signal_pdf_owned_v1(samples, 4, 0.01, true).expect("owned");
+        assert_eq!(owned.min_bin(), borrowed.min_bin());
+        assert_eq!(owned.probability(), borrowed.probability());
     }
 
     #[test]

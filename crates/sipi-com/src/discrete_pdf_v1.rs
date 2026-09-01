@@ -67,6 +67,18 @@ impl DiscretePdfV1 {
         (self.min_bin as f64 + index as f64) * self.bin_size
     }
 
+    // The unit-delta convolution path only shifts the support.  Reproduce
+    // `try_new`'s sum/division order without first cloning the input vector;
+    // C2M invokes this path for every viable search candidate.
+    fn renormalized_shifted_clone(&self, min_bin: i64) -> Self {
+        let total: f64 = self.probability.iter().sum();
+        Self {
+            bin_size: self.bin_size,
+            min_bin,
+            probability: self.probability.iter().map(|value| value / total).collect(),
+        }
+    }
+
     /// Normalized cumulative distribution over the support.
     pub fn cdf(&self) -> Vec<f64> {
         let mut running = 0.0;
@@ -160,11 +172,8 @@ pub fn convolve_v1(
         } else {
             (left, right.min_bin)
         };
-        return DiscretePdfV1::try_new(
-            other.bin_size,
-            matlab_round(other.min_bin as f64 + single_min as f64),
-            other.probability.clone(),
-        );
+        return Ok(other
+            .renormalized_shifted_clone(matlab_round(other.min_bin as f64 + single_min as f64)));
     }
     let size = left.probability.len() + right.probability.len() - 1;
     let mut result = vec![0.0_f64; size];
@@ -203,11 +212,8 @@ pub(crate) fn convolve_c2m_accelerated_v1(
         } else {
             (left, right.min_bin)
         };
-        return DiscretePdfV1::try_new(
-            other.bin_size,
-            matlab_round(other.min_bin as f64 + single_min as f64),
-            other.probability.clone(),
-        );
+        return Ok(other
+            .renormalized_shifted_clone(matlab_round(other.min_bin as f64 + single_min as f64)));
     }
     let result = if let Some(indices) = sparse_indices_at_most_four(&right.probability) {
         if indices.len()
@@ -399,6 +405,13 @@ mod tests {
         let delta = DiscretePdfV1::try_new(1e-4, 0, vec![1.0]).expect("delta");
         let gaussian = normal_pdf_v1(0.01, 3.0, 1e-4).expect("gaussian");
         let result = convolve_v1(&gaussian, &delta).expect("convolution");
+        let legacy = DiscretePdfV1::try_new(
+            gaussian.bin_size(),
+            gaussian.min_bin(),
+            gaussian.probability().to_vec(),
+        )
+        .expect("legacy identity");
+        assert_eq!(result.probability(), legacy.probability());
         // Normalization re-entry may leave ~1e-16 relative differences.
         for (left, right) in result
             .probability()
@@ -407,6 +420,21 @@ mod tests {
         {
             assert!((left - right).abs() < 1e-14, "delta identity drift");
         }
+    }
+
+    #[test]
+    fn accelerated_delta_identity_preserves_legacy_bits() {
+        let delta = DiscretePdfV1::try_new(0.125, 0, vec![1.0]).expect("delta");
+        let dense = DiscretePdfV1::try_new(0.125, -3, vec![0.1, 0.3, 0.2, 0.4]).expect("dense");
+        let result = convolve_c2m_accelerated_v1(&delta, &dense).expect("accelerated");
+        let legacy = DiscretePdfV1::try_new(
+            dense.bin_size(),
+            dense.min_bin(),
+            dense.probability().to_vec(),
+        )
+        .expect("legacy identity");
+        assert_eq!(result.probability(), legacy.probability());
+        assert_eq!(result.min_bin(), legacy.min_bin());
     }
 
     #[test]

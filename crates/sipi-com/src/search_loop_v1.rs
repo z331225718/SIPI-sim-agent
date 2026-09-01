@@ -10,12 +10,16 @@
 #![allow(unused_imports)]
 
 use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 
 use faer::linalg::matmul::matmul;
 use faer::{Accum, Mat, Par};
 use rayon::prelude::*;
 
-use crate::c2m_eye_v1::C2mEyeErrorV1;
+use crate::c2m_eye_v1::{
+    C2mEyeErrorV1, c2m_performance_snapshot_v1, reset_c2m_performance_snapshot_v1,
+};
 use crate::candidate_eval_v1::{
     CandidateEvalErrorV1, CandidateEvalOptionsV1, CandidateEvalParamsV1, NonMmseSearchResultV1,
     evaluate_candidate_v1,
@@ -41,6 +45,67 @@ use sipi_types::Complex64;
 /// Explicit scope policy of the search loop stage.
 pub const SEARCH_LOOP_POLICY_V1: &str = "sipi.p5-04t.search-loop.v1.nonmmse-no-rxffe";
 const MAX_TX_CROSSTALK_MAGNITUDE_CACHE_ELEMENTS_V1: usize = 64 * 1024 * 1024;
+static SEARCH_PROFILE_SEQUENCE_V1: AtomicUsize = AtomicUsize::new(0);
+
+/// Opt-in, best-effort timing for the scalar equalizer path.  It is kept out
+/// of the COM result surface so profiling cannot affect an acceptance payload.
+struct SearchPerformanceTraceV1 {
+    started: Instant,
+    candidate_evaluation: Duration,
+    candidate_evaluation_count: usize,
+    c2m_evaluation: Duration,
+    c2m_evaluation_count: usize,
+    c2m_residual_preparation: Duration,
+    c2m_phase_pdf: Duration,
+    c2m_final_reduction: Duration,
+    qualified_ctle_pairs: usize,
+    tx_grid_candidates: usize,
+}
+
+impl SearchPerformanceTraceV1 {
+    fn from_environment(tx_grid_candidates: usize) -> Option<Self> {
+        std::env::var_os("SIPI_COM_PERFORMANCE_TRACE_DIR").map(|_| Self {
+            started: Instant::now(),
+            candidate_evaluation: Duration::ZERO,
+            candidate_evaluation_count: 0,
+            c2m_evaluation: Duration::ZERO,
+            c2m_evaluation_count: 0,
+            c2m_residual_preparation: Duration::ZERO,
+            c2m_phase_pdf: Duration::ZERO,
+            c2m_final_reduction: Duration::ZERO,
+            qualified_ctle_pairs: 0,
+            tx_grid_candidates,
+        })
+    }
+
+    fn write(&self, package_case_index: usize) {
+        let Some(root) = std::env::var_os("SIPI_COM_PERFORMANCE_TRACE_DIR") else {
+            return;
+        };
+        let sequence = SEARCH_PROFILE_SEQUENCE_V1.fetch_add(1, Ordering::Relaxed);
+        let payload = serde_json::json!({
+            "schema": "sipi.com.search-performance-trace.v1",
+            "package_case_index": package_case_index,
+            "process_id": std::process::id(),
+            "sequence": sequence,
+            "elapsed_seconds": self.started.elapsed().as_secs_f64(),
+            "candidate_evaluation_seconds": self.candidate_evaluation.as_secs_f64(),
+            "candidate_evaluation_count": self.candidate_evaluation_count,
+            "c2m_evaluation_seconds": self.c2m_evaluation.as_secs_f64(),
+            "c2m_evaluation_count": self.c2m_evaluation_count,
+            "c2m_residual_preparation_seconds": self.c2m_residual_preparation.as_secs_f64(),
+            "c2m_phase_pdf_seconds": self.c2m_phase_pdf.as_secs_f64(),
+            "c2m_final_reduction_seconds": self.c2m_final_reduction.as_secs_f64(),
+            "qualified_ctle_pairs": self.qualified_ctle_pairs,
+            "tx_grid_candidates": self.tx_grid_candidates,
+        });
+        let path = std::path::PathBuf::from(root).join(format!(
+            "search-package-case-{package_case_index}-{}-{sequence}.json",
+            std::process::id()
+        ));
+        let _ = std::fs::write(path, payload.to_string());
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SearchLoopErrorV1 {
@@ -746,6 +811,10 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
     if grid.taps().is_empty() {
         return Err(SearchLoopErrorV1::NoTxffe);
     }
+    let mut performance_trace = SearchPerformanceTraceV1::from_environment(grid.taps().len());
+    if performance_trace.is_some() {
+        reset_c2m_performance_snapshot_v1();
+    }
     let (peak_start, peak_stop) = peak_window(
         peak_window_pulse.unwrap_or(unequalized_impulse),
         spu,
@@ -810,6 +879,9 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                 &full.g2qual,
             )? {
                 continue;
+            }
+            if let Some(trace) = performance_trace.as_mut() {
+                trace.qualified_ctle_pairs += 1;
             }
             if skip_high_pass_local_search(
                 ctle_index,
@@ -1105,6 +1177,7 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                             continue;
                         }
                     }
+                    let candidate_started = performance_trace.as_ref().map(|_| Instant::now());
                     let candidate = evaluate_candidate_v1(
                         waveform,
                         best_fom,
@@ -1126,6 +1199,12 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
                         itick,
                         middle,
                     )?;
+                    if let (Some(trace), Some(started)) =
+                        (performance_trace.as_mut(), candidate_started)
+                    {
+                        trace.candidate_evaluation += started.elapsed();
+                        trace.candidate_evaluation_count += 1;
+                    }
                     if let Some(cand) = candidate {
                         if middle {
                             if itick >= 0 && cand.fom_db > best_pos_fom {
@@ -1220,6 +1299,15 @@ pub fn search_r480_nonmmse_no_xtalk_with_sigma_and_gdc_v2(
             spu,
             &pulse,
         )?;
+    }
+    if let Some(trace) = performance_trace.as_mut() {
+        let c2m = c2m_performance_snapshot_v1();
+        trace.c2m_evaluation = c2m.elapsed;
+        trace.c2m_evaluation_count = c2m.call_count;
+        trace.c2m_residual_preparation = c2m.residual_preparation;
+        trace.c2m_phase_pdf = c2m.phase_pdf;
+        trace.c2m_final_reduction = c2m.final_reduction;
+        trace.write(package_case_index);
     }
     Ok(best)
 }
