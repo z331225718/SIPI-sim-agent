@@ -19,9 +19,9 @@ use sipi_agent_com_adapter::{
     PublicWorkflowRequest, RunRequest,
 };
 use sipi_agent_spice_adapter::{
-    AgentSpiceAdapter, FitSparamCascadeRequest, FitSparamRequest, FitYparamRequest,
-    ProcessLimits as SpiceLimits, ProcessOptions as SpiceOptions, Request as SpiceRequest,
-    RunHspiceRequest, RunRfmRequest, TuneYparamTranRequest,
+    AgentSpiceAdapter, FitYparamRequest, ProcessLimits as SpiceLimits,
+    ProcessOptions as SpiceOptions, Request as SpiceRequest, RunHspiceRequest, RunRfmRequest,
+    TuneYparamTranRequest,
 };
 use sipi_pybert_adapter::{
     AdapterRequest as PyBertRequest, AdapterResult as PyBertResult, ProcessLimits as PyBertLimits,
@@ -45,7 +45,7 @@ pub const REQUEST_SCHEMA_JSON: &str = r#"{
       "required": ["schema", "workflow", "interpreter", "working_directory", "artifact_root", "backend", "args"],
       "properties": {
         "schema": {"const": "sipi.upstream-migration-request.v1"},
-        "workflow": {"enum": ["agent-spice.fit-sparam", "agent-spice.fit-sparam-cascade", "agent-spice.fit-yparam", "agent-spice.tune-yparam-tran", "agent-spice.run-hspice", "agent-spice.run-rfm"]},
+        "workflow": {"enum": ["agent-spice.fit-yparam", "agent-spice.tune-yparam-tran", "agent-spice.run-hspice", "agent-spice.run-rfm"]},
         "interpreter": {"type": "string", "minLength": 1},
         "working_directory": {"type": "string", "minLength": 1},
         "artifact_root": {"type": "string", "minLength": 1},
@@ -170,10 +170,6 @@ fn execute_spice(
         invocation_prefix: vec!["-m".into(), "agent_spice.cli".into()],
     };
     let request = match route {
-        "agent-spice.fit-sparam" => SpiceRequest::FitSparam(FitSparamRequest::new(args, options)),
-        "agent-spice.fit-sparam-cascade" => {
-            SpiceRequest::FitSparamCascade(FitSparamCascadeRequest::new(args, options))
-        }
         "agent-spice.fit-yparam" => SpiceRequest::FitYparam(FitYparamRequest::new(args, options)),
         "agent-spice.tune-yparam-tran" => {
             SpiceRequest::TuneYparamTran(TuneYparamTranRequest::new(args, options))
@@ -1036,9 +1032,7 @@ fn quote(value: &str) -> String {
 pub fn known_route(route: &str) -> bool {
     matches!(
         route,
-        "agent-spice.fit-sparam"
-            | "agent-spice.fit-sparam-cascade"
-            | "agent-spice.fit-yparam"
+        "agent-spice.fit-yparam"
             | "agent-spice.tune-yparam-tran"
             | "agent-spice.run-hspice"
             | "agent-spice.run-rfm"

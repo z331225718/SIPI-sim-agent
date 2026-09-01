@@ -63,7 +63,7 @@ fn base(root: &PathBuf, workflow: &str, backend: &str) -> serde_json::Value {
 }
 
 #[test]
-fn manifest_has_fifteen_external_migration_routes() {
+fn manifest_exposes_thirteen_external_routes_and_two_owner_excluded_sparam_routes() {
     let output = Command::new(env!("CARGO_BIN_EXE_sipi"))
         .args(["commands", "--json"])
         .output()
@@ -77,11 +77,21 @@ fn manifest_has_fifteen_external_migration_routes() {
         .iter()
         .filter(|command| command["transport"] == "external_migration_adapter")
         .collect::<Vec<_>>();
-    assert_eq!(external.len(), 15);
+    assert_eq!(external.len(), 13);
     assert!(external.iter().all(|command| {
         command["request_schema"] == "sipi.upstream-migration-request.v1"
             && command["nonclaim"]
                 == "external_upstream_transport_only_no_product_capability_or_acceptance"
+    }));
+    let excluded = commands
+        .iter()
+        .filter(|command| command["unavailable_reason"] == "owner_excluded_no_s_parameter_fit")
+        .collect::<Vec<_>>();
+    assert_eq!(excluded.len(), 2);
+    assert!(excluded.iter().all(|command| {
+        command["transport"] == "none"
+            && command["request_schema"].is_null()
+            && command["response_schema"].is_null()
     }));
 }
 
@@ -142,7 +152,7 @@ fn schema_and_protocol_catalog_match_repository_route_shapes() {
         assert_eq!(
             matched.len(),
             if prefix == "upstream.agent-spice." {
-                6
+                4
             } else if prefix == "upstream.pybert." {
                 5
             } else {
@@ -176,13 +186,32 @@ fn unknown_upstream_workflow_fails_closed() {
 }
 
 #[test]
-fn agent_spice_path_is_callable_and_does_not_publish_child_payload() {
+fn excluded_agent_spice_sparam_routes_fail_closed() {
+    for command in ["fit-sparam", "fit-sparam-cascade"] {
+        let output = Command::new(env!("CARGO_BIN_EXE_sipi"))
+            .args(["upstream", "agent-spice", command, "--stdin"])
+            .output()
+            .expect("excluded command");
+        assert_eq!(output.status.code(), Some(4), "{command}");
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("capability_unavailable"),
+            "{command}"
+        );
+        assert!(
+            String::from_utf8_lossy(&output.stdout).contains("owner_excluded_no_s_parameter_fit"),
+            "{command}"
+        );
+    }
+}
+
+#[test]
+fn retained_agent_spice_path_is_callable_and_does_not_publish_child_payload() {
     let root = root("agent-spice");
-    let mut request = base(&root, "agent-spice.fit-sparam", "null");
+    let mut request = base(&root, "agent-spice.fit-yparam", "null");
     request["interpreter"] = serde_json::json!(fake());
     request["args"] = serde_json::json!(["--output", "result.sp"]);
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         request,
     );
     assert!(
@@ -205,11 +234,6 @@ fn agent_spice_path_is_callable_and_does_not_publish_child_payload() {
 fn agent_spice_fixture_satisfies_each_required_output_contract() {
     let root = root("agent-spice-all");
     let cases = [
-        (
-            "agent-spice.fit-sparam-cascade",
-            serde_json::Value::Null,
-            vec!["--output-root", "cascade"],
-        ),
         (
             "agent-spice.fit-yparam",
             serde_json::Value::Null,
@@ -354,52 +378,52 @@ fn output_target_must_be_inside_declared_artifact_root() {
 #[test]
 fn external_limits_are_bounded_and_route_specific() {
     let root = root("limit-boundary");
-    let mut oversized = base(&root, "agent-spice.fit-sparam", "null");
+    let mut oversized = base(&root, "agent-spice.fit-yparam", "null");
     oversized["interpreter"] = serde_json::json!(fake());
     oversized["args"] = serde_json::json!(["--output", "result.sp"]);
     oversized["limits"] = serde_json::json!({"artifact_bytes": u64::MAX});
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         oversized,
     );
     assert_eq!(output.status.code(), Some(3));
 
-    let mut unknown = base(&root, "agent-spice.fit-sparam", "null");
+    let mut unknown = base(&root, "agent-spice.fit-yparam", "null");
     unknown["interpreter"] = serde_json::json!(fake());
     unknown["args"] = serde_json::json!(["--output", "result.sp"]);
     unknown["limits"] = serde_json::json!({"not_a_limit": 1});
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         unknown,
     );
     assert_eq!(output.status.code(), Some(3));
 
-    let mut unsupported_cancel = base(&root, "agent-spice.fit-sparam", "null");
+    let mut unsupported_cancel = base(&root, "agent-spice.fit-yparam", "null");
     unsupported_cancel["interpreter"] = serde_json::json!(fake());
     unsupported_cancel["args"] = serde_json::json!(["--output", "result.sp"]);
     unsupported_cancel["cancel_file"] = serde_json::json!("cancel.flag");
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         unsupported_cancel,
     );
     assert_eq!(output.status.code(), Some(3));
 
-    let mut unknown_top_level = base(&root, "agent-spice.fit-sparam", "null");
+    let mut unknown_top_level = base(&root, "agent-spice.fit-yparam", "null");
     unknown_top_level["interpreter"] = serde_json::json!(fake());
     unknown_top_level["args"] = serde_json::json!(["--output", "result.sp"]);
     unknown_top_level["unknown_top"] = serde_json::json!(true);
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         unknown_top_level,
     );
     assert_eq!(output.status.code(), Some(3));
 
-    let mut wrong_route_field = base(&root, "agent-spice.fit-sparam", "null");
+    let mut wrong_route_field = base(&root, "agent-spice.fit-yparam", "null");
     wrong_route_field["interpreter"] = serde_json::json!(fake());
     wrong_route_field["args"] = serde_json::json!(["--output", "result.sp"]);
     wrong_route_field["input"] = serde_json::json!({"config_file": "config.yaml"});
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         wrong_route_field,
     );
     assert_eq!(output.status.code(), Some(3));
@@ -466,11 +490,11 @@ fn compare_protocol_and_upstream_failures_remain_transport_errors() {
 #[test]
 fn nonzero_and_timeout_are_machine_diagnostics_without_child_text() {
     let root = root("diagnostics");
-    let mut failure = base(&root, "agent-spice.fit-sparam", "null");
+    let mut failure = base(&root, "agent-spice.fit-yparam", "null");
     failure["interpreter"] = serde_json::json!(fake());
     failure["args"] = serde_json::json!(["--output", "result.sp", "--fail"]);
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         failure,
     );
     assert_eq!(output.status.code(), Some(3));
@@ -478,12 +502,12 @@ fn nonzero_and_timeout_are_machine_diagnostics_without_child_text() {
     assert!(stderr.contains("external_adapter_nonzero_exit"));
     assert!(!stderr.contains("fixture failure"));
 
-    let mut timeout = base(&root, "agent-spice.fit-sparam", "null");
+    let mut timeout = base(&root, "agent-spice.fit-yparam", "null");
     timeout["interpreter"] = serde_json::json!(fake());
     timeout["args"] = serde_json::json!(["--output", "result.sp", "--sleep"]);
     timeout["limits"] = serde_json::json!({"timeout_millis": 20});
     let output = run(
-        &["upstream", "agent-spice", "fit-sparam", "--stdin"],
+        &["upstream", "agent-spice", "fit-yparam", "--stdin"],
         timeout,
     );
     assert_eq!(output.status.code(), Some(3));

@@ -779,22 +779,22 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     CommandDescriptorV1 {
         id: "upstream.agent-spice.fit-sparam",
         route: &["upstream", "agent-spice", "fit-sparam"],
-        availability: CommandAvailabilityV1::Available,
-        transport: "external_migration_adapter",
-        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
-        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
-        unavailable_reason: None,
-        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("owner_excluded_no_s_parameter_fit"),
+        nonclaim: "owner_excluded_no_s_parameter_fit",
     },
     CommandDescriptorV1 {
         id: "upstream.agent-spice.fit-sparam-cascade",
         route: &["upstream", "agent-spice", "fit-sparam-cascade"],
-        availability: CommandAvailabilityV1::Available,
-        transport: "external_migration_adapter",
-        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
-        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
-        unavailable_reason: None,
-        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("owner_excluded_no_s_parameter_fit"),
+        nonclaim: "owner_excluded_no_s_parameter_fit",
     },
     CommandDescriptorV1 {
         id: "upstream.agent-spice.fit-yparam",
@@ -1277,24 +1277,6 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         diagnostic_contract: "root_json_envelope_with_bounded_direct_compare_payload",
     },
     CommandProtocolProfileV1 {
-        command_id: "upstream.agent-spice.fit-sparam",
-        example_id: None,
-        required_options: &["--stdin"],
-        caller_bindings: UPSTREAM_SPICE_BINDINGS,
-        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
-        successful_exit: 0,
-        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
-    },
-    CommandProtocolProfileV1 {
-        command_id: "upstream.agent-spice.fit-sparam-cascade",
-        example_id: None,
-        required_options: &["--stdin"],
-        caller_bindings: UPSTREAM_SPICE_BINDINGS,
-        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
-        successful_exit: 0,
-        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
-    },
-    CommandProtocolProfileV1 {
         command_id: "upstream.agent-spice.fit-yparam",
         example_id: None,
         required_options: &["--stdin"],
@@ -1424,7 +1406,11 @@ struct CommandService;
 fn main() {
     let arguments = env::args().skip(1).collect::<Vec<_>>();
     let command = arguments.first().map_or("help", String::as_str);
-    let response = if arguments == ["validate", "--stdin"] {
+    let response = if let Some(descriptor) = descriptor_for_route(&arguments)
+        && descriptor.availability == CommandAvailabilityV1::Unavailable
+    {
+        unavailable(descriptor)
+    } else if arguments == ["validate", "--stdin"] {
         ProcessAdapter::validate_stdin()
     } else if let [command, repository, workflow, stdin] = &arguments[..]
         && command == "upstream"
@@ -3685,8 +3671,6 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["project", "run"]
             | ["report", "inspect"]
             | ["com", "run-artifact"]
-            | ["upstream", "agent-spice", "fit-sparam"]
-            | ["upstream", "agent-spice", "fit-sparam-cascade"]
             | ["upstream", "agent-spice", "fit-yparam"]
             | ["upstream", "agent-spice", "tune-yparam-tran"]
             | ["upstream", "agent-spice", "run-hspice"]
