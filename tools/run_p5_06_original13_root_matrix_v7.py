@@ -183,6 +183,7 @@ def main() -> int:
     parser.add_argument("--uv", type=Path, required=True)
     parser.add_argument("--matlab", type=Path, required=True)
     parser.add_argument("--python", type=Path, required=True)
+    parser.add_argument("--only-index", type=int)
     parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
     if args.report.exists() or args.output_root.exists():
@@ -268,9 +269,13 @@ def main() -> int:
     }
     nonce = secrets.token_hex(32)
     root_id = secrets.token_hex(32)
+    if args.only_index is not None and not 0 <= args.only_index < len(CONFIG_PATHS):
+        raise RuntimeError("--only-index is outside the original-13 corpus")
+    selected_indices = range(len(CONFIG_PATHS)) if args.only_index is None else (args.only_index,)
     records = []
     started_ns = time.perf_counter_ns()
-    for index, relative_config in enumerate(CONFIG_PATHS):
+    for index in selected_indices:
+        relative_config = CONFIG_PATHS[index]
         case_root = args.output_root / f"case-{index:02d}"
         case_root.mkdir()
         upstream = case_root / "upstream-source"
@@ -353,7 +358,7 @@ def main() -> int:
         raise RuntimeError("upstream preparation archive drift")
     report = {
         "schema": SCHEMA, "engine": args.engine, "run_id": f"original13-root-v7-{args.engine}-{nonce}", "nonce": nonce,
-        "root_id": root_id, "status": "fresh_matrix_run" if all(record["status"] == "passed" for record in records) else "failed_matrix_run",
+        "root_id": root_id, "status": "fresh_matrix_run" if len(records) == len(CONFIG_PATHS) and all(record["status"] == "passed" for record in records) else "diagnostic",
         "timing_clock": "perf_counter_ns", "timing_scope": TIMING_SCOPE, "total_execution_wall_ns": sum(record["execution_wall_ns"] for record in records),
         "host_fingerprint": host_fingerprint(),
         "thread_policy": {"rust_rayon_num_threads": RAYON_THREADS, "matlab_launch_mode": MATLAB_RECEIPT["launch_mode"]},
