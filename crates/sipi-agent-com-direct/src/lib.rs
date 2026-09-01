@@ -15,6 +15,7 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 
 mod config_preflight_v1;
@@ -45,6 +46,9 @@ pub const MISMATCH_EXIT_CODE_V1: i32 = 3;
 pub const JSON_INPUT_ERROR_EXIT_CODE_V1: i32 = 2;
 pub const CONFIG_ERROR_EXIT_CODE_V1: i32 = 3;
 pub const IO_ERROR_EXIT_CODE_V1: i32 = 1;
+pub const MAX_COMPARE_RESULT_BYTES_V1: usize = 16 * 1024 * 1024;
+pub const MAX_COMPARE_JSON_NESTING_V1: usize = 64;
+pub const MAX_COMPARE_MISMATCHES_V1: usize = 256;
 
 const REQUIRED_RESULT_KEYS: &[&str] = &[
     "schema_version",
@@ -63,6 +67,7 @@ pub enum DirectCompareErrorV1 {
     Json(String),
     Schema(String),
     NegativeTolerance,
+    InputLimit(String),
     Io { path: String, message: String },
 }
 
@@ -73,6 +78,9 @@ impl Display for DirectCompareErrorV1 {
             Self::Schema(message) => write!(formatter, "{message}"),
             Self::NegativeTolerance => {
                 write!(formatter, "comparison tolerance must be non-negative")
+            }
+            Self::InputLimit(message) => {
+                write!(formatter, "comparison input exceeds limit: {message}")
             }
             Self::Io { path, message } => write!(formatter, "cannot read {path}: {message}"),
         }
@@ -125,19 +133,55 @@ impl CompareReportV1 {
 
 /// Parse and validate one upstream result artifact.
 pub fn read_result_json_v1(bytes: &[u8]) -> Result<Value, DirectCompareErrorV1> {
+    if bytes.len() > MAX_COMPARE_RESULT_BYTES_V1 {
+        return Err(DirectCompareErrorV1::InputLimit("byte length".to_owned()));
+    }
     let document: Value = serde_json::from_slice(bytes)
         .map_err(|error| DirectCompareErrorV1::Json(error.to_string()))?;
+    validate_json_nesting_v1(&document, 0)?;
     validate_result_json_v1(&document)?;
     Ok(document)
 }
 
 /// Read one upstream result artifact from a path.
 pub fn read_result_path_v1(path: &Path) -> Result<Value, DirectCompareErrorV1> {
-    let bytes = fs::read(path).map_err(|error| DirectCompareErrorV1::Io {
+    let metadata = fs::symlink_metadata(path).map_err(|error| DirectCompareErrorV1::Io {
         path: path.display().to_string(),
         message: error.to_string(),
     })?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(DirectCompareErrorV1::InputLimit("regular file".to_owned()));
+    }
+    if metadata.len() > MAX_COMPARE_RESULT_BYTES_V1 as u64 {
+        return Err(DirectCompareErrorV1::InputLimit("byte length".to_owned()));
+    }
+    let file = fs::File::open(path).map_err(|error| DirectCompareErrorV1::Io {
+        path: path.display().to_string(),
+        message: error.to_string(),
+    })?;
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    file.take((MAX_COMPARE_RESULT_BYTES_V1 + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| DirectCompareErrorV1::Io {
+            path: path.display().to_string(),
+            message: error.to_string(),
+        })?;
     read_result_json_v1(&bytes)
+}
+
+fn validate_json_nesting_v1(value: &Value, depth: usize) -> Result<(), DirectCompareErrorV1> {
+    if depth > MAX_COMPARE_JSON_NESTING_V1 {
+        return Err(DirectCompareErrorV1::InputLimit("JSON nesting".to_owned()));
+    }
+    match value {
+        Value::Array(values) => values
+            .iter()
+            .try_for_each(|value| validate_json_nesting_v1(value, depth + 1)),
+        Value::Object(values) => values
+            .values()
+            .try_for_each(|value| validate_json_nesting_v1(value, depth + 1)),
+        _ => Ok(()),
+    }
 }
 
 /// Validate the release-critical subset implemented by upstream
@@ -339,6 +383,9 @@ fn python_string_key_dict(
 }
 
 fn compare_values(left: &Value, right: &Value, atol: f64, path: &str, messages: &mut Vec<String>) {
+    if messages.len() >= MAX_COMPARE_MISMATCHES_V1 {
+        return;
+    }
     match (left, right) {
         (Value::Object(left), Value::Object(right)) => {
             let left_keys: BTreeSet<&String> = left.keys().collect();
@@ -415,9 +462,9 @@ fn python_repr(value: &Value) -> String {
 pub fn error_exit_code_v1(error: &DirectCompareErrorV1) -> i32 {
     match error {
         DirectCompareErrorV1::Json(_) => JSON_INPUT_ERROR_EXIT_CODE_V1,
-        DirectCompareErrorV1::Schema(_) | DirectCompareErrorV1::NegativeTolerance => {
-            CONFIG_ERROR_EXIT_CODE_V1
-        }
+        DirectCompareErrorV1::Schema(_)
+        | DirectCompareErrorV1::NegativeTolerance
+        | DirectCompareErrorV1::InputLimit(_) => CONFIG_ERROR_EXIT_CODE_V1,
         DirectCompareErrorV1::Io { .. } => IO_ERROR_EXIT_CODE_V1,
     }
 }
@@ -534,6 +581,22 @@ mod tests {
         let error = compare_result_json_v1(b"not json", b"not json", -1.0).unwrap_err();
         assert_eq!(error, DirectCompareErrorV1::NegativeTolerance);
         assert_eq!(error_exit_code_v1(&error), CONFIG_ERROR_EXIT_CODE_V1);
+    }
+
+    #[test]
+    fn rejects_oversized_and_deep_compare_inputs_before_comparison() {
+        assert!(matches!(
+            read_result_json_v1(&vec![b' '; MAX_COMPARE_RESULT_BYTES_V1 + 1]),
+            Err(DirectCompareErrorV1::InputLimit(message)) if message == "byte length"
+        ));
+        let mut nested = serde_json::json!(null);
+        for _ in 0..=MAX_COMPARE_JSON_NESTING_V1 {
+            nested = serde_json::json!([nested]);
+        }
+        assert!(matches!(
+            read_result_json_v1(&bytes(&nested)),
+            Err(DirectCompareErrorV1::InputLimit(message)) if message == "JSON nesting"
+        ));
     }
 
     #[test]
