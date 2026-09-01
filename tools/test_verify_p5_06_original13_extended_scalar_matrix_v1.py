@@ -88,6 +88,8 @@ class Tests(unittest.TestCase):
     def test_aggregate_source_status_slot_value_and_hash_gates(self):
         reports=[self.full("matlab",1),self.full("matlab",2),self.full("rust",3),self.full("rust",4)]
         result,payload=self.aggregate(reports);self.assertEqual(result.returncode,0);self.assertEqual(payload["status"],"accepted_stage1")
+        rebuilt=copy.deepcopy(reports);rebuilt[2]["source"]["rust_binary"]["sha256"]="1"*64
+        result,payload=self.aggregate(rebuilt);self.assertEqual(result.returncode,0);self.assertEqual(payload["status"],"accepted_stage1")
         mutated=copy.deepcopy(reports);mutated[0]["source"]["toolchain"]["cargo"]["role"]="rustc";self.assertNotEqual(self.aggregate(mutated)[0].returncode,0)
         mutated=copy.deepcopy(reports);mutated[2]["records"][0]["status"]="candidate_branch_missing";self.assertNotEqual(self.aggregate(mutated)[0].returncode,0)
         mutated=copy.deepcopy(reports);mutated[2]["records"][0]["metrics"][0].pop("COM_dB");self.assertNotEqual(self.aggregate(mutated)[0].returncode,0)
