@@ -780,6 +780,17 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     },
     #[cfg(feature = "agent-spice-direct-integration")]
     CommandDescriptorV1 {
+        id: "agent-spice.fit-yparam",
+        route: &["agent-spice", "fit-yparam"],
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("numeric_parity_open"),
+        nonclaim: "retained_external_y_parameter_reference_only_no_native_tolerance_bypass",
+    },
+    #[cfg(feature = "agent-spice-direct-integration")]
+    CommandDescriptorV1 {
         id: "agent-spice.tune-yparam-tran",
         route: &["agent-spice", "tune-yparam-tran"],
         availability: CommandAvailabilityV1::Available,
@@ -4722,6 +4733,7 @@ mod tests {
             assert_eq!(descriptor.availability, CommandAvailabilityV1::Available);
             assert_eq!(descriptor.transport, "argv_typed_v1");
         }
+        assert_eq!(dispatch(&args(&["agent-spice", "fit-yparam"])).code, 4);
         assert_eq!(
             dispatch(&args(&[
                 "agent-spice",
