@@ -19,9 +19,8 @@ use sipi_agent_com_adapter::{
     PublicWorkflowRequest, RunRequest,
 };
 use sipi_agent_spice_adapter::{
-    AgentSpiceAdapter, FitYparamRequest, ProcessLimits as SpiceLimits,
-    ProcessOptions as SpiceOptions, Request as SpiceRequest, RunHspiceRequest, RunRfmRequest,
-    TuneYparamTranRequest,
+    AgentSpiceAdapter, ProcessLimits as SpiceLimits, ProcessOptions as SpiceOptions,
+    Request as SpiceRequest, RunHspiceRequest, RunRfmRequest,
 };
 use sipi_pybert_adapter::{
     AdapterRequest as PyBertRequest, AdapterResult as PyBertResult, ProcessLimits as PyBertLimits,
@@ -45,7 +44,7 @@ pub const REQUEST_SCHEMA_JSON: &str = r#"{
       "required": ["schema", "workflow", "interpreter", "working_directory", "artifact_root", "backend", "args"],
       "properties": {
         "schema": {"const": "sipi.upstream-migration-request.v1"},
-        "workflow": {"enum": ["agent-spice.fit-yparam", "agent-spice.tune-yparam-tran", "agent-spice.run-hspice", "agent-spice.run-rfm"]},
+        "workflow": {"enum": ["agent-spice.run-hspice", "agent-spice.run-rfm"]},
         "interpreter": {"type": "string", "minLength": 1},
         "working_directory": {"type": "string", "minLength": 1},
         "artifact_root": {"type": "string", "minLength": 1},
@@ -129,10 +128,13 @@ impl Failure {
     }
 }
 
-/// Execute one of the fifteen pinned routes and return only path-free result
+/// Execute one of the eleven pinned routes and return only path-free result
 /// metadata.  The route is selected by the caller from the static manifest;
 /// this function still checks the discriminator in stdin for defense in depth.
 pub fn execute(route: &str, input: &[u8]) -> Result<String, Failure> {
+    if !known_route(route) {
+        return Err(Failure::invalid());
+    }
     let value: Value = serde_json::from_slice(input).map_err(|_| Failure::invalid())?;
     let object = value.as_object().ok_or_else(Failure::invalid)?;
     validate_top_level_route(object, route)?;
@@ -170,10 +172,6 @@ fn execute_spice(
         invocation_prefix: vec!["-m".into(), "agent_spice.cli".into()],
     };
     let request = match route {
-        "agent-spice.fit-yparam" => SpiceRequest::FitYparam(FitYparamRequest::new(args, options)),
-        "agent-spice.tune-yparam-tran" => {
-            SpiceRequest::TuneYparamTran(TuneYparamTranRequest::new(args, options))
-        }
         "agent-spice.run-hspice" => SpiceRequest::RunHspice(
             RunHspiceRequest::new(args, options).map_err(|error| map_spice_error(&error))?,
         ),
@@ -1032,9 +1030,7 @@ fn quote(value: &str) -> String {
 pub fn known_route(route: &str) -> bool {
     matches!(
         route,
-        "agent-spice.fit-yparam"
-            | "agent-spice.tune-yparam-tran"
-            | "agent-spice.run-hspice"
+        "agent-spice.run-hspice"
             | "agent-spice.run-rfm"
             | "pybert.sim"
             | "pybert.sim-native"
@@ -1050,4 +1046,17 @@ pub fn known_route(route: &str) -> bool {
 
 pub const fn max_request_bytes() -> usize {
     MAX_REQUEST_BYTES
+}
+
+#[cfg(test)]
+mod tests {
+    use super::known_route;
+
+    #[test]
+    fn yfit_routes_are_not_external_adapter_routes() {
+        assert!(!known_route("agent-spice.fit-yparam"));
+        assert!(!known_route("agent-spice.tune-yparam-tran"));
+        assert!(known_route("agent-spice.run-hspice"));
+        assert!(known_route("agent-spice.run-rfm"));
+    }
 }

@@ -786,19 +786,19 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         transport: "none",
         request_schema: None,
         response_schema: None,
-        unavailable_reason: Some("numeric_parity_open"),
-        nonclaim: "retained_external_y_parameter_reference_only_no_native_tolerance_bypass",
+        unavailable_reason: Some("owner_excluded_yfit_not_admitted"),
+        nonclaim: "owner_excluded_yfit_not_admitted",
     },
     #[cfg(feature = "agent-spice-direct-integration")]
     CommandDescriptorV1 {
         id: "agent-spice.tune-yparam-tran",
         route: &["agent-spice", "tune-yparam-tran"],
-        availability: CommandAvailabilityV1::Available,
-        transport: "argv_typed_v1",
-        request_schema: Some("sipi.agent-spice.direct-cli-argv.v1"),
-        response_schema: Some(agent_spice_direct_cli::AGENT_SPICE_DIRECT_RECEIPT_SCHEMA_V1),
-        unavailable_reason: None,
-        nonclaim: "quarantined_direct_port_external_hspice_no_oracle_acceptance_or_release",
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("owner_excluded_yfit_not_admitted"),
+        nonclaim: "owner_excluded_yfit_not_admitted",
     },
     #[cfg(feature = "agent-spice-direct-integration")]
     CommandDescriptorV1 {
@@ -845,22 +845,22 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
     CommandDescriptorV1 {
         id: "upstream.agent-spice.fit-yparam",
         route: &["upstream", "agent-spice", "fit-yparam"],
-        availability: CommandAvailabilityV1::Available,
-        transport: "external_migration_adapter",
-        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
-        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
-        unavailable_reason: None,
-        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("owner_excluded_yfit_not_admitted"),
+        nonclaim: "owner_excluded_yfit_not_admitted",
     },
     CommandDescriptorV1 {
         id: "upstream.agent-spice.tune-yparam-tran",
         route: &["upstream", "agent-spice", "tune-yparam-tran"],
-        availability: CommandAvailabilityV1::Available,
-        transport: "external_migration_adapter",
-        request_schema: Some(UPSTREAM_MIGRATION_REQUEST_SCHEMA),
-        response_schema: Some(UPSTREAM_MIGRATION_RESPONSE_SCHEMA),
-        unavailable_reason: None,
-        nonclaim: "external_upstream_transport_only_no_product_capability_or_acceptance",
+        availability: CommandAvailabilityV1::Unavailable,
+        transport: "none",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: Some("owner_excluded_yfit_not_admitted"),
+        nonclaim: "owner_excluded_yfit_not_admitted",
     },
     CommandDescriptorV1 {
         id: "upstream.agent-spice.run-hspice",
@@ -1324,16 +1324,6 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
     },
     #[cfg(feature = "agent-spice-direct-integration")]
     CommandProtocolProfileV1 {
-        command_id: "agent-spice.tune-yparam-tran",
-        example_id: None,
-        required_options: &[],
-        caller_bindings: &[],
-        validation_rule_id: None,
-        successful_exit: 0,
-        diagnostic_contract: "root_json_envelope_with_path_free_typed_direct_receipt",
-    },
-    #[cfg(feature = "agent-spice-direct-integration")]
-    CommandProtocolProfileV1 {
         command_id: "agent-spice.run-hspice",
         example_id: None,
         required_options: &[],
@@ -1351,24 +1341,6 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "root_json_envelope_with_path_free_typed_direct_receipt",
-    },
-    CommandProtocolProfileV1 {
-        command_id: "upstream.agent-spice.fit-yparam",
-        example_id: None,
-        required_options: &["--stdin"],
-        caller_bindings: UPSTREAM_SPICE_BINDINGS,
-        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
-        successful_exit: 0,
-        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
-    },
-    CommandProtocolProfileV1 {
-        command_id: "upstream.agent-spice.tune-yparam-tran",
-        example_id: None,
-        required_options: &["--stdin"],
-        caller_bindings: UPSTREAM_SPICE_BINDINGS,
-        validation_rule_id: Some(upstream_migration::VALIDATION_RULE),
-        successful_exit: 0,
-        diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success_no_external_payload",
     },
     CommandProtocolProfileV1 {
         command_id: "upstream.agent-spice.run-hspice",
@@ -3751,8 +3723,6 @@ fn available_route_has_handler(route: &[&str]) -> bool {
             | ["project", "run"]
             | ["report", "inspect"]
             | ["com", "run-artifact"]
-            | ["upstream", "agent-spice", "fit-yparam"]
-            | ["upstream", "agent-spice", "tune-yparam-tran"]
             | ["upstream", "agent-spice", "run-hspice"]
             | ["upstream", "agent-spice", "run-rfm"]
             | ["upstream", "pybert", "sim"]
@@ -3778,9 +3748,7 @@ fn available_route_has_handler(route: &[&str]) -> bool {
     #[cfg(feature = "agent-spice-direct-integration")]
     if matches!(
         route,
-        ["agent-spice", "tune-yparam-tran"]
-            | ["agent-spice", "run-hspice"]
-            | ["agent-spice", "run-rfm"]
+        ["agent-spice", "run-hspice"] | ["agent-spice", "run-rfm"]
     ) {
         return true;
     }
@@ -4175,10 +4143,7 @@ impl CommandService {
             #[cfg(feature = "agent-spice-direct-integration")]
             [command, action, tail @ ..]
                 if command == "agent-spice"
-                    && matches!(
-                        action.as_str(),
-                        "tune-yparam-tran" | "run-hspice" | "run-rfm"
-                    ) =>
+                    && matches!(action.as_str(), "run-hspice" | "run-rfm") =>
             {
                 let mut direct_arguments = Vec::with_capacity(tail.len().saturating_add(1));
                 direct_arguments.push(action.clone());
@@ -4721,19 +4686,47 @@ mod tests {
     #[test]
     fn agent_spice_direct_routes_are_feature_gated_and_fail_closed() {
         assert!(command_manifest_is_valid(COMMAND_MANIFEST_V1));
-        for id in [
-            "agent-spice.tune-yparam-tran",
-            "agent-spice.run-hspice",
-            "agent-spice.run-rfm",
-        ] {
+        for id in ["agent-spice.fit-yparam", "agent-spice.tune-yparam-tran"] {
             let descriptor = COMMAND_MANIFEST_V1
                 .iter()
                 .find(|descriptor| descriptor.id == id)
                 .expect("feature-gated direct descriptor");
+            assert_eq!(descriptor.availability, CommandAvailabilityV1::Unavailable);
+            assert_eq!(descriptor.transport, "none");
+            assert_eq!(descriptor.request_schema, None);
+            assert_eq!(descriptor.response_schema, None);
+            assert_eq!(
+                descriptor.unavailable_reason,
+                Some("owner_excluded_yfit_not_admitted")
+            );
+            assert_eq!(descriptor.nonclaim, "owner_excluded_yfit_not_admitted");
+        }
+        for id in ["agent-spice.run-hspice", "agent-spice.run-rfm"] {
+            let descriptor = COMMAND_MANIFEST_V1
+                .iter()
+                .find(|descriptor| descriptor.id == id)
+                .expect("feature-gated retained direct descriptor");
             assert_eq!(descriptor.availability, CommandAvailabilityV1::Available);
             assert_eq!(descriptor.transport, "argv_typed_v1");
+            assert!(descriptor.request_schema.is_some());
+            assert!(descriptor.response_schema.is_some());
         }
-        assert_eq!(dispatch(&args(&["agent-spice", "fit-yparam"])).code, 4);
+        for route in ["fit-yparam", "tune-yparam-tran"] {
+            let response = dispatch(&args(&[
+                "agent-spice",
+                route,
+                "--hspice-bin",
+                "this-child-must-not-start",
+            ]));
+            assert_eq!(response.code, 4, "{route}");
+            assert_eq!(response.stderr.as_deref(), Some("capability_unavailable"));
+            assert!(
+                response
+                    .stdout
+                    .as_deref()
+                    .is_some_and(|body| body.contains("owner_excluded_yfit_not_admitted"))
+            );
+        }
         assert_eq!(
             dispatch(&args(&[
                 "agent-spice",

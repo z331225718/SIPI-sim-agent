@@ -10,9 +10,6 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sipi_agent_spice_direct::as04_tune_yparam_tran::{
-    HspiceCustody, TuneError, TuneYparamTranRequest, tune_yparam_tran_with_hspice_custody,
-};
 use sipi_agent_spice_direct::as06_run_rfm::{
     RfmBackend, RfmError, RfmNativeCustody, RfmNgspiceCustody, RunRfmRequest,
     run_rfm_with_native_custody, run_rfm_with_ngspice_custody,
@@ -22,7 +19,7 @@ use sipi_agent_spice_direct::{
     run_hspice_with_ngspice_custody,
 };
 
-/// Stable receipt schema emitted by all three direct Agent-Spice routes.
+/// Stable receipt schema emitted by the two retained direct Agent-Spice routes.
 pub(crate) const AGENT_SPICE_DIRECT_RECEIPT_SCHEMA_V1: &str =
     "sipi.agent-spice.direct-cli-receipt.v1";
 
@@ -60,11 +57,9 @@ impl AgentSpiceDirectCliError {
     }
 }
 
-/// The three explicitly retained Agent-Spice workflow names.
+/// The two explicitly retained Agent-Spice workflow names.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub(crate) enum AgentSpiceWorkflow {
-    #[serde(rename = "tune-yparam-tran")]
-    TuneYparamTran,
     #[serde(rename = "run-hspice")]
     RunHspice,
     #[serde(rename = "run-rfm")]
@@ -74,8 +69,6 @@ pub(crate) enum AgentSpiceWorkflow {
 /// Backend identity included in a path-free receipt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub(crate) enum AgentSpiceBackend {
-    #[serde(rename = "hspice")]
-    Hspice,
     #[serde(rename = "native")]
     Native,
     #[serde(rename = "ngspice")]
@@ -103,15 +96,6 @@ pub(crate) struct ArtifactReceipt {
 pub(crate) enum ArtifactKind {
     #[serde(rename = "report")]
     Report,
-    #[serde(rename = "output_rfm")]
-    OutputRfm,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub(crate) struct TuneYparamTranSummary {
-    pub best_tran_rms: f64,
-    pub evaluations: usize,
-    pub artifacts: Vec<ArtifactReceipt>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -135,8 +119,6 @@ pub(crate) struct RunRfmSummary {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "data")]
 pub(crate) enum AgentSpiceDirectSummary {
-    #[serde(rename = "tune_yparam_tran")]
-    TuneYparamTran(TuneYparamTranSummary),
     #[serde(rename = "run_hspice")]
     RunHspice(RunHspiceSummary),
     #[serde(rename = "run_rfm")]
@@ -163,15 +145,8 @@ impl AgentSpiceDirectReceipt {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum AgentSpiceDirectRequest {
-    TuneYparamTran(TuneYparamTranCliRequest),
     RunHspice(RunHspiceCliRequest),
     RunRfm(RunRfmCliRequest),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct TuneYparamTranCliRequest {
-    pub request: TuneYparamTranRequest,
-    pub hspice_sha256: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -191,14 +166,13 @@ pub(crate) struct RunRfmCliRequest {
     pub code_model_sha256: Option<String>,
 }
 
-/// Parse arguments beginning with one of tune-yparam-tran, run-hspice, or
-/// run-rfm. Every singleton option is rejected when repeated.
+/// Parse arguments beginning with one of run-hspice or run-rfm. Every
+/// singleton option is rejected when repeated.
 pub(crate) fn parse_agent_spice_direct_argv(
     arguments: &[String],
 ) -> Result<AgentSpiceDirectRequest, AgentSpiceDirectCliError> {
     let workflow = arguments.first().ok_or(AgentSpiceDirectCliError::Usage)?;
     match workflow.as_str() {
-        "tune-yparam-tran" => parse_tune_yparam_tran(&arguments[1..]),
         "run-hspice" => parse_run_hspice(&arguments[1..]),
         "run-rfm" => parse_run_rfm(&arguments[1..]),
         _ => Err(AgentSpiceDirectCliError::Usage),
@@ -210,7 +184,6 @@ pub(crate) fn execute_agent_spice_direct(
     arguments: &[String],
 ) -> Result<AgentSpiceDirectReceipt, AgentSpiceDirectCliError> {
     match parse_agent_spice_direct_argv(arguments)? {
-        AgentSpiceDirectRequest::TuneYparamTran(request) => execute_tune(request),
         AgentSpiceDirectRequest::RunHspice(request) => execute_hspice(request),
         AgentSpiceDirectRequest::RunRfm(request) => execute_rfm(request),
     }
@@ -221,132 +194,6 @@ pub(crate) fn execute_agent_spice_direct_json(
     arguments: &[String],
 ) -> Result<String, AgentSpiceDirectCliError> {
     execute_agent_spice_direct(arguments)?.to_json()
-}
-
-fn parse_tune_yparam_tran(
-    arguments: &[String],
-) -> Result<AgentSpiceDirectRequest, AgentSpiceDirectCliError> {
-    let (positionals, mut index) = leading_positionals(arguments, 3)?;
-    let touchstone = positionals[0].clone();
-    let input_rfm = positionals[1].clone();
-    let deck = positionals[2].clone();
-
-    let mut output_rfm = None;
-    let mut report = None;
-    let mut work_dir = None;
-    let mut rfm_token = None;
-    let mut rms_measure = None;
-    let mut peak_measure = None;
-    let mut residual_poles = None;
-    let mut band_boundaries = None;
-    let mut hspice_bin = None;
-    let mut hspice_sha256 = None;
-    let mut license_file = None;
-    let mut max_evaluations = None;
-    let mut max_static_rms_growth = None;
-    let mut max_sigma = None;
-
-    while index < arguments.len() {
-        let option = arguments[index].as_str();
-        match option {
-            "--output-rfm" => set_once(
-                &mut output_rfm,
-                parse_path_value(arguments, &mut index, option)?,
-            )?,
-            "--report" => set_once(
-                &mut report,
-                parse_path_value(arguments, &mut index, option)?,
-            )?,
-            "--work-dir" => set_once(
-                &mut work_dir,
-                parse_path_value(arguments, &mut index, option)?,
-            )?,
-            "--rfm-token" => set_once(
-                &mut rfm_token,
-                parse_string_value(arguments, &mut index, option)?,
-            )?,
-            "--rms-measure" => set_once(
-                &mut rms_measure,
-                parse_string_value(arguments, &mut index, option)?,
-            )?,
-            "--peak-measure" => set_once(
-                &mut peak_measure,
-                parse_string_value(arguments, &mut index, option)?,
-            )?,
-            "--residual-poles" => set_once(
-                &mut residual_poles,
-                parse_floats(arguments, &mut index, option)?,
-            )?,
-            "--band-boundaries" => set_once(
-                &mut band_boundaries,
-                parse_floats(arguments, &mut index, option)?,
-            )?,
-            "--hspice-bin" => set_once(
-                &mut hspice_bin,
-                parse_absolute_executable(arguments, &mut index, option)?,
-            )?,
-            "--hspice-sha256" => set_once(
-                &mut hspice_sha256,
-                parse_sha256(arguments, &mut index, option)?,
-            )?,
-            "--license-file" => set_once(
-                &mut license_file,
-                parse_string_value(arguments, &mut index, option)?,
-            )?,
-            "--max-evaluations" => set_once(
-                &mut max_evaluations,
-                parse_usize(arguments, &mut index, option)?,
-            )?,
-            "--max-static-rms-growth" => set_once(
-                &mut max_static_rms_growth,
-                parse_f64(arguments, &mut index, option)?,
-            )?,
-            "--max-sigma" => set_once(&mut max_sigma, parse_f64(arguments, &mut index, option)?)?,
-            _ => return Err(AgentSpiceDirectCliError::Usage),
-        }
-    }
-
-    let output_rfm = output_rfm.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let work_dir = work_dir.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let rfm_token = rfm_token.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let rms_measure = rms_measure.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let residual_poles = residual_poles.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let band_boundaries = band_boundaries.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let hspice_bin = hspice_bin.ok_or(AgentSpiceDirectCliError::Usage)?;
-    let hspice_sha256 = hspice_sha256.ok_or(AgentSpiceDirectCliError::Usage)?;
-
-    let mut request = TuneYparamTranRequest::new(
-        touchstone,
-        input_rfm,
-        deck,
-        output_rfm,
-        work_dir,
-        rfm_token,
-        rms_measure,
-        residual_poles,
-        band_boundaries,
-    )
-    .map_err(map_tune_error)?;
-    request.report = report;
-    request.peak_measure = peak_measure;
-    request.hspice_bin = hspice_bin.to_string_lossy().into_owned();
-    request.license_file = license_file;
-    if let Some(value) = max_evaluations {
-        request.max_evaluations = value;
-    }
-    if let Some(value) = max_static_rms_growth {
-        request.max_static_rms_growth = value;
-    }
-    if let Some(value) = max_sigma {
-        request.max_sigma = value;
-    }
-
-    Ok(AgentSpiceDirectRequest::TuneYparamTran(
-        TuneYparamTranCliRequest {
-            request,
-            hspice_sha256,
-        },
-    ))
 }
 
 fn parse_run_hspice(
@@ -595,39 +442,6 @@ fn parse_run_rfm(
     }))
 }
 
-fn execute_tune(
-    parsed: TuneYparamTranCliRequest,
-) -> Result<AgentSpiceDirectReceipt, AgentSpiceDirectCliError> {
-    let TuneYparamTranCliRequest {
-        request,
-        hspice_sha256,
-    } = parsed;
-    let result = tune_yparam_tran_with_hspice_custody(
-        &request,
-        &HspiceCustody::new(&request.hspice_bin, hspice_sha256),
-    )
-    .map_err(map_tune_error)?;
-    let report = artifact_receipt(&result.report, ArtifactKind::Report)?;
-    let output_rfm = artifact_receipt(&result.output_rfm, ArtifactKind::OutputRfm)?;
-    Ok(AgentSpiceDirectReceipt {
-        schema: AGENT_SPICE_DIRECT_RECEIPT_SCHEMA_V1,
-        workflow: AgentSpiceWorkflow::TuneYparamTran,
-        upstream: UpstreamReceipt {
-            repository: sipi_agent_spice_direct::UPSTREAM_REPOSITORY,
-            commit: sipi_agent_spice_direct::as04_tune_yparam_tran::UPSTREAM_COMMIT,
-            tree: sipi_agent_spice_direct::UPSTREAM_TREE,
-        },
-        backend: AgentSpiceBackend::Hspice,
-        execute: true,
-        status: "completed".to_owned(),
-        summary: AgentSpiceDirectSummary::TuneYparamTran(TuneYparamTranSummary {
-            best_tran_rms: result.best_tran_rms,
-            evaluations: result.evaluations,
-            artifacts: vec![report, output_rfm],
-        }),
-    })
-}
-
 fn execute_hspice(
     parsed: RunHspiceCliRequest,
 ) -> Result<AgentSpiceDirectReceipt, AgentSpiceDirectCliError> {
@@ -817,50 +631,6 @@ fn parse_sha256(
     Ok(value.to_ascii_lowercase())
 }
 
-fn parse_floats(
-    arguments: &[String],
-    index: &mut usize,
-    option: &str,
-) -> Result<Vec<f64>, AgentSpiceDirectCliError> {
-    let value = parse_string_value(arguments, index, option)?;
-    let values = value
-        .split(',')
-        .map(|part| {
-            part.trim()
-                .parse::<f64>()
-                .map_err(|_| AgentSpiceDirectCliError::InvalidInput)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    if values.is_empty() || values.iter().any(|value| !value.is_finite()) {
-        return Err(AgentSpiceDirectCliError::InvalidInput);
-    }
-    Ok(values)
-}
-
-fn parse_f64(
-    arguments: &[String],
-    index: &mut usize,
-    option: &str,
-) -> Result<f64, AgentSpiceDirectCliError> {
-    let value = parse_string_value(arguments, index, option)?
-        .parse::<f64>()
-        .map_err(|_| AgentSpiceDirectCliError::InvalidInput)?;
-    if !value.is_finite() {
-        return Err(AgentSpiceDirectCliError::InvalidInput);
-    }
-    Ok(value)
-}
-
-fn parse_usize(
-    arguments: &[String],
-    index: &mut usize,
-    option: &str,
-) -> Result<usize, AgentSpiceDirectCliError> {
-    parse_string_value(arguments, index, option)?
-        .parse::<usize>()
-        .map_err(|_| AgentSpiceDirectCliError::InvalidInput)
-}
-
 fn set_once<T>(slot: &mut Option<T>, value: T) -> Result<(), AgentSpiceDirectCliError> {
     if slot.is_some() {
         return Err(AgentSpiceDirectCliError::Usage);
@@ -919,17 +689,6 @@ fn artifact_receipt(
     })
 }
 
-fn map_tune_error(error: TuneError) -> AgentSpiceDirectCliError {
-    match error {
-        TuneError::InvalidOption(_) | TuneError::Input(_) | TuneError::StaticGate(_) => {
-            AgentSpiceDirectCliError::InvalidInput
-        }
-        TuneError::External(_) | TuneError::Output(_) => {
-            AgentSpiceDirectCliError::OperationalFailure
-        }
-    }
-}
-
 fn map_direct_port_error(error: DirectPortError) -> AgentSpiceDirectCliError {
     match error {
         DirectPortError::UnsupportedBackend(_) => AgentSpiceDirectCliError::Unsupported,
@@ -972,6 +731,14 @@ mod tests {
 
     #[test]
     fn unknown_and_duplicate_options_are_rejected() {
+        assert_eq!(
+            parse_agent_spice_direct_argv(&args(&["fit-yparam"])),
+            Err(AgentSpiceDirectCliError::Usage)
+        );
+        assert_eq!(
+            parse_agent_spice_direct_argv(&args(&["tune-yparam-tran"])),
+            Err(AgentSpiceDirectCliError::Usage)
+        );
         assert_eq!(
             parse_agent_spice_direct_argv(&args(&[
                 "run-rfm",
@@ -1043,59 +810,6 @@ mod tests {
                 &exe,
             ])),
             Err(AgentSpiceDirectCliError::Usage)
-        );
-    }
-
-    #[test]
-    fn as04_requires_absolute_hspice_and_sha() {
-        let exe = current_exe_string();
-        let parsed = parse_agent_spice_direct_argv(&args(&[
-            "tune-yparam-tran",
-            "network.s2p",
-            "model.rfm",
-            "deck.sp",
-            "--output-rfm",
-            "out.rfm",
-            "--work-dir",
-            "work",
-            "--rfm-token",
-            "RFM",
-            "--rms-measure",
-            "rms",
-            "--residual-poles",
-            "1,2",
-            "--band-boundaries",
-            "1.5",
-            "--hspice-bin",
-            &exe,
-            "--hspice-sha256",
-            &"0".repeat(64),
-        ]));
-        assert!(parsed.is_ok());
-        assert_eq!(
-            parse_agent_spice_direct_argv(&args(&[
-                "tune-yparam-tran",
-                "network.s2p",
-                "model.rfm",
-                "deck.sp",
-                "--output-rfm",
-                "out.rfm",
-                "--work-dir",
-                "work",
-                "--rfm-token",
-                "RFM",
-                "--rms-measure",
-                "rms",
-                "--residual-poles",
-                "1,2",
-                "--band-boundaries",
-                "1.5",
-                "--hspice-bin",
-                "hspice.exe",
-                "--hspice-sha256",
-                &"0".repeat(64),
-            ])),
-            Err(AgentSpiceDirectCliError::InvalidInput)
         );
     }
 
