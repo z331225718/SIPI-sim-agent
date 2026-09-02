@@ -1,0 +1,40 @@
+schema: sipi.com.tp0v-current-asset-formal.v4
+status: accepted_selected_profile
+scope:
+  workbook: "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA _TP0V_08_17_2022.xlsx"
+  matlab: R2024b
+  package_case_index: 0
+  normal_erl_port: 1
+  rust_route: public_root_sipi_com_run
+  channel_processing: raw_fd_to_td_no_s_parameter_fit
+  excluded: [other_workbooks, TD_ILN_dB, generalized_com_release]
+candidate:
+  commit: b255967c91898f720a16e5029af09521f94fa7df
+  tree: 849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e
+  archive_sha256: f5a096653d89b79989834fb253438b0a0d63e722638e14ad1e3cd528e61d1930
+  archive_bytes: 62033920
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+records:
+  matlab-01: {path: docs/baselines/com-tp0v-current-asset-r2024b-matlab-01.v4.json, bytes: 5602434, sha256: c4f12e3dc3771d56e006466e441001464398cc91d36144b1431dafbb3e4fc1db}
+  matlab-02: {path: docs/baselines/com-tp0v-current-asset-r2024b-matlab-02.v4.json, bytes: 5602432, sha256: 4adc435911abeecdf2240c9c052d6a45f2f434fce78959c8c33bbe03f2096e6b}
+  rust-01: {path: docs/baselines/com-tp0v-current-asset-r2024b-rust-01.v4.json, bytes: 3998922, sha256: 88faabecdde527006d94aa1a59d83791cf4660bc1d28eaf52d3afc288b0f3ab7}
+  rust-02: {path: docs/baselines/com-tp0v-current-asset-r2024b-rust-02.v4.json, bytes: 3998914, sha256: 803f1f3cc9017e3f82196d1f0ed8c6b912a1f9d76a968da1ab14c20c77e39cac}
+aggregate: {path: docs/baselines/com-tp0v-current-asset-r2024b-aggregate.v4.json, bytes: 15538, sha256: fe4d9613a3efb0433004bba4719b2ce3bc6d4e32d2b733d797ceac81a4b8d395}
+acceptance:
+  scalar_surface: 12_values_abs_le_1e-9
+  normal_erl_vectors: ordered_elementwise_no_transform
+  vector_counts: {time_s: 19183, impedance_ohm: 19183, ptdr: 19183, gated: 19183}
+  internal_repeats_exact_f64: true
+  four_independent_replays: true
+  rust_strictly_faster: true
+  matlab_mat_cache_bridge_exact: true
+d3:
+  status: not_evaluated_configuration_disables_tdiln
+  compute_tdiln: 0
+  global_d3_blocker_open: true
+provenance:
+  prep_manifest: docs/baselines/com-tp0v-current-asset-scoped-acceptance.v4.yaml
+  source_reports_are_bound_replay_receipts: true
+  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v4-formal.md, sha256: b47a817dad02987039d96fe949c37ecbd879d0ea469c1a8f8cf5fabbe9c23f59}

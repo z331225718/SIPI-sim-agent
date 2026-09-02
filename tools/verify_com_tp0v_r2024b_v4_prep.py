@@ -20,6 +20,13 @@ EXPECTED_ASSET_ROLES = ["THRU", "FEXT", "NEXT"]
 EXPECTED_VECTOR_NAMES = ["time_s", "impedance_ohm", "ptdr", "gated"]
 EXPECTED_TRANSFORMS = ["alignment", "resampling", "interpolation", "truncation", "delay_correction"]
 EXPECTED_REPLAYS = ["matlab-01", "matlab-02", "rust-01", "rust-02"]
+EXPECTED_FORMAL_PATHS = [
+    "docs/baselines/com-tp0v-current-asset-r2024b-matlab-01.v4.json",
+    "docs/baselines/com-tp0v-current-asset-r2024b-matlab-02.v4.json",
+    "docs/baselines/com-tp0v-current-asset-r2024b-rust-01.v4.json",
+    "docs/baselines/com-tp0v-current-asset-r2024b-rust-02.v4.json",
+    "docs/baselines/com-tp0v-current-asset-r2024b-aggregate.v4.json",
+]
 EXPECTED_TOOLS = {
     "runner": "tools/run_com_tp0v_r2024b_v4_replay.py",
     "aggregate": "tools/aggregate_com_tp0v_r2024b_v4_replay.py",
@@ -117,8 +124,9 @@ def _compare_contract(comparison: Any) -> None:
 def validate(document: dict[str, Any], *, require_sources: bool = False, candidate_archive: Path | None = None, upstream_archive: Path | None = None) -> dict[str, Any]:
     expected_top = {"schema", "status", "formal_record_absent", "base_v3_manifest", "upstream", "candidate", "candidate_gate_parent", "matlab", "rust", "replays", "isolation", "comparison", "cache_bridge", "d3_policy", "performance", "formal_paths_absent", "tools"}
     require(set(document) == expected_top, "manifest top-level keyset")
-    require(document.get("schema") == EXPECTED_SCHEMA and document.get("status") == "preparation_bound_candidate_pending_four_replays", "schema/status")
-    require(document.get("formal_record_absent") is True, "formal record must be absent")
+    require(document.get("schema") == EXPECTED_SCHEMA and document.get("status") in {"preparation_bound_candidate_pending_four_replays", "preparation_bound_candidate_formal_successor_recorded"}, "schema/status")
+    formal_successor = document.get("status") == "preparation_bound_candidate_formal_successor_recorded"
+    require(document.get("formal_record_absent") is (not formal_successor), "formal record status")
     require(document.get("candidate") == EXPECTED_CANDIDATE, "candidate receipt")
     require(document.get("candidate_gate_parent") == EXPECTED_CANDIDATE_GATE_PARENT, "candidate gate parent")
     upstream = document.get("upstream")
@@ -153,10 +161,11 @@ def validate(document: dict[str, Any], *, require_sources: bool = False, candida
     require(document.get("d3_policy") == {"status": "not_evaluated_configuration_disables_tdiln", "selected_configs_compute_tdiln": 0, "global_d3_enabled": True}, "D3 policy")
     require(document.get("performance") == {"required": True, "rule": "each_case_rust_wall_clock_s_strictly_less_than_matlab_wall_clock_s", "instrumented_trace_included": False, "semantic_timing_source": "un-instrumented_semantic_invocation_only", "diagnostic_trace_timing_recorded": True}, "performance contract")
     formal_paths = document.get("formal_paths_absent")
-    require(isinstance(formal_paths, list) and len(formal_paths) == 5, "formal path list")
+    require(formal_paths == EXPECTED_FORMAL_PATHS, "formal path list")
     for path in formal_paths:
         _safe_repo_path(path, "formal path")
-        require(not (ROOT / path).exists(), f"formal path exists: {path}")
+    formal_present = all((ROOT / path).exists() for path in formal_paths)
+    require((document["status"] == "preparation_bound_candidate_formal_successor_recorded") == formal_present, "formal successor status")
     tools = document.get("tools")
     require(isinstance(tools, dict) and set(tools) == set(EXPECTED_TOOLS), "tool map")
     for name, expected_path in EXPECTED_TOOLS.items():
@@ -174,7 +183,7 @@ def validate(document: dict[str, Any], *, require_sources: bool = False, candida
         require(candidate_archive is not None and upstream_archive is not None, "source archives required")
         _verify_archive_receipt(candidate_archive, EXPECTED_CANDIDATE, "candidate")
         _verify_archive_receipt(upstream_archive, upstream, "upstream")
-    return {"valid": True, "status": document["status"], "formal_record_absent": True}
+    return {"valid": True, "status": document["status"], "formal_record_absent": document["formal_record_absent"]}
 
 
 def _verify_archive_receipt(path: Path, receipt: dict[str, Any], label: str) -> None:

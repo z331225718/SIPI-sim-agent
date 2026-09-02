@@ -1,0 +1,487 @@
+{
+  "blockers": [],
+  "candidate": {
+    "archive_bytes": 62033920,
+    "archive_sha256": "f5a096653d89b79989834fb253438b0a0d63e722638e14ad1e3cd528e61d1930",
+    "commit": "b255967c91898f720a16e5029af09521f94fa7df",
+    "tree": "849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e"
+  },
+  "claims": {
+    "acceptance": false,
+    "release": false,
+    "vector_parity": true
+  },
+  "comparison": {
+    "pairs": [
+      {
+        "pair": "matlab-01-rust-01",
+        "passed": true,
+        "scalar": {
+          "cases": [
+            {
+              "case_index": 0,
+              "passed": true,
+              "values": [
+                {
+                  "absolute_difference": 1.3145040611561853e-13,
+                  "matlab": -12.165899453240549,
+                  "name": "COM_dB",
+                  "passed": true,
+                  "rust": -12.165899453240417
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 0,
+                  "name": "CTLE_DC_gain_dB",
+                  "passed": true,
+                  "rust": 0.0
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 17.310082883306528,
+                  "name": "ERL",
+                  "passed": true,
+                  "rust": 17.310082883306528
+                },
+                {
+                  "absolute_difference": 3.312905505481467e-13,
+                  "matlab": -4.166327806609774,
+                  "name": "FOM",
+                  "passed": true,
+                  "rust": -4.166327806609443
+                },
+                {
+                  "absolute_difference": 8.881784197001252e-16,
+                  "matlab": 4.601554213273623,
+                  "name": "ICN_mV",
+                  "passed": true,
+                  "rust": 4.601554213273622
+                },
+                {
+                  "absolute_difference": 1.7763568394002505e-15,
+                  "matlab": 10.000735704402235,
+                  "name": "IL_dB_channel_only_at_Fnq",
+                  "passed": true,
+                  "rust": 10.000735704402237
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 229.75,
+                  "name": "Peak_ISI_XTK_and_Noise_interference_at_BER_mV",
+                  "passed": true,
+                  "rust": 229.75
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 313.07119549054045,
+                  "name": "VEC_dB",
+                  "passed": true,
+                  "rust": 313.07119549054045
+                },
+                {
+                  "absolute_difference": 1.7621459846850485e-12,
+                  "matlab": -346.2624294976843,
+                  "name": "VEO_mV",
+                  "passed": true,
+                  "rust": -346.26242949768255
+                },
+                {
+                  "absolute_difference": 5.329070518200751e-13,
+                  "matlab": 9.834912844952038,
+                  "name": "fitted_IL_dB_at_Fnq",
+                  "passed": true,
+                  "rust": 9.834912844951505
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 0,
+                  "name": "g_DC_HP",
+                  "passed": true,
+                  "rust": 0.0
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 0,
+                  "name": "itick",
+                  "passed": true,
+                  "rust": 0
+                }
+              ]
+            }
+          ],
+          "finite_absolute_tolerance": 1e-09,
+          "metrics": [
+            "COM_dB",
+            "CTLE_DC_gain_dB",
+            "ERL",
+            "FOM",
+            "ICN_mV",
+            "IL_dB_channel_only_at_Fnq",
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV",
+            "VEC_dB",
+            "VEO_mV",
+            "fitted_IL_dB_at_Fnq",
+            "g_DC_HP",
+            "itick"
+          ],
+          "passed": true,
+          "policy": "scalar_elementwise_no_transform"
+        },
+        "vectors": [
+          {
+            "case_index": 0,
+            "passed": true,
+            "policy": "ordered_elementwise_no_transform",
+            "vectors": [
+              {
+                "absolute_tolerance": 5e-24,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 1.6543612251060553e-24,
+                "max_allowed_difference": 5e-24,
+                "name": "time_s",
+                "passed": true,
+                "relative_tolerance": 0.0,
+                "shape": [
+                  19183
+                ],
+                "unit": "s"
+              },
+              {
+                "absolute_tolerance": 2e-12,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 2.842170943040401e-14,
+                "max_allowed_difference": 4.000000000000001e-12,
+                "name": "impedance_ohm",
+                "passed": true,
+                "relative_tolerance": 2e-14,
+                "shape": [
+                  19183
+                ],
+                "unit": "ohm"
+              },
+              {
+                "absolute_tolerance": 5e-17,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 1.49464948745146e-17,
+                "max_allowed_difference": 5.00000000000003e-17,
+                "name": "ptdr",
+                "passed": true,
+                "relative_tolerance": 2e-14,
+                "shape": [
+                  19183
+                ],
+                "unit": "linear"
+              },
+              {
+                "absolute_tolerance": 5e-17,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 1.49464948745146e-17,
+                "max_allowed_difference": 5.00000000000003e-17,
+                "name": "gated",
+                "passed": true,
+                "relative_tolerance": 2e-14,
+                "shape": [
+                  19183
+                ],
+                "unit": "linear"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pair": "matlab-02-rust-02",
+        "passed": true,
+        "scalar": {
+          "cases": [
+            {
+              "case_index": 0,
+              "passed": true,
+              "values": [
+                {
+                  "absolute_difference": 1.3145040611561853e-13,
+                  "matlab": -12.165899453240549,
+                  "name": "COM_dB",
+                  "passed": true,
+                  "rust": -12.165899453240417
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 0,
+                  "name": "CTLE_DC_gain_dB",
+                  "passed": true,
+                  "rust": 0.0
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 17.310082883306528,
+                  "name": "ERL",
+                  "passed": true,
+                  "rust": 17.310082883306528
+                },
+                {
+                  "absolute_difference": 3.312905505481467e-13,
+                  "matlab": -4.166327806609774,
+                  "name": "FOM",
+                  "passed": true,
+                  "rust": -4.166327806609443
+                },
+                {
+                  "absolute_difference": 8.881784197001252e-16,
+                  "matlab": 4.601554213273623,
+                  "name": "ICN_mV",
+                  "passed": true,
+                  "rust": 4.601554213273622
+                },
+                {
+                  "absolute_difference": 1.7763568394002505e-15,
+                  "matlab": 10.000735704402235,
+                  "name": "IL_dB_channel_only_at_Fnq",
+                  "passed": true,
+                  "rust": 10.000735704402237
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 229.75,
+                  "name": "Peak_ISI_XTK_and_Noise_interference_at_BER_mV",
+                  "passed": true,
+                  "rust": 229.75
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 313.07119549054045,
+                  "name": "VEC_dB",
+                  "passed": true,
+                  "rust": 313.07119549054045
+                },
+                {
+                  "absolute_difference": 1.7621459846850485e-12,
+                  "matlab": -346.2624294976843,
+                  "name": "VEO_mV",
+                  "passed": true,
+                  "rust": -346.26242949768255
+                },
+                {
+                  "absolute_difference": 5.329070518200751e-13,
+                  "matlab": 9.834912844952038,
+                  "name": "fitted_IL_dB_at_Fnq",
+                  "passed": true,
+                  "rust": 9.834912844951505
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 0,
+                  "name": "g_DC_HP",
+                  "passed": true,
+                  "rust": 0.0
+                },
+                {
+                  "absolute_difference": 0.0,
+                  "matlab": 0,
+                  "name": "itick",
+                  "passed": true,
+                  "rust": 0
+                }
+              ]
+            }
+          ],
+          "finite_absolute_tolerance": 1e-09,
+          "metrics": [
+            "COM_dB",
+            "CTLE_DC_gain_dB",
+            "ERL",
+            "FOM",
+            "ICN_mV",
+            "IL_dB_channel_only_at_Fnq",
+            "Peak_ISI_XTK_and_Noise_interference_at_BER_mV",
+            "VEC_dB",
+            "VEO_mV",
+            "fitted_IL_dB_at_Fnq",
+            "g_DC_HP",
+            "itick"
+          ],
+          "passed": true,
+          "policy": "scalar_elementwise_no_transform"
+        },
+        "vectors": [
+          {
+            "case_index": 0,
+            "passed": true,
+            "policy": "ordered_elementwise_no_transform",
+            "vectors": [
+              {
+                "absolute_tolerance": 5e-24,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 1.6543612251060553e-24,
+                "max_allowed_difference": 5e-24,
+                "name": "time_s",
+                "passed": true,
+                "relative_tolerance": 0.0,
+                "shape": [
+                  19183
+                ],
+                "unit": "s"
+              },
+              {
+                "absolute_tolerance": 2e-12,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 2.842170943040401e-14,
+                "max_allowed_difference": 4.000000000000001e-12,
+                "name": "impedance_ohm",
+                "passed": true,
+                "relative_tolerance": 2e-14,
+                "shape": [
+                  19183
+                ],
+                "unit": "ohm"
+              },
+              {
+                "absolute_tolerance": 5e-17,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 1.49464948745146e-17,
+                "max_allowed_difference": 5.00000000000003e-17,
+                "name": "ptdr",
+                "passed": true,
+                "relative_tolerance": 2e-14,
+                "shape": [
+                  19183
+                ],
+                "unit": "linear"
+              },
+              {
+                "absolute_tolerance": 5e-17,
+                "count": 19183,
+                "first_sample_equal": true,
+                "max_absolute_difference": 1.49464948745146e-17,
+                "max_allowed_difference": 5.00000000000003e-17,
+                "name": "gated",
+                "passed": true,
+                "relative_tolerance": 2e-14,
+                "shape": [
+                  19183
+                ],
+                "unit": "linear"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "policy": "elementwise_no_alignment_or_transform"
+  },
+  "d3": {
+    "global_d3_enabled": true,
+    "status": "not_evaluated_configuration_disables_tdiln"
+  },
+  "diagnostic_only": true,
+  "formal_record": false,
+  "gates": {
+    "independent_replay_nonces": true,
+    "independent_replay_roots": true,
+    "internal_exact_repeat": true,
+    "mat_bridge": true,
+    "ordered_elementwise_vector_comparison": true,
+    "performance_each_case_rust_strictly_faster": true
+  },
+  "performance": {
+    "diagnostic_trace_timing_recorded": true,
+    "instrumented_trace_included": false,
+    "per_case": {
+      "matlab-01": [
+        [
+          15.907054900017101
+        ],
+        [
+          15.719656800036319
+        ]
+      ],
+      "matlab-02": [
+        [
+          15.856447099999059
+        ],
+        [
+          15.580890499986708
+        ]
+      ],
+      "rust-01": [
+        [
+          0.45130220003193244
+        ],
+        [
+          0.44321870000567287
+        ]
+      ],
+      "rust-02": [
+        [
+          0.4245327999815345
+        ],
+        [
+          0.4447019000072032
+        ]
+      ]
+    },
+    "semantic_timing_source": "un-instrumented_semantic_invocation_only"
+  },
+  "reports": {
+    "matlab-01": {
+      "bytes": 5602434,
+      "path": "sipi-com-tp0v-r2024b-v4-matlab-01b.json",
+      "sha256": "c4f12e3dc3771d56e006466e441001464398cc91d36144b1431dafbb3e4fc1db"
+    },
+    "matlab-02": {
+      "bytes": 5602432,
+      "path": "sipi-com-tp0v-r2024b-v4-matlab-02.json",
+      "sha256": "4adc435911abeecdf2240c9c052d6a45f2f434fce78959c8c33bbe03f2096e6b"
+    },
+    "rust-01": {
+      "bytes": 3998922,
+      "path": "sipi-com-tp0v-r2024b-v4-rust-01c.json",
+      "sha256": "88faabecdde527006d94aa1a59d83791cf4660bc1d28eaf52d3afc288b0f3ab7"
+    },
+    "rust-02": {
+      "bytes": 3998914,
+      "path": "sipi-com-tp0v-r2024b-v4-rust-02.json",
+      "sha256": "803f1f3cc9017e3f82196d1f0ed8c6b912a1f9d76a968da1ab14c20c77e39cac"
+    }
+  },
+  "schema": "sipi.com.tp0v-r2024b-v4-aggregate.v1",
+  "status": "passed",
+  "upstream": {
+    "archive_bytes": 43694080,
+    "archive_sha256": "a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf",
+    "assets": [
+      {
+        "bytes": 6393177,
+        "path": "fixtures/synthetic/thru_10db_at_26p56ghz.s4p",
+        "role": "THRU",
+        "sha256": "fcbcce086dbae6bbb9a1f8ca5df775073ebb6303f80a9f062caf1f2ab5607361"
+      },
+      {
+        "bytes": 6393140,
+        "path": "fixtures/synthetic/fext_m40db_at_26p56ghz.s4p",
+        "role": "FEXT",
+        "sha256": "cc5968bacd5bd40d6ccd7db4927dbb1dd3f20d82f4d3ad5a3193ad86e0e9ca04"
+      },
+      {
+        "bytes": 6392860,
+        "path": "fixtures/synthetic/next_m40db_at_26p56ghz.s4p",
+        "role": "NEXT",
+        "sha256": "882819542f43b8fb5f174c7e984b418ceb0f56e068654c9be362a84547b93e65"
+      }
+    ],
+    "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
+    "tree": "7094ab6e84989b218730c52432c70da10261f8ea",
+    "workbook": {
+      "bytes": 67151,
+      "path": "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA _TP0V_08_17_2022.xlsx",
+      "sha256": "54562fa2bbe856f1fb6e96b7c1c873d2b399555b1fb38e50cd6f4ad3ddc69f0a"
+    }
+  }
+}
