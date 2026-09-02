@@ -228,3 +228,24 @@ fn pinned_native_dfe_case_matches_the_complete_artifact() {
     });
     run_and_compare("dfe", input);
 }
+
+#[test]
+fn pinned_native_statistical_eye_case_matches_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+    let mut input = native_fixture();
+    input["analysis"]["statisticalEye"] = json!({
+        "targetBer": 1.0e-12,
+        "contourBerLevels": [1.0e-12, 1.0e-9],
+        "rxRjUi": null,
+        "rxDjUi": null,
+        "txRjUi": null,
+        "txDjUi": null,
+        "txDcdUi": null,
+        "voltageResolution": 1.0e-3,
+        "timePoints": 2,
+        "maxDistributionStates": 200,
+        "postReceiverOutput": false
+    });
+    run_and_compare("statistical-eye", input);
+}

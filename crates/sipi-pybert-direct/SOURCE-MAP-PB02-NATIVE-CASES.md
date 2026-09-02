@@ -24,6 +24,8 @@ its exact commit and test blob, then runs its `sim-native` CLI and the local
 release candidate independently. It compares normalized complete metadata,
 diagnostics, and every NPZ member's name, dtype, shape, and numeric payload.
 The DFE case uses the source test's configured one-tap adaptive receiver.
+The statistical-eye case uses its two source contour levels and pre-DFE
+sampling configuration.
 
 The CTLE case has only the source test's analytic controls; it intentionally
 does not use the historical local `impulseResponseVPerV` extension. The jitter
