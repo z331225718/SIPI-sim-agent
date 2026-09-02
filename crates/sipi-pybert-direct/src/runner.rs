@@ -455,7 +455,7 @@ pub fn run_sim_native_json(
 ) -> Result<DirectRunReport, DirectRunError> {
     let input = strict_simulation_input_json(input_json)?;
     let output = native_cli_output(simulate_native_v1(&input)?);
-    write_simulation_artifacts(input, input_file, output_dir, output, None)
+    write_upstream_native_cli_artifacts(input, input_file, output_dir, output)
 }
 
 /// Keep implementation-only arrays available to projected/legacy callers,
@@ -469,6 +469,102 @@ fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
     output.arrays.remove("tx_impulse_v_per_v");
     output.metrics.remove("effective_prbs_seed");
     output
+}
+
+/// Write the exact artifact envelope published by the pinned `sim-native`
+/// command.  SIPI-only nested output and provenance fields deliberately stay
+/// out of this compatibility artifact: the upstream Python CLI does not
+/// publish them, and adding them makes otherwise equal native payloads
+/// incompatible.
+fn write_upstream_native_cli_artifacts(
+    input: SimulationInputV1,
+    input_file: &Path,
+    output_dir: &Path,
+    output: SimulationOutputV1,
+) -> Result<DirectRunReport, DirectRunError> {
+    output
+        .validate()
+        .map_err(|error| DirectRunError::Output(error.to_string()))?;
+
+    let source_file = upstream_cli_input_path(input_file);
+    let effective_input = upstream_effective_input(&input)?;
+    let diagnostics = json!({
+        "pipeline": "typed_simulation_input_v1",
+        "capabilities": output.capabilities.stages,
+        "events": output.events,
+        "cancellation": "checked_before_and_after_the_bounded_native_call",
+    });
+    let metadata = json!({
+        "schema": NATIVE_CLI_SCHEMA,
+        "input_file": source_file,
+        "effective_input": effective_input,
+        "backend_metadata": {
+            "schema": output.schema,
+            "run_id": output.run_id,
+            "engine": upstream_native_engine_metadata(),
+            "metrics": output.metrics,
+            "aborted": false,
+        },
+        "diagnostics": diagnostics,
+        "arrays_file": "arrays.npz",
+    });
+    let metadata_bytes = serde_json::to_vec_pretty(&metadata)
+        .map_err(|error| DirectRunError::Output(error.to_string()))?;
+    if metadata_bytes.len() > MAX_ARTIFACT_METADATA_BYTES {
+        return Err(DirectRunError::Output(
+            "native artifact metadata exceeds 16 MiB".into(),
+        ));
+    }
+    prepare_output_directory(output_dir)?;
+    let meta_path = output_dir.join("meta.json");
+    let arrays_path = output_dir.join("arrays.npz");
+    fs::write(&meta_path, metadata_bytes)?;
+    fs::write(&arrays_path, npz_bytes_with_shapes(&output.arrays, None)?)?;
+    Ok(DirectRunReport {
+        input,
+        output,
+        metadata,
+        diagnostics,
+        meta_path,
+        arrays_path,
+    })
+}
+
+fn upstream_effective_input(input: &SimulationInputV1) -> Result<Value, DirectRunError> {
+    let mut value =
+        serde_json::to_value(input).map_err(|error| DirectRunError::Output(error.to_string()))?;
+    // `jitterRelThresh` is a SIPI direct-port control added after the pinned
+    // Python request model. Pydantic drops it before `_write_native_artifacts`;
+    // retaining it here would be a wire drift, not evidence of a new feature.
+    if let Some(analysis) = value.get_mut("analysis").and_then(Value::as_object_mut) {
+        analysis.remove("jitterRelThresh");
+    }
+    Ok(value)
+}
+
+fn upstream_native_engine_metadata() -> Value {
+    json!({
+        "backend": "rust",
+        "native_simulation_v1": true,
+        "name": "pybert-python",
+        "version": env!("CARGO_PKG_VERSION"),
+        "build": {
+            "profile": if cfg!(debug_assertions) { "debug" } else { "release" },
+            "target": format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS),
+            "id": option_env!("PYBERT_NATIVE_BUILD_ID").unwrap_or("unknown"),
+        },
+    })
+}
+
+fn upstream_cli_input_path(input_file: &Path) -> String {
+    let path = input_file
+        .canonicalize()
+        .unwrap_or_else(|_| input_file.to_path_buf());
+    let display = path.to_string_lossy();
+    display
+        .strip_prefix(r"\\?\")
+        .unwrap_or(display.as_ref())
+        .to_owned()
 }
 
 /// Run an already projected, typed request through the same artifact boundary

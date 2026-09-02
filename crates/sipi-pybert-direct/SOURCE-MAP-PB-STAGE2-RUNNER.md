@@ -1,10 +1,9 @@
 # PB stage 2 runner source map
 
-Scope: the additive public artifact boundary for the existing PB stage 2
-native engine.  This map covers the runner-only changes that publish the
-typed `SimulationOutputV1` envelope beside the pinned CLI projection.  It
-does not add a numerical engine, copy Python runtime code, or make an
-external parity claim.
+Scope: the artifact boundary for the existing PB stage 2 native engine. This
+map distinguishes the pinned `sim-native` compatibility artifact from the
+SIPI-owned rich writer used by projected workflows. It does not add a
+numerical engine, copy Python runtime code, or make an external parity claim.
 
 ## Pinned provenance
 
@@ -29,35 +28,28 @@ a legal conclusion or a redistribution grant.
 
 ## Boundary contract
 
-`run_sim_native_json` and `run_sim_native_input` execute the same
-`simulate_native_v1` engine and pass its validated result to
-`write_simulation_artifacts...`.  The writer now serializes that exact typed
-result under `meta.json.output`.  `backend_metadata.schema`, `run_id`, and
-`metrics`, plus `diagnostics.capabilities` and `diagnostics.events`, are
-mechanical projections of the nested result.  Consumers must use the nested
-`SimulationOutputV1` as canonical and reject a coexisting flat projection
-that drifts.
+`run_sim_native_json` executes `simulate_native_v1` and then writes the six
+top-level fields published by pinned `src/pybert/cli.py::_write_native_artifacts`:
+`schema`, `input_file`, `effective_input`, `backend_metadata`, `diagnostics`,
+and `arrays_file`. It deliberately does not inject the SIPI nested
+`SimulationOutputV1`, `effective_randomness`, source custody, workflow
+namespaces, or artifact references into the compatible `meta.json`.
 
-The pinned `src/pybert/cli.py::_write_native_artifacts` does **not** publish
-`effective_randomness`; that field is candidate-adapter provenance owned by
-this Rust boundary.  The runner removes the engine-only
-`effective_prbs_seed` metric from the narrow `sim-native` direct projection so
-the typed metrics match the pinned CLI payload.  The candidate's separate
-`meta.json.effective_randomness` remains explicitly local provenance and is
-not attributed to upstream.
+The source request adapter drops `analysis.jitterRelThresh` from
+`effective_input`: that is a SIPI control absent from the pinned Python
+request model and Pydantic drops it before the source CLI writes its artifact.
+The direct writer also projects the source build-info shape (`name`, `version`,
+and profile/target/build id) from the same Rust compile-time facts as
+`native/pybert-python/src/lib.rs::native_build_info`. This is artifact-wire
+compatibility, not a claim that this executable is the upstream Python wheel.
+The crate and source maps remain the authoritative provenance for the actual
+direct-port executable.
 
-The writer keeps the existing `arrays.npz` artifact and enforces a bounded
-16 MiB metadata budget.  Before any `serde_json::to_value` materialization, a
-borrowed `MetadataEnvelopeV1` is streamed through the same pretty-JSON writer
-used for `meta.json`.  It includes every final field and duplicate projection:
-the input, nested output arrays/metrics/capabilities/events/artifacts,
-`backend_metadata`, `effective_randomness`, diagnostics, both workflow
-namespaces, `artifact_schema`, `backend_label`, and the canonical source path.
-The bounded writer counts actual serialized bytes, indentation, keys, and
-punctuation and fails closed at the limit; it uses no fixed overhead estimate.
-Typed artifact references, when supplied by a workflow, retain all six
-required fields (`name`, `schema`, `relativePath`, `mimeType`, `sha256`, and
-`byteLength`) and are validated by `SimulationOutputV1::validate`.
+`run_sim_native_input` and explicit rich-writer callers retain the SIPI-owned
+nested envelope/provenance form for projected workflows. Their 16 MiB
+streaming preflight, reserved workflow namespaces, typed artifact references,
+and all six artifact-reference fields remain outside the pinned `sim-native`
+wire contract.
 
 The native f64 `sim-native` direct path writes the same one-dimensional
 `SimulationOutputV1.arrays` values to `arrays.npz`; the artifact-reference
@@ -75,10 +67,9 @@ fields are written last.
 ## Verification
 
 `tests/direct.rs::direct_run_writes_upstream_artifact_names_and_metadata`
-round-trips the emitted nested value through `SimulationOutputV1`, checks
-mechanical projection equality, checks the candidate-only randomness split,
-verifies six-field artifact references after disk deserialization, checks the
-native NPZ logical payload, exercises reserved workflow collisions, and
-exercises the metadata preflight/overflow gates.  The complete-output
+checks the exact six-key source envelope, source-shaped build metadata,
+absence of `jitterRelThresh`, and the native NPZ logical payload. Separate
+rich-writer tests retain the provenance/noise, artifact-reference, reserved
+workflow collision, and metadata preflight coverage. The complete-output
 comparison and strict artifact field gate remain in `src/workflows.rs` and
 `tests/workflows.rs` as recorded by the stage 2 source map.

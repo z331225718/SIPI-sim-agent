@@ -8,8 +8,8 @@ use sipi_pybert_direct::{
     ChannelResponseV1, FfeConfigV1, Hertz, ModulationV1, NumericArrayV1, Ohms, PatternV1,
     ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
     SimulationOutputV1, TxConfigV1, TypedArrayV1, Volts, npz_bytes_nd, npz_bytes_typed_nd,
-    run_sim_native_json, sha256_bytes, strict_simulation_input_json, write_simulation_artifacts,
-    write_simulation_artifacts_with_schema_and_backend,
+    run_sim_native_json, sha256_bytes, simulate_native_v1, strict_simulation_input_json,
+    write_simulation_artifacts, write_simulation_artifacts_with_schema_and_backend,
 };
 
 fn input() -> SimulationInputV1 {
@@ -84,41 +84,72 @@ fn direct_run_writes_upstream_artifact_names_and_metadata() {
     let report = run_sim_native_json(&json, &input_path, &output_path).expect("run");
     assert_eq!(report.meta_path, output_path.join("meta.json"));
     assert_eq!(report.arrays_path, output_path.join("arrays.npz"));
+    assert_eq!(
+        report
+            .metadata
+            .as_object()
+            .expect("upstream metadata object")
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        [
+            "arrays_file",
+            "backend_metadata",
+            "diagnostics",
+            "effective_input",
+            "input_file",
+            "schema",
+        ]
+    );
     assert_eq!(report.metadata["arrays_file"], "arrays.npz");
     assert_eq!(
         report.metadata["backend_metadata"]["engine"]["backend"],
         "rust"
     );
-    let nested = serde_json::from_value::<SimulationOutputV1>(report.metadata["output"].clone())
-        .expect("nested SimulationOutputV1 envelope");
-    assert_eq!(nested, report.output);
     assert_eq!(
         report.metadata["backend_metadata"]["schema"],
-        report.metadata["output"]["schema"]
+        report.output.schema
     );
     assert_eq!(
         report.metadata["backend_metadata"]["run_id"],
-        report.metadata["output"]["runId"]
+        report.output.run_id
     );
     assert_eq!(
         report.metadata["backend_metadata"]["metrics"],
-        report.metadata["output"]["metrics"]
+        serde_json::to_value(&report.output.metrics).expect("metrics")
     );
     assert_eq!(
         report.metadata["diagnostics"]["capabilities"],
-        report.metadata["output"]["capabilities"]["stages"]
+        serde_json::to_value(&report.output.capabilities.stages).expect("stages")
     );
     assert_eq!(
         report.metadata["diagnostics"]["events"],
-        report.metadata["output"]["events"]
+        serde_json::to_value(&report.output.events).expect("events")
     );
     assert!(
         report.metadata["backend_metadata"]["metrics"]
             .get("effective_prbs_seed")
             .is_none()
     );
-    assert_eq!(report.metadata["effective_randomness"]["prbs_seed"], 17);
-    assert!(report.metadata["output"]["artifacts"].is_array());
+    assert_eq!(
+        report.metadata["backend_metadata"]["engine"]["name"],
+        "pybert-python"
+    );
+    assert_eq!(
+        report.metadata["backend_metadata"]["engine"]["build"]["profile"],
+        "debug"
+    );
+    assert!(
+        report.metadata["effective_input"]["analysis"]
+            .get("jitterRelThresh")
+            .is_none()
+    );
+    assert!(
+        report.metadata["input_file"]
+            .as_str()
+            .expect("source path")
+            .ends_with("input.json")
+    );
     assert!(!report.output.arrays.contains_key("tx_impulse_v_per_v"));
     assert_eq!(report.diagnostics["pipeline"], "typed_simulation_input_v1");
     assert!(output_path.join("meta.json").is_file());
@@ -488,7 +519,10 @@ fn artifact_keeps_explicit_noise_distinct_from_seeded_noise() {
     });
     let json = serde_json::to_vec(&request).expect("serialize");
     fs::write(&input_path, &json).expect("input");
-    let report = run_sim_native_json(&json, &input_path, &output_path).expect("run");
+    let parsed = strict_simulation_input_json(&json).expect("strict native input");
+    let output = simulate_native_v1(&parsed).expect("native output");
+    let report = write_simulation_artifacts(parsed, &input_path, &output_path, output, None)
+        .expect("rich SIPI artifact");
     assert_eq!(
         report.metadata["effective_randomness"]["noise"]["source"],
         "explicit_samples"
