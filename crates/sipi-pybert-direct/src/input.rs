@@ -400,7 +400,7 @@ pub struct CtleConfigV1 {
     /// Optional impulse response imported from a portable legacy Touchstone
     /// file. Values are dimensionless V/V samples at the request timebase;
     /// analytic fields above remain populated as the legacy metadata surface.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub impulse_response_v_per_v: Option<Vec<f64>>,
 }
 

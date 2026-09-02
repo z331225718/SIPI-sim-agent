@@ -220,6 +220,14 @@ fn direct_cli_drops_the_non_source_ctle_impulse_extension() {
         .expect("ctle")
         .impulse_response_v_per_v = None;
     let source_json = serde_json::to_vec(&source_input).expect("source input");
+    assert!(
+        !serde_json::from_slice::<serde_json::Value>(&source_json).expect("source JSON")["rx"]
+            ["ctle"]
+            .as_object()
+            .expect("ctle object")
+            .contains_key("impulseResponseVPerV"),
+        "the source-native serializer omits an absent local extension"
+    );
     let source_report = run_sim_native_json(&source_json, &input_path, &root.join("source-output"))
         .expect("source-shape run");
 

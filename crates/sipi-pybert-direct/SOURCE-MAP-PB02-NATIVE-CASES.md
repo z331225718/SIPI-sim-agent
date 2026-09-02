@@ -1,0 +1,39 @@
+# PB-02 native source-case map
+
+This map binds two existing, reachable native-core cases to the Rust direct
+port. It is an external pinned-source comparison and does not change the
+historical PB-02 formal matrix, its records, or its blocked case definitions.
+
+## Pinned source
+
+PyBERT commit `5bf6d7ea0ace261891aaeb611ffc1c267e160afe`, tree
+`5faef6bdb341d444ad65d82a11c0018b15805e24`, remains the only oracle. Its
+BSD-3-Clause `LICENSE` and the crate's existing
+`NOTICE-PYBERT-LICENSE-BOUNDARY.md` govern this direct-port boundary.
+
+| Pinned path | Git object | Local use |
+| --- | --- | --- |
+| `native/pybert-core/tests/simulation.rs` | blob `dd06dc7f612ac32a2fd088611c27530ed25762b6` | Source-owned construction and expectations for the configured CTLE response and full-PRBS jitter/bathtub cases. |
+| `native/pybert-core/src/simulation.rs` | blob `1f19bff64315e0042bab89d67e9131c289f5e583` | Existing direct-port implementation lineage. |
+| `crates/sipi-pybert-direct/fixtures/pb-02-nrz.json` | SIPI-owned typed baseline | Matches the source test's native linear input before the narrowly specified source case mutation. |
+
+## Comparison
+
+`tests/pb02_native_source_cases.rs` requires a clean pinned `native` tree,
+its exact commit and test blob, then runs its `sim-native` CLI and the local
+release candidate independently. It compares normalized complete metadata,
+diagnostics, and every NPZ member's name, dtype, shape, and numeric payload.
+
+The CTLE case has only the source test's analytic controls; it intentionally
+does not use the historical local `impulseResponseVPerV` extension. The jitter
+case uses the source test's complete PRBS-7 period length (`nbits=254`) instead
+of the invalid historical 16-bit/8-UI span.
+
+The local `CtleConfigV1` serializer omits an absent
+`impulseResponseVPerV`, matching the pinned native request model. A populated
+value remains confined to its separately documented typed direct-port path;
+the native CLI still drops it before execution.
+
+This does not claim whole PB-02 branch parity, exact build bytes, AMI/IBIS,
+GetWave, S2P, external models, Web/GUI results, product admission, or release
+acceptance.
