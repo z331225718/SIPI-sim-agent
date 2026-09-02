@@ -1,8 +1,4 @@
-//! Preparation-only bounded argv contract for the future R4.80 COM route.
-//!
-//! This module deliberately has no dispatcher registration.  It freezes the
-//! caller-owned argument surface before the route is enabled on an immutable
-//! product candidate; `com run` remains unavailable in this preparation stage.
+//! Bounded argv contract for the feature-gated R4.80 `sipi com run` route.
 
 use crate::com_direct_integration::run_com_direct_for_integration_v1;
 use sha2::{Digest, Sha256};
@@ -352,7 +348,7 @@ fn receipt_json_v1(
     .collect::<Result<Vec<_>, ComR480ExecutionErrorV1>>()?
     .join(",");
     Ok(format!(
-        "{{\"schema\":\"{COM_R480_CLI_RECEIPT_SCHEMA_V1}\",\"status\":\"completed\",\"profile\":\"r4.80\",\"case_count\":{},\"warning_count\":{},\"config_sha256\":\"{}\",\"impulse_sha256\":\"{}\",\"artifacts\":[{artifacts}]}}",
+        "{{\"schema\":\"{COM_R480_CLI_RECEIPT_SCHEMA_V1}\",\"status\":\"completed\",\"profile\":\"r4.80\",\"case_count\":{},\"warning_count\":{},\"config_sha256\":\"{}\",\"input_channel_sha256\":\"{}\",\"artifacts\":[{artifacts}]}}",
         cases.len(),
         warnings.len(),
         report.config_sha256,

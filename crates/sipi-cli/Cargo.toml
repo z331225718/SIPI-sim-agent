@@ -11,8 +11,8 @@ default-run = "sipi"
 
 [features]
 test-support = []
-# Internal-only link check for the quarantined Agent-COM direct port.  This is
-# deliberately non-default and does not publish a `sipi com run` command.
+# Opt-in scoped public `sipi com run` route for the Agent-COM direct port.
+# It remains absent from the default CLI build.
 com-direct-integration = ["dep:sipi-agent-com-direct"]
 # Internal-only root linkage for the quarantined Agent-Spice direct leaves.
 # The feature stays opt-in so the default CLI remains byte-for-byte isolated
