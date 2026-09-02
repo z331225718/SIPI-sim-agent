@@ -26,6 +26,9 @@ diagnostics, and every NPZ member's name, dtype, shape, and numeric payload.
 The DFE case uses the source test's configured one-tap adaptive receiver.
 The statistical-eye case uses its two source contour levels and pre-DFE
 sampling configuration.
+The ISI and PAM4-FEC cases retain the source test's typed DFE and Viterbi
+controls, including the five-sample ISI impulse and bounded sixteen-state
+trellis.
 
 The CTLE case has only the source test's analytic controls; it intentionally
 does not use the historical local `impulseResponseVPerV` extension. The jitter

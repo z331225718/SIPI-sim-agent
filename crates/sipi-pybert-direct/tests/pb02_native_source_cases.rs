@@ -249,3 +249,53 @@ fn pinned_native_statistical_eye_case_matches_the_complete_artifact() {
     });
     run_and_compare("statistical-eye", input);
 }
+
+fn source_native_dfe_config() -> Value {
+    json!({
+        "gain": 0.1,
+        "decisionScaler": 1.0,
+        "nAve": 1,
+        "deltaT": 1.0e-13,
+        "alpha": 0.0,
+        "nLockAve": 1,
+        "relLockTol": 0.01,
+        "lockSustain": 1,
+        "ideal": true,
+        "bandwidth": 0.0,
+        "useAgc": false,
+        "agcNAve": 1
+    })
+}
+
+#[test]
+fn pinned_native_isi_and_fec_viterbi_cases_match_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+
+    let mut isi = native_fixture();
+    isi["channel"]["value"]["impulseResponseVoltsPerSecond"] =
+        json!([1.0e12, 0.25e12, 0.0, 0.0, 0.0]);
+    isi["rx"]["dfeTaps"] = Value::from(1_u64);
+    isi["rx"]["dfe"] = source_native_dfe_config();
+    isi["rx"]["viterbiEnabled"] = Value::Bool(true);
+    isi["rx"]["viterbi"] = json!({
+        "stateSymbols": 2,
+        "fec": false,
+        "noiseSigmaV": 0.01,
+        "maxStates": 16
+    });
+    run_and_compare("isi-viterbi", isi);
+
+    let mut fec = native_fixture();
+    fec["modulation"] = Value::String("pam4".into());
+    fec["rx"]["dfeTaps"] = Value::from(1_u64);
+    fec["rx"]["dfe"] = source_native_dfe_config();
+    fec["rx"]["viterbiEnabled"] = Value::Bool(true);
+    fec["rx"]["viterbi"] = json!({
+        "stateSymbols": 2,
+        "fec": true,
+        "noiseSigmaV": null,
+        "maxStates": 16
+    });
+    run_and_compare("fec-viterbi", fec);
+}
