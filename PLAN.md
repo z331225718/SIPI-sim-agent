@@ -1024,7 +1024,8 @@ matrix 仍是不可变历史记录，不能再解释为当前 runtime defect。�
 Agent-BERT 的实际 Rust 可达边界及非准入项汇总在
 [`agent-bert-reachability-boundary.v1`](docs/baselines/agent-bert-reachability-boundary.v1.md)：
 它连接 PB-01 legacy class、PB-02 native source corpus 与 PB-03 两个 Web payload
-replay，但不将它们扩大为 whole-PyBERT、root `sipi` 路由、发行或许可批准。
+replay；其中 PB-01/PB-03 仍待 archive-built 双 replay 记录，不能提前称为迁移验收。
+该边界不将它们扩大为 whole-PyBERT、root `sipi` 路由、发行或许可批准。
 
 ## 19. 完成定义
 
