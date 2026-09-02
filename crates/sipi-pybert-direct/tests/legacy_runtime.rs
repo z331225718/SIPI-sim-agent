@@ -553,6 +553,125 @@ print("complete-class-compare-ok")
     let _ = fs::remove_dir_all(root);
 }
 
+#[cfg(feature = "pinned-python-tests")]
+#[test]
+fn pinned_pybert_sim_native_matches_metadata_and_every_logical_npz_member() {
+    const PINNED_PYBERT_COMMIT: &str = "5bf6d7ea0ace261891aaeb611ffc1c267e160afe";
+    let python = std::env::var_os("SIPI_PYBERT_PINNED_PYTHON")
+        .expect("pinned-python-tests requires SIPI_PYBERT_PINNED_PYTHON");
+    let oracle_cli = std::env::var_os("SIPI_PYBERT_ORACLE_CLI")
+        .expect("pinned-python-tests requires SIPI_PYBERT_ORACLE_CLI");
+    let oracle_root = PathBuf::from(
+        std::env::var_os("SIPI_PYBERT_ORACLE_ROOT")
+            .expect("pinned-python-tests requires SIPI_PYBERT_ORACLE_ROOT"),
+    );
+    let revision = Command::new("git")
+        .args(["-C"])
+        .arg(&oracle_root)
+        .args(["rev-parse", "HEAD^{commit}"])
+        .output()
+        .expect("read pinned PyBERT revision");
+    assert!(revision.status.success());
+    assert_eq!(
+        String::from_utf8(revision.stdout).unwrap().trim(),
+        PINNED_PYBERT_COMMIT
+    );
+    let source_status = Command::new("git")
+        .args(["-C"])
+        .arg(&oracle_root)
+        .args([
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            "src",
+        ])
+        .output()
+        .expect("check pinned PyBERT source custody");
+    assert!(source_status.status.success());
+    assert!(source_status.stdout.is_empty());
+
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join("pb-02-nrz.json");
+    let root =
+        std::env::temp_dir().join(format!("sipi-pb02-source-compare-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    let oracle_dir = root.join("oracle");
+    let candidate_dir = root.join("candidate");
+    let oracle = Command::new(oracle_cli)
+        .arg("sim-native")
+        .arg(&fixture)
+        .arg("--output-dir")
+        .arg(&oracle_dir)
+        .output()
+        .unwrap();
+    assert!(
+        oracle.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&oracle.stdout),
+        String::from_utf8_lossy(&oracle.stderr)
+    );
+    let candidate = Command::new(env!("CARGO_BIN_EXE_sipi-pybert-direct"))
+        .arg(&fixture)
+        .arg("--output-dir")
+        .arg(&candidate_dir)
+        .output()
+        .unwrap();
+    assert!(
+        candidate.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&candidate.stdout),
+        String::from_utf8_lossy(&candidate.stderr)
+    );
+
+    const PROBE: &str = r#"
+import json, sys
+import numpy as np
+
+oracle_dir, candidate_dir = sys.argv[1:]
+with open(oracle_dir + "/meta.json", "r", encoding="utf-8") as stream:
+    oracle_meta = json.load(stream)
+with open(candidate_dir + "/meta.json", "r", encoding="utf-8") as stream:
+    candidate_meta = json.load(stream)
+# Cargo integration tests execute the candidate debug binary, while this
+# pinned oracle installation exposes a release extension. Build identity is
+# runtime provenance rather than simulation output; every other metadata field
+# must agree exactly.
+oracle_build = oracle_meta["backend_metadata"]["engine"].pop("build")
+candidate_build = candidate_meta["backend_metadata"]["engine"].pop("build")
+assert set(oracle_build) == set(candidate_build) == {"id", "profile", "target"}
+assert oracle_build["profile"] == "release"
+assert candidate_build["profile"] == "debug"
+assert oracle_meta == candidate_meta
+with np.load(oracle_dir + "/arrays.npz", allow_pickle=False) as oracle, np.load(candidate_dir + "/arrays.npz", allow_pickle=False) as candidate:
+    assert set(oracle.files) == set(candidate.files)
+    for name in oracle.files:
+        left, right = oracle[name], candidate[name]
+        assert left.dtype == right.dtype, name
+        assert left.shape == right.shape, name
+        assert np.array_equal(left, right), name
+print("complete-native-compare-ok")
+"#;
+    let compared = Command::new(python)
+        .args(["-c", PROBE])
+        .arg(&oracle_dir)
+        .arg(&candidate_dir)
+        .output()
+        .unwrap();
+    assert!(
+        compared.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&compared.stdout),
+        String::from_utf8_lossy(&compared.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&compared.stdout).trim(),
+        "complete-native-compare-ok"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
 #[test]
 fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
     let root = std::env::temp_dir().join(format!("sipi-pb03-projection-{}", std::process::id()));

@@ -92,3 +92,13 @@ rich-writer tests retain the provenance/noise, artifact-reference, reserved
 workflow collision, and metadata preflight coverage. The complete-output
 comparison and strict artifact field gate remain in `src/workflows.rs` and
 `tests/workflows.rs` as recorded by the stage 2 source map.
+
+The optional
+`tests/legacy_runtime.rs::pinned_pybert_sim_native_matches_metadata_and_every_logical_npz_member`
+test additionally runs pinned `pybert sim-native` and the direct CLI over the
+same PB-02 NRZ fixture. It requires the exact source commit and a clean source
+tree, then compares the complete JSON metadata and every logical NPZ member
+(name, dtype, shape, and values). Its only normalization removes the runtime
+build profile/id before comparison because Cargo integration tests execute a
+debug candidate while the pinned oracle exposes a release extension; no
+simulation payload is normalized.
