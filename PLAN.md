@@ -1012,6 +1012,15 @@ S 参数保持 no-fit，channel 仅允许 one-final FD-to-TD impulse。
 v14、v1 及其旧 evidence 保持 immutable；AS-01、AS-02、AS-05、AS-06 不变，AS-05
 继续不做 Xyce/XDM，S 参数保持 no-fit，channel 仅允许 one-final FD-to-TD impulse。
 
+**2026-09-02 PB-02 pinned-native-source corpus：** 新增
+[`pb-02-pinned-native-source-corpus.v1`](docs/baselines/pb-02-pinned-native-source-corpus.v1.yaml)，
+由 preparation commit `11bb6edd` 锁定并对 Rust candidate `d2047cd1` 与 pinned PyBERT
+`5bf6d7e` 完成两次独立 archive replay。该记录接受上游 native simulation test 所有成功配置
+及一个 CLI 可达拒绝配置，逐项检查完整 metadata、diagnostics 与所有 NPZ members；旧 PB-01/PB-02
+matrix 仍是不可变历史记录，不能再解释为当前 runtime defect。此项仅关闭该有限 source-owned corpus
+的数值证据缺口，不关闭 PB-02 migration row，不提升 AMI/IBIS/GetWave/S2P、Web/GUI、产品路由、
+性能、许可或 release。
+
 ## 19. 完成定义
 
 本计划完成时：
