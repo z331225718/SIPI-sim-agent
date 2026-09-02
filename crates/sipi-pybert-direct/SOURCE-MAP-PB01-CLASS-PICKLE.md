@@ -14,7 +14,7 @@ The reference is PyBERT commit
 | Upstream path | Blob SHA-1 | Bytes | Blob SHA-256 | Rust adaptation |
 | --- | --- | ---: | --- | --- |
 | `src/pybert/results.py` | `4d8eafa77a20ef8a3ac307f6ae8c0397deb8e907` | 5835 | `b8655be9eb47311a030adfe2ce4e54169bab502b6c6ccdde24ca182aaec08635` | `src/legacy_runtime.rs`: `PyBertData` state keys and canonical 23-item order |
-| `src/pybert/cli.py` | `4c1116007d31bcebf8db3252363eed7774c7b349` | 12806 | `3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9` | `src/bin/sipi-pybert-direct.rs`: explicit result-codec selection on the existing `sim` command |
+| `src/pybert/cli.py` | `4c1116007d31bcebf8db3252363eed7774c7b349` | 12806 | `3826b0c156166e6f04b0e9997ce64a53a53867db6d89143b7c582ca2cf4337c9` | `src/bin/sipi-pybert-direct.rs`: `sim` defaults to the source-compatible class result; the SIPI dictionary is explicit |
 | `src/pybert/models/bert.py` | `f04340c1028078175b26d7882efeeaf96f001abf` | 70571 | `145cb77bd1c864a41c307e76581beb19c6de7ec1a5764cada9df82882bbf4d10` | `src/legacy_runtime.rs`: seven plot frequency responses use magnitude dB after removing DC |
 | `src/pybert/utility/math.py` | `d9c5de2ba9d24ee2981a197e24e8c7489406f0ec` | 4721 | `a8b1df23e87ac5580940eae6c7bb539b5342e68bc1ef18fde5794c0ddb97dc42` | `src/legacy_runtime.rs`: `safe_log10` floor of `1e-20` (`-400 dB`) |
 
@@ -34,16 +34,19 @@ numeric entries are one-dimensional little-endian NumPy `float64` ndarrays.
 As in `results.py`, `tx_out` is instead a zero-dimensional NumPy object array
 whose item is `None`; it is a plot-data placeholder, not the internal native
 transmitter waveform. The seven `*_H` arrays are
-`20*log10(max(abs(rFFT[1:]), 1e-20))`; the DC bin is not serialized. The Rust
-rFFT grid length is the scoped candidate grid and is not claimed to equal
-every upstream `len_f_GHz` truncation.
+`20*log10(max(abs(H[1:]), 1e-20))`; the DC bin is not serialized. When the
+native output carries the legacy frequency/stage telemetry, the class codec
+uses that fixed grid and the disabled CTLE/DFE padded identity plot vectors,
+matching the source result shape. It otherwise falls back to the scoped Rust
+FFT presentation and is not claimed to equal every upstream `len_f_GHz`
+truncation.
 
 `LegacyResultCodecV1` and `run_legacy_sim_with_codec_v1` are the only new
 public selection surface. The class writer and pickle opcode writer remain
-private. `sim --result-format class-pickle` reaches the codec explicitly;
-the default remains the SIPI-owned dictionary, including its historical
-interleaved real/imaginary `*_H` values. The dB/removed-DC projection applies
-only to the class codec. The class path streams arrays
+private. Like upstream `pybert sim`, the CLI defaults to `class-pickle`;
+`sim --result-format sipi-dictionary` retains the SIPI-owned dictionary,
+including its historical interleaved real/imaginary `*_H` values. The
+dB/removed-DC projection applies only to the class codec. The class path streams arrays
 without a 23-array clone, enforces checked logical-payload and codec-owned
 buffer budgets, verifies the complete temporary file by SHA-256 and length,
 and publishes with a same-directory no-clobber hard link. The budget excludes
@@ -51,8 +54,8 @@ the caller-owned `SimulationOutputV1`, allocator bookkeeping, and internal
 FFT planner/scratch memory.
 
 The SIPI-owned dictionary writer and `run_legacy_sim_v1` remain unchanged for
-existing consumers. The class-compatible writer is an explicit adapter; it
-does not silently change the established default artifact schema.
+Rust callers. The CLI default changes only to mirror the source command-line
+artifact contract; callers can request the historical dictionary explicitly.
 
 ## Boundary
 

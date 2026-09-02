@@ -1,8 +1,8 @@
 # PB-01 class-pickle notice
 
 This notice covers the additive class-load-compatible result codec in
-`src/legacy_runtime.rs`, the explicit `sim --result-format class-pickle`
-adapter, and focused tests. It is subordinate to
+`src/legacy_runtime.rs`, the source-compatible default `sim` result adapter,
+and focused tests. It is subordinate to
 `NOTICE-PYBERT-PB01-DIRECT-PORT.md` and
 `NOTICE-PYBERT-LICENSE-BOUNDARY.md`.
 
@@ -20,6 +20,12 @@ claim to reproduce upstream wall-clock metadata or the upstream PyBERT
 package version. The codec migrates the pinned class-load shape and canonical
 plot arrays only; it does not claim byte identity, global numeric parity, or
 support for arbitrary pickle input.
+
+The `sipi-pybert-direct sim` CLI defaults to this class-compatible artifact to
+match `pybert sim`. `--result-format sipi-dictionary` remains an explicit
+compatibility mode for the prior SIPI-owned dictionary wire format. The public
+Rust `run_legacy_sim_v1` function retains that dictionary default, so this CLI
+compatibility change does not silently alter existing Rust callers.
 
 Python pickle loading executes referenced reducers. The codec's fixed GLOBAL
 set constrains only artifacts produced by this Rust writer; it does not make
