@@ -833,4 +833,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--matlab-trace-worker":
+        raise SystemExit(main(sys.argv[1:]))
+    if len(sys.argv) == 3 and sys.argv[1] == "--engine-worker":
+        raise SystemExit(main(sys.argv[1:]))
     raise SystemExit(main())

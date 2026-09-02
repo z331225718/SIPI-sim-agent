@@ -62,6 +62,16 @@ class V4RunnerTests(unittest.TestCase):
         self.assertEqual(len(first), 64)
         self.assertNotEqual(first, second)
 
+    def test_main_routes_matlab_trace_worker_without_reparsing_replay_args(self) -> None:
+        observed: list[Path] = []
+        original = runner._matlab_trace_worker
+        try:
+            runner._matlab_trace_worker = observed.append
+            self.assertEqual(runner.main(["--matlab-trace-worker", "trace-spec.json"]), 0)
+        finally:
+            runner._matlab_trace_worker = original
+        self.assertEqual(observed, [Path("trace-spec.json")])
+
     def test_normal_erl_sidecar_reads_raw_f64_and_rejects_escape(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
