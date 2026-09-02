@@ -423,6 +423,136 @@ print("bounded-class-load-ok")
     let _ = fs::remove_dir_all(root);
 }
 
+#[cfg(feature = "pinned-python-tests")]
+#[test]
+fn pinned_pybert_sim_matches_the_complete_class_result_shape_and_numeric_tolerance() {
+    const PINNED_PYBERT_COMMIT: &str = "5bf6d7ea0ace261891aaeb611ffc1c267e160afe";
+    let python = std::env::var_os("SIPI_PYBERT_PINNED_PYTHON")
+        .expect("pinned-python-tests requires SIPI_PYBERT_PINNED_PYTHON");
+    let oracle_cli = std::env::var_os("SIPI_PYBERT_ORACLE_CLI")
+        .expect("pinned-python-tests requires SIPI_PYBERT_ORACLE_CLI");
+    let oracle_root = PathBuf::from(
+        std::env::var_os("SIPI_PYBERT_ORACLE_ROOT")
+            .expect("pinned-python-tests requires SIPI_PYBERT_ORACLE_ROOT"),
+    );
+    let revision = Command::new("git")
+        .args(["-C"])
+        .arg(&oracle_root)
+        .args(["rev-parse", "HEAD^{commit}"])
+        .output()
+        .expect("read pinned PyBERT revision");
+    assert!(revision.status.success());
+    assert_eq!(
+        String::from_utf8(revision.stdout).unwrap().trim(),
+        PINNED_PYBERT_COMMIT
+    );
+    let source_status = Command::new("git")
+        .args(["-C"])
+        .arg(&oracle_root)
+        .args([
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            "src",
+        ])
+        .output()
+        .expect("check pinned PyBERT source custody");
+    assert!(source_status.status.success());
+    assert!(
+        source_status.stdout.is_empty(),
+        "pinned PyBERT source must be clean for an oracle run: {}",
+        String::from_utf8_lossy(&source_status.stdout)
+    );
+
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join("pb-01-legacy-nrz.yaml");
+    let root =
+        std::env::temp_dir().join(format!("sipi-pb01-source-compare-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    let oracle_result = root.join("oracle.pybert_data");
+    let candidate_result = root.join("candidate.pybert_data");
+    let oracle = Command::new(oracle_cli)
+        .arg("sim")
+        .arg(&fixture)
+        .arg("--results")
+        .arg(&oracle_result)
+        .output()
+        .unwrap();
+    assert!(
+        oracle.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&oracle.stdout),
+        String::from_utf8_lossy(&oracle.stderr)
+    );
+    let candidate = Command::new(env!("CARGO_BIN_EXE_sipi-pybert-direct"))
+        .arg("sim")
+        .arg(&fixture)
+        .arg("--results")
+        .arg(&candidate_result)
+        .output()
+        .unwrap();
+    assert!(
+        candidate.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&candidate.stdout),
+        String::from_utf8_lossy(&candidate.stderr)
+    );
+
+    const PROBE: &str = r#"
+import pickle, sys
+import numpy as np
+
+expected_names = [
+    "chnl_h", "tx_out_h", "ctle_out_h", "dfe_out_h", "chnl_s", "tx_s",
+    "ctle_s", "dfe_s", "tx_out_s", "ctle_out_s", "dfe_out_s", "chnl_p",
+    "tx_out_p", "ctle_out_p", "dfe_out_p", "chnl_H", "tx_H", "ctle_H",
+    "dfe_H", "tx_out_H", "ctle_out_H", "dfe_out_H", "tx_out",
+]
+oracle = pickle.load(open(sys.argv[1], "rb"))
+candidate = pickle.load(open(sys.argv[2], "rb"))
+for value in (oracle, candidate):
+    assert (type(value).__module__, type(value).__name__) == ("pybert.results", "PyBertData")
+oracle_arrays = oracle.the_data.arrays
+candidate_arrays = candidate.the_data.arrays
+assert list(oracle_arrays) == expected_names
+assert list(candidate_arrays) == expected_names
+for name in expected_names:
+    left, right = oracle_arrays[name], candidate_arrays[name]
+    if name == "tx_out":
+        assert left.shape == right.shape == ()
+        assert left.dtype == right.dtype == np.dtype("O")
+        assert left.item() is None and right.item() is None
+        continue
+    assert left.dtype == right.dtype == np.dtype("<f8"), name
+    assert left.shape == right.shape, name
+    delta = float(np.max(np.abs(left - right), initial=0.0))
+    scale = max(float(np.max(np.abs(left), initial=0.0)), float(np.max(np.abs(right), initial=0.0)), 1.0)
+    tolerance = 1.0e-7 + 1.0e-6 * scale
+    assert delta <= tolerance, (name, delta, tolerance)
+print("complete-class-compare-ok")
+"#;
+    let compared = Command::new(python)
+        .args(["-c", PROBE])
+        .arg(&oracle_result)
+        .arg(&candidate_result)
+        .output()
+        .unwrap();
+    assert!(
+        compared.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&compared.stdout),
+        String::from_utf8_lossy(&compared.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&compared.stdout).trim(),
+        "complete-class-compare-ok"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
 #[test]
 fn projection_covers_portable_modulation_noise_and_viterbi_fields() {
     let root = std::env::temp_dir().join(format!("sipi-pb03-projection-{}", std::process::id()));

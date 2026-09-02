@@ -65,8 +65,12 @@ fixes the pickle GLOBAL allowlist, unpickles the result as
 `pybert.results.PyBertData` and confirms `ArrayPlotData`/
 `TraitDictObject` reconstruction, then checks every numeric ndarray's exact
 type, shape, C-contiguity, and logical f64 digest plus the `tx_out` object
-scalar semantics. The fixed metadata is explicitly
-noncanonical. This is bounded class-load compatibility, not byte identity
-with Python's pickle stream, upstream numeric parity, GUI state parity, or
-global PyBERT branch parity. AMI/IBIS/DLL and other external model branches
-remain outside this codec.
+scalar semantics. A separate feature-gated oracle test requires the pinned
+source commit and a clean `src/` tree, runs its `pybert sim` command and the
+Rust CLI over the same fixture, and compares all 22 numeric plot arrays with
+their exact dtype/shape and a documented `1e-7 + 1e-6 * max(abs(values), 1)`
+tolerance; it also requires the `tx_out` object placeholder to agree. The
+fixed metadata is explicitly noncanonical. This is bounded class-load and
+scoped numeric compatibility, not byte identity with Python's pickle stream,
+GUI state parity, or global PyBERT branch parity. AMI/IBIS/DLL and other
+external model branches remain outside this codec.
