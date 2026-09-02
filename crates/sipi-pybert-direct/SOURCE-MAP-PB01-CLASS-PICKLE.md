@@ -29,11 +29,14 @@ licenses remain governed by the normal dependency inventory.
 The crate-private class codec serializes protocol 3 with root global
 `pybert.results.PyBertData`. Its state contains `the_data`, `date_created`, and
 `version`; `the_data` contains an `ArrayPlotData`, whose `arrays` contains a
-`TraitDictObject` with the pinned 23 canonical item names. Every array is
-encoded as a one-dimensional little-endian NumPy `float64` ndarray. The seven
-`*_H` arrays are `20*log10(max(abs(rFFT[1:]), 1e-20))`; the DC bin is not
-serialized. The Rust rFFT grid length is the scoped candidate grid and is not
-claimed to equal every upstream `len_f_GHz` truncation.
+`TraitDictObject` with the pinned 23 canonical item names. The 22 plotted
+numeric entries are one-dimensional little-endian NumPy `float64` ndarrays.
+As in `results.py`, `tx_out` is instead a zero-dimensional NumPy object array
+whose item is `None`; it is a plot-data placeholder, not the internal native
+transmitter waveform. The seven `*_H` arrays are
+`20*log10(max(abs(rFFT[1:]), 1e-20))`; the DC bin is not serialized. The Rust
+rFFT grid length is the scoped candidate grid and is not claimed to equal
+every upstream `len_f_GHz` truncation.
 
 `LegacyResultCodecV1` and `run_legacy_sim_with_codec_v1` are the only new
 public selection surface. The class writer and pickle opcode writer remain
@@ -53,12 +56,13 @@ does not silently change the established default artifact schema.
 
 ## Boundary
 
-Focused Rust tests bind frequency values, complete artifact bytes, no-clobber
-publication, and canonical key order. A feature-gated pinned-environment test
+Focused Rust tests bind frequency values, no-clobber publication, and canonical
+key order. A feature-gated pinned-environment test
 fixes the pickle GLOBAL allowlist, unpickles the result as
 `pybert.results.PyBertData` and confirms `ArrayPlotData`/
-`TraitDictObject` reconstruction, then checks every ndarray's exact type,
-shape, C-contiguity, and logical f64 digest. The fixed metadata is explicitly
+`TraitDictObject` reconstruction, then checks every numeric ndarray's exact
+type, shape, C-contiguity, and logical f64 digest plus the `tx_out` object
+scalar semantics. The fixed metadata is explicitly
 noncanonical. This is bounded class-load compatibility, not byte identity
 with Python's pickle stream, upstream numeric parity, GUI state parity, or
 global PyBERT branch parity. AMI/IBIS/DLL and other external model branches

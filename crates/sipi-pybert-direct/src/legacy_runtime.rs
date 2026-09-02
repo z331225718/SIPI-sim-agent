@@ -1245,7 +1245,16 @@ fn write_legacy_trait_dict<W: Write>(
     let memo = pickle.memo()?;
     arrays.visit(response_spectrum_db, |name, values| {
         pickle.bin_unicode(name)?;
-        pickle.numpy_f64_array(values)?;
+        if name == "tx_out" {
+            // `PyBertData` captures the plot-data entry, not the internal
+            // transmitter waveform.  The legacy Python `sim` path leaves
+            // that plot entry as a zero-dimensional object array containing
+            // None.  Publishing the native `tx_waveform_v` here made an
+            // otherwise class-loadable result observably incompatible.
+            pickle.numpy_object_scalar_none()?;
+        } else {
+            pickle.numpy_f64_array(values)?;
+        }
         pickle.set_item()
     })?;
 
@@ -1338,6 +1347,10 @@ impl<W: Write> LegacyClassPickleWriter<W> {
         self.byte(b'}')
     }
 
+    fn empty_list(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b']')
+    }
+
     fn mark(&mut self) -> Result<(), LegacyRuntimeError> {
         self.byte(b'(')
     }
@@ -1391,6 +1404,14 @@ impl<W: Write> LegacyClassPickleWriter<W> {
         self.byte(0x88)
     }
 
+    fn new_false(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(0x89)
+    }
+
+    fn none(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'N')
+    }
+
     fn memo(&mut self) -> Result<u8, LegacyRuntimeError> {
         let memo = u8::try_from(self.next_memo).map_err(|_| {
             LegacyRuntimeError::ResourceLimit("class pickle memo table overflow".into())
@@ -1430,6 +1451,10 @@ impl<W: Write> LegacyClassPickleWriter<W> {
 
     fn set_item(&mut self) -> Result<(), LegacyRuntimeError> {
         self.byte(b's')
+    }
+
+    fn append_item(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.byte(b'a')
     }
 
     fn set_items(&mut self) -> Result<(), LegacyRuntimeError> {
@@ -1502,6 +1527,48 @@ impl<W: Write> LegacyClassPickleWriter<W> {
         self.build()?;
         self.byte(0x89)?;
         self.bin_f64_values(values)?;
+        self.tuple()?;
+        self.build()
+    }
+
+    /// Encode the exact scalar object slot that PyBERT's `PyBertData` saves
+    /// for `tx_out`: a NumPy `dtype=object`, zero-dimensional ndarray whose
+    /// only item is Python `None`.  It is intentionally not a waveform.
+    fn numpy_object_scalar_none(&mut self) -> Result<(), LegacyRuntimeError> {
+        self.global("numpy._core.multiarray", "_reconstruct")?;
+        self.global("numpy", "ndarray")?;
+        self.byte(b'K')?;
+        self.u8(0)?;
+        self.tuple1()?;
+        self.short_bin_bytes(b"b")?;
+        self.tuple3()?;
+        self.reduce()?;
+        self.mark()?;
+        self.pickle_int(1)?;
+        self.empty_tuple()?;
+        self.global("numpy", "dtype")?;
+        self.bin_unicode("O8")?;
+        self.new_false()?;
+        self.new_true()?;
+        self.tuple3()?;
+        self.reduce()?;
+        self.mark()?;
+        self.pickle_int(3)?;
+        self.bin_unicode("|")?;
+        self.none()?;
+        self.none()?;
+        self.none()?;
+        self.byte(b'J')?;
+        self.i32(-1)?;
+        self.byte(b'J')?;
+        self.i32(-1)?;
+        self.pickle_int(63)?;
+        self.tuple()?;
+        self.build()?;
+        self.new_false()?;
+        self.empty_list()?;
+        self.none()?;
+        self.append_item()?;
         self.tuple()?;
         self.build()
     }
