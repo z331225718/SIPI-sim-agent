@@ -78,6 +78,13 @@ fn native_fixture() -> Value {
     .expect("parse base native fixture")
 }
 
+#[test]
+fn pinned_native_linear_case_matches_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+    run_and_compare("linear", native_fixture());
+}
+
 fn run_and_compare(case: &str, input: Value) {
     let root = std::env::temp_dir().join(format!("sipi-pb02-native-{case}-{}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
@@ -279,6 +286,30 @@ fn pinned_native_metallic_line_case_matches_the_complete_artifact() {
         }
     });
     run_and_compare("metallic-line", input);
+
+    let mut windowed = native_fixture();
+    windowed["channel"] = json!({
+        "kind": "metallic_line",
+        "value": {
+            "sampleInterval": 1.0e-12,
+            "lengthM": 0.5,
+            "skinEffectResistanceOhmPerM": 0.5,
+            "crossoverAngularFrequencyRadPerS": 1.0e7,
+            "dcResistanceOhmPerM": 0.1876,
+            "characteristicImpedance": 100.0,
+            "propagationVelocityMPerS": 0.67 * 3.0e8,
+            "lossTangent": 0.02,
+            "sourceImpedance": 100.0,
+            "sourceCapacitanceF": 0.2e-12,
+            "loadImpedance": 100.0,
+            "loadCapacitanceF": 0.4e-12,
+            "applyRaisedCosineWindow": true,
+            "frequencyStepHz": null,
+            "frequencyMaxHz": null,
+            "impulseLength": null
+        }
+    });
+    run_and_compare("metallic-line-windowed", windowed);
 }
 
 #[test]
