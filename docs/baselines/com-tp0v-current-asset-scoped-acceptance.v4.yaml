@@ -1,0 +1,106 @@
+schema: sipi.com.tp0v-current-asset-scoped-acceptance-prep.v4
+status: preparation_only_pending_candidate_gate_commit
+formal_record_absent: true
+base_v3_manifest:
+  path: docs/baselines/com-tp0v-current-asset-scoped-acceptance.v3.yaml
+  sha256: 327dbdd80aba0f8471e10736c0bd68e46c030daa03c31331f9b073831b33043b
+upstream:
+  commit: 5272ffe74702cd585054d975559b06f8afae7b6e
+  tree: 7094ab6e84989b218730c52432c70da10261f8ea
+  archive_sha256: a7bbe0e019d5ce4d7b47246b6f0daccdd3cfc8f27a471b03eb50e8c751082ccf
+  archive_bytes: 43694080
+  workbook: {path: "matlab_src/config_sheets_100G/config_com_ieee8023_93a=3ck_SA _TP0V_08_17_2022.xlsx", bytes: 67151, sha256: 54562fa2bbe856f1fb6e96b7c1c873d2b399555b1fb38e50cd6f4ad3ddc69f0a}
+  assets:
+    - {role: THRU, path: fixtures/synthetic/thru_10db_at_26p56ghz.s4p, bytes: 6393177, sha256: fcbcce086dbae6bbb9a1f8ca5df775073ebb6303f80a9f062caf1f2ab5607361, header: "# Hz S RI R 50.0", port_order: [1, 2, 3, 4]}
+    - {role: FEXT, path: fixtures/synthetic/fext_m40db_at_26p56ghz.s4p, bytes: 6393140, sha256: cc5968bacd5bd40d6ccd7db4927dbb1dd3f20d82f4d3ad5a3193ad86e0e9ca04, header: "# Hz S RI R 50.0", port_order: [1, 2, 3, 4]}
+    - {role: NEXT, path: fixtures/synthetic/next_m40db_at_26p56ghz.s4p, bytes: 6392860, sha256: 882819542f43b8fb5f174c7e984b418ceb0f56e068654c9be362a84547b93e65, header: "# Hz S RI R 50.0", port_order: [1, 2, 3, 4]}
+candidate:
+  commit: null
+  tree: null
+  archive_sha256: null
+  archive_bytes: null
+candidate_gate_parent:
+  commit: bd9a26195a6c204e31b2601b138da66e7ecad150
+  tree: b12a799cb97a065b9f6d896ace4c40d7a3b35bac
+matlab:
+  required_release: R2024b
+  required_release_raw: '2024b'
+  executable_mode: explicit_only_no_path_fallback
+  semantic_run: uninstrumented
+  trace_run: instrumented_diagnostic_only
+  start_flags: ['-noFigureWindows', '-singleCompThread']
+  mw_disable_connector: '1'
+  isolated_preference_dir: true
+rust:
+  route: public_root_sipi_com_run
+  build_feature: com-direct-integration
+  diagnostic_sidecar_feature: normal-erl-diagnostic-sidecar
+  diagnostic_sidecar_schema: sipi.com.normal-erl-array-sidecar.v1
+  executable_mode: explicit_only_no_path_fallback
+replays: [matlab-01, matlab-02, rust-01, rust-02]
+isolation:
+  distinct_archive_root: true
+  distinct_build_root: true
+  distinct_output_root: true
+  distinct_nonce: true
+  internal_exact_repeat_count: 2
+comparison:
+  key: [workbook, case_index, vector_name, vector_index]
+  scalar_surface:
+    names: [COM_dB, CTLE_DC_gain_dB, ERL, FOM, ICN_mV, IL_dB_channel_only_at_Fnq, Peak_ISI_XTK_and_Noise_interference_at_BER_mV, VEC_dB, VEO_mV, fitted_IL_dB_at_Fnq, g_DC_HP, itick]
+    selected_case_index: 0
+    package_testcase_index: 0
+    case_count: 1
+    finite_absolute_tolerance: 1.0e-9
+    infinity: same_sign_same_position
+    nan: rejected
+  vectors:
+    names: [time_s, impedance_ohm, ptdr, gated]
+    selected_case_index: 0
+    package_testcase_index: 0
+    selected_port: 1
+    source: normal_erl_diagnostic_sidecar_or_archive_local_matlab_trace
+    case_to_port:
+      - {case_index: 0, port: 1, package_testcase_index: 0}
+    elementwise: true
+    shape_order_count_strict: true
+    first_sample_strict: true
+    finite_strict: true
+    time_strictly_monotonic: true
+    tolerances:
+      time_s: {unit: s, absolute: 5.0e-24, relative: 0.0}
+      impedance_ohm: {unit: ohm, absolute: 2.0e-12, relative: 2.0e-14}
+      ptdr: {unit: linear, absolute: 5.0e-17, relative: 2.0e-14}
+      gated: {unit: linear, absolute: 5.0e-17, relative: 2.0e-14}
+    prohibited_transforms: [alignment, resampling, interpolation, truncation, delay_correction]
+  internal_repeat: {exact_f64: true, count: 2}
+cache_bridge:
+  xlsx_to_mat: exact_shape_row_column_kind_value
+  matlab_must_reload_produced_mat: true
+d3_policy:
+  status: not_evaluated_configuration_disables_tdiln
+  selected_configs_compute_tdiln: 0
+  global_d3_enabled: true
+performance:
+  required: true
+  rule: each_case_rust_wall_clock_s_strictly_less_than_matlab_wall_clock_s
+  instrumented_trace_included: false
+  semantic_timing_source: un-instrumented_semantic_invocation_only
+  diagnostic_trace_timing_recorded: true
+formal_paths_absent:
+  - docs/baselines/com-tp0v-current-asset-r2024b-matlab-01.v4.json
+  - docs/baselines/com-tp0v-current-asset-r2024b-matlab-02.v4.json
+  - docs/baselines/com-tp0v-current-asset-r2024b-rust-01.v4.json
+  - docs/baselines/com-tp0v-current-asset-r2024b-rust-02.v4.json
+  - docs/baselines/com-tp0v-current-asset-r2024b-aggregate.v4.json
+tools:
+  runner: {path: tools/run_com_tp0v_r2024b_v4_replay.py, sha256: 538dcde0bbcf749fd7c16ea4efde0ae9f1764d6d14da270bd4fb96c1ad383c78}
+  aggregate: {path: tools/aggregate_com_tp0v_r2024b_v4_replay.py, sha256: 12c7f875a4b679001e24516d8472a17083fb2540ac43e485f8c8a60ff3aaad65}
+  verifier: {path: tools/verify_com_tp0v_r2024b_v4_prep.py, sha256: 707afddbb30d0d2e5a46c113f3c27a2fe582fa90604d702d5c979a53a335bfba}
+  tests: {path: tools/test_verify_com_tp0v_r2024b_v4_prep.py, sha256: d37defea83913333551c574d38f4565ba62f5c2df3407babc1954a91be2a85e0}
+  runner_tests: {path: tools/test_run_com_tp0v_r2024b_v4_replay.py, sha256: a0e0c14c23b9822e16905c9b4a922ffb110c71d0ddb4f4d5e8db491df1f4e4bc}
+  aggregate_tests: {path: tools/test_aggregate_com_tp0v_r2024b_v4_replay.py, sha256: 057a4abacceca81feb8445a2b2aa0c2c908c34815c1a811878d5e3c5a8791679}
+  trace_support: {path: tools/run_com_normal_erl_trace_diagnostic.py, sha256: 889b70aa16e8c83569b159346869e065601ff14ec4fd75033e1fed14908ded2a}
+  trace_wrapper: {path: tools/sipi_com_normal_erl_trace_run_v1.m, sha256: 5132882ecc8c90477653e80defd75933782df953893f2d5de1058c58beea6f11}
+  trace_sink: {path: tools/sipi_com_normal_erl_trace_sink_v1.m, sha256: a3922fad54a69f7bbb6856be9c39b9588c91690d7dc21ca29879c0eb4eb683a1}
+  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v4-prep.md, sha256: b9ce37bfdf8844d50e40b7b49657de47e32e7a4adf1928717d26ecbd1b81c766}
