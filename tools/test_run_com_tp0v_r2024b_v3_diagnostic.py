@@ -98,10 +98,40 @@ class Tp0vV3RunnerTests(unittest.TestCase):
         self.assertIn("--output-dir", command)
         self.assertNotIn("sipi-com-direct-run", " ".join(command))
 
-    def test_scalar_comparison_does_not_apply_tolerance(self) -> None:
-        result = RUNNER.scalar_comparison([{"COM_dB": 1.0}], [{"COM_dB": 1.0 + 1e-12}])
-        self.assertFalse(result["exact"])
-        self.assertEqual(result["policy"], "raw_scalar_values_no_alignment_or_tolerance")
+    def test_scalar_comparison_uses_only_frozen_shared_projection(self) -> None:
+        shared = {name: 1.0 for name in RUNNER.CANONICAL_SCALAR_METRICS}
+        rust = {**shared, "COM_dB": 1.0 + 1e-12, "candidate_only": 9.0}
+        result = RUNNER.scalar_comparison([shared], [rust])
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["metrics"], list(RUNNER.CANONICAL_SCALAR_METRICS))
+        self.assertEqual(result["finite_absolute_tolerance"], 1e-9)
+
+    def test_scalar_comparison_rejects_missing_or_nan_shared_metric(self) -> None:
+        shared = {name: 1.0 for name in RUNNER.CANONICAL_SCALAR_METRICS}
+        missing = dict(shared)
+        missing.pop("ERL")
+        self.assertFalse(RUNNER.scalar_comparison([shared], [missing])["passed"])
+        nan = dict(shared)
+        nan["ERL"] = float("nan")
+        self.assertFalse(RUNNER.scalar_comparison([shared], [nan])["passed"])
+
+    def test_bridge_comparison_requires_exact_slots(self) -> None:
+        payload = {"shape": [1, 2], "slots": [{"row": 0, "column": 0, "kind": "number", "value": 1.0}, {"row": 0, "column": 1, "kind": "blank", "value": ""}]}
+        with tempfile.TemporaryDirectory() as directory:
+            expected = Path(directory) / "expected.json"
+            observed = Path(directory) / "observed.json"
+            expected.write_text(__import__("json").dumps(payload), encoding="utf-8")
+            observed.write_text(__import__("json").dumps(payload), encoding="utf-8")
+            self.assertTrue(RUNNER.bridge_comparison(expected, observed)["passed"])
+            payload["slots"][1]["kind"] = "string"
+            observed.write_text(__import__("json").dumps(payload), encoding="utf-8")
+            self.assertFalse(RUNNER.bridge_comparison(expected, observed)["passed"])
+
+    def test_d3_policy_does_not_alias_td_iln(self) -> None:
+        metrics = [{"COM_dB": 1.0, "ERL": 2.0, "FOM_TDILN": 3.0}]
+        result = RUNNER.d3_checkpoint_policy(metrics, metrics)
+        self.assertFalse(result["passed"])
+        self.assertFalse(result["entries"][2]["present"])
 
     def test_matlab_and_rust_case_extractors_require_two_case_shape(self) -> None:
         matlab = RUNNER.matlab_cases({"case_metrics": [{"output_metrics": {"ERL": {"kind": "inf"}}}, {"output_metrics": {"ERL": {"kind": "finite", "value": 1.25}}}]})

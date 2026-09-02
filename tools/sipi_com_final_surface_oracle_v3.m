@@ -28,6 +28,7 @@ write_stage(output_dir, nonce, 'oracle_entered');
 started_at = datetime('now', 'TimeZone', 'UTC', 'Format', "yyyy-MM-dd'T'HH:mm:ss'Z'");
 run_timer = tic;
 try
+    write_parameter_bridge(config_path, output_dir);
     % Keep one output local to MATLAB.  Calling the pinned core with no
     % output makes it display its full result graph, which is both unrelated
     % to the scalar contract and unsafe for a noninteractive Engine session.
@@ -58,6 +59,43 @@ catch ME
     rethrow(ME);
 end
 close all force;
+end
+
+function write_parameter_bridge(config_path, output_dir)
+% Confirm the exact cell matrix MATLAB will hand to the pinned core.  This is
+% intentionally a cache-bridge receipt, not a serialized result graph.
+loaded = load(config_path, 'parameter');
+if ~isfield(loaded, 'parameter') || ~iscell(loaded.parameter)
+    error('sipi_com_final_surface_oracle_v3:ParameterBridge', ...
+        'MAT cache must provide a cell parameter matrix.');
+end
+parameter = loaded.parameter;
+[rows, columns] = size(parameter);
+slots = repmat(struct('row', 0, 'column', 0, 'kind', '', 'value', []), 1, rows * columns);
+slot_index = 1;
+for row = 1:rows
+    for column = 1:columns
+        raw = parameter{row, column};
+        slots(slot_index).row = double(row - 1);
+        slots(slot_index).column = double(column - 1);
+        if isempty(raw)
+            slots(slot_index).kind = 'blank';
+            slots(slot_index).value = '';
+        elseif isnumeric(raw) && isscalar(raw) && isfinite(raw)
+            slots(slot_index).kind = 'number';
+            slots(slot_index).value = double(raw);
+        elseif ischar(raw)
+            slots(slot_index).kind = 'string';
+            slots(slot_index).value = raw;
+        else
+            error('sipi_com_final_surface_oracle_v3:ParameterBridge', ...
+                'MAT cache contains an unsupported parameter cell.');
+        end
+        slot_index = slot_index + 1;
+    end
+end
+bridge = struct('shape', [double(rows), double(columns)], 'slots', slots);
+write_atomic_text(fullfile(output_dir, 'parameter-bridge.json'), jsonencode(bridge));
 end
 
 function metrics = final_scalar_metrics(results)

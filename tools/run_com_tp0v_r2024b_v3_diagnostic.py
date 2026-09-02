@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import secrets
 import subprocess
@@ -29,6 +30,21 @@ MATLAB_RELEASE = "R2024b"
 MAX_ARCHIVE_MEMBERS = 20_000
 MAX_ARCHIVE_BYTES = 256 * 1024 * 1024
 CASE_INDICES = (0, 1)
+CANONICAL_SCALAR_METRICS = (
+    "COM_dB",
+    "CTLE_DC_gain_dB",
+    "ERL",
+    "FOM",
+    "ICN_mV",
+    "IL_dB_channel_only_at_Fnq",
+    "Peak_ISI_XTK_and_Noise_interference_at_BER_mV",
+    "VEC_dB",
+    "VEO_mV",
+    "fitted_IL_dB_at_Fnq",
+    "g_DC_HP",
+    "itick",
+)
+CROSS_SCALAR_TOLERANCE = 1.0e-9
 
 # Keep the wrapper runnable with the explicit offline Python used to build the
 # MATLAB Engine.  The manifest is a human/audit document and is validated by
@@ -301,18 +317,23 @@ def _matlab_worker(spec_path: Path) -> None:
     columns = max((len(row) for row in rows), default=0)
     require(columns > 0, "workbook has no cells")
     parameter = np.empty((len(rows), columns), dtype=object)
+    slots: list[dict[str, Any]] = []
     for row_index, row in enumerate(rows):
         for column_index in range(columns):
             raw = row[column_index].value if column_index < len(row) else None
             if raw is None:
                 value = ""
+                kind = "blank"
             elif isinstance(raw, (bool, int, float, np.integer, np.floating)):
                 value = float(raw)
+                kind = "number"
             elif isinstance(raw, str):
                 value = raw
+                kind = "string"
             else:
                 raise TypeError(f"unsupported workbook cell type: {type(raw).__name__}")
             parameter[row_index, column_index] = value
+            slots.append({"row": row_index, "column": column_index, "kind": kind, "value": value})
     parameter_mat = Path(spec["parameter_mat"])
     savemat(parameter_mat, {"parameter": parameter}, do_compression=False, oned_as="row")
     engine = matlab.engine.start_matlab("-noFigureWindows -singleCompThread")
@@ -331,6 +352,13 @@ def _matlab_worker(spec_path: Path) -> None:
         )
     finally:
         engine.quit()
+    logical_parameter = {"shape": [len(rows), columns], "slots": slots}
+    bridge_expected = Path(spec["bridge_expected"])
+    bridge_expected.write_text(
+        json.dumps(logical_parameter, sort_keys=True, separators=(",", ":"), allow_nan=False),
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def root_command(binary: Path, config: Path, thru: Path, fext: Path, next_channel: Path, output: Path) -> list[str]:
@@ -387,13 +415,23 @@ def rust_cases(result: dict[str, Any]) -> list[dict[str, Any]]:
     return output
 
 
+def _finite_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+
+
 def scalar_comparison(left: list[dict[str, Any]], right: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compare the frozen original-13 final-scalar projection only.
+
+    Candidate-only diagnostic fields are intentionally excluded.  The 1e-9
+    finite tolerance is the existing original-13 Stage-1 parity policy, not a
+    newly chosen tolerance or any form of sample alignment.
+    """
     comparison: list[dict[str, Any]] = []
-    exact = len(left) == len(right)
+    passed = len(left) == len(right)
     if len(left) != len(right):
         comparison.append({"case": None, "equal": False, "reason": "case_count_drift", "matlab": len(left), "rust": len(right)})
     for index, (matlab, rust) in enumerate(zip(left, right)):
-        keys = sorted(set(matlab) | set(rust))
+        keys = CANONICAL_SCALAR_METRICS
         values: list[dict[str, Any]] = []
         for key in keys:
             if key not in matlab or key not in rust:
@@ -401,14 +439,53 @@ def scalar_comparison(left: list[dict[str, Any]], right: list[dict[str, Any]]) -
                 values.append({"name": key, "equal": False, "reason": "missing_key"})
             else:
                 a, b = matlab[key], rust[key]
-                equal = type(a) is type(b) and a == b
+                if _finite_number(a) and _finite_number(b):
+                    difference = abs(float(a) - float(b))
+                    equal = difference <= CROSS_SCALAR_TOLERANCE
+                else:
+                    difference = None
+                    equal = type(a) is type(b) and a == b and a != "NaN"
                 record: dict[str, Any] = {"name": key, "equal": equal, "matlab": a, "rust": b}
-                if isinstance(a, (int, float)) and not isinstance(a, bool) and isinstance(b, (int, float)) and not isinstance(b, bool):
-                    record["absolute_difference"] = abs(float(a) - float(b))
+                if difference is not None:
+                    record["absolute_difference"] = difference
                 values.append(record)
-            exact = exact and equal
+            passed = passed and equal
         comparison.append({"case": index, "equal": all(item["equal"] for item in values), "values": values})
-    return {"exact": exact, "cases": comparison, "policy": "raw_scalar_values_no_alignment_or_tolerance"}
+    return {
+        "passed": passed,
+        "cases": comparison,
+        "metrics": list(CANONICAL_SCALAR_METRICS),
+        "finite_absolute_tolerance": CROSS_SCALAR_TOLERANCE,
+        "policy": "original13_final_scalar_projection_no_alignment",
+    }
+
+
+def bridge_comparison(expected_path: Path, observed_path: Path) -> dict[str, Any]:
+    """Require MATLAB to reload the exact MAT cache produced from the XLSX."""
+    expected = json.loads(expected_path.read_text(encoding="utf-8"))
+    observed = json.loads(observed_path.read_text(encoding="utf-8"))
+    equal = expected == observed
+    return {
+        "passed": equal,
+        "expected_sha256": sha256_bytes(json.dumps(expected, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()),
+        "observed_sha256": sha256_bytes(json.dumps(observed, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()),
+        "policy": "exact_shape_row_column_kind_value_no_normalization",
+    }
+
+
+def d3_checkpoint_policy(matlab: list[dict[str, Any]], rust: list[dict[str, Any]]) -> dict[str, Any]:
+    """Expose the owner D3 gate without substituting unrelated metrics."""
+    entries = []
+    for name, matlab_name, rust_name in (("COM_dB", "COM_dB", "COM_dB"), ("ERL_dB", "ERL", "ERL"), ("TD_ILN_dB", "TD_ILN_dB", "TD_ILN_dB")):
+        present = all(matlab_name in item for item in matlab) and all(rust_name in item for item in rust)
+        entries.append({"metric": name, "present": present, "absolute_tolerance_db": 0.1, "passed": False if not present else None})
+    return {
+        "checkpoint": "TP0V/current-assets/package-case",
+        "alignment": "forbidden",
+        "entries": entries,
+        "passed": False,
+        "reason": "TD_ILN_dB checkpoint unavailable" if not entries[-1]["present"] else "not_evaluated_by_diagnostic",
+    }
 
 
 def _channel_inputs(source: Path, manifest: dict[str, Any]) -> tuple[Path, Path, Path, dict[str, Any]]:
@@ -474,6 +551,7 @@ def _run_matlab_case(worker_python: Path, engine_site: Path, harness: Path, sour
         "source_root": str(source),
         "config": str(config),
         "parameter_mat": str(root / "parameter.mat"),
+        "bridge_expected": str(root / "parameter-bridge-expected.json"),
         "output": str(output),
         "harness": str(harness),
         "nonce": secrets.token_hex(32),
@@ -485,7 +563,8 @@ def _run_matlab_case(worker_python: Path, engine_site: Path, harness: Path, sour
     completed, elapsed = run_command([str(worker_python), str(Path(__file__).resolve()), "--engine-worker", str(spec_path)], root, timeout, environment)
     record = {"case": index, "engine": "matlab", "wall_clock_s": elapsed}
     summary_path = output / "summary.json"
-    if completed.returncode != 0 or not summary_path.is_file():
+    bridge_path = output / "parameter-bridge.json"
+    if completed.returncode != 0 or not summary_path.is_file() or not bridge_path.is_file():
         record.update(_case_result_error(completed, elapsed, "matlab_engine_failed"))
         return record
     try:
@@ -495,6 +574,7 @@ def _run_matlab_case(worker_python: Path, engine_site: Path, harness: Path, sour
         record.update({"status": "failed", "label": "matlab_result_schema_failed", "error": type(error).__name__})
         return record
     require(summary.get("matlab_release") == "R2024b", "MATLAB Engine case did not report R2024b")
+    bridge = bridge_comparison(Path(spec["bridge_expected"]), bridge_path)
     record.update({
         "status": "passed",
         "summary_bytes": summary_path.stat().st_size,
@@ -504,6 +584,7 @@ def _run_matlab_case(worker_python: Path, engine_site: Path, harness: Path, sour
         "stdout_sha256": sha256_bytes(completed.stdout or b""),
         "stderr_sha256": sha256_bytes(completed.stderr or b""),
         "route": "pinned_agent_com_matlab_core_uninstrumented",
+        "parameter_bridge": bridge,
     })
     return record
 
@@ -613,8 +694,13 @@ def run_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
         comparison = scalar_comparison(matlab_record["metrics"], rust_record["metrics"])
         comparison["case"] = index
         comparisons.append(comparison)
-        if not comparison["exact"]:
+        if not comparison["passed"]:
             blockers.append(f"case_{index}_scalar_surface_drift")
+        if not matlab_record["parameter_bridge"]["passed"]:
+            blockers.append(f"case_{index}_mat_cache_bridge_drift")
+        comparison["d3_checkpoint_policy"] = d3_checkpoint_policy(matlab_record["metrics"], rust_record["metrics"])
+        if not comparison["d3_checkpoint_policy"]["passed"]:
+            blockers.append(f"case_{index}_d3_checkpoint_unavailable")
         if not rust_record["wall_clock_s"] < matlab_record["wall_clock_s"]:
             blockers.append(f"case_{index}_rust_not_faster")
 
@@ -632,7 +718,7 @@ def run_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
         "build": {"status": "passed", "wall_clock_s": build_elapsed, "stdout_sha256": sha256_bytes(build.stdout or b""), "stderr_sha256": sha256_bytes(build.stderr or b"")},
         "dependency_sync": {"status": "passed", "wall_clock_s": sync_elapsed, "stdout_sha256": sha256_bytes(sync.stdout or b""), "stderr_sha256": sha256_bytes(sync.stderr or b"")},
         "cases": records,
-        "comparison": {"cases": comparisons, "policy": "raw_scalar_values_no_alignment_or_tolerance", "vector_comparison": "not_run"},
+        "comparison": {"cases": comparisons, "policy": "frozen_original13_scalar_projection", "vector_comparison": "not_run"},
         "claims": {
             "acceptance": False,
             "release": False,

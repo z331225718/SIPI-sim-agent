@@ -1,5 +1,5 @@
 schema: sipi.com.tp0v-current-asset-scoped-acceptance-prep.v3
-status: candidate_bound_pending_four_replays
+status: preparation_only_pending_clean_candidate_and_harness_commit
 formal_record_absent: true
 upstream:
   commit: 5272ffe74702cd585054d975559b06f8afae7b6e
@@ -19,12 +19,25 @@ matlab:
   trace_run: instrumented_diagnostic_only
   start_flags: ['-batch']
   mw_disable_connector: '1'
-candidate: {commit: 9e8ca698beccf0561683f89649b5ec0d2441b379, tree: f01db873646763f02baf51561ab8287e10eb0869, archive_sha256: 6524c1c894657e9efd0e242fe812ffe4c8e34d671e01ba12e2ea8ccaa3f07f54, archive_bytes: 61880320}
+candidate: {commit: null, tree: null, archive_sha256: null, archive_bytes: null}
 replays: [matlab-01, matlab-02, rust-01, rust-02]
 isolation: [distinct_archive_root, distinct_build_root, distinct_output_root, distinct_nonce]
 comparison:
   key: [workbook, case, port, checkpoint]
-  scalar_surface_count: 21
+  scalar_surface:
+    names: [COM_dB, CTLE_DC_gain_dB, ERL, FOM, ICN_mV, IL_dB_channel_only_at_Fnq, Peak_ISI_XTK_and_Noise_interference_at_BER_mV, VEC_dB, VEO_mV, fitted_IL_dB_at_Fnq, g_DC_HP, itick]
+    finite_absolute_tolerance: 1.0e-09
+    infinity: same_sign_same_position
+    nan: rejected
+    candidate_extensions: diagnostic_only_excluded_from_matlab_parity
+  d3_policy:
+    metrics: [COM_dB, ERL_dB, TD_ILN_dB]
+    finite_absolute_tolerance_db: 0.1
+    td_iln_aliases_forbidden: [FOM_TDILN, ICN_mV]
+    unavailable_checkpoint: blocked
+  cache_bridge:
+    xlsx_to_mat: exact_shape_row_column_kind_value
+    matlab_must_reload_produced_mat: true
   vectors: [time_s, impedance_ohm, ptdr, gated]
   prohibited: [align, interpolate, resample, truncate, delay_correction]
   rust_repeat: exact_f64
@@ -40,5 +53,7 @@ formal_paths_absent:
 tools:
   runner: {path: tools/run_com_tp0v_current_asset_v3.py, sha256: f3c145b803be39bc9936d386e1452ef534229fee9327dea9cfb9a917a203c382}
   aggregate: {path: tools/aggregate_com_tp0v_current_asset_v3.py, sha256: dc25a5e87ebd2f6806e1fb72d85c18ded5dac00d64a352fa3dbea17a9c08eb7d}
-  verifier: {path: tools/verify_com_tp0v_current_asset_v3.py, sha256: ed42c73a2197934dab924b378b81659bb343f7e253bc6f531c85d38dd87ed1c8}
-  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v3-prep.md, sha256: ce6e31d9e6cf1ffd96d016e4c85df9877532fd41da668ae15cff01f029ffe4fb}
+  verifier: {path: tools/verify_com_tp0v_current_asset_v3.py, sha256: 566b07cd36ac60df3db4ac872ca5d604f84c9d532482a8853730f64648f537ad}
+  diagnostic: {path: tools/run_com_tp0v_r2024b_v3_diagnostic.py, sha256: ea89f85c13dcc0ae6865be025a41013459c342cfdb06ec44f02f6b206854afcc}
+  matlab_harness: {path: tools/sipi_com_final_surface_oracle_v3.m, sha256: 8691d594027ff610cef2db491b44d4cdf6088935a226b123d0f9cb95da1d6e9d}
+  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v3-prep.md, sha256: 2686119c5d7e0c711844dca9ea1129e1f05c78673cf2ba1a3c73ce782963160b}
