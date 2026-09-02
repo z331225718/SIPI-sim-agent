@@ -29,6 +29,12 @@ sampling configuration.
 The ISI and PAM4-FEC cases retain the source test's typed DFE and Viterbi
 controls, including the five-sample ISI impulse and bounded sixteen-state
 trellis.
+The additive-noise cases retain the source's 32-sample host-provided noise,
+both before and after the analytic CTLE. The metallic-line case uses the
+source's analytic transmission-line parameters and native frequency grid.
+The pre-DFE statistical-eye case combines the source's DFE and single-contour
+eye controls, checking that the published complete artifact retains that
+source-owned stage ordering.
 
 The CTLE case has only the source test's analytic controls; it intentionally
 does not use the historical local `impulseResponseVPerV` extension. The jitter

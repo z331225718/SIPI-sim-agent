@@ -454,7 +454,8 @@ pub fn run_sim_native_json(
     output_dir: &Path,
 ) -> Result<DirectRunReport, DirectRunError> {
     let input = strict_simulation_input_json(input_json)?;
-    let output = native_cli_output(simulate_native_v1(&upstream_native_input(input.clone()))?);
+    let input = upstream_native_input(input);
+    let output = native_cli_output(simulate_native_v1(&input)?);
     write_upstream_native_cli_artifacts(
         input,
         input_file,
@@ -474,6 +475,16 @@ pub fn run_sim_native_json(
 fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
     output.arrays.remove("tx_impulse_v_per_v");
     output.metrics.remove("effective_prbs_seed");
+    output.metrics.remove("effective_noise_seed");
+    output.metrics.remove("random_noise_sample_count");
+    if let Some(random_noise) = output.arrays.remove("random_noise_v") {
+        // The SIPI typed leaf retains the materialized host waveform as a
+        // separate provenance array. The pinned native CLI instead publishes
+        // that unfiltered waveform under `additive_noise_v`.
+        output
+            .arrays
+            .insert("additive_noise_v".into(), random_noise);
+    }
     output
 }
 

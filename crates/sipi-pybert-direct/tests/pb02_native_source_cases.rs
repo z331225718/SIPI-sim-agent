@@ -230,6 +230,58 @@ fn pinned_native_dfe_case_matches_the_complete_artifact() {
 }
 
 #[test]
+fn pinned_native_additive_noise_and_ctle_noise_cases_match_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+
+    let mut noise = native_fixture();
+    noise["tx"]["additiveNoise"] = json!({ "samplesV": vec![0.125; 32], "effectiveSeed": null });
+    run_and_compare("additive-noise", noise);
+
+    let mut ctle_noise = native_fixture();
+    ctle_noise["rx"]["nativeCtleEnabled"] = Value::Bool(true);
+    ctle_noise["rx"]["ctle"] = json!({
+        "bandwidth": 12.0e9,
+        "peakFrequency": 5.0e9,
+        "peakMagnitudeDb": 4.0,
+        "frequencyStepHz": null,
+        "frequencyMaxHz": null
+    });
+    ctle_noise["tx"]["additiveNoise"] =
+        json!({ "samplesV": vec![0.125; 32], "effectiveSeed": null });
+    run_and_compare("ctle-additive-noise", ctle_noise);
+}
+
+#[test]
+fn pinned_native_metallic_line_case_matches_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+    let mut input = native_fixture();
+    input["channel"] = json!({
+        "kind": "metallic_line",
+        "value": {
+            "sampleInterval": 1.0e-12,
+            "lengthM": 0.5,
+            "skinEffectResistanceOhmPerM": 0.5,
+            "crossoverAngularFrequencyRadPerS": 1.0e7,
+            "dcResistanceOhmPerM": 0.1876,
+            "characteristicImpedance": 100.0,
+            "propagationVelocityMPerS": 0.67 * 3.0e8,
+            "lossTangent": 0.02,
+            "sourceImpedance": 100.0,
+            "sourceCapacitanceF": 0.2e-12,
+            "loadImpedance": 100.0,
+            "loadCapacitanceF": 0.4e-12,
+            "applyRaisedCosineWindow": false,
+            "frequencyStepHz": null,
+            "frequencyMaxHz": null,
+            "impulseLength": null
+        }
+    });
+    run_and_compare("metallic-line", input);
+}
+
+#[test]
 fn pinned_native_statistical_eye_case_matches_the_complete_artifact() {
     let root = source_root();
     assert_source_custody(&root);
@@ -248,6 +300,29 @@ fn pinned_native_statistical_eye_case_matches_the_complete_artifact() {
         "postReceiverOutput": false
     });
     run_and_compare("statistical-eye", input);
+}
+
+#[test]
+fn pinned_native_pre_dfe_statistical_eye_case_matches_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+    let mut input = native_fixture();
+    input["rx"]["dfeTaps"] = Value::from(1_u64);
+    input["rx"]["dfe"] = source_native_dfe_config();
+    input["analysis"]["statisticalEye"] = json!({
+        "targetBer": 1.0e-12,
+        "contourBerLevels": [1.0e-12],
+        "rxRjUi": null,
+        "rxDjUi": null,
+        "txRjUi": null,
+        "txDjUi": null,
+        "txDcdUi": null,
+        "voltageResolution": 1.0e-3,
+        "timePoints": 2,
+        "maxDistributionStates": 200,
+        "postReceiverOutput": false
+    });
+    run_and_compare("pre-dfe-statistical-eye", input);
 }
 
 fn source_native_dfe_config() -> Value {
