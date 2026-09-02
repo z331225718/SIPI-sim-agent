@@ -49,7 +49,9 @@ fn sim_rust_publishes_the_existing_web_payload_projection() {
         .keys()
         .map(String::as_str)
         .collect::<BTreeSet<_>>();
-    assert_eq!(names.len(), 142);
+    // The upstream `sim-rust` CLI keeps the full payload in arrays.npz; its
+    // metadata is a six-key envelope rather than a second embedded array map.
+    assert_eq!(names.len(), 150);
     for name in expected {
         assert!(names.contains(name), "missing projected array {name}");
     }
@@ -65,8 +67,22 @@ fn sim_rust_publishes_the_existing_web_payload_projection() {
         report.output.arrays["parity_dfe_decisions"],
         report.output.arrays["dfe_decisions"]
     );
-    assert!(report.output.arrays.contains_key("tx_impulse_v_per_v"));
-    assert!(report.output.arrays.contains_key("receiver_input_noise_v"));
+    for name in [
+        "native_eye_chnl",
+        "native_eye_tx",
+        "native_eye_ctle",
+        "native_eye_dfe",
+        "native_eye_rx",
+        "eye_chnl",
+        "eye_tx",
+        "eye_ctle",
+        "eye_dfe",
+        "eye_rx",
+    ] {
+        assert!(names.contains(name), "missing Web eye presentation {name}");
+    }
+    assert!(!names.contains("tx_impulse_v_per_v"));
+    assert!(!names.contains("receiver_input_noise_v"));
     assert_eq!(report.output.metrics["eye_contour_count"], 3.0);
     assert_eq!(
         report.output.arrays["eye_contour_ber"].as_slice(),
@@ -88,8 +104,45 @@ fn sim_rust_publishes_the_existing_web_payload_projection() {
     }
     assert!(report.output.arrays["eye_contour_2_x_ui"].is_empty());
     assert!(report.output.arrays["eye_contour_2_y_v"].is_empty());
-    assert!(report.metadata["output"]["arrays"]["chnl_p"].is_array());
+    assert!(report.metadata.get("output").is_none());
+    assert_eq!(
+        report
+            .metadata
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        [
+            "arrays_file",
+            "backend_metadata",
+            "diagnostics",
+            "effective_input",
+            "input_file",
+            "schema",
+        ]
+    );
+    assert_eq!(
+        report.metadata["effective_input"]["tx"]["modulation"],
+        "nrz"
+    );
     assert_eq!(report.metadata["schema"], "pybert.native-cli-result.v1");
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn sim_rust_rejects_controls_that_the_source_web_request_cannot_validate() {
+    let root = std::env::temp_dir().join(format!("sipi-pb03-invalid-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+    let config = root.join("gain-out-of-range.yaml");
+    let source = fs::read_to_string(fixture()).unwrap();
+    fs::write(&config, source.replacen("gain: 0.1", "gain: 1.1", 1)).unwrap();
+
+    let error = run_sim_rust_file(&config, &root.join("output"), None).unwrap_err();
+    assert!(error.to_string().contains("rx.gain outside 0..=1"));
+    assert!(!root.join("output/meta.json").exists());
 
     let _ = fs::remove_dir_all(root);
 }

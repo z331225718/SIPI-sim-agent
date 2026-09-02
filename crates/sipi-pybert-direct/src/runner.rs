@@ -501,11 +501,6 @@ fn write_upstream_native_cli_artifacts(
     output: SimulationOutputV1,
     include_jitter_rel_thresh: bool,
 ) -> Result<DirectRunReport, DirectRunError> {
-    output
-        .validate()
-        .map_err(|error| DirectRunError::Output(error.to_string()))?;
-
-    let source_file = upstream_cli_input_path(input_file);
     let effective_input = upstream_effective_input(&input, include_jitter_rel_thresh)?;
     let diagnostics = json!({
         "pipeline": "typed_simulation_input_v1",
@@ -513,17 +508,48 @@ fn write_upstream_native_cli_artifacts(
         "events": output.events,
         "cancellation": "checked_before_and_after_the_bounded_native_call",
     });
-    let metadata = json!({
-        "schema": NATIVE_CLI_SCHEMA,
-        "input_file": source_file,
-        "effective_input": effective_input,
-        "backend_metadata": {
+    let backend_metadata = json!({
             "schema": output.schema,
             "run_id": output.run_id,
             "engine": upstream_native_engine_metadata(),
             "metrics": output.metrics,
             "aborted": false,
-        },
+    });
+    write_native_cli_artifacts_with_effective_input(
+        input,
+        input_file,
+        output_dir,
+        output,
+        effective_input,
+        backend_metadata,
+        diagnostics,
+        None,
+    )
+}
+
+/// Publish the six-key artifact envelope owned by the upstream CLI while a
+/// legacy adapter supplies its already-validated effective request and
+/// result-adapter metadata.  This keeps large NPZ payloads out of meta.json;
+/// the richer SIPI workflow writer remains separate by design.
+pub(crate) fn write_native_cli_artifacts_with_effective_input(
+    input: SimulationInputV1,
+    input_file: &Path,
+    output_dir: &Path,
+    output: SimulationOutputV1,
+    effective_input: Value,
+    backend_metadata: Value,
+    diagnostics: Value,
+    array_shapes: Option<&BTreeMap<String, Vec<usize>>>,
+) -> Result<DirectRunReport, DirectRunError> {
+    output
+        .validate()
+        .map_err(|error| DirectRunError::Output(error.to_string()))?;
+    let source_file = upstream_cli_input_path(input_file);
+    let metadata = json!({
+        "schema": NATIVE_CLI_SCHEMA,
+        "input_file": source_file,
+        "effective_input": effective_input,
+        "backend_metadata": backend_metadata,
         "diagnostics": diagnostics,
         "arrays_file": "arrays.npz",
     });
@@ -538,7 +564,10 @@ fn write_upstream_native_cli_artifacts(
     let meta_path = output_dir.join("meta.json");
     let arrays_path = output_dir.join("arrays.npz");
     fs::write(&meta_path, metadata_bytes)?;
-    fs::write(&arrays_path, npz_bytes_with_shapes(&output.arrays, None)?)?;
+    fs::write(
+        &arrays_path,
+        npz_bytes_with_shapes(&output.arrays, array_shapes)?,
+    )?;
     Ok(DirectRunReport {
         input,
         output,

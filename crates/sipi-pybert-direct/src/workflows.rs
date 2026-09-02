@@ -15,11 +15,14 @@ use std::{
 use serde_json::{Value, json};
 use thiserror::Error;
 
-use crate::runner::{ArrayDTypeV1, TypedArrayV1, UPSTREAM_COMMIT, UPSTREAM_TREE};
+use crate::runner::{
+    ArrayDTypeV1, TypedArrayV1, UPSTREAM_COMMIT, UPSTREAM_TREE,
+    write_native_cli_artifacts_with_effective_input,
+};
 use crate::{
-    ArtifactRefV1, DirectRunError, DirectRunReport, LegacyRuntimeError, SimulationInputV1,
-    SimulationOutputV1, StatisticalEyeConfigV1, Volts, project_legacy_config_v1,
-    simulate_native_v1, write_simulation_artifacts,
+    ArtifactRefV1, DirectRunError, DirectRunReport, LegacyConfigProjectionV1, LegacyRuntimeError,
+    SimulationInputV1, SimulationOutputV1, StatisticalEyeConfigV1, Volts, project_legacy_config_v1,
+    simulate_native_v1,
     write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_arrays,
 };
 
@@ -237,9 +240,9 @@ pub fn run_sim_rust_file(
     output_dir: &Path,
     statistical_time_points: Option<u32>,
 ) -> Result<DirectRunReport, WorkflowError> {
-    let (_, mut input) = projected_input(config_file)?;
+    let (config, mut input) = projected_web_input(config_file)?;
     apply_statistical_override(&mut input, statistical_time_points)?;
-    run_projected_input(input, config_file, output_dir)
+    run_projected_input(config, input, config_file, output_dir)
 }
 
 /// Execute `sim-auto` with the pinned selection semantics.
@@ -458,16 +461,62 @@ fn projected_input(
     project_legacy_config_v1(path, run_id).map_err(WorkflowError::from)
 }
 
+fn projected_web_input(
+    path: &Path,
+) -> Result<(LegacyConfigProjectionV1, SimulationInputV1), WorkflowError> {
+    let (config, input) = projected_input(path)?;
+    let input = config
+        .web_native_input(input.run_id.clone())
+        .map_err(WorkflowError::from)?;
+    Ok((config, input))
+}
+
 fn run_projected_input(
+    config: LegacyConfigProjectionV1,
     input: SimulationInputV1,
     input_file: &Path,
     output_dir: &Path,
 ) -> Result<DirectRunReport, WorkflowError> {
     let mut output = simulate_native_v1(&input)
         .map_err(|error| WorkflowError::Artifact(format!("native simulation failed: {error}")))?;
-    crate::legacy_runtime::augment_sim_rust_result_arrays_v1(&input, &mut output)?;
-    write_simulation_artifacts(input, input_file, output_dir, output, None)
-        .map_err(WorkflowError::from)
+    let array_shapes =
+        crate::legacy_runtime::augment_sim_rust_result_arrays_v1(&input, &mut output)?;
+    let effective_input = config.web_effective_request_json()?;
+    let diagnostics = json!({
+        "pipeline": "typed_simulation_input_v1",
+        "capabilities": output.capabilities.stages,
+        "events": output.events,
+        "cancellation": "checked_before_and_after_the_bounded_native_call",
+        "web_result_adapter": "native_waveform_presentation_only",
+    });
+    let backend_metadata = json!({
+        "schema": output.schema,
+        "run_id": output.run_id,
+        "engine": {
+            "backend": "rust",
+            "native_simulation_v1": true,
+            "name": "pybert-python",
+            "version": env!("CARGO_PKG_VERSION"),
+            "build": {
+                "profile": if cfg!(debug_assertions) { "debug" } else { "release" },
+                "target": format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS),
+                "id": option_env!("PYBERT_NATIVE_BUILD_ID").unwrap_or("unknown"),
+            },
+        },
+        "metrics": output.metrics,
+        "aborted": false,
+    });
+    write_native_cli_artifacts_with_effective_input(
+        input,
+        input_file,
+        output_dir,
+        output,
+        effective_input,
+        backend_metadata,
+        diagnostics,
+        Some(&array_shapes),
+    )
+    .map_err(WorkflowError::from)
 }
 
 fn apply_statistical_override(

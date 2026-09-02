@@ -4,13 +4,24 @@ use flate2::read::DeflateDecoder;
 use serde_json::Value;
 use sipi_pybert_direct::{
     SimulationOutputV1, compare_native_outputs, project_legacy_config_v1, run_sim_auto_file,
-    run_sim_compare_file, run_sim_rust_file, simulate_portable_reference_v1,
+    run_sim_compare_file, run_sim_rust_file, simulate_native_v1, simulate_portable_reference_v1,
 };
 
 fn fixture() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("fixtures")
         .join("pb-01-legacy-nrz.yaml")
+}
+
+fn web_fixture() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures")
+        .join("pb-03-legacy-nrz.yaml")
+}
+
+fn sim_compare_native_output() -> SimulationOutputV1 {
+    let (_, input) = project_legacy_config_v1(&fixture(), "pb-01-legacy-nrz").unwrap();
+    simulate_native_v1(&input).unwrap()
 }
 
 fn temp_root(label: &str) -> PathBuf {
@@ -23,7 +34,7 @@ fn temp_root(label: &str) -> PathBuf {
 #[test]
 fn sim_rust_publishes_native_artifacts_but_auto_preserves_python_selection() {
     let root = temp_root("workflow-artifacts");
-    let rust = run_sim_rust_file(&fixture(), &root.join("rust"), None).unwrap();
+    let rust = run_sim_rust_file(&web_fixture(), &root.join("rust"), None).unwrap();
     assert_eq!(rust.metadata["schema"], "pybert.native-cli-result.v1");
     assert!(rust.meta_path.is_file());
     assert!(rust.arrays_path.is_file());
@@ -83,9 +94,7 @@ fn auto_external_projection_failure_is_structured_and_fail_closed() {
 #[test]
 fn compare_checks_payload_and_rejects_waveform_mutation() {
     let root = temp_root("workflow-compare");
-    let reference = run_sim_rust_file(&fixture(), &root.join("reference"), None)
-        .unwrap()
-        .output;
+    let reference = sim_compare_native_output();
     let mut candidate = reference.clone();
     if let Some(value) = candidate
         .arrays
@@ -136,9 +145,7 @@ fn sim_compare_without_reference_is_not_evaluated() {
 #[test]
 fn compare_shadow_populates_full_result_adapter_payload() {
     let root = temp_root("workflow-result-adapter");
-    let reference = run_sim_rust_file(&fixture(), &root.join("reference"), None)
-        .unwrap()
-        .output;
+    let reference = sim_compare_native_output();
     let reference_json = root.join("reference.json");
     let payload = serde_json::json!({
         "output": reference.clone(),
@@ -179,9 +186,7 @@ fn compare_shadow_populates_full_result_adapter_payload() {
 #[test]
 fn compare_consumes_nested_output_and_rejects_flat_projection_drift() {
     let root = temp_root("workflow-nested-output-projection");
-    let output = run_sim_rust_file(&fixture(), &root.join("source"), None)
-        .unwrap()
-        .output;
+    let output = sim_compare_native_output();
     let reference_json = root.join("reference.json");
     let payload = serde_json::json!({
         "output": output.clone(),
@@ -239,9 +244,7 @@ fn compare_consumes_nested_output_and_rejects_flat_projection_drift() {
 #[test]
 fn compare_accepts_serialized_backend_run_result_shape() {
     let root = temp_root("workflow-result-adapter-flat");
-    let reference = run_sim_rust_file(&fixture(), &root.join("reference"), None)
-        .unwrap()
-        .output;
+    let reference = sim_compare_native_output();
     let reference_json = root.join("reference-flat.json");
     let payload = serde_json::json!({
         "metadata": {
@@ -506,9 +509,7 @@ fn compare_rejects_empty_payloads_instead_of_comparing_status_only() {
 #[test]
 fn compare_consumes_full_metadata_and_diagnostics_payload() {
     let root = temp_root("workflow-full-compare");
-    let reference = run_sim_rust_file(&fixture(), &root.join("reference"), None)
-        .unwrap()
-        .output;
+    let reference = sim_compare_native_output();
     let reference_json = root.join("reference.json");
     let payload = serde_json::json!({
         "output": reference,

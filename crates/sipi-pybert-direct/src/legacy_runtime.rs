@@ -24,7 +24,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value as JsonValue;
+use serde_json::{Value as JsonValue, json};
 use serde_pickle::{
     DeOptions,
     value::{HashableValue, Value as PickleValue},
@@ -604,6 +604,204 @@ impl LegacyConfigProjectionV1 {
             external_models: Vec::new(),
             legacy_options: BTreeMap::new(),
         })
+    }
+
+    /// Reproduce the narrower `legacy_pybert_to_web_request` ->
+    /// `to_native_simulation_input_v1` route used only by the upstream
+    /// `sim-rust` command.  It is deliberately separate from `sim`: that
+    /// older Python simulation consumes several controls that the Web native
+    /// adapter never forwards.
+    pub(crate) fn web_native_input(
+        &self,
+        run_id: String,
+    ) -> Result<SimulationInputV1, LegacyRuntimeError> {
+        self.validate_web_native_projection()?;
+        let mut input = self.simulation_input(run_id)?;
+        let ChannelInputV1::MetallicLine(channel) = &mut input.channel else {
+            return Err(LegacyRuntimeError::Unsupported(
+                "sim-rust maps legacy S-parameter channels to an unsupported native Web capability"
+                    .into(),
+            ));
+        };
+
+        // This is the pinned Web adapter's fixed metallic-line projection,
+        // not the broader legacy `sim` channel model.
+        channel.skin_effect_resistance_ohm_per_m = DEFAULT_R0;
+        channel.source_capacitance_f = 0.5e-12;
+        channel.load_capacitance_f = 0.5e-12;
+        input.rx.native_ctle_enabled = self.ctle_enable;
+        input.rx.ctle = Some(CtleConfigV1 {
+            bandwidth: Hertz(12.0e9),
+            peak_frequency: Hertz(self.peak_freq_ghz * 1.0e9),
+            peak_magnitude_db: self.peak_mag_db,
+            frequency_step_hz: Some(Hertz(self.f_step_mhz * 1.0e6)),
+            frequency_max_hz: Some(Hertz(self.f_max_ghz * 1.0e9)),
+            // `legacy_pybert_to_web_request` does not forward ctle_file.
+            impulse_response_v_per_v: None,
+        });
+        input.rx.ffe = FfeConfigV1 {
+            enabled: true,
+            weights: [vec![0.0; 5], vec![1.0], vec![0.0; 14]].concat(),
+            cursor_position: 5,
+        };
+        let dfe_taps = contiguous_dfe_count(&self.dfe_tap_tuners)?;
+        input.rx.dfe_taps = dfe_taps as u32;
+        if let Some(dfe) = input.rx.dfe.as_mut() {
+            dfe.decision_scaler = Volts(self.vod_v / 2.0);
+            dfe.n_lock_ave = 500;
+            dfe.rel_lock_tol = 0.1;
+            dfe.lock_sustain = 500;
+            dfe.ideal = true;
+            dfe.bandwidth = Hertz(12.0e9);
+            dfe.use_agc = true;
+            dfe.agc_n_ave = 100;
+        }
+        input.rx.viterbi = self.viterbi_enabled.then_some(ViterbiConfigV1 {
+            state_symbols: self.viterbi_symbols,
+            fec: false,
+            noise_sigma_v: Some(Volts(self.rn_v)),
+            max_states: ResourceLimitsV1::default().max_distribution_states,
+        });
+        input.analysis.jitter_rel_thresh = None;
+        Ok(input)
+    }
+
+    /// The exact Pydantic-shaped request published as `sim-rust`'s
+    /// `effective_input`, for the portable RLGC/no-external-model subset.
+    pub(crate) fn web_effective_request_json(&self) -> Result<JsonValue, LegacyRuntimeError> {
+        self.validate_web_native_projection()?;
+        if self.channel_response.is_some() {
+            return Err(LegacyRuntimeError::Unsupported(
+                "sim-rust maps legacy S-parameter channels to an unsupported native Web capability"
+                    .into(),
+            ));
+        }
+        let modulation = match self.mod_type.as_str() {
+            "NRZ" => "nrz",
+            "PAM-4" | "PAM4" => "pam4",
+            "DUO-BINARY" | "DUOBINARY" => "duo-binary",
+            _ => unreachable!("simulation_input already validates modulation"),
+        };
+        let pattern = self.pattern.to_ascii_lowercase().replace('-', "");
+        let dfe_taps = contiguous_dfe_count(&self.dfe_tap_tuners)?;
+        Ok(json!({
+            "reproduction_preset": null,
+            "tx": {
+                "modulation": modulation,
+                "ffe_taps": 7,
+                "ffe_weights": tx_weights(&self.tx_taps)?,
+                "cursor_pos": 3,
+                "vod": self.vod_v,
+                "pn_mag": self.pn_mag_v,
+                "pn_freq": self.pn_freq_mhz,
+                "rn": self.rn_v,
+                "use_ibis": false,
+                "ibis_dir": null,
+                "ibis_file": "",
+                "ami_file": "",
+                "dll_file": "",
+                "use_ami": false,
+                "use_getwave": false,
+                "ami_init_output_scale": 1.0,
+                "rj_ui": 0.0,
+                "dj_ui": 0.0,
+                "dcd_ui": 0.0,
+                "ami_param_values": [],
+                "ami_params": [],
+            },
+            "rx": {
+                "ctle_enable": self.ctle_enable,
+                "peak_freq": self.peak_freq_ghz,
+                "peak_mag": self.peak_mag_db,
+                "use_ctle_file": false,
+                "ctle_file_id": null,
+                "dfe_taps": dfe_taps,
+                "gain": self.gain,
+                "n_ave": self.n_ave,
+                "use_viterbi": self.viterbi_enabled,
+                "viterbi_symbols": self.viterbi_symbols,
+                "cdr_alpha": self.alpha,
+                "cdr_delta_t": self.delta_t_ps,
+                "use_ibis": false,
+                "ibis_dir": null,
+                "ibis_file": "",
+                "ami_file": "",
+                "dll_file": "",
+                "use_ami": false,
+                "use_getwave": false,
+                "ami_init_output_scale": 1.0,
+                "rj_ui": 0.0,
+                "dj_ui": 0.0,
+                "ami_param_values": [],
+                "ami_params": [],
+            },
+            "channel": {
+                "mode": "rlgc",
+                "file_id": null,
+                "sp_dir": null,
+                "sp_file": null,
+                "fixture_files": [],
+                "semantic_metadata_file": null,
+                "source_impedance": self.rs_ohm,
+                "load_impedance": self.rin_ohm,
+                "impulse_length": self.impulse_length_ns,
+                "rdc": self.rdc_ohm_per_m,
+                "w0": self.w0_rad_per_s,
+                "theta0": self.theta0,
+                "z0": self.z0_ohm,
+                "v0": self.v0_relative,
+                "l_ch": self.channel_length_m,
+                "renumber": false,
+                "use_window": self.use_window,
+                "enforce_passivity": false,
+                "use_low_frequency_extrapolation": true,
+                "max_impulse_response_length_ui": null,
+                "agent_spice_rfm": null,
+            },
+            "config": {
+                "bit_rate": self.bit_rate_gbps * 1.0e9,
+                "nbits": self.nbits,
+                "nspui": self.nspui,
+                "pattern": pattern,
+                "seed": self.requested_seed,
+                "noise_seed": self.random_noise_seed,
+                "getwave_block_size": 0,
+                "f_max": self.f_max_ghz * 1.0e9,
+                "f_step": self.f_step_mhz * 1.0e6,
+                "eye_bits": self.eye_bits,
+                "statistical_voltage_resolution_v": null,
+                "statistical_time_points": 400,
+                "statistical_ber_levels": [1.0e-5, 1.0e-4, 1.0e-3],
+            },
+        }))
+    }
+
+    fn validate_web_native_projection(&self) -> Result<(), LegacyRuntimeError> {
+        let bounded = |name: &str, value: f64, lower: f64, upper: f64| {
+            if value < lower || value > upper {
+                Err(LegacyRuntimeError::Unsupported(format!(
+                    "sim-rust Web request rejects {name} outside {lower}..={upper}"
+                )))
+            } else {
+                Ok(())
+            }
+        };
+        bounded("tx.vod", self.vod_v, f64::MIN_POSITIVE, 2.0)?;
+        bounded("rx.peak_mag", self.peak_mag_db, 0.0, 12.0)?;
+        bounded("rx.gain", self.gain, 0.0, 1.0)?;
+        bounded("rx.n_ave", self.n_ave as f64, 1.0, 1_000.0)?;
+        bounded("rx.viterbi_symbols", self.viterbi_symbols as f64, 2.0, 16.0)?;
+        bounded("rx.cdr_alpha", self.alpha, 0.0, 1.0)?;
+        bounded("rx.cdr_delta_t", self.delta_t_ps, 0.0, 0.1)?;
+        bounded("config.nbits", self.nbits as f64, 1_000.0, 10_000_000.0)?;
+        bounded("config.nspui", self.nspui as f64, 8.0, 128.0)?;
+        bounded("config.eye_bits", self.eye_bits as f64, 1_000.0, 100_000.0)?;
+        if contiguous_dfe_count(&self.dfe_tap_tuners)? == 0 {
+            return Err(LegacyRuntimeError::Unsupported(
+                "sim-rust Web request requires at least one enabled DFE tap".into(),
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -1844,7 +2042,7 @@ fn legacy_arrays(
 pub(crate) fn augment_sim_rust_result_arrays_v1(
     input: &SimulationInputV1,
     output: &mut SimulationOutputV1,
-) -> Result<(), LegacyRuntimeError> {
+) -> Result<BTreeMap<String, Vec<usize>>, LegacyRuntimeError> {
     let source = &output.arrays;
     let channel = source.get("channel_impulse_v_per_v").ok_or_else(|| {
         LegacyRuntimeError::InvalidConfig(
@@ -2054,8 +2252,228 @@ pub(crate) fn augment_sim_rust_result_arrays_v1(
     }
     let bathtub_rx = projected["bathtub_dfe"].clone();
     add_projected_array(source, &mut projected, "bathtub_rx", bathtub_rx)?;
+    let array_shapes =
+        add_pb03_eye_presentations_v1(input, source, samples_per_ui, &mut projected)?;
     output.arrays.extend(projected);
-    Ok(())
+    // These are typed-core implementation arrays. The pinned Web result
+    // adapter does not publish either name in its `sim-rust` NPZ payload.
+    output.arrays.remove("receiver_input_noise_v");
+    output.arrays.remove("tx_impulse_v_per_v");
+    Ok(array_shapes)
+}
+
+fn add_pb03_eye_presentations_v1(
+    input: &SimulationInputV1,
+    source: &BTreeMap<String, Vec<f64>>,
+    samples_per_ui: usize,
+    projected: &mut BTreeMap<String, Vec<f64>>,
+) -> Result<BTreeMap<String, Vec<usize>>, LegacyRuntimeError> {
+    const HEIGHT: usize = 1_000;
+    let eye_bits = usize::try_from(
+        input
+            .analysis
+            .ber_eye_bits
+            .unwrap_or(input.timebase.nbits)
+            .min(input.timebase.nbits),
+    )
+    .map_err(|_| LegacyRuntimeError::ResourceLimit("PB-03 eye bit count overflows usize".into()))?;
+    let skip = usize::try_from(input.timebase.nbits)
+        .ok()
+        .and_then(|bits| bits.checked_sub(eye_bits))
+        .and_then(|bits| bits.checked_mul(samples_per_ui))
+        .ok_or_else(|| LegacyRuntimeError::ResourceLimit("PB-03 eye window overflow".into()))?;
+    let waveform = |names: &[&str]| {
+        names
+            .iter()
+            .find_map(|name| source.get(*name).filter(|values| !values.is_empty()))
+            .map(|values| values.get(skip.min(values.len())..).unwrap_or_default())
+            .unwrap_or_default()
+    };
+    let channel = waveform(&["channel_output_v", "rx_output_v"]);
+    let tx = waveform(&["rx_input_v", "tx_waveform_v", "rx_output_v"]);
+    let ctle = waveform(&["ctle_output_v", "rx_output_v"]);
+    let dfe = waveform(&["dfe_output_v", "rx_output_v"]);
+    let dfe_y_max = max_abs(dfe).max(max_abs(ctle)) * 1.1;
+    let raw = [
+        ("native_eye_chnl", channel, max_abs(channel) * 1.1, None),
+        ("native_eye_tx", tx, max_abs(tx) * 1.1, None),
+        ("native_eye_ctle", ctle, max_abs(ctle) * 1.1, None),
+        (
+            "native_eye_dfe",
+            dfe,
+            dfe_y_max,
+            source.get("dfe_clock_times_s").map(Vec::as_slice),
+        ),
+    ];
+    let mut shapes = BTreeMap::new();
+    let mut rendered = BTreeMap::new();
+    for (name, values, y_max, clock_times) in raw {
+        let eye = pb03_calc_eye_v1(
+            input.timebase.sample_interval.0,
+            samples_per_ui,
+            HEIGHT,
+            values,
+            y_max,
+            clock_times,
+        );
+        let width = samples_per_ui
+            .checked_mul(2)
+            .ok_or_else(|| LegacyRuntimeError::ResourceLimit("PB-03 eye width overflow".into()))?;
+        add_projected_array(source, projected, name, eye.clone())?;
+        shapes.insert(name.to_owned(), vec![HEIGHT, width]);
+        rendered.insert(name, (eye, width));
+    }
+    let (dfe_eye, dfe_width) = rendered
+        .get("native_eye_dfe")
+        .ok_or_else(|| LegacyRuntimeError::InvalidConfig("PB-03 DFE eye is missing".into()))?;
+    add_projected_array(source, projected, "native_eye_rx", dfe_eye.clone())?;
+    shapes.insert("native_eye_rx".into(), vec![HEIGHT, *dfe_width]);
+    for (source_name, target_name) in [
+        ("native_eye_chnl", "eye_chnl"),
+        ("native_eye_tx", "eye_tx"),
+        ("native_eye_ctle", "eye_ctle"),
+        ("native_eye_dfe", "eye_dfe"),
+        ("native_eye_dfe", "eye_rx"),
+    ] {
+        let (eye, width) = rendered.get(source_name).ok_or_else(|| {
+            LegacyRuntimeError::InvalidConfig(format!("PB-03 eye source {source_name} is missing"))
+        })?;
+        let (values, displayed_width) = pb03_display_eye_v1(eye, HEIGHT, *width)?;
+        add_projected_array(source, projected, target_name, values)?;
+        shapes.insert(target_name.to_owned(), vec![HEIGHT, displayed_width]);
+    }
+    Ok(shapes)
+}
+
+fn max_abs(values: &[f64]) -> f64 {
+    values
+        .iter()
+        .fold(0.0_f64, |maximum, value| maximum.max(value.abs()))
+}
+
+fn pb03_calc_eye_v1(
+    sample_interval: f64,
+    samples_per_ui: usize,
+    height: usize,
+    values: &[f64],
+    y_max: f64,
+    clock_times_s: Option<&[f64]>,
+) -> Vec<f64> {
+    let width = samples_per_ui.saturating_mul(2);
+    let mut image = vec![0.0; height.saturating_mul(width)];
+    if width == 0
+        || !sample_interval.is_finite()
+        || sample_interval <= 0.0
+        || !y_max.is_finite()
+        || y_max <= 0.0
+    {
+        return image;
+    }
+    let scale = (height as f64 / (2.0 * y_max)).floor();
+    let add_trace = |first: usize, image: &mut [f64]| -> bool {
+        let Some(trace) = values.get(first..first.saturating_add(width)) else {
+            return false;
+        };
+        for (column, value) in trace.iter().enumerate() {
+            if !value.is_finite() {
+                return false;
+            }
+            let row = (*value * scale + 0.5) as isize + height as isize / 2;
+            if row < 0 || row >= height as isize {
+                return false;
+            }
+            image[row as usize * width + column] += 1.0;
+        }
+        true
+    };
+    if let Some(clocks) = clock_times_s {
+        for clock in clocks {
+            if !clock.is_finite() {
+                return vec![0.0; height * width];
+            }
+            let first = python_floor_div_index_v1(*clock, sample_interval);
+            if first < 0.0 || first > usize::MAX as f64 {
+                return vec![0.0; height * width];
+            }
+            let first = first as usize;
+            if first.saturating_add(width) > values.len() {
+                break;
+            }
+            if !add_trace(first, &mut image) {
+                return vec![0.0; height * width];
+            }
+        }
+    } else {
+        let Some(crossing) = values.windows(2).position(|pair| {
+            let left = if pair[0] > 0.0 {
+                1_i8
+            } else if pair[0] < 0.0 {
+                -1
+            } else {
+                0
+            };
+            let right = if pair[1] > 0.0 {
+                1_i8
+            } else if pair[1] < 0.0 {
+                -1
+            } else {
+                0
+            };
+            left != right
+        }) else {
+            return image;
+        };
+        let start = crossing.saturating_add(samples_per_ui / 2);
+        let last = values.len().saturating_sub(width);
+        for first in (start..last).step_by(samples_per_ui) {
+            if !add_trace(first, &mut image) {
+                return vec![0.0; height * width];
+            }
+        }
+    }
+    image
+}
+
+/// CPython's float floor-division starts with an fmod remainder, then snaps
+/// a quotient that is closer to the next integer than the previous one.  The
+/// latter step matters for long DFE runs: using Rust's direct `floor(x / y)`
+/// drifts by one sample at otherwise ordinary binary values.
+fn python_floor_div_index_v1(value: f64, divisor: f64) -> f64 {
+    let remainder = value % divisor;
+    let quotient = (value - remainder) / divisor;
+    let floor = quotient.floor();
+    if quotient - floor > 0.5 {
+        floor + 1.0
+    } else {
+        floor
+    }
+}
+
+fn pb03_display_eye_v1(
+    raw: &[f64],
+    height: usize,
+    width: usize,
+) -> Result<(Vec<f64>, usize), LegacyRuntimeError> {
+    if raw.len() != height.saturating_mul(width) {
+        return Err(LegacyRuntimeError::InvalidConfig(
+            "PB-03 eye shape is inconsistent".into(),
+        ));
+    }
+    if width >= 512 {
+        return Ok((raw.to_vec(), width));
+    }
+    let mut displayed = vec![0.0; height * 512];
+    for row in 0..height {
+        for column in 0..512 {
+            let position = column as f64 * (width.saturating_sub(1)) as f64 / 511.0;
+            let left = position.floor() as usize;
+            let right = (left + 1).min(width - 1);
+            let fraction = position - left as f64;
+            displayed[row * 512 + column] =
+                raw[row * width + left] * (1.0 - fraction) + raw[row * width + right] * fraction;
+        }
+    }
+    Ok((displayed, 512))
 }
 
 fn first_abs_argmax(values: &[f64]) -> Option<usize> {
@@ -3049,6 +3467,16 @@ dfe_tap_tuners:
         assert_eq!(first_abs_argmax(&[0.25, -1.0, 1.0, 0.5]), Some(1));
         assert_eq!(first_abs_argmax(&[0.0, -0.0]), Some(0));
         assert_eq!(first_abs_argmax(&[]), None);
+    }
+
+    #[test]
+    fn pb03_dfe_eye_uses_cpython_float_floor_division() {
+        let interval = 3.125e-12;
+        // CPython intentionally returns 47 here: its fmod-based floor
+        // division sees a remainder just below one complete sample.
+        assert_eq!(python_floor_div_index_v1(1.5e-10, interval), 47.0);
+        // The corrective snap is equally important later in a long run.
+        assert_eq!(python_floor_div_index_v1(4.249_866e-9, interval), 1_359.0);
     }
 
     #[test]
