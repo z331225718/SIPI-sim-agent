@@ -9,8 +9,9 @@ def require(ok, msg):
     if not ok: raise ValueError(msg)
 def validate(d):
     require(d.get('schema')=='sipi.com.tp0v-current-asset-scoped-acceptance-prep.v3','schema')
-    require(d.get('status')=='preparation_only_pending_clean_candidate_and_harness_commit','status')
-    require(d['candidate']=={'commit':None,'tree':None,'archive_sha256':None,'archive_bytes':None},'candidate must remain null')
+    require(d.get('status') in {'preparation_only_pending_clean_candidate_and_harness_commit','candidate_bound_pending_four_replays'},'status')
+    if d['status']=='preparation_only_pending_clean_candidate_and_harness_commit': require(d['candidate']=={'commit':None,'tree':None,'archive_sha256':None,'archive_bytes':None},'candidate must remain null')
+    else: require(d['candidate']=={'commit':'9e8ca698beccf0561683f89649b5ec0d2441b379','tree':'f01db873646763f02baf51561ab8287e10eb0869','archive_sha256':'6524c1c894657e9efd0e242fe812ffe4c8e34d671e01ba12e2ea8ccaa3f07f54','archive_bytes':61880320},'candidate receipt')
     require(d['matlab']=={'required_release':'R2024b','required_release_raw':'2024b','executable_mode':'explicit_only_no_path_fallback','semantic_run':'uninstrumented','trace_run':'instrumented_diagnostic_only','start_flags':['-batch'],'mw_disable_connector':'1'},'exact R2024b runtime gate')
     require(d['comparison']['source_warning_equivalent'] is False and d['comparison']['scalar_surface_count']==21,'comparison contract')
     assets=d['upstream']['assets']; require([a['role'] for a in assets]==['THRU','FEXT','NEXT'],'asset role/order')

@@ -1,5 +1,5 @@
 schema: sipi.com.tp0v-current-asset-scoped-acceptance-prep.v3
-status: preparation_only_pending_clean_candidate_and_harness_commit
+status: candidate_bound_pending_four_replays
 formal_record_absent: true
 upstream:
   commit: 5272ffe74702cd585054d975559b06f8afae7b6e
@@ -19,7 +19,7 @@ matlab:
   trace_run: instrumented_diagnostic_only
   start_flags: ['-batch']
   mw_disable_connector: '1'
-candidate: {commit: null, tree: null, archive_sha256: null, archive_bytes: null}
+candidate: {commit: 9e8ca698beccf0561683f89649b5ec0d2441b379, tree: f01db873646763f02baf51561ab8287e10eb0869, archive_sha256: 6524c1c894657e9efd0e242fe812ffe4c8e34d671e01ba12e2ea8ccaa3f07f54, archive_bytes: 61880320}
 replays: [matlab-01, matlab-02, rust-01, rust-02]
 isolation: [distinct_archive_root, distinct_build_root, distinct_output_root, distinct_nonce]
 comparison:
@@ -40,5 +40,5 @@ formal_paths_absent:
 tools:
   runner: {path: tools/run_com_tp0v_current_asset_v3.py, sha256: f3c145b803be39bc9936d386e1452ef534229fee9327dea9cfb9a917a203c382}
   aggregate: {path: tools/aggregate_com_tp0v_current_asset_v3.py, sha256: dc25a5e87ebd2f6806e1fb72d85c18ded5dac00d64a352fa3dbea17a9c08eb7d}
-  verifier: {path: tools/verify_com_tp0v_current_asset_v3.py, sha256: 158f0ec187e33c7f1819e608d8605b8c61b00dcf40eeeb3fa4c33748dc95ad37}
-  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v3-prep.md, sha256: d06227133fd1e0110cde8cca1f88bfec54c3a4b2ef0a4fa8da2f1e1768557729}
+  verifier: {path: tools/verify_com_tp0v_current_asset_v3.py, sha256: ed42c73a2197934dab924b378b81659bb343f7e253bc6f531c85d38dd87ed1c8}
+  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v3-prep.md, sha256: ce6e31d9e6cf1ffd96d016e4c85df9877532fd41da668ae15cff01f029ffe4fb}

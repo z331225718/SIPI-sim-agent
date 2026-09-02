@@ -11,4 +11,5 @@ class Tests(unittest.TestCase):
  def test_raw_rejected(self): self.bad(lambda d:d['matlab'].update(required_release_raw='2026a'))
  def test_path_fallback_rejected(self): self.bad(lambda d:d['matlab'].update(executable_mode='path'))
  def test_candidate_rejected(self): self.bad(lambda d:d['candidate'].update(commit='0'*40))
+ def test_unknown_status_rejected(self): self.bad(lambda d:d.update(status='candidate_bound_pending_r2024b_smoke'))
 if __name__=='__main__': unittest.main()
