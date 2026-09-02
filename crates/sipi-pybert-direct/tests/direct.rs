@@ -233,9 +233,11 @@ fn direct_cli_drops_the_non_source_ctle_impulse_extension() {
         .expect("source-shape run");
 
     assert_eq!(extended_report.output, source_report.output);
-    assert_eq!(
-        extended_report.metadata["effective_input"]["rx"]["ctle"]["impulseResponseVPerV"],
-        serde_json::json!([1.0, 0.25, -0.05])
+    assert!(
+        extended_report.metadata["effective_input"]["rx"]["ctle"]
+            .get("impulseResponseVPerV")
+            .is_none(),
+        "the native CLI must not publish its non-source CTLE extension"
     );
     let _ = fs::remove_dir_all(root);
 }
