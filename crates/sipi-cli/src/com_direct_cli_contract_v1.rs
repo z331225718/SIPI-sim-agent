@@ -321,13 +321,19 @@ fn map_direct_error_v1(error: DirectRunErrorV1) -> ComR480ExecutionErrorV1 {
 fn receipt_json_v1(
     report: &sipi_agent_com_direct::DirectRunReportV1,
 ) -> Result<String, ComR480ExecutionErrorV1> {
-    let cases = report
-        .result
+    // The artifact is the public, fully written result boundary.  Reading it
+    // here also keeps receipt metadata coupled to the atomically published
+    // payload rather than an internal projection that can differ by profile.
+    let result: serde_json::Value = serde_json::from_slice(
+        &fs::read(&report.artifacts.result_json)
+            .map_err(|_| ComR480ExecutionErrorV1::OperationalFailure)?,
+    )
+    .map_err(|_| ComR480ExecutionErrorV1::OperationalFailure)?;
+    let cases = result
         .get("cases")
         .and_then(serde_json::Value::as_array)
         .ok_or(ComR480ExecutionErrorV1::OperationalFailure)?;
-    let warnings = report
-        .result
+    let warnings = result
         .get("warnings")
         .and_then(serde_json::Value::as_array)
         .ok_or(ComR480ExecutionErrorV1::OperationalFailure)?;
