@@ -709,7 +709,7 @@ def run_replay(args: argparse.Namespace) -> dict[str, Any]:
     uv = explicit_file(args.uv, "uv")
     worker_python = explicit_file(args.python, "Python")
     matlab = explicit_file(args.matlab, "MATLAB R2024b")
-    toolchain = {"cargo": tool_receipt(cargo, "cargo"), "rustc": tool_receipt(rustc, "rustc"), "uv": tool_receipt(uv, "uv"), "python": tool_receipt(worker_python, "python"), "matlab": matlab_receipt(matlab, args.output_root / "matlab-identity")}
+    toolchain = {"cargo": tool_receipt(cargo, "cargo"), "rustc": tool_receipt(rustc, "rustc"), "uv": tool_receipt(uv, "uv"), "python": tool_receipt(worker_python, "python"), "matlab": matlab_receipt(matlab, args.output_root)}
     candidate, build, build_elapsed = _build_candidate(args, args.output_root)
     harness = candidate / "tools" / "sipi_com_final_surface_oracle_v3.m"
     require(harness.is_file(), "candidate MATLAB harness is missing")
