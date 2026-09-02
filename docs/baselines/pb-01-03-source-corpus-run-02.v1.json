@@ -1,0 +1,6736 @@
+{
+  "build": {
+    "binary_pre": {
+      "bytes": 3884032,
+      "exclusive_create": true,
+      "nlink": 1,
+      "nonlink": true,
+      "path": "sipi-pybert-direct.exe",
+      "post_identity": [
+        12437349290275704424,
+        1125899915610556,
+        3884032,
+        1788335581138657100
+      ],
+      "pre_absent": true,
+      "pre_identity": [
+        12437349290275704424,
+        1125899915610556,
+        3884032,
+        1788335581138657100
+      ],
+      "readback_equal": true,
+      "regular": true,
+      "sha256": "ce5365711109d5d3ee8525e353ff8b3844e4ca9e651268afd237929c3c79cf5e",
+      "single_handle_read": true
+    },
+    "cargo_binary_source": {
+      "bytes": 3884032,
+      "nlink": 2,
+      "nonlink": true,
+      "path": "sipi-pybert-direct.exe",
+      "post_identity": [
+        12437349290275704424,
+        844424938899893,
+        3884032,
+        1788335581043530000
+      ],
+      "pre_identity": [
+        12437349290275704424,
+        844424938899893,
+        3884032,
+        1788335581043530000
+      ],
+      "regular": true,
+      "sha256": "ce5365711109d5d3ee8525e353ff8b3844e4ca9e651268afd237929c3c79cf5e",
+      "single_handle_read": true
+    },
+    "env": {
+      "cargo_cache_lock_bound": true,
+      "cargo_config_and_flags_cleared": true,
+      "cargo_home_explicit": true,
+      "cargo_offline": true,
+      "cargo_target_external": true,
+      "path_closed": true,
+      "rustc_explicit": true,
+      "rustc_wrappers_cleared": true
+    },
+    "process": {
+      "exit_code": 0,
+      "stderr": {
+        "bytes": 3465,
+        "exclusive_create": true,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "cargo-build.stderr",
+        "post_identity": [
+          12437349290275704424,
+          1688849869031866,
+          3465,
+          1788335581128890800
+        ],
+        "pre_absent": true,
+        "pre_identity": [
+          12437349290275704424,
+          1688849869031866,
+          3465,
+          1788335581128890800
+        ],
+        "readback_equal": true,
+        "regular": true,
+        "sha256": "aa3d6d7186470a93f22b67ee9127707b1459e276a364edd78024994428ab251e",
+        "single_handle_read": true
+      },
+      "stdout": {
+        "bytes": 0,
+        "exclusive_create": true,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "cargo-build.stdout",
+        "post_identity": [
+          12437349290275704424,
+          1407374892321201,
+          0,
+          1788335581127307400
+        ],
+        "pre_absent": true,
+        "pre_identity": [
+          12437349290275704424,
+          1407374892321201,
+          0,
+          1788335581127307400
+        ],
+        "readback_equal": true,
+        "regular": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "single_handle_read": true
+      }
+    }
+  },
+  "candidate": {
+    "archive_sha256": "5d8acbd6c42a88e39e22ceeb8ff33d43092da9d83be71460b26d2213bca78255",
+    "commit": "58f3c99bb40a440dae9b148b19fff3016dc3238e",
+    "tree": "87016c939f71d1ea306ede1d4201591d11ff5ddc"
+  },
+  "cases": [
+    {
+      "blockers": [],
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr": {
+          "bytes": 0,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stderr",
+          "post_identity": [
+            12437349290275704424,
+            562949962189295,
+            0,
+            1788335623770730800
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189295,
+            0,
+            1788335623770730800
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 103,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stdout",
+          "post_identity": [
+            12437349290275704424,
+            562949962189294,
+            103,
+            1788335623766220900
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189294,
+            103,
+            1788335623766220900
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "4b996285b138e132e14c2a2df81a9d1f47a147ab6dbc43f83631df91b896e14e",
+          "single_handle_read": true
+        }
+      },
+      "comparison": {
+        "blockers": [],
+        "candidate_artifact": {
+          "bytes": 105430,
+          "sha256": "7d0ecb6a7a727a9e0fd4a680a3d0db95e05cdd0cea575e92df16ac1b4a0093fe"
+        },
+        "oracle_artifact": {
+          "bytes": 98210,
+          "sha256": "ba6f591f41d1ba4f81d1a9ceae62cb58e917e45d5a0f3e1c4068543a7cbb2a7e"
+        },
+        "passed": true,
+        "root_types": {
+          "candidate": {
+            "module": "pybert.results",
+            "name": "PyBertData"
+          },
+          "oracle": {
+            "module": "pybert.results",
+            "name": "PyBertData"
+          }
+        },
+        "rows": [
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 9.528047426564379e-11,
+            "name": "chnl_h",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 9.528047426564379e-11,
+            "name": "tx_out_h",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 9.528047426564379e-11,
+            "name": "ctle_out_h",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 9.528047426564379e-11,
+            "name": "dfe_out_h",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 9.814112272854558e-09,
+            "name": "chnl_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 0.0,
+            "name": "tx_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 0.0,
+            "name": "ctle_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              960
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 0.0,
+            "name": "dfe_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 7.901202549870368e-09,
+            "name": "tx_out_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 7.901202549870368e-09,
+            "name": "ctle_out_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 7.901202549870368e-09,
+            "name": "dfe_out_s",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 2.816567295366168e-09,
+            "name": "chnl_p",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 2.8165672971008915e-09,
+            "name": "tx_out_p",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 2.8165672971008915e-09,
+            "name": "ctle_out_p",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 2.8165672971008915e-09,
+            "name": "dfe_out_p",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              640
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 1.8670899737394109e-06,
+            "name": "chnl_H",
+            "passed": true,
+            "scale": 4.1963642121761495,
+            "shape": [
+              400
+            ],
+            "tolerance": 4.296364212176149e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 2.892982399659862e-15,
+            "name": "tx_H",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              400
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 0.0,
+            "name": "ctle_H",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              400
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 0.0,
+            "name": "dfe_H",
+            "passed": true,
+            "scale": 1.0,
+            "shape": [
+              400
+            ],
+            "tolerance": 1.1e-06
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 4.394607877600265e-07,
+            "name": "tx_out_H",
+            "passed": true,
+            "scale": 20.6590326564408,
+            "shape": [
+              400
+            ],
+            "tolerance": 2.07590326564408e-05
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 4.394607877600265e-07,
+            "name": "ctle_out_H",
+            "passed": true,
+            "scale": 20.6590326564408,
+            "shape": [
+              400
+            ],
+            "tolerance": 2.07590326564408e-05
+          },
+          {
+            "dtype": "float64",
+            "finite": true,
+            "kind": "float64",
+            "max_abs": 2.053859574857597e-06,
+            "name": "dfe_out_H",
+            "passed": true,
+            "scale": 39.877517288296005,
+            "shape": [
+              400
+            ],
+            "tolerance": 3.9977517288296006e-05
+          },
+          {
+            "kind": "object_none",
+            "name": "tx_out",
+            "passed": true
+          }
+        ]
+      },
+      "id": "pb01_class_pickle",
+      "input": {
+        "bytes": 1171,
+        "file": {
+          "bytes": 1171,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+          "post_identity": [
+            12437349290275704424,
+            562949962155587,
+            1171,
+            1788335524122383700
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            562949962155587,
+            1171,
+            1788335524122383700
+          ],
+          "regular": true,
+          "sha256": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48",
+          "single_handle_read": true
+        },
+        "path": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+        "sha256": "d63bb7ab3466ae70406cd2a555ae5a95cda1264021fed8fb1cdca85da961cc48"
+      },
+      "kind": "class_pickle",
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr": {
+          "bytes": 202,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stderr",
+          "post_identity": [
+            12437349290275704424,
+            844424938899958,
+            202,
+            1788335629914715900
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            844424938899958,
+            202,
+            1788335629914715900
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "a43f20bb0d3fa85605a5703944e9d41d31381ad3eb062e7c5b4534fc8c9c5269",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stdout",
+          "post_identity": [
+            12437349290275704424,
+            844424938899957,
+            0,
+            1788335629909249100
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            844424938899957,
+            0,
+            1788335629909249100
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "single_handle_read": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "blockers": [],
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr": {
+          "bytes": 0,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stderr",
+          "post_identity": [
+            12437349290275704424,
+            562949962189314,
+            0,
+            1788335648959052000
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189314,
+            0,
+            1788335648959052000
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 87,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stdout",
+          "post_identity": [
+            12437349290275704424,
+            562949962189313,
+            87,
+            1788335648954053400
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189313,
+            87,
+            1788335648954053400
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "c0c547de842ae6d3adfe99704b2b0971aa581c2ba8df7411fd71c23b851ab489",
+          "single_handle_read": true
+        }
+      },
+      "comparison": {
+        "arrays": {
+          "drifts": [],
+          "members": [
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "additive_noise_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_chnl_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0060120240480965,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0070120240480967e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_ctle_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_dfe_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_rx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_tx_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_auto_correlation",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_error_indices",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                262
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 974.0,
+              "shape": [
+                262
+              ],
+              "tolerance": 9.740010000000001e-07
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_observed_bits",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_reference_bits",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "channel_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "channel_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.220446049250313e-16,
+              "name": "chnl_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.000000014101481,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000141014812e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_H_raw",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_h",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_p",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 5.551115123125783e-17,
+              "name": "chnl_trimmed_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ctle_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.7755575615628914e-17,
+              "name": "ctle_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ctle_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_bits",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_clock_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1001
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1001
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_clocks",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_decision_scalers_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                803
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                803
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_decisions",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_locked",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 5.551115123125783e-17,
+              "name": "dfe_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_signal_samples_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_tap_weights_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1001
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1001
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_ui_estimates_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.2026824808563106e-13,
+              "name": "eye_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 30.671232876712338,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 3.067223287671234e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_0_x_ui",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_0_y_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_1_x_ui",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_1_y_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_2_x_ui",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_2_y_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_height_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_point_count",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_width_ps",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 1.7053025658242404e-13,
+              "name": "eye_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 8.526512829121202e-14,
+              "name": "eye_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 16.93150684931507,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 1.6932506849315074e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 8.526512829121202e-14,
+              "name": "eye_rx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 16.93150684931507,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 1.6932506849315074e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 1.7053025658242404e-13,
+              "name": "eye_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "f_GHz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 4.0010000000000006e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_bins",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 41002004008.01599,
+              "shape": [
+                101
+              ],
+              "tolerance": 41.002004008016996
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 101843687374.74939,
+              "shape": [
+                101
+              ],
+              "tolerance": 101.84368737475039
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                499
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                499
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                499
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                499
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                499
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                499
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 36004016064.25709,
+              "shape": [
+                101
+              ],
+              "tolerance": 36.00401606425809
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 104257028112.44969,
+              "shape": [
+                101
+              ],
+              "tolerance": 104.2570281124507
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 103999999999.99991,
+              "shape": [
+                101
+              ],
+              "tolerance": 104.00000000000091
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 39555555555.55565,
+              "shape": [
+                101
+              ],
+              "tolerance": 39.55555555555665
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 103999999999.99991,
+              "shape": [
+                101
+              ],
+              "tolerance": 104.00000000000091
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 39555555555.55565,
+              "shape": [
+                101
+              ],
+              "tolerance": 39.55555555555665
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 36004016064.25709,
+              "shape": [
+                101
+              ],
+              "tolerance": 36.00401606425809
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 104257028112.44969,
+              "shape": [
+                101
+              ],
+              "tolerance": 104.2570281124507
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4000000000.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 4.000000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_raw_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_raw_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_terminated_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_terminated_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_trimmed_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_trimmed_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_out_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_out_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_out_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_out_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_out_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_out_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 31.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 3.1001e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 17.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 1.7001e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_rx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 17.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 1.7001e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_channel_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_ctle_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_dfe_clock_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1001
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1001
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_dfe_decisions",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_dfe_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_rx_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "random_noise_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_ffe_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_filter_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_input_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 5.551115123125783e-17,
+              "name": "rx_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "statistical_eye_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "statistical_eye_pulse_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "symbols_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "t_ns_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.034375,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0353750000000003e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "time_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.220446049250313e-16,
+              "name": "tx_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0000000000000002,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000004e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "tx_channel_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.7755575615628914e-17,
+              "name": "tx_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "tx_waveform_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            }
+          ],
+          "passed": true
+        },
+        "artifacts": {
+          "candidate": {
+            "arrays": {
+              "bytes": 5006702,
+              "sha256": "73a94266adcb9214c6d8736378cebb1889e2598f7c92d02b2760d064f9a02684"
+            },
+            "meta": {
+              "bytes": 11917,
+              "sha256": "8c507ecb192b2c486f11c67fb05564159fc1f8350bb2c208c7b5a57e65705855"
+            }
+          },
+          "oracle": {
+            "arrays": {
+              "bytes": 3852401,
+              "sha256": "28da30db995bc3350f4d6c2993fd0e2f495c345392451a358add09397127daaa"
+            },
+            "meta": {
+              "bytes": 12587,
+              "sha256": "3060d3fe30aef6c61769d038740d822f7dfddc309df1fde432577a2da0d9ac32"
+            }
+          }
+        },
+        "metadata": {
+          "drifts": [],
+          "excluded_paths": [
+            "$.input_file",
+            "$.backend_metadata.run_id",
+            "$.backend_metadata.engine.build",
+            "$.diagnostics.events[].runId"
+          ],
+          "passed": true
+        },
+        "passed": true
+      },
+      "id": "pb03_baseline",
+      "input": {
+        "bytes": 1170,
+        "file": {
+          "bytes": 1170,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "input.yaml",
+          "post_identity": [
+            12437349290275704424,
+            562949962189307,
+            1170,
+            1788335631270774500
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189307,
+            1170,
+            1788335631270774500
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f",
+          "single_handle_read": true
+        },
+        "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+        "sha256": "2d6b5ca8aad9e293e675afbbb34e032d335be7148bd0aef7340c41a3aabf605f"
+      },
+      "kind": "complete_web_artifact",
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr": {
+          "bytes": 202,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stderr",
+          "post_identity": [
+            12437349290275704424,
+            562949962189319,
+            202,
+            1788335671835142400
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189319,
+            202,
+            1788335671835142400
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "a43f20bb0d3fa85605a5703944e9d41d31381ad3eb062e7c5b4534fc8c9c5269",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 85,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stdout",
+          "post_identity": [
+            12437349290275704424,
+            562949962189318,
+            85,
+            1788335671829013500
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189318,
+            85,
+            1788335671829013500
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e569b2929ec626a918672d132a08afd7d7e88c530363241bc02ec839ece0cf0f",
+          "single_handle_read": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "blockers": [],
+      "candidate_process": {
+        "exit_code": 0,
+        "stderr": {
+          "bytes": 0,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stderr",
+          "post_identity": [
+            12437349290275704424,
+            562949962189329,
+            0,
+            1788335684693688200
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189329,
+            0,
+            1788335684693688200
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 92,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stdout",
+          "post_identity": [
+            12437349290275704424,
+            844424938899984,
+            92,
+            1788335684686690800
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            844424938899984,
+            92,
+            1788335684686690800
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "aa556d370ad446c3aa12098f0191d96f8041178f1ad6b462f4fa7f85be4f9dc2",
+          "single_handle_read": true
+        }
+      },
+      "comparison": {
+        "arrays": {
+          "drifts": [],
+          "members": [
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "additive_noise_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_chnl_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0060120240480965,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0070120240480967e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_ctle_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_dfe_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_rx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "bathtub_tx_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_auto_correlation",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_error_indices",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                71
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 974.0,
+              "shape": [
+                71
+              ],
+              "tolerance": 9.740010000000001e-07
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_observed_bits",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ber_reference_bits",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "channel_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "channel_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.220446049250313e-16,
+              "name": "chnl_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.000000014101481,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000141014812e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_H_raw",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_h",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_p",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "chnl_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 5.551115123125783e-17,
+              "name": "chnl_trimmed_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.220446049250313e-16,
+              "name": "ctle_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.7755575615628914e-17,
+              "name": "ctle_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "ctle_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.220446049250313e-16,
+              "name": "dfe_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0002642455202773,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0012642455202775e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_bits",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_clock_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1001
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1001
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_clocks",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_decision_scalers_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                803
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                803
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_decisions",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_locked",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.7755575615628914e-17,
+              "name": "dfe_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_signal_samples_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_tap_weights_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1001
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1001
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "dfe_ui_estimates_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.2026824808563106e-13,
+              "name": "eye_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 30.671232876712338,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 3.067223287671234e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_0_x_ui",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_0_y_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_1_x_ui",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_1_y_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_2_x_ui",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_2_y_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                0
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                0
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_ber",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_height_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_point_count",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "eye_contour_width_ps",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                3
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                3
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 1.7053025658242404e-13,
+              "name": "eye_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 6.394884621840902e-14,
+              "name": "eye_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 18.753424657534254,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 1.8754424657534256e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 6.394884621840902e-14,
+              "name": "eye_rx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 18.753424657534254,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 1.8754424657534256e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 1.7053025658242404e-13,
+              "name": "eye_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                512
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                512
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "f_GHz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 4.0010000000000006e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_bins",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 41002004008.01599,
+              "shape": [
+                101
+              ],
+              "tolerance": 41.002004008016996
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 101843687374.74939,
+              "shape": [
+                101
+              ],
+              "tolerance": 101.84368737475039
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                499
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                499
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                499
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                499
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_chnl_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                499
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                499
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 28993963782.69619,
+              "shape": [
+                101
+              ],
+              "tolerance": 28.99396378269719
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 91629778672.03209,
+              "shape": [
+                101
+              ],
+              "tolerance": 91.62977867203308
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                497
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                497
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                497
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                497
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_ctle_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                497
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                497
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 91999999999.99991,
+              "shape": [
+                101
+              ],
+              "tolerance": 92.00000000000091
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 29111111111.111122,
+              "shape": [
+                101
+              ],
+              "tolerance": 29.111111111112123
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 91999999999.99991,
+              "shape": [
+                101
+              ],
+              "tolerance": 92.00000000000091
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_dfe_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 29111111111.111122,
+              "shape": [
+                101
+              ],
+              "tolerance": 29.111111111112123
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                495
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                495
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 36004016064.25709,
+              "shape": [
+                101
+              ],
+              "tolerance": 36.00401606425809
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_bin_centers_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                101
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_data_independent_histogram_per_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                101
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 104257028112.44969,
+              "shape": [
+                101
+              ],
+              "tolerance": 104.2570281124507
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_data_independent_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_data_independent_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4990000000.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 4.990000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_spectrum",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_threshold",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                500
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                500
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_tie_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "jitter_tx_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                498
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                498
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_frequency_hz",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 4000000000.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 4.000000000001
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_raw_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_raw_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_terminated_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_terminated_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_trimmed_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_channel_trimmed_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_out_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_out_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_ctle_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_out_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_out_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_dfe_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0002642455202773,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0012642455202775e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_out_im",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_out_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "legacy_stage_tx_re",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 31.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 3.1001e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_ctle",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_dfe",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 19.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 1.9001000000000003e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_rx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 19.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 1.9001000000000003e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "native_eye_tx",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000,
+                64
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 24.0,
+              "shape": [
+                1000,
+                64
+              ],
+              "tolerance": 2.4001000000000004e-08
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_channel_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_ctle_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_dfe_clock_times_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1001
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1001
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_dfe_decisions",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_dfe_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "parity_rx_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "random_noise_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_ffe_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_filter_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                960
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                960
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_input_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.7755575615628914e-17,
+              "name": "rx_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "rx_output_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "statistical_eye_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "statistical_eye_pulse_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "symbols_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                1000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                1000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "t_ns_chnl",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.034375,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0353750000000003e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "time_s",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.220446049250313e-16,
+              "name": "tx_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0000000000000002,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000004e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "tx_channel_impulse_v_per_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                640
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                640
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 2.7755575615628914e-17,
+              "name": "tx_out_H",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                401
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                401
+              ],
+              "tolerance": 1.0010000000000002e-09
+            },
+            {
+              "dtype": "float64",
+              "finite": true,
+              "max_abs": 0.0,
+              "name": "tx_waveform_v",
+              "numeric": true,
+              "oracle_dtype": "float64",
+              "oracle_shape": [
+                32000
+              ],
+              "passed": true,
+              "present": true,
+              "scale": 1.0,
+              "shape": [
+                32000
+              ],
+              "tolerance": 1.0010000000000002e-09
+            }
+          ],
+          "passed": true
+        },
+        "artifacts": {
+          "candidate": {
+            "arrays": {
+              "bytes": 4847715,
+              "sha256": "3bd62275a2ab69d55a8a77fa5b101ceae1e0406de6d7559014e5bb453c9aedfa"
+            },
+            "meta": {
+              "bytes": 11960,
+              "sha256": "197b7c176945e27dd57677e17e73d14e2be2c1819e02d3b91848052d7fd5809c"
+            }
+          },
+          "oracle": {
+            "arrays": {
+              "bytes": 3796655,
+              "sha256": "155bfd973be5c5f4a939b139dc528c494ef9350ad8676e155322c2262fbab5cb"
+            },
+            "meta": {
+              "bytes": 12634,
+              "sha256": "4291adae483b593a38da8b7142c0fc3dae4c999e68c3d7cd7dcc77e46fa98918"
+            }
+          }
+        },
+        "metadata": {
+          "drifts": [],
+          "excluded_paths": [
+            "$.input_file",
+            "$.backend_metadata.run_id",
+            "$.backend_metadata.engine.build",
+            "$.diagnostics.events[].runId"
+          ],
+          "passed": true
+        },
+        "passed": true
+      },
+      "id": "pb03_analytic_ctle",
+      "input": {
+        "bytes": 1169,
+        "file": {
+          "bytes": 1169,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "input.yaml",
+          "post_identity": [
+            12437349290275704424,
+            562949962189324,
+            1169,
+            1788335672383808000
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189324,
+            1169,
+            1788335672383808000
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "d57850540097cba4b10c4db3f0c42615677658f14f3edaa8b59c2512f504f164",
+          "single_handle_read": true
+        },
+        "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+        "sha256": "d57850540097cba4b10c4db3f0c42615677658f14f3edaa8b59c2512f504f164"
+      },
+      "kind": "complete_web_artifact",
+      "oracle_process": {
+        "exit_code": 0,
+        "stderr": {
+          "bytes": 202,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stderr",
+          "post_identity": [
+            12437349290275704424,
+            562949962189334,
+            202,
+            1788335702249472100
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189334,
+            202,
+            1788335702249472100
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "a43f20bb0d3fa85605a5703944e9d41d31381ad3eb062e7c5b4534fc8c9c5269",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 90,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stdout",
+          "post_identity": [
+            12437349290275704424,
+            562949962189333,
+            90,
+            1788335702242382500
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189333,
+            90,
+            1788335702242382500
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "f68911892ed63ebe03ba7c4dce89dc96c5b7278c78eaea65851fb1ee2ca1dd09",
+          "single_handle_read": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "blockers": [],
+      "candidate_process": {
+        "exit_code": 1,
+        "stderr": {
+          "bytes": 302,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stderr",
+          "post_identity": [
+            12437349290275704424,
+            562949962189342,
+            302,
+            1788335702750998600
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189342,
+            302,
+            1788335702750998600
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "739b0bf8cc12b5a6d5e78153cca7d213ff490843d0184f1857d0799ba14b74eb",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "candidate.stdout",
+          "post_identity": [
+            12437349290275704424,
+            562949962189341,
+            0,
+            1788335702747008600
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189341,
+            0,
+            1788335702747008600
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "single_handle_read": true
+        }
+      },
+      "id": "pb03_gain_rejected",
+      "input": {
+        "bytes": 1170,
+        "file": {
+          "bytes": 1170,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "input.yaml",
+          "post_identity": [
+            12437349290275704424,
+            562949962189339,
+            1170,
+            1788335702733277500
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            562949962189339,
+            1170,
+            1788335702733277500
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "090c114644e33462ecca1d26f80790629448b214f7d413498c25e5d143d5873b",
+          "single_handle_read": true
+        },
+        "path": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+        "sha256": "090c114644e33462ecca1d26f80790629448b214f7d413498c25e5d143d5873b"
+      },
+      "kind": "expected_rejection",
+      "no_artifacts": {
+        "candidate": true,
+        "oracle": true
+      },
+      "oracle_process": {
+        "exit_code": 1,
+        "stderr": {
+          "bytes": 435,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stderr",
+          "post_identity": [
+            12437349290275704424,
+            844424938900001,
+            435,
+            1788335707469524700
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            844424938900001,
+            435,
+            1788335707469524700
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "ed18b10c9fb5e42ddaae36410e0b9ed907fa419c6d86187a26f35814e719d3b4",
+          "single_handle_read": true
+        },
+        "stdout": {
+          "bytes": 0,
+          "exclusive_create": true,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "oracle.stdout",
+          "post_identity": [
+            12437349290275704424,
+            1970324845742611,
+            0,
+            1788335707462517600
+          ],
+          "pre_absent": true,
+          "pre_identity": [
+            12437349290275704424,
+            1970324845742611,
+            0,
+            1788335707462517600
+          ],
+          "readback_equal": true,
+          "regular": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "single_handle_read": true
+        }
+      },
+      "passed": true
+    }
+  ],
+  "nonce": "0ac414a18260545a4264e2940af69bed6f7eac98bc660acc036fb1da337292c9",
+  "oracle_runtime": {
+    "clean_archive_or_venv_only": true,
+    "host_pythonpath_absent": true,
+    "host_uv_flags_cleared": true,
+    "host_virtual_env_absent": true,
+    "modules": {
+      "numpy": {
+        "file": {
+          "bytes": 23016,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "Lib/site-packages/numpy/__init__.py",
+          "post_identity": [
+            12437349290275704424,
+            281474985496206,
+            23016,
+            1786082590830488100
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            281474985496206,
+            23016,
+            1786082590830488100
+          ],
+          "regular": true,
+          "sha256": "ad238e76e8c6fbd56a19e6c894864cf466bd2ed76004cac89e78c019fa625607",
+          "single_handle_read": true
+        },
+        "owner": "venv",
+        "relative_path": "Lib/site-packages/numpy/__init__.py",
+        "version": "2.2.6"
+      },
+      "pybert": {
+        "file": {
+          "bytes": 1444,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "Lib/site-packages/pybert/__init__.py",
+          "post_identity": [
+            12437349290275704424,
+            281474985481615,
+            1444,
+            1788335583863978600
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            281474985481615,
+            1444,
+            1788335583863978600
+          ],
+          "regular": true,
+          "sha256": "d24187f1f3191b37260a47abb6810d0b2ab1870e9cc89d0df49e4b71ac58d36c",
+          "single_handle_read": true
+        },
+        "owner": "venv",
+        "relative_path": "Lib/site-packages/pybert/__init__.py",
+        "version": "(dev)"
+      },
+      "scipy": {
+        "file": {
+          "bytes": 4614,
+          "nlink": 1,
+          "nonlink": true,
+          "path": "Lib/site-packages/scipy/__init__.py",
+          "post_identity": [
+            12437349290275704424,
+            1125899915632881,
+            4614,
+            1786082589622639400
+          ],
+          "pre_identity": [
+            12437349290275704424,
+            1125899915632881,
+            4614,
+            1786082589622639400
+          ],
+          "regular": true,
+          "sha256": "68d789d0eea2912c40cb75119b50579aac07ab30814f551c8ab24876bb3d724a",
+          "single_handle_read": true
+        },
+        "owner": "venv",
+        "relative_path": "Lib/site-packages/scipy/__init__.py",
+        "version": "1.15.3"
+      }
+    },
+    "process": {
+      "exit_code": 0,
+      "stderr": {
+        "bytes": 891,
+        "exclusive_create": true,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "module-probe.stderr",
+        "post_identity": [
+          12437349290275704424,
+          562949962189288,
+          891,
+          1788335623698942000
+        ],
+        "pre_absent": true,
+        "pre_identity": [
+          12437349290275704424,
+          562949962189288,
+          891,
+          1788335623698942000
+        ],
+        "readback_equal": true,
+        "regular": true,
+        "sha256": "cb15d5e2986b131173e5be67a2697aeb7e3dbaada46d67b9784f37f97365cb7e",
+        "single_handle_read": true
+      },
+      "stdout": {
+        "bytes": 489,
+        "exclusive_create": true,
+        "nlink": 1,
+        "nonlink": true,
+        "path": "module-probe.stdout",
+        "post_identity": [
+          12437349290275704424,
+          562949962189287,
+          489,
+          1788335623691562500
+        ],
+        "pre_absent": true,
+        "pre_identity": [
+          12437349290275704424,
+          562949962189287,
+          489,
+          1788335623691562500
+        ],
+        "readback_equal": true,
+        "regular": true,
+        "sha256": "5f5656e2684262714caf4c3e1a55d50a42e5ac255145bfcb30d32168bc4f13ce",
+        "single_handle_read": true
+      }
+    },
+    "uv_cache_explicit_lock_bound": true,
+    "uv_link_mode_copy": true,
+    "uv_offline_frozen_no_config": true
+  },
+  "run_id": "pb-01-03-source-corpus-run-02",
+  "schema": "sipi.pb-01-03-source-corpus-replay.v1",
+  "scope": {
+    "pb01": {
+      "atol": 1e-07,
+      "canonical_names": [
+        "chnl_h",
+        "tx_out_h",
+        "ctle_out_h",
+        "dfe_out_h",
+        "chnl_s",
+        "tx_s",
+        "ctle_s",
+        "dfe_s",
+        "tx_out_s",
+        "ctle_out_s",
+        "dfe_out_s",
+        "chnl_p",
+        "tx_out_p",
+        "ctle_out_p",
+        "dfe_out_p",
+        "chnl_H",
+        "tx_H",
+        "ctle_H",
+        "dfe_H",
+        "tx_out_H",
+        "ctle_out_H",
+        "dfe_out_H",
+        "tx_out"
+      ],
+      "fixture": "crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml",
+      "pickle_bytes_exact": false,
+      "rtol": 1e-06
+    },
+    "pb03": {
+      "atol": 1e-12,
+      "case_ids": [
+        "pb03_baseline",
+        "pb03_analytic_ctle",
+        "pb03_gain_rejected"
+      ],
+      "fixture": "crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml",
+      "metadata_exclusions": [
+        "$.input_file",
+        "$.backend_metadata.run_id",
+        "$.backend_metadata.engine.build",
+        "$.diagnostics.events[].runId"
+      ],
+      "rtol": 1e-09
+    }
+  },
+  "status": "passed",
+  "toolchain": {
+    "cargo": {
+      "executable": "cargo.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "cargo",
+      "version_exit": 0,
+      "version_sha256": "e11749bef57e0f2056f4a11bb00871623d935559227c35a7b373e983f1eea6bb"
+    },
+    "link": {
+      "executable": "link.exe",
+      "file_sha256": "ca11e6c45debd34bf652dfe984c5360a531a005ed78bf72852330c9c2590cf0d",
+      "path_redacted": true,
+      "role": "link",
+      "version_exit": 0,
+      "version_sha256": "f5967e8fed8a0058b2813fa1c42f18645e258cb02d8817bef7760e09d0441412"
+    },
+    "rustc": {
+      "executable": "rustc.exe",
+      "file_sha256": "86478e53f769379d7f0ebfa7c9aa97cb76ca92233f79aa2cc0dbee2efaac73c7",
+      "path_redacted": true,
+      "role": "rustc",
+      "version_exit": 0,
+      "version_sha256": "d6dec673ca010f6a7d90aa3f4a896ad9d88b66b8fe090296c298eddfe9a406db"
+    },
+    "uv": {
+      "executable": "uv.exe",
+      "file_sha256": "5a7ec85884c2ccb1be560cb8fac3eb890df1adf49bfcc070a270ba70401bdd68",
+      "path_redacted": true,
+      "role": "uv",
+      "version_exit": 0,
+      "version_sha256": "ab0d29803cb58959acc6cf64650fb215c72c2989b94fb6f9de5f22814ceca82d"
+    }
+  },
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  },
+  "version": 1
+}

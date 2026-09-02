@@ -4,9 +4,8 @@
 
 This record is the formalization boundary for the Agent-BERT lane.  It joins
 three independently source-bound PyBERT compatibility leaves without turning
-them into a claim of whole-PyBERT, product, or release parity.  PB-02 has an
-immutable two-run archive record; PB-01 and PB-03 still require equivalent
-archive-built records before this lane can be called complete.
+them into a claim of whole-PyBERT, product, or release parity.  PB-02 and the
+PB-01/PB-03 leaves each have immutable two-run archive records.
 
 The sole upstream reference is PyBERT commit
 `5bf6d7ea0ace261891aaeb611ffc1c267e160afe`, tree
@@ -19,9 +18,9 @@ workspace under the explicit license boundary in
 
 | Upstream command | Rust command | Evidence | Accepted scope |
 | --- | --- | --- | --- |
-| `pybert sim` | `sipi-pybert-direct sim` | `SOURCE-MAP-PB01-CLASS-PICKLE.md`; `legacy_runtime.rs` pinned-source class-pickle test | Development evidence: bound legacy NRZ configuration, source-loadable `PyBertData` graph, 22 numeric plot arrays, and `tx_out` object placeholder. Archive replay pending. |
+| `pybert sim` | `sipi-pybert-direct sim` | `pb-01-03-source-corpus.v1.yaml`; `SOURCE-MAP-PB01-CLASS-PICKLE.md` | Bound legacy NRZ configuration, source-loadable `PyBertData` graph, 22 numeric plot arrays, and `tx_out` object placeholder, from two archive-built replays. |
 | `pybert sim-native` | `sipi-pybert-direct sim-native` | `pb-02-pinned-native-source-corpus.v1.yaml` and its two archive-built reports | Every successful configuration in pinned `native/pybert-core/tests/simulation.rs`, plus its reachable additive-noise length rejection; full metadata, diagnostics, and all NPZ logical members. |
-| `pybert sim-rust` | `sipi-pybert-direct sim-rust` | `SOURCE-MAP-PB03-PAYLOAD.md`; `pb03_payload.rs` pinned-source tests | Development evidence: full 150-member payload and metadata for the admitted legacy NRZ metallic-line configuration and its analytic-CTLE variant. Archive replay pending. |
+| `pybert sim-rust` | `sipi-pybert-direct sim-rust` | `pb-01-03-source-corpus.v1.yaml`; `SOURCE-MAP-PB03-PAYLOAD.md` | Full 150-member payload and metadata for the admitted legacy NRZ metallic-line configuration and its analytic-CTLE variant, from two archive-built replays. |
 
 The PB-02 formal candidate is `d2047cd1977f76aecb81c1674c031672bac5ff13`.
 At the creation of this record, `git diff` from that candidate through

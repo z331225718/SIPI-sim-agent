@@ -1,0 +1,52 @@
+schema: sipi.pb-01-03-source-corpus.v1
+status: accepted_scoped_legacy_and_web_source_corpus
+preparation:
+  commit: b3648aec
+  parent: 58f3c99bb40a440dae9b148b19fff3016dc3238e
+  paths:
+    - tools/run_pb_01_03_source_corpus.py
+    - tools/test_run_pb_01_03_source_corpus.py
+candidate:
+  commit: 58f3c99bb40a440dae9b148b19fff3016dc3238e
+  tree: 87016c939f71d1ea306ede1d4201591d11ff5ddc
+  archive_sha256: 5d8acbd6c42a88e39e22ceeb8ff33d43092da9d83be71460b26d2213bca78255
+upstream:
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+reports:
+  - path: docs/baselines/pb-01-03-source-corpus-run-01.v1.json
+    bytes: 190918
+    sha256: 18410e7ba721fab36a5ce0c957e7acea092577929b5e71fba22f47fe594c41c5
+    run_id: pb-01-03-source-corpus-run-01
+  - path: docs/baselines/pb-01-03-source-corpus-run-02.v1.json
+    bytes: 190890
+    sha256: 036bbfcb28ffbfcf77e4d675c9862ce6879ac2b72f798b3b95ca8bda0121dc15
+    run_id: pb-01-03-source-corpus-run-02
+aggregate:
+  path: docs/baselines/pb-01-03-source-corpus-aggregate.v1.json
+  bytes: 3601
+  sha256: 7ea7e6267877b80d7e1ae3abba4d55e18b93ade8f23d239dbd7adea7fc0818f4
+scope:
+  pb01:
+    command: sim
+    fixture: crates/sipi-pybert-direct/fixtures/pb-01-legacy-nrz.yaml
+    class_pickle: PyBertData/ArrayPlotData/TraitDictObject
+    canonical_members: 23
+    numeric_tolerance: 1e-7 + 1e-6 * max(abs(values), 1)
+    pickle_bytes_exact: false
+  pb03:
+    command: sim-rust
+    fixture: crates/sipi-pybert-direct/fixtures/pb-03-legacy-nrz.yaml
+    accepted_cases: [baseline_nrz_metallic_line, analytic_ctle]
+    rejected_case: gain_outside_0_to_1
+    complete_npz_members_per_success_case: 150
+    numeric_rtol: 1.0e-9
+    numeric_atol: 1.0e-12
+    metadata_exclusions: [$.input_file, $.backend_metadata.run_id, $.backend_metadata.engine.build, $.diagnostics.events[].runId]
+non_claims:
+  - Not whole-PyBERT parity or a general legacy configuration claim.
+  - AMI, IBIS, TS4/GetWave, vendor DLL/models, GUI/Desktop, FastAPI, Redis, and operational storage remain excluded.
+  - S-parameter and local-extension handling are outside these source-compatible corpora.
+  - PB-04 sim-auto remains fail-closed with external Python required; PB-05 sim-compare requires an independent supplied reference.
+  - This is not root sipi integration, distribution approval, license approval, or release approval.
