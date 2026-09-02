@@ -133,6 +133,11 @@ class Tp0vV3RunnerTests(unittest.TestCase):
         self.assertFalse(result["passed"])
         self.assertFalse(result["entries"][2]["present"])
 
+    def test_matlab_summary_release_uses_raw_release_with_r_prefixed_version(self) -> None:
+        summary = {"matlab_release": "2024b", "matlab_version": "24.2.0 (R2024b)"}
+        self.assertTrue(RUNNER.matlab_summary_identity(summary))
+        self.assertFalse(RUNNER.matlab_summary_identity({"matlab_release": "2026a", "matlab_version": "R2026a"}))
+
     def test_matlab_and_rust_case_extractors_require_two_case_shape(self) -> None:
         matlab = RUNNER.matlab_cases({"case_metrics": [{"output_metrics": {"ERL": {"kind": "inf"}}}, {"output_metrics": {"ERL": {"kind": "finite", "value": 1.25}}}]})
         rust = RUNNER.rust_cases({"cases": [{"metrics": {"ERL": None}}, {"metrics": {"ERL": 1.25}}]})

@@ -67,10 +67,10 @@ UPSTREAM_RECEIPT = {
     ),
 }
 CANDIDATE_RECEIPT = {
-    "commit": "9e8ca698beccf0561683f89649b5ec0d2441b379",
-    "tree": "f01db873646763f02baf51561ab8287e10eb0869",
-    "archive_sha256": "6524c1c894657e9efd0e242fe812ffe4c8e34d671e01ba12e2ea8ccaa3f07f54",
-    "archive_bytes": 61_880_320,
+    "commit": "3cb373b0d4c7d33f771179650c8982303f4329a6",
+    "tree": "3b21f44768312987debdb2e18e24671c01005bd3",
+    "archive_sha256": "871f4e72011bab82bace724336724125081acf7f91270d61c5d08be19d1c3602",
+    "archive_bytes": 61_921_280,
 }
 
 
@@ -488,6 +488,10 @@ def d3_checkpoint_policy(matlab: list[dict[str, Any]], rust: list[dict[str, Any]
     }
 
 
+def matlab_summary_identity(summary: dict[str, Any]) -> bool:
+    return summary.get("matlab_release") == "2024b" and "R2024b" in str(summary.get("matlab_version", ""))
+
+
 def _channel_inputs(source: Path, manifest: dict[str, Any]) -> tuple[Path, Path, Path, dict[str, Any]]:
     assets = manifest["upstream"]["assets"]
     require([item["role"] for item in assets] == ["THRU", "FEXT", "NEXT"], "asset role/order drift")
@@ -573,7 +577,7 @@ def _run_matlab_case(worker_python: Path, engine_site: Path, harness: Path, sour
     except (OSError, json.JSONDecodeError, RuntimeError) as error:
         record.update({"status": "failed", "label": "matlab_result_schema_failed", "error": type(error).__name__})
         return record
-    require(summary.get("matlab_release") == "R2024b", "MATLAB Engine case did not report R2024b")
+    require(matlab_summary_identity(summary), "MATLAB Engine case did not report R2024b")
     bridge = bridge_comparison(Path(spec["bridge_expected"]), bridge_path)
     record.update({
         "status": "passed",

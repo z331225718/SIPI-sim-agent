@@ -11,7 +11,7 @@ def validate(d):
     require(d.get('schema')=='sipi.com.tp0v-current-asset-scoped-acceptance-prep.v3','schema')
     require(d.get('status') in {'preparation_only_pending_clean_candidate_and_harness_commit','candidate_bound_pending_four_replays'},'status')
     if d['status']=='preparation_only_pending_clean_candidate_and_harness_commit': require(d['candidate']=={'commit':None,'tree':None,'archive_sha256':None,'archive_bytes':None},'candidate must remain null')
-    else: require(d['candidate']=={'commit':'9e8ca698beccf0561683f89649b5ec0d2441b379','tree':'f01db873646763f02baf51561ab8287e10eb0869','archive_sha256':'6524c1c894657e9efd0e242fe812ffe4c8e34d671e01ba12e2ea8ccaa3f07f54','archive_bytes':61880320},'candidate receipt')
+    else: require(d['candidate']=={'commit':'3cb373b0d4c7d33f771179650c8982303f4329a6','tree':'3b21f44768312987debdb2e18e24671c01005bd3','archive_sha256':'871f4e72011bab82bace724336724125081acf7f91270d61c5d08be19d1c3602','archive_bytes':61921280},'candidate receipt')
     require(d['matlab']=={'required_release':'R2024b','required_release_raw':'2024b','executable_mode':'explicit_only_no_path_fallback','semantic_run':'uninstrumented','trace_run':'instrumented_diagnostic_only','start_flags':['-batch'],'mw_disable_connector':'1'},'exact R2024b runtime gate')
     comparison=d['comparison']
     require(comparison['source_warning_equivalent'] is False,'source warning contract')
