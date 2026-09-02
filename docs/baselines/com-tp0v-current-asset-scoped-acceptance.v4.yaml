@@ -94,7 +94,7 @@ formal_paths_absent:
   - docs/baselines/com-tp0v-current-asset-r2024b-rust-02.v4.json
   - docs/baselines/com-tp0v-current-asset-r2024b-aggregate.v4.json
 tools:
-  runner: {path: tools/run_com_tp0v_r2024b_v4_replay.py, sha256: 8350f6e52b66066a586c792ceebdb6b835f69698318e62611155707439adf804}
+  runner: {path: tools/run_com_tp0v_r2024b_v4_replay.py, sha256: dc8c595bffb9d7c90cc99643596f155b7ad7f23c86d1bdb5c72c188ad2a669eb}
   aggregate: {path: tools/aggregate_com_tp0v_r2024b_v4_replay.py, sha256: 12c7f875a4b679001e24516d8472a17083fb2540ac43e485f8c8a60ff3aaad65}
   verifier: {path: tools/verify_com_tp0v_r2024b_v4_prep.py, sha256: 5bd95019bd6b0994766387bd4120079eaff89f4b682d628ea64f3d78d5e15959}
   tests: {path: tools/test_verify_com_tp0v_r2024b_v4_prep.py, sha256: d37defea83913333551c574d38f4565ba62f5c2df3407babc1954a91be2a85e0}

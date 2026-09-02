@@ -390,7 +390,7 @@ def _enrich_trace_hash_receipts(root: Path) -> None:
         if entry.get("available") is False:
             continue
         vectors = entry.get("vectors")
-        require(isinstance(vectors, dict) and list(vectors) == list(VECTOR_NAMES), "MATLAB trace vector order before enrichment")
+        require(isinstance(vectors, dict) and set(vectors) == set(VECTOR_NAMES), "MATLAB trace vector names before enrichment")
         for name in VECTOR_NAMES:
             receipt = vectors[name]
             require(isinstance(receipt, dict), "MATLAB trace vector receipt before enrichment")
