@@ -14,6 +14,9 @@ test-support = []
 # Opt-in scoped public `sipi com run` route for the Agent-COM direct port.
 # It remains absent from the default CLI build.
 com-direct-integration = ["dep:sipi-agent-com-direct"]
+# Diagnostic-only raw normal-ERL sidecar. It is deliberately opt-in and
+# forwards only through the already opt-in public COM route.
+normal-erl-diagnostic-sidecar = ["com-direct-integration", "sipi-agent-com-direct/normal-erl-diagnostic-sidecar"]
 # Internal-only root linkage for the quarantined Agent-Spice direct leaves.
 # The feature stays opt-in so the default CLI remains byte-for-byte isolated
 # from the direct port and its external-runtime custody paths.
