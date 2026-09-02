@@ -77,7 +77,9 @@ class V4RunnerTests(unittest.TestCase):
                     target.write_bytes(raw)
                     vectors[name] = {"file": relative, "dtype": "f64le", "shape": [2], "bytes": len(raw), "sha256": runner.sha256_bytes(raw)}
                 ports.append({"port": port, "available": True, "vectors": vectors})
-            (root / "manifest.json").write_text(json.dumps({"schema": "sipi.com.normal-erl-array-sidecar.v1", "diagnostic_only": True, "ports": ports}), encoding="utf-8")
+            # The production sidecar writes canonical sorted JSON; object
+            # member order must not be mistaken for vector order.
+            (root / "manifest.json").write_text(json.dumps({"schema": "sipi.com.normal-erl-array-sidecar.v1", "diagnostic_only": True, "ports": ports}, sort_keys=True), encoding="utf-8")
             result = runner._read_f64le_sidecar(root, schema="sipi.com.normal-erl-array-sidecar.v1")
             self.assertEqual(result[1][0]["name"], "time_s")
             self.assertEqual(runner.CASE_TO_PORT, {0: 1})

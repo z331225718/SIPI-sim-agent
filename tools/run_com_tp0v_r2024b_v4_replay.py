@@ -355,7 +355,9 @@ def _read_f64le_sidecar(root: Path, *, schema: str, ports_required: bool = True)
             require(not ports_required, "normal ERL sidecar unavailable port")
             continue
         vectors = entry.get("vectors")
-        require(isinstance(vectors, dict) and list(vectors) == list(VECTOR_NAMES), "normal ERL sidecar vector order")
+        # JSON object-member order is not a wire contract; project the fixed
+        # vector order below rather than rejecting a canonical sorted writer.
+        require(isinstance(vectors, dict) and set(vectors) == set(VECTOR_NAMES), "normal ERL sidecar vector names")
         projected = []
         for name in VECTOR_NAMES:
             receipt = vectors[name]
