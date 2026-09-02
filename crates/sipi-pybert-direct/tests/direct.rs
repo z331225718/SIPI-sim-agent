@@ -5,8 +5,8 @@ use serde_json::json;
 
 use sipi_pybert_direct::{
     AdditiveNoiseV1, AnalysisConfigV1, ArrayDTypeV1, ArtifactRefV1, ChannelInputV1,
-    ChannelResponseV1, FfeConfigV1, Hertz, ModulationV1, NumericArrayV1, Ohms, PatternV1,
-    ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
+    ChannelResponseV1, CtleConfigV1, FfeConfigV1, Hertz, ModulationV1, NumericArrayV1, Ohms,
+    PatternV1, ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
     SimulationOutputV1, TxConfigV1, TypedArrayV1, Volts, npz_bytes_nd, npz_bytes_typed_nd,
     run_sim_native_json, sha256_bytes, simulate_native_v1, strict_simulation_input_json,
     write_simulation_artifacts, write_simulation_artifacts_with_schema_and_backend,
@@ -139,11 +139,7 @@ fn direct_run_writes_upstream_artifact_names_and_metadata() {
         report.metadata["backend_metadata"]["engine"]["build"]["profile"],
         "debug"
     );
-    assert!(
-        report.metadata["effective_input"]["analysis"]
-            .get("jitterRelThresh")
-            .is_none()
-    );
+    assert!(report.metadata["effective_input"]["analysis"]["jitterRelThresh"].is_null());
     assert!(
         report.metadata["input_file"]
             .as_str()
@@ -155,6 +151,83 @@ fn direct_run_writes_upstream_artifact_names_and_metadata() {
     assert!(output_path.join("meta.json").is_file());
     assert!(output_path.join("arrays.npz").is_file());
     assert!(fs::metadata(output_path.join("arrays.npz")).unwrap().len() > 22);
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn direct_cli_preserves_source_optional_jitter_field_presence() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-jitter-field-presence-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+
+    let present = serde_json::to_vec(&input()).expect("present input");
+    fs::write(&input_path, &present).expect("input");
+    let present_report =
+        run_sim_native_json(&present, &input_path, &root.join("present")).expect("present run");
+    assert!(present_report.metadata["effective_input"]["analysis"]["jitterRelThresh"].is_null());
+
+    let mut absent_value = serde_json::to_value(input()).expect("input value");
+    absent_value["analysis"]
+        .as_object_mut()
+        .expect("analysis object")
+        .remove("jitterRelThresh");
+    let absent = serde_json::to_vec(&absent_value).expect("absent input");
+    let absent_report =
+        run_sim_native_json(&absent, &input_path, &root.join("absent")).expect("absent run");
+    assert!(
+        absent_report.metadata["effective_input"]["analysis"]
+            .get("jitterRelThresh")
+            .is_none()
+    );
+    assert_eq!(present_report.output, absent_report.output);
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn direct_cli_drops_the_non_source_ctle_impulse_extension() {
+    let root = std::env::temp_dir().join(format!(
+        "sipi-pybert-direct-ctle-source-contract-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).expect("root");
+    let input_path = root.join("input.json");
+    let mut extended = input();
+    extended.rx.native_ctle_enabled = true;
+    extended.rx.ctle = Some(CtleConfigV1 {
+        bandwidth: Hertz(12.0e9),
+        peak_frequency: Hertz(5.0e9),
+        peak_magnitude_db: 1.7,
+        frequency_step_hz: Some(Hertz(1.0e9)),
+        frequency_max_hz: Some(Hertz(20.0e9)),
+        impulse_response_v_per_v: Some(vec![1.0, 0.25, -0.05]),
+    });
+    let extended_json = serde_json::to_vec(&extended).expect("extended input");
+    fs::write(&input_path, &extended_json).expect("input");
+    let extended_report =
+        run_sim_native_json(&extended_json, &input_path, &root.join("extended-output"))
+            .expect("source-compatible direct run");
+
+    let mut source_input = extended;
+    source_input
+        .rx
+        .ctle
+        .as_mut()
+        .expect("ctle")
+        .impulse_response_v_per_v = None;
+    let source_json = serde_json::to_vec(&source_input).expect("source input");
+    let source_report = run_sim_native_json(&source_json, &input_path, &root.join("source-output"))
+        .expect("source-shape run");
+
+    assert_eq!(extended_report.output, source_report.output);
+    assert_eq!(
+        extended_report.metadata["effective_input"]["rx"]["ctle"]["impulseResponseVPerV"],
+        serde_json::json!([1.0, 0.25, -0.05])
+    );
     let _ = fs::remove_dir_all(root);
 }
 

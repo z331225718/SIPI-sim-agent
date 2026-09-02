@@ -35,10 +35,14 @@ and `arrays_file`. It deliberately does not inject the SIPI nested
 `SimulationOutputV1`, `effective_randomness`, source custody, workflow
 namespaces, or artifact references into the compatible `meta.json`.
 
-The source request adapter drops `analysis.jitterRelThresh` from
-`effective_input`: that is a SIPI control absent from the pinned Python
-request model and Pydantic drops it before the source CLI writes its artifact.
-The direct writer also projects the source build-info shape (`name`, `version`,
+The source request adapter preserves `analysis.jitterRelThresh` only when the
+raw source JSON supplied it; an absent field stays absent in `effective_input`
+rather than being synthesized as JSON null. In contrast, the
+pinned `SimulationInputV1` retains `rx.ctle.impulseResponseVPerV` in the
+published input but its simulation path does not consume the local direct-port
+extension. The compatible CLI therefore preserves that input field in metadata
+while clearing it before execution. The typed in-process API retains the field
+under its separately documented direct-port boundary. The direct writer also projects the source build-info shape (`name`, `version`,
 and profile/target/build id) from the same Rust compile-time facts as
 `native/pybert-python/src/lib.rs::native_build_info`. This is artifact-wire
 compatibility, not a claim that this executable is the upstream Python wheel.
@@ -68,7 +72,8 @@ fields are written last.
 
 `tests/direct.rs::direct_run_writes_upstream_artifact_names_and_metadata`
 checks the exact six-key source envelope, source-shaped build metadata,
-absence of `jitterRelThresh`, and the native NPZ logical payload. Separate
+presence-sensitive `jitterRelThresh`, preservation-but-non-consumption of the
+CTLE extension, and the native NPZ logical payload. Separate
 rich-writer tests retain the provenance/noise, artifact-reference, reserved
 workflow collision, and metadata preflight coverage. The complete-output
 comparison and strict artifact field gate remain in `src/workflows.rs` and

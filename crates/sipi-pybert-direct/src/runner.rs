@@ -454,8 +454,14 @@ pub fn run_sim_native_json(
     output_dir: &Path,
 ) -> Result<DirectRunReport, DirectRunError> {
     let input = strict_simulation_input_json(input_json)?;
-    let output = native_cli_output(simulate_native_v1(&input)?);
-    write_upstream_native_cli_artifacts(input, input_file, output_dir, output)
+    let output = native_cli_output(simulate_native_v1(&upstream_native_input(input.clone()))?);
+    write_upstream_native_cli_artifacts(
+        input,
+        input_file,
+        output_dir,
+        output,
+        raw_analysis_has_jitter_rel_thresh(input_json)?,
+    )
 }
 
 /// Keep implementation-only arrays available to projected/legacy callers,
@@ -471,6 +477,18 @@ fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
     output
 }
 
+fn upstream_native_input(mut input: SimulationInputV1) -> SimulationInputV1 {
+    if let Some(ctle) = input.rx.ctle.as_mut() {
+        // The pinned `NativeSimulationRequest` model does not declare this
+        // direct-port extension. Its Pydantic boundary drops the extra key
+        // before native execution, so `sim-native` must not let it change a
+        // source-compatible artifact. The typed in-process API retains the
+        // field for its separately documented direct-port boundary.
+        ctle.impulse_response_v_per_v = None;
+    }
+    input
+}
+
 /// Write the exact artifact envelope published by the pinned `sim-native`
 /// command.  SIPI-only nested output and provenance fields deliberately stay
 /// out of this compatibility artifact: the upstream Python CLI does not
@@ -481,13 +499,14 @@ fn write_upstream_native_cli_artifacts(
     input_file: &Path,
     output_dir: &Path,
     output: SimulationOutputV1,
+    include_jitter_rel_thresh: bool,
 ) -> Result<DirectRunReport, DirectRunError> {
     output
         .validate()
         .map_err(|error| DirectRunError::Output(error.to_string()))?;
 
     let source_file = upstream_cli_input_path(input_file);
-    let effective_input = upstream_effective_input(&input)?;
+    let effective_input = upstream_effective_input(&input, include_jitter_rel_thresh)?;
     let diagnostics = json!({
         "pipeline": "typed_simulation_input_v1",
         "capabilities": output.capabilities.stages,
@@ -530,13 +549,27 @@ fn write_upstream_native_cli_artifacts(
     })
 }
 
-fn upstream_effective_input(input: &SimulationInputV1) -> Result<Value, DirectRunError> {
+fn raw_analysis_has_jitter_rel_thresh(input_json: &[u8]) -> Result<bool, DirectRunError> {
+    let value: Value = serde_json::from_slice(input_json)
+        .map_err(|error| DirectRunError::Json(error.to_string()))?;
+    Ok(value
+        .get("analysis")
+        .and_then(Value::as_object)
+        .is_some_and(|analysis| analysis.contains_key("jitterRelThresh")))
+}
+
+fn upstream_effective_input(
+    input: &SimulationInputV1,
+    include_jitter_rel_thresh: bool,
+) -> Result<Value, DirectRunError> {
     let mut value =
         serde_json::to_value(input).map_err(|error| DirectRunError::Output(error.to_string()))?;
-    // `jitterRelThresh` is a SIPI direct-port control added after the pinned
+    // `jitterRelThresh` is a SIPI direct-port control absent from the pinned
     // Python request model. Pydantic drops it before `_write_native_artifacts`;
-    // retaining it here would be a wire drift, not evidence of a new feature.
-    if let Some(analysis) = value.get_mut("analysis").and_then(Value::as_object_mut) {
+    // retaining it in the emitted contract would be a wire drift.
+    if !include_jitter_rel_thresh
+        && let Some(analysis) = value.get_mut("analysis").and_then(Value::as_object_mut)
+    {
         analysis.remove("jitterRelThresh");
     }
     Ok(value)
