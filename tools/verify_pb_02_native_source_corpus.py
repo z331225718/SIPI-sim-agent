@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+import yaml
 try:  # pragma: no cover - direct execution uses the fallback
     from . import run_pb_02_native_source_corpus as runner
 except ImportError:  # pragma: no cover
@@ -239,12 +240,65 @@ def aggregate(reports: list[Path], output: Path) -> dict[str, Any]:
     return result
 
 
+def _record_path(value: Any) -> Path:
+    if type(value) is not str:
+        raise VerifyError("record path must be a string")
+    path = (ROOT / value).resolve()
+    if ROOT.resolve() not in path.parents or not path.is_file() or path.is_symlink():
+        raise VerifyError("record path must be a regular workspace file")
+    return path
+
+
+def validate_record(record_path: Path, repo: Path) -> dict[str, Any]:
+    if not record_path.is_file() or record_path.is_symlink():
+        raise VerifyError("record must be a regular file")
+    try:
+        record = yaml.safe_load(record_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as error:
+        raise VerifyError("record YAML is invalid") from error
+    record = _exact(record, {"schema", "status", "preparation", "candidate", "upstream", "reports", "aggregate", "scope", "non_claims"}, "record")
+    if record["schema"] != "sipi.pb-02-pinned-native-source-corpus.v1" or record["status"] != "accepted_scoped_native_source_corpus":
+        raise VerifyError("record schema or status drift")
+    prep = _exact(record["preparation"], {"commit", "tree", "parent"}, "record preparation")
+    checked_prep = verify_preparation(repo, prep["commit"])
+    if prep != {key: checked_prep[key] for key in ("commit", "tree", "parent")}:
+        raise VerifyError("record preparation receipt drift")
+    if type(record["reports"]) is not list or len(record["reports"]) != 2:
+        raise VerifyError("record requires exactly two reports")
+    paths: list[Path] = []
+    report_values: list[dict[str, Any]] = []
+    for receipt in record["reports"]:
+        receipt = _exact(receipt, {"path", "bytes", "sha256", "run_id", "nonce"}, "record report")
+        path = _record_path(receipt["path"])
+        value, payload = _strict_json(path)
+        checked = _validate_report(value)
+        if {"bytes": len(payload), "sha256": _sha256(payload), "run_id": checked["run_id"], "nonce": checked["nonce"]} != {key: receipt[key] for key in ("bytes", "sha256", "run_id", "nonce")}:
+            raise VerifyError("record report receipt drift")
+        paths.append(path)
+        report_values.append(checked)
+    aggregate_receipt = _exact(record["aggregate"], {"path", "bytes", "sha256"}, "record aggregate")
+    aggregate_path = _record_path(aggregate_receipt["path"])
+    aggregate_value, aggregate_payload = _strict_json(aggregate_path)
+    if {"bytes": len(aggregate_payload), "sha256": _sha256(aggregate_payload)} != {key: aggregate_receipt[key] for key in ("bytes", "sha256")}:
+        raise VerifyError("record aggregate receipt drift")
+    expected = {"schema", "status", "reports", "candidate", "upstream", "scope", "case_ids", "non_claims"}
+    aggregate_value = _exact(aggregate_value, expected, "aggregate record")
+    if aggregate_value["status"] != "passed" or aggregate_value["candidate"] != report_values[0]["candidate"] or aggregate_value["upstream"] != report_values[0]["upstream"] or aggregate_value["scope"] != report_values[0]["scope"] or aggregate_value["case_ids"] != list(runner.CASE_IDS):
+        raise VerifyError("aggregate record drift")
+    if record["candidate"] != report_values[0]["candidate"] or record["upstream"].get("commit") != report_values[0]["upstream"]["commit"] or record["upstream"].get("tree") != report_values[0]["upstream"]["tree"] or record["upstream"].get("archive_sha256") != report_values[0]["upstream"]["archive_sha256"]:
+        raise VerifyError("record source identity drift")
+    if record["scope"] != report_values[0]["scope"]:
+        raise VerifyError("record scope drift")
+    return {"status": "valid", "record": record_path.name, "reports": [path.name for path in paths], "aggregate": aggregate_path.name}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prep-commit")
     parser.add_argument("--repo", type=Path, default=ROOT)
     parser.add_argument("--reports", type=Path, nargs=2)
     parser.add_argument("--aggregate", type=Path)
+    parser.add_argument("--record", type=Path)
     args = parser.parse_args()
     result: dict[str, Any] = {}
     if args.prep_commit:
@@ -253,6 +307,8 @@ def main() -> int:
         if args.aggregate is None:
             raise VerifyError("--aggregate is required with --reports")
         result["aggregate"] = aggregate(args.reports, args.aggregate)
+    if args.record is not None:
+        result["record"] = validate_record(args.record, args.repo)
     if not result:
         raise VerifyError("select --prep-commit and/or --reports")
     print(json.dumps(result, sort_keys=True))

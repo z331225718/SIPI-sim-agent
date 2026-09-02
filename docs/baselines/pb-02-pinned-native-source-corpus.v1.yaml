@@ -1,0 +1,63 @@
+schema: sipi.pb-02-pinned-native-source-corpus.v1
+status: accepted_scoped_native_source_corpus
+preparation:
+  commit: 11bb6eddb90def8b17163182ba850a3b60951988
+  tree: dc407195b1a76c22053a0752e0bbc4537a3e2eb4
+  parent: d2047cd1977f76aecb81c1674c031672bac5ff13
+candidate:
+  commit: d2047cd1977f76aecb81c1674c031672bac5ff13
+  tree: 28184a54e0d3cd805ded78bfff0182ff11162aed
+  archive_sha256: 2a5aefe6a44d1cd20016cf4fab36c5b97b815d3048e31bd075e19e613d0b2898
+  fixture:
+    path: crates/sipi-pybert-direct/fixtures/pb-02-nrz.json
+    bytes: 1245
+    sha256: 5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13
+upstream:
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  archive_sha256: e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25
+  source_test:
+    path: native/pybert-core/tests/simulation.rs
+    blob: dd06dc7f612ac32a2fd088611c27530ed25762b6
+reports:
+  - path: docs/baselines/pb-02-pinned-native-source-corpus-run-01.v1.json
+    bytes: 209713
+    sha256: f3e44fd56c1c06dee33095f15f42474994e5cf2765bb8ec50c22608b45b2703c
+    run_id: pb-02-native-source-corpus-run-01
+    nonce: eae73ced43a9fd1ac0726e5106d90c368c06373ad5e11f68fd4715499d5b6a53
+  - path: docs/baselines/pb-02-pinned-native-source-corpus-run-02.v1.json
+    bytes: 209709
+    sha256: faf9a55d1a80311826ced60d74b8e6c55cef2479c3f6bcddebb46bd1d7974bd7
+    run_id: pb-02-native-source-corpus-run-02
+    nonce: 35d732424d93b31711501320b4346f9e9e2d7781843a3b7cd2800b4b7771fc22
+aggregate:
+  path: docs/baselines/pb-02-pinned-native-source-corpus-aggregate.v1.json
+  bytes: 2680
+  sha256: bf30d54fd251460255e3c9b15e88fadde03a2f1c0abe378886b230116b60582d
+scope:
+  source_test_path: native/pybert-core/tests/simulation.rs
+  source_test_blob: dd06dc7f612ac32a2fd088611c27530ed25762b6
+  successful_case_ids:
+    - linear
+    - additive_noise
+    - ctle_additive_noise
+    - metallic_line
+    - metallic_line_windowed
+    - ctle
+    - jitter_bathtub
+    - statistical_eye
+    - dfe
+    - dfe_statistical_eye
+    - isi_viterbi
+    - fec_viterbi
+  rejection_case_id: additive_noise_length_rejected
+  numeric_rtol: 1.0e-9
+  numeric_atol: 1.0e-12
+  metadata_exclusions:
+    - $.input_file
+    - $.backend_metadata.engine.build
+non_claims:
+  - This is a finite source-owned native corpus acceptance, not whole-PyBERT parity.
+  - AMI, IBIS, GetWave, S2P, vendor models, local extensions, and Web/GUI families remain excluded.
+  - This record is not a performance claim, license decision, product admission, or release approval.
+  - Historical PB-01/PB-02 blocked matrix evidence remains immutable and is not rewritten.

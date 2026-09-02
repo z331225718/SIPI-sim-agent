@@ -1,0 +1,80 @@
+{
+  "candidate": {
+    "archive_sha256": "2a5aefe6a44d1cd20016cf4fab36c5b97b815d3048e31bd075e19e613d0b2898",
+    "commit": "d2047cd1977f76aecb81c1674c031672bac5ff13",
+    "fixture": {
+      "bytes": 1245,
+      "path": "crates/sipi-pybert-direct/fixtures/pb-02-nrz.json",
+      "sha256": "5bcd0b905f8a7f0ec5e2b7c3761a998e9553ac24a71b54f8b0d4e8e84261ea13"
+    },
+    "tree": "28184a54e0d3cd805ded78bfff0182ff11162aed"
+  },
+  "case_ids": [
+    "linear",
+    "additive_noise",
+    "ctle_additive_noise",
+    "metallic_line",
+    "metallic_line_windowed",
+    "ctle",
+    "jitter_bathtub",
+    "statistical_eye",
+    "dfe",
+    "dfe_statistical_eye",
+    "isi_viterbi",
+    "fec_viterbi",
+    "additive_noise_length_rejected"
+  ],
+  "non_claims": [
+    "This accepts only the pinned source-owned native corpus.",
+    "AMI, IBIS, GetWave, S2P, vendor models, local extensions, Web/GUI families, release, and performance remain outside this record.",
+    "The historical PB-01/PB-02 blocked matrix remains immutable historical evidence."
+  ],
+  "reports": [
+    {
+      "bytes": 209713,
+      "name": "pb-02-pinned-native-source-corpus-run-01.v1.json",
+      "nonce": "eae73ced43a9fd1ac0726e5106d90c368c06373ad5e11f68fd4715499d5b6a53",
+      "run_id": "pb-02-native-source-corpus-run-01",
+      "sha256": "f3e44fd56c1c06dee33095f15f42474994e5cf2765bb8ec50c22608b45b2703c"
+    },
+    {
+      "bytes": 209709,
+      "name": "pb-02-pinned-native-source-corpus-run-02.v1.json",
+      "nonce": "35d732424d93b31711501320b4346f9e9e2d7781843a3b7cd2800b4b7771fc22",
+      "run_id": "pb-02-native-source-corpus-run-02",
+      "sha256": "faf9a55d1a80311826ced60d74b8e6c55cef2479c3f6bcddebb46bd1d7974bd7"
+    }
+  ],
+  "schema": "sipi.pb-02-pinned-native-source-corpus-aggregate.v1",
+  "scope": {
+    "metadata_exclusions": [
+      "$.input_file",
+      "$.backend_metadata.engine.build"
+    ],
+    "numeric_atol": 1e-12,
+    "numeric_rtol": 1e-09,
+    "rejection_case_id": "additive_noise_length_rejected",
+    "source_test_blob": "dd06dc7f612ac32a2fd088611c27530ed25762b6",
+    "source_test_path": "native/pybert-core/tests/simulation.rs",
+    "successful_case_ids": [
+      "linear",
+      "additive_noise",
+      "ctle_additive_noise",
+      "metallic_line",
+      "metallic_line_windowed",
+      "ctle",
+      "jitter_bathtub",
+      "statistical_eye",
+      "dfe",
+      "dfe_statistical_eye",
+      "isi_viterbi",
+      "fec_viterbi"
+    ]
+  },
+  "status": "passed",
+  "upstream": {
+    "archive_sha256": "e6ed484e87712e7120ea4314f21ae74386443ca90c6fe5f0bcfdbf1d99ebeb25",
+    "commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
+    "tree": "5faef6bdb341d444ad65d82a11c0018b15805e24"
+  }
+}

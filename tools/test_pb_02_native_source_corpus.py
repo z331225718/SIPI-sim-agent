@@ -108,6 +108,11 @@ class CorpusGateTests(unittest.TestCase):
             with self.assertRaisesRegex(verifier.VerifyError, "distinct run IDs and nonces"):
                 verifier.aggregate([first, second], root / "aggregate.json")
 
+    def test_committed_record_is_self_consistent(self) -> None:
+        record = verifier.ROOT / "docs/baselines/pb-02-pinned-native-source-corpus.v1.yaml"
+        result = verifier.validate_record(record, verifier.ROOT)
+        self.assertEqual(result["status"], "valid")
+
 
 if __name__ == "__main__":
     unittest.main()
