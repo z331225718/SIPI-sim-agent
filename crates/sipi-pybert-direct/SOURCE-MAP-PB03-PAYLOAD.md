@@ -9,7 +9,8 @@ crate contains the upstream implementation.
 - `src/legacy_runtime.rs`: `augment_sim_rust_result_arrays_v1` validates and
   projects the already materialized `SimulationOutputV1.arrays` map.
 - `src/workflows.rs`: `run_projected_input` invokes the projection after
-  `simulate_native_v1` and before the existing artifact writer.
+  `simulate_native_v1`, then direct-ports the pinned Web adapter's private
+  presentation metadata before the existing artifact writer.
 - `src/runner.rs`: the existing `SimulationOutputV1` serializer writes the
   resulting map to the existing `arrays.npz` and nested metadata envelope.
 
@@ -45,6 +46,7 @@ mechanical operations below.
 | `parity_channel_impulse_v_per_v`, `parity_ctle_output_v`, `parity_rx_output_v`, `parity_dfe_output_v`, `parity_dfe_decisions`, `parity_dfe_clock_times_s` | `src/pybert_web/engine_adapter.py:440-444`; `src/pybert_web/simulation.py:772-777` | Direct array aliases. |
 | `jitter_bins` | `src/pybert_web/engine_adapter.py:681-685`; `src/pybert_web/simulation.py:771` | Alias existing `jitter_bin_centers_s`. |
 | `bathtub_chnl`, `bathtub_tx`, `bathtub_ctle`, `bathtub_dfe`, `bathtub_rx` | `src/pybert_web/engine_adapter.py:687-692`; `src/pybert_web/simulation.py:624-770` | Apply the pinned `log10(max(value, 1e-13))` presentation to existing BER curves; RX aliases DFE. |
+| `result_mode`, `channel_semantics`, eye ranges/samples/statistical summary, FOM/BER/eye/jitter/randomness/shape/presentation metadata | `src/pybert_web/engine_adapter.py:693-852` | Assemble the same metadata only from the admitted typed-RLGC request, existing waveform/clock/metric/contour telemetry, and the serializer's existing eye shapes. No second simulation or public metadata API is introduced. |
 
 ## Eye and contour follow-up
 
@@ -61,26 +63,28 @@ mechanical operations below.
   contour operation. Empty coordinates remain empty when that operation finds
   no points; no points are fabricated by the serializer.
 - The ten pinned display matrices (`eye_chnl`, `eye_tx`, `eye_ctle`,
-  `eye_dfe`, `eye_rx`, and the five `native_eye_*` fields) remain blocked.
-  Their producer is `pybert.utility.sigproc.calc_eye` followed by the Web
-  adapter's resampling step, while the current typed output has no 2-D eye
-  source. Porting that producer would be a new algorithm and is outside this
-  mechanical slice.
+  `eye_dfe`, `eye_rx`, and the five `native_eye_*` fields) are produced from
+  the already computed typed waveforms using the bounded `calc_eye` and
+  order-one presentation projection. Their raw/display shapes are retained
+  for the metadata adapter; this stays presentation-only and does not rerun
+  channel or receiver physics.
 - The seven response magnitude fields (`chnl_H`, `chnl_trimmed_H`,
   `ctle_out_H`, `dfe_out_H`, `rx_out_H`, `tx_H`, `tx_out_H`) continue to use
   the mechanical magnitude projection above. Their candidate/oracle logical
   f64 hashes drift because the upstream telemetry differs before serialization;
   no serializer-only correction or ULP claim is made.
 
-## Explicitly not ported
+## Observed boundary and explicit non-claims
 
-The pinned adapter creates `eye_*` and `native_eye_*` display matrices through
-its eye extraction/resampling path. The current typed Rust output does not
-contain those 2-D sources. The projection therefore does not recreate that
-algorithm. Before the contour follow-up, the legacy defaults requested two
-additional levels; the follow-up now requests the pinned three-level list
-through the existing typed contour operation. Numerical parity remains
-unclaimed until a clean replay.
+The source comparison checks the complete 150-member NPZ payload (names,
+dtypes, shapes, and numerical tolerance) and all mechanically derived Web
+metadata fields. Two statistical-eye observations remain deliberately visible,
+not normalized into product behavior: `eye_distribution_state_count` and
+`eye_height_at_ber_v` / `statistical_eye.height_at_ber_v`. They are generated
+by the existing native statistical-eye core rather than this serializer and
+are not evidence of complete Web-result parity. The direct port therefore
+does not claim full PyBERT Web parity, release acceptance, or any correction
+of those numerical observations.
 
 AMI, IBIS, DLL, GetWave, vendor noise, and exact `PyBertData` class pickle
 behavior are outside this map. No public wire schema v2 or second engine was

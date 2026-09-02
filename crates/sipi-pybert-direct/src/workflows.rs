@@ -479,6 +479,17 @@ fn run_projected_input(
 ) -> Result<DirectRunReport, WorkflowError> {
     let mut output = simulate_native_v1(&input)
         .map_err(|error| WorkflowError::Artifact(format!("native simulation failed: {error}")))?;
+    // The pinned Web adapter publishes these values as request provenance (or
+    // not at all), rather than simulation metrics. Keeping the direct core's
+    // internal bookkeeping here creates source-only metadata keys in the
+    // otherwise compatible `sim-rust` artifact.
+    for metric in [
+        "effective_prbs_seed",
+        "effective_noise_seed",
+        "random_noise_sample_count",
+    ] {
+        output.metrics.remove(metric);
+    }
     let array_shapes =
         crate::legacy_runtime::augment_sim_rust_result_arrays_v1(&input, &mut output)?;
     let effective_input = config.web_effective_request_json()?;
@@ -489,6 +500,7 @@ fn run_projected_input(
         "cancellation": "checked_before_and_after_the_bounded_native_call",
         "web_result_adapter": "native_waveform_presentation_only",
     });
+    let web_metadata = sim_rust_web_metadata_v1(&input, &output, &array_shapes)?;
     let backend_metadata = json!({
         "schema": output.schema,
         "run_id": output.run_id,
@@ -506,6 +518,14 @@ fn run_projected_input(
         "metrics": output.metrics,
         "aborted": false,
     });
+    let mut backend_metadata = backend_metadata;
+    let backend_object = backend_metadata
+        .as_object_mut()
+        .expect("JSON object literal must be an object");
+    let web_object = web_metadata
+        .as_object()
+        .expect("PB-03 Web metadata projection must be an object");
+    backend_object.extend(web_object.clone());
     write_native_cli_artifacts_with_effective_input(
         input,
         input_file,
@@ -517,6 +537,276 @@ fn run_projected_input(
         Some(&array_shapes),
     )
     .map_err(WorkflowError::from)
+}
+
+/// Direct-port the presentation metadata published by the pinned Web adapter
+/// for its typed-RLGC `sim-rust` route.  This consumes only the native output
+/// and the already projected arrays; it does not add another simulation pass.
+fn sim_rust_web_metadata_v1(
+    input: &SimulationInputV1,
+    output: &SimulationOutputV1,
+    array_shapes: &BTreeMap<String, Vec<usize>>,
+) -> Result<Value, WorkflowError> {
+    if !matches!(input.channel, crate::ChannelInputV1::MetallicLine(_)) {
+        return Err(WorkflowError::Artifact(
+            "PB-03 Web metadata projection is only defined for native_typed_rlgc".into(),
+        ));
+    }
+    let samples_per_ui = usize::try_from(input.timebase.samples_per_ui).map_err(|_| {
+        WorkflowError::Artifact("PB-03 Web metadata samples_per_ui overflows usize".into())
+    })?;
+    let sample_interval = input.timebase.sample_interval.0;
+    if samples_per_ui == 0 || !sample_interval.is_finite() || sample_interval <= 0.0 {
+        return Err(WorkflowError::Artifact(
+            "PB-03 Web metadata has an invalid timebase".into(),
+        ));
+    }
+    let eye_bits = input
+        .analysis
+        .ber_eye_bits
+        .unwrap_or(input.timebase.nbits)
+        .min(input.timebase.nbits);
+    let ignored_samples = usize::try_from(input.timebase.nbits.saturating_sub(eye_bits))
+        .ok()
+        .and_then(|bits| bits.checked_mul(samples_per_ui))
+        .ok_or_else(|| WorkflowError::Artifact("PB-03 Web eye window overflows usize".into()))?;
+    let ignored_until_s = ignored_samples as f64 * sample_interval;
+    let waveform = |names: &[&str]| -> &[f64] {
+        names
+            .iter()
+            .find_map(|name| output.arrays.get(*name).filter(|values| !values.is_empty()))
+            .and_then(|values| values.get(ignored_samples.min(values.len())..))
+            .unwrap_or_default()
+    };
+    let channel = waveform(&["channel_output_v", "rx_output_v"]);
+    let tx = waveform(&["rx_input_v", "tx_waveform_v", "rx_output_v"]);
+    let ctle = waveform(&["ctle_output_v", "rx_output_v"]);
+    let dfe = waveform(&["dfe_output_v", "rx_output_v"]);
+    let max_abs = |samples: &[f64]| {
+        samples
+            .iter()
+            .fold(0.0_f64, |maximum, value| maximum.max(value.abs()))
+    };
+    let y_max_chnl = max_abs(channel) * 1.1;
+    let y_max_tx = max_abs(tx) * 1.1;
+    let y_max_ctle = max_abs(ctle) * 1.1;
+    let y_max_dfe = (max_abs(dfe) * 1.1).max(y_max_ctle);
+
+    let clocks = output
+        .arrays
+        .get("dfe_clock_times_s")
+        .map(Vec::as_slice)
+        .unwrap_or_default()
+        .iter()
+        .copied()
+        .filter(|time| *time >= ignored_until_s)
+        .map(|time| time - ignored_until_s)
+        .collect::<Vec<_>>();
+    let (sample_indices, sampled_eye_source) = if clocks.is_empty() {
+        (
+            (samples_per_ui / 2..dfe.len())
+                .step_by(samples_per_ui)
+                .collect::<Vec<_>>(),
+            "ui_centers",
+        )
+    } else {
+        (
+            clocks
+                .iter()
+                .filter_map(|time| numpy_rint_index_v1(*time / sample_interval))
+                .collect::<Vec<_>>(),
+            "clock_times",
+        )
+    };
+    let samples = sample_indices
+        .into_iter()
+        .filter_map(|index| dfe.get(index).copied())
+        .collect::<Vec<_>>();
+    let mean = |predicate: fn(f64) -> bool| {
+        let selected = samples
+            .iter()
+            .copied()
+            .filter(|value| predicate(*value))
+            .collect::<Vec<_>>();
+        (!selected.is_empty()).then(|| selected.iter().sum::<f64>() / selected.len() as f64)
+    };
+    let level0 = mean(|value| value < 0.0);
+    let level1 = mean(|value| value >= 0.0);
+    let metric = |name: &str| output.metrics.get(name).copied();
+    let target_ber = input
+        .analysis
+        .statistical_eye
+        .as_ref()
+        .map(|config| config.target_ber)
+        .unwrap_or(1.0e-5);
+    let statistical_eye = sim_rust_statistical_eye_v1(output, input, target_ber)?;
+    let eye_height = statistical_eye
+        .get("eye_height_v")
+        .and_then(Value::as_f64)
+        .or_else(|| metric("eye_height_v"));
+    let eye_width = statistical_eye
+        .get("eye_width_ps")
+        .and_then(Value::as_f64)
+        .or_else(|| metric("eye_width_ps"))
+        .unwrap_or(0.0);
+    let stage_jitter = |kind: &str| -> Vec<f64> {
+        ["chnl", "tx", "ctle", "dfe"]
+            .into_iter()
+            .map(|stage| metric(&format!("jitter_{stage}_{kind}_s")))
+            .collect::<Option<Vec<_>>>()
+            .unwrap_or_default()
+    };
+    let displayed_shape = |name: &str| -> Result<Vec<usize>, WorkflowError> {
+        array_shapes.get(name).cloned().ok_or_else(|| {
+            WorkflowError::Artifact(format!(
+                "PB-03 Web metadata projection is missing {name} shape"
+            ))
+        })
+    };
+    let legacy_frequency_ready = output.arrays.contains_key("legacy_channel_frequency_hz");
+    let jitter_stages_ready = ["chnl", "tx", "ctle", "dfe"].into_iter().all(|stage| {
+        output
+            .arrays
+            .get(&format!("jitter_{stage}"))
+            .is_some_and(|values| !values.is_empty())
+    });
+    Ok(json!({
+        "result_mode": {"tx_ami": false, "rx_ami": false, "rx_ami_controlled_output": false},
+        "channel_semantics": {"intent": "native_typed_rlgc", "conversion_policy": "native_result_adapter_v1"},
+        "eye_y_ranges_v": {
+            "chnl": {"y_min": -y_max_chnl, "y_max": y_max_chnl},
+            "tx": {"y_min": -y_max_tx, "y_max": y_max_tx},
+            "ctle": {"y_min": -y_max_ctle, "y_max": y_max_ctle},
+            "dfe": {"y_min": -y_max_dfe, "y_max": y_max_dfe},
+            "rx": {"y_min": -y_max_dfe, "y_max": y_max_dfe},
+        },
+        "sampled_eye": {
+            "source": sampled_eye_source,
+            "sample_count": samples.len(),
+            "level0_v": level0,
+            "level1_v": level1,
+            "eye_height_v": level0.zip(level1).map(|(low, high)| high - low),
+        },
+        "statistical_eye": statistical_eye,
+        "fom": 0.0,
+        "ber": metric("ber").unwrap_or(1.0),
+        "eye_width_ps": eye_width,
+        "eye_height_mv": eye_height.map(|value| value * 1.0e3).unwrap_or(0.0),
+        "jitter": {"isi": stage_jitter("isi"), "dcd": stage_jitter("dcd"), "pj": stage_jitter("periodic"), "rj": stage_jitter("random")},
+        "effective_randomness": {
+            "prbs_seed": match input.pattern {
+                crate::PatternV1::Prbs { seed, .. } if seed > 0 => Some(seed),
+                _ => None,
+            },
+            "noise": {"mode": "not_applied_by_native_result_adapter"},
+        },
+        "eye_shape": {
+            "chnl": displayed_shape("eye_chnl")?,
+            "tx": displayed_shape("eye_tx")?,
+            "ctle": displayed_shape("eye_ctle")?,
+            "dfe": displayed_shape("eye_dfe")?,
+        },
+        "native_presentation": {
+            "schema": "pybert.native-web-presentation.v1",
+            "eye_display_width": 512,
+            "frequency_response": if legacy_frequency_ready { "legacy_core_frequency_telemetry" } else { "native_channel_impulse_fft" },
+            "stage_frequency_response": if legacy_frequency_ready { "legacy_core_stage_frequency_telemetry_v1" } else { "unavailable" },
+            "jitter_stages": if jitter_stages_ready { "four_stage" } else { "unavailable" },
+        },
+    }))
+}
+
+fn sim_rust_statistical_eye_v1(
+    output: &SimulationOutputV1,
+    input: &SimulationInputV1,
+    target_ber: f64,
+) -> Result<Value, WorkflowError> {
+    let metric = |name: &str| output.metrics.get(name).copied();
+    let required = [
+        "eye_level0_v",
+        "eye_level1_v",
+        "eye_height_v",
+        "eye_width_ps",
+        "eye_height_at_ber_v",
+        "eye_width_at_ber_ps",
+    ];
+    let metrics = required
+        .iter()
+        .map(|name| metric(name).map(|value| ((*name).to_owned(), value)))
+        .collect::<Option<BTreeMap<_, _>>>();
+    let arrays = |name: &str| {
+        output
+            .arrays
+            .get(name)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+    };
+    let contour_ber = arrays("eye_contour_ber");
+    let contour_heights = arrays("eye_contour_height_v");
+    let contour_widths = arrays("eye_contour_width_ps");
+    let contour_counts = arrays("eye_contour_point_count");
+    if let Some(metrics) = metrics
+        && contour_ber.len() == contour_heights.len()
+        && contour_ber.len() == contour_widths.len()
+        && contour_ber.len() == contour_counts.len()
+    {
+        let mut contours = Vec::with_capacity(contour_ber.len());
+        for index in 0..contour_ber.len() {
+            let points = contour_counts[index];
+            if !points.is_finite() || points < 0.0 || points.fract() != 0.0 {
+                return Err(WorkflowError::Artifact(
+                    "PB-03 Web statistical eye has an invalid contour count".into(),
+                ));
+            }
+            let x = arrays(&format!("eye_contour_{index}_x_ui"));
+            let y = arrays(&format!("eye_contour_{index}_y_v"));
+            if x.len() != y.len() || x.len() != points as usize {
+                return Err(WorkflowError::Artifact(
+                    "PB-03 Web statistical eye contour telemetry is inconsistent".into(),
+                ));
+            }
+            contours.push(json!({
+                "ber": contour_ber[index], "x_ui": x, "y_v": y,
+                "point_count": points as usize,
+                "height_v": contour_heights[index], "width_ps": contour_widths[index],
+                "fit_source": "native_fractional_phase_isi_pdf",
+                "phase_count": input.analysis.statistical_eye.as_ref().map(|config| config.time_points).unwrap_or_default(),
+                "time_grid_count": input.analysis.statistical_eye.as_ref().map(|config| config.time_points).unwrap_or_default(),
+            }));
+        }
+        return Ok(json!({
+            "status": "ok", "source": "dfe_output_pulse", "target_ber": target_ber,
+            "level0_v": metrics["eye_level0_v"], "level1_v": metrics["eye_level1_v"],
+            "eye_height_v": metrics["eye_height_v"], "eye_width_ps": metrics["eye_width_ps"],
+            "height_at_ber_v": metrics["eye_height_at_ber_v"],
+            "width_at_ber_ps": metrics["eye_width_at_ber_ps"], "contours": contours,
+            "debug": {"algorithm": "rust_fractional_phase_isi_pdf"},
+        }));
+    }
+    Ok(json!({
+        "status": "native_metrics", "source": "native_result_adapter_v1", "target_ber": target_ber,
+        "eye_height_v": metric("eye_height_v"),
+        "eye_width_ps": metric("eye_width_ps").unwrap_or(0.0),
+        "contours": [],
+    }))
+}
+
+fn numpy_rint_index_v1(value: f64) -> Option<usize> {
+    if !value.is_finite() || value < 0.0 || value > usize::MAX as f64 {
+        return None;
+    }
+    let floor = value.floor();
+    let fraction = value - floor;
+    let rounded = if fraction < 0.5 {
+        floor
+    } else if fraction > 0.5 {
+        floor + 1.0
+    } else if (floor as u128).is_multiple_of(2) {
+        floor
+    } else {
+        floor + 1.0
+    };
+    (rounded <= usize::MAX as f64).then_some(rounded as usize)
 }
 
 fn apply_statistical_override(
