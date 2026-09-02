@@ -33,14 +33,14 @@ EXPECTED_TOOLS = {
     "audit": "docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v4-prep.md",
 }
 EXPECTED_CANDIDATE = {
-    "commit": None,
-    "tree": None,
-    "archive_sha256": None,
-    "archive_bytes": None,
+    "commit": "b255967c91898f720a16e5029af09521f94fa7df",
+    "tree": "849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e",
+    "archive_sha256": "f5a096653d89b79989834fb253438b0a0d63e722638e14ad1e3cd528e61d1930",
+    "archive_bytes": 62033920,
 }
 EXPECTED_CANDIDATE_GATE_PARENT = {
-    "commit": "bd9a26195a6c204e31b2601b138da66e7ecad150",
-    "tree": "b12a799cb97a065b9f6d896ace4c40d7a3b35bac",
+    "commit": "90bf1a92f699a61511a0bf9b34f3f7038f30df8b",
+    "tree": "849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e",
 }
 EXPECTED_UPSTREAM = {
     "commit": "5272ffe74702cd585054d975559b06f8afae7b6e",
@@ -117,7 +117,7 @@ def _compare_contract(comparison: Any) -> None:
 def validate(document: dict[str, Any], *, require_sources: bool = False, candidate_archive: Path | None = None, upstream_archive: Path | None = None) -> dict[str, Any]:
     expected_top = {"schema", "status", "formal_record_absent", "base_v3_manifest", "upstream", "candidate", "candidate_gate_parent", "matlab", "rust", "replays", "isolation", "comparison", "cache_bridge", "d3_policy", "performance", "formal_paths_absent", "tools"}
     require(set(document) == expected_top, "manifest top-level keyset")
-    require(document.get("schema") == EXPECTED_SCHEMA and document.get("status") == "preparation_only_pending_candidate_gate_commit", "schema/status")
+    require(document.get("schema") == EXPECTED_SCHEMA and document.get("status") == "preparation_bound_candidate_pending_four_replays", "schema/status")
     require(document.get("formal_record_absent") is True, "formal record must be absent")
     require(document.get("candidate") == EXPECTED_CANDIDATE, "candidate receipt")
     require(document.get("candidate_gate_parent") == EXPECTED_CANDIDATE_GATE_PARENT, "candidate gate parent")

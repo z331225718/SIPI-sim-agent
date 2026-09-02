@@ -103,14 +103,14 @@ UPSTREAM_RECEIPT = {
     ),
 }
 CANDIDATE_RECEIPT = {
-    "commit": None,
-    "tree": None,
-    "archive_sha256": None,
-    "archive_bytes": None,
+    "commit": "b255967c91898f720a16e5029af09521f94fa7df",
+    "tree": "849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e",
+    "archive_sha256": "f5a096653d89b79989834fb253438b0a0d63e722638e14ad1e3cd528e61d1930",
+    "archive_bytes": 62_033_920,
 }
 CANDIDATE_GATE_PARENT = {
-    "commit": "bd9a26195a6c204e31b2601b138da66e7ecad150",
-    "tree": "b12a799cb97a065b9f6d896ace4c40d7a3b35bac",
+    "commit": "90bf1a92f699a61511a0bf9b34f3f7038f30df8b",
+    "tree": "849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e",
 }
 SELECTED_PORT = 1
 CASE_TO_PORT = {SELECTED_CASE_INDEX: SELECTED_PORT}
@@ -784,7 +784,6 @@ def run_replay(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _v3_archive_receipt(path: Path, expected: dict[str, Any], label: str) -> dict[str, Any]:
-    require(expected.get("commit") is not None, "candidate receipt is pending the v4 gate commit")
     explicit_file(path, f"{label} archive")
     size = path.stat().st_size
     digest = sha256_file(path)

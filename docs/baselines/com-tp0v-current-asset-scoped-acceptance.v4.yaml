@@ -1,5 +1,5 @@
 schema: sipi.com.tp0v-current-asset-scoped-acceptance-prep.v4
-status: preparation_only_pending_candidate_gate_commit
+status: preparation_bound_candidate_pending_four_replays
 formal_record_absent: true
 base_v3_manifest:
   path: docs/baselines/com-tp0v-current-asset-scoped-acceptance.v3.yaml
@@ -15,13 +15,13 @@ upstream:
     - {role: FEXT, path: fixtures/synthetic/fext_m40db_at_26p56ghz.s4p, bytes: 6393140, sha256: cc5968bacd5bd40d6ccd7db4927dbb1dd3f20d82f4d3ad5a3193ad86e0e9ca04, header: "# Hz S RI R 50.0", port_order: [1, 2, 3, 4]}
     - {role: NEXT, path: fixtures/synthetic/next_m40db_at_26p56ghz.s4p, bytes: 6392860, sha256: 882819542f43b8fb5f174c7e984b418ceb0f56e068654c9be362a84547b93e65, header: "# Hz S RI R 50.0", port_order: [1, 2, 3, 4]}
 candidate:
-  commit: null
-  tree: null
-  archive_sha256: null
-  archive_bytes: null
+  commit: b255967c91898f720a16e5029af09521f94fa7df
+  tree: 849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e
+  archive_sha256: f5a096653d89b79989834fb253438b0a0d63e722638e14ad1e3cd528e61d1930
+  archive_bytes: 62033920
 candidate_gate_parent:
-  commit: bd9a26195a6c204e31b2601b138da66e7ecad150
-  tree: b12a799cb97a065b9f6d896ace4c40d7a3b35bac
+  commit: 90bf1a92f699a61511a0bf9b34f3f7038f30df8b
+  tree: 849fc6c1ba682f3302bb4eb1c9c701e8aec6e53e
 matlab:
   required_release: R2024b
   required_release_raw: '2024b'
@@ -94,13 +94,13 @@ formal_paths_absent:
   - docs/baselines/com-tp0v-current-asset-r2024b-rust-02.v4.json
   - docs/baselines/com-tp0v-current-asset-r2024b-aggregate.v4.json
 tools:
-  runner: {path: tools/run_com_tp0v_r2024b_v4_replay.py, sha256: 538dcde0bbcf749fd7c16ea4efde0ae9f1764d6d14da270bd4fb96c1ad383c78}
+  runner: {path: tools/run_com_tp0v_r2024b_v4_replay.py, sha256: d2a0562d06b9a7966307f8721f7c50441cef906e631ffcd39f516249520c4471}
   aggregate: {path: tools/aggregate_com_tp0v_r2024b_v4_replay.py, sha256: 12c7f875a4b679001e24516d8472a17083fb2540ac43e485f8c8a60ff3aaad65}
-  verifier: {path: tools/verify_com_tp0v_r2024b_v4_prep.py, sha256: 707afddbb30d0d2e5a46c113f3c27a2fe582fa90604d702d5c979a53a335bfba}
+  verifier: {path: tools/verify_com_tp0v_r2024b_v4_prep.py, sha256: 5bd95019bd6b0994766387bd4120079eaff89f4b682d628ea64f3d78d5e15959}
   tests: {path: tools/test_verify_com_tp0v_r2024b_v4_prep.py, sha256: d37defea83913333551c574d38f4565ba62f5c2df3407babc1954a91be2a85e0}
   runner_tests: {path: tools/test_run_com_tp0v_r2024b_v4_replay.py, sha256: a0e0c14c23b9822e16905c9b4a922ffb110c71d0ddb4f4d5e8db491df1f4e4bc}
   aggregate_tests: {path: tools/test_aggregate_com_tp0v_r2024b_v4_replay.py, sha256: 057a4abacceca81feb8445a2b2aa0c2c908c34815c1a811878d5e3c5a8791679}
   trace_support: {path: tools/run_com_normal_erl_trace_diagnostic.py, sha256: 889b70aa16e8c83569b159346869e065601ff14ec4fd75033e1fed14908ded2a}
   trace_wrapper: {path: tools/sipi_com_normal_erl_trace_run_v1.m, sha256: 5132882ecc8c90477653e80defd75933782df953893f2d5de1058c58beea6f11}
   trace_sink: {path: tools/sipi_com_normal_erl_trace_sink_v1.m, sha256: a3922fad54a69f7bbb6856be9c39b9588c91690d7dc21ca29879c0eb4eb683a1}
-  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v4-prep.md, sha256: b9ce37bfdf8844d50e40b7b49657de47e32e7a4adf1928717d26ecbd1b81c766}
+  audit: {path: docs/baselines/audits/2026-09-02-com-tp0v-r2024b-v4-prep.md, sha256: 19fc8d822c6ca3f84afe82043f78be2a7a181649e9ab0da7c19b67a4860f5f5f}
