@@ -1627,7 +1627,12 @@ fn json_map(
 ) -> Value {
     let object = values
         .iter()
-        .map(|(key, value)| (key.clone(), json_consumption_value(key, value, integer_keys)))
+        .map(|(key, value)| {
+            (
+                key.clone(),
+                json_consumption_value(key, value, integer_keys),
+            )
+        })
         .collect::<serde_json::Map<_, _>>();
     Value::Object(object)
 }

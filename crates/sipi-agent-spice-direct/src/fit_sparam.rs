@@ -1543,17 +1543,28 @@ pub(crate) fn fit_residues(
                 2.0 * std::f64::consts::PI * network.frequencies_hz[sample] / frequency_scale_hz,
             ),
         ) * scales[column];
-        if row < sample_indices.len() { value.re } else { value.im }
+        if row < sample_indices.len() {
+            value.re
+        } else {
+            value.im
+        }
     });
     let response = Mat::from_fn(row_count, response_count, |row, column| {
         let value = network.samples[sample_indices[row % sample_indices.len()]][column];
-        if row < sample_indices.len() { value.re } else { value.im }
+        if row < sample_indices.len() {
+            value.re
+        } else {
+            value.im
+        }
     });
     let solved = system.as_ref().col_piv_qr().solve_lstsq(response.as_ref());
     let mut coefficients = vec![vec![Complex::new(0.0, 0.0); response_count]; basis.len()];
     for (active_index, basis_index) in active.iter().enumerate() {
         for response_index in 0..response_count {
-            let value = Complex::new(solved[(active_index, response_index)] * scales[active_index], 0.0);
+            let value = Complex::new(
+                solved[(active_index, response_index)] * scales[active_index],
+                0.0,
+            );
             if !finite_complex(value) {
                 return Err(FitSparamError::FitNumericalFailure(
                     "least-squares coefficients are non-finite".to_owned(),
@@ -1671,13 +1682,14 @@ fn relocate_common_denominator(
     let denominator_columns = model_order + 1;
     let dimension_m = 2 * sample_count;
     let dimension_n = numerator_columns + denominator_columns;
-    let work_cells = dimension_m
-        .checked_mul(dimension_n)
-        .ok_or(FitSparamError::BudgetExceeded {
-            kind: "relocation least-squares matrix cells",
-            limit: MAX_REAL_MATRIX_CELLS,
-            actual: usize::MAX,
-        })?;
+    let work_cells =
+        dimension_m
+            .checked_mul(dimension_n)
+            .ok_or(FitSparamError::BudgetExceeded {
+                kind: "relocation least-squares matrix cells",
+                limit: MAX_REAL_MATRIX_CELLS,
+                actual: usize::MAX,
+            })?;
     if work_cells > MAX_REAL_MATRIX_CELLS {
         return Err(FitSparamError::BudgetExceeded {
             kind: "relocation least-squares matrix cells",
@@ -1749,13 +1761,14 @@ fn relocate_common_denominator(
             limit: MAX_REAL_MATRIX_ROWS,
             actual: usize::MAX,
         })?;
-    let projected_cells = (data_rows + 1)
-        .checked_mul(denominator_columns)
-        .ok_or(FitSparamError::BudgetExceeded {
-            kind: "relocation projected matrix cells",
-            limit: MAX_REAL_MATRIX_CELLS,
-            actual: usize::MAX,
-        })?;
+    let projected_cells =
+        (data_rows + 1)
+            .checked_mul(denominator_columns)
+            .ok_or(FitSparamError::BudgetExceeded {
+                kind: "relocation projected matrix cells",
+                limit: MAX_REAL_MATRIX_CELLS,
+                actual: usize::MAX,
+            })?;
     if projected_cells > MAX_REAL_MATRIX_CELLS {
         return Err(FitSparamError::BudgetExceeded {
             kind: "relocation projected matrix cells",
@@ -1797,8 +1810,7 @@ fn relocate_common_denominator(
         for row in 0..rows_r22 {
             for column in 0..denominator_columns {
                 projected_values[(block * rows_r22 + row) * denominator_columns + column] =
-                    response_weights[block]
-                        * r[(rows_r12 + row, numerator_columns + column)];
+                    response_weights[block] * r[(rows_r12 + row, numerator_columns + column)];
             }
         }
     }
@@ -3323,7 +3335,12 @@ mod tests {
         };
         let model = fit_residues(&network, &poles, &basis, &options).unwrap();
         assert!(model.constant.iter().all(|value| value.im.abs() < 1.0e-10));
-        assert!(model.proportional.iter().all(|value| value.im.abs() < 1.0e-10));
+        assert!(
+            model
+                .proportional
+                .iter()
+                .all(|value| value.im.abs() < 1.0e-10)
+        );
         assert!(model.residues[2][0].im.abs() < 1.0e-10);
         assert!((model.residues[0][0].re - 0.4).abs() < 1.0e-8);
         assert!((model.residues[0][0].im - 0.25).abs() < 1.0e-8);

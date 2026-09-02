@@ -8224,12 +8224,18 @@ fn result_value_v1(
     // The MATLAB ERL-only route publishes the selected return-loss value for
     // both port aliases when it does not produce per-port diagnostics.  Keep
     // those source-visible aliases rather than silently dropping them.
-    let source_erl_db = normal_erl_db
-        .as_ref()
-        .or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl_db")));
+    let source_erl_db = normal_erl_db.as_ref().or_else(|| {
+        portable_diagnostics
+            .get("erl_only")
+            .and_then(|value| value.get("erl_db"))
+    });
     let source_erl11_db = normal_erl11_db
         .as_ref()
-        .or_else(|| portable_diagnostics.get("erl_only").and_then(|value| value.get("erl11_db")))
+        .or_else(|| {
+            portable_diagnostics
+                .get("erl_only")
+                .and_then(|value| value.get("erl11_db"))
+        })
         .or(source_erl_db);
     let source_erl22_db = normal_erl22_db.as_ref().or(source_erl_db);
     let normal_erl_observation = normal_erl_result
