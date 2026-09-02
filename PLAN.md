@@ -1021,6 +1021,11 @@ matrix 仍是不可变历史记录，不能再解释为当前 runtime defect。�
 的数值证据缺口，不关闭 PB-02 migration row，不提升 AMI/IBIS/GetWave/S2P、Web/GUI、产品路由、
 性能、许可或 release。
 
+Agent-BERT 的实际 Rust 可达边界及非准入项汇总在
+[`agent-bert-reachability-boundary.v1`](docs/baselines/agent-bert-reachability-boundary.v1.md)：
+它连接 PB-01 legacy class、PB-02 native source corpus 与 PB-03 两个 Web payload
+replay，但不将它们扩大为 whole-PyBERT、root `sipi` 路由、发行或许可批准。
+
 ## 19. 完成定义
 
 本计划完成时：
