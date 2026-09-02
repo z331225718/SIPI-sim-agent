@@ -13,4 +13,7 @@ class GateTests(unittest.TestCase):
     def test_performance_reference_only_rejected(self): self.reject(lambda d: d["performance_gate"].update(required=False))
     def test_scalar_surface_shrink_rejected(self): self.reject(lambda d: d["comparison"].update(scalar_surface=d["comparison"]["scalar_surface"][:-1]))
     def test_repeat_matrix_shrink_rejected(self): self.reject(lambda d: d.update(replays=d["replays"][:-1]))
+    def test_runner_hash_drift_rejected(self): self.reject(lambda d: d["tools"]["runner"].update(sha256="0" * 64))
+    def test_prep_parent_drift_rejected(self): self.reject(lambda d: d["prep_harness_commit"].update(parent="0" * 40))
+    def test_live_prep_receipt(self): gate.validate_prep_commit(self.doc, "2f5b4d99a4a567e9ecf2938c0e90f20e6190c181")
 if __name__ == "__main__": unittest.main()

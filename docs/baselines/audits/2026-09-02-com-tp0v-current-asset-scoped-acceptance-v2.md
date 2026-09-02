@@ -4,6 +4,11 @@ This is a preparation contract, not an acceptance record. It fixes the original
 Agent-COM `5272ffe74702cd585054d975559b06f8afae7b6e` archive, the TP0V workbook,
 and the same THRU/FEXT/NEXT payloads from that archive. The candidate is
 intentionally null until this harness can be committed from a clean worktree.
+The committed preparation receipt is `2f5b4d99a4a567e9ecf2938c0e90f20e6190c181`
+(tree `88b06c59c5ae098e3a7e917c63866abcf4059e34`, parent
+`e2a6ed7c5bd48dbd1ea91bcf2a545ab5420cfbed`). A future candidate must be its
+direct child and be created from a clean worktree; this receipt is its required
+parent, not an assertion that a candidate already exists.
 
 The future run has exactly four isolated executions: two MATLAB R2026a and two
 Rust runs. Each gets a separate archive, build, output, and nonce root. Rust uses

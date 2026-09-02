@@ -23,7 +23,17 @@ matlab:
   semantic_run: uninstrumented
   trace_run: instrumented_diagnostic_only
   speed_measurement: uninstrumented_end_to_end_wall_clock_excluding_build
-candidate: {commit: null, tree: null, archive_sha256: null, archive_bytes: null}
+prep_harness_commit:
+  commit: 2f5b4d99a4a567e9ecf2938c0e90f20e6190c181
+  tree: 88b06c59c5ae098e3a7e917c63866abcf4059e34
+  parent: e2a6ed7c5bd48dbd1ea91bcf2a545ab5420cfbed
+candidate:
+  commit: null
+  tree: null
+  archive_sha256: null
+  archive_bytes: null
+  required_parent: 2f5b4d99a4a567e9ecf2938c0e90f20e6190c181
+  required_relation: direct_child_clean_worktree
 replays: [matlab-01, matlab-02, rust-01, rust-02]
 isolation: [distinct_archive_root, distinct_build_root, distinct_output_root, distinct_nonce]
 comparison:
@@ -42,9 +52,11 @@ performance_gate:
   rule: each_case_rust_wall_clock_s_strictly_less_than_matlab_wall_clock_s
   failure_status: rejected_or_blocked
 tools:
-  runner: {path: tools/run_com_tp0v_current_asset_v2.py, sha256: pending_prep_commit}
-  aggregate: {path: tools/aggregate_com_tp0v_current_asset_v2.py, sha256: pending_prep_commit}
-  verifier: {path: tools/verify_com_tp0v_current_asset_v2.py, sha256: pending_prep_commit}
+  runner: {path: tools/run_com_tp0v_current_asset_v2.py, sha256: fb63ee19d2ebb68fec51f8fe27b718aeaae50f722fb58daaf91ba93b0bcb05b2}
+  aggregate: {path: tools/aggregate_com_tp0v_current_asset_v2.py, sha256: e1fd41ed455fcfb60ed8ae783ec460aa84f908867e84f5b18d096f7407e78c58}
+  scalar_instrumentation: {path: tools/sipi_com_extended_scalar_oracle_v1.m, sha256: 37ada16efd14b12327b86b95dd4b1a33fe722a4866becc828a83ccac7fe6671f}
+  trace_instrumentation: {path: tools/sipi_com_normal_erl_trace_sink_v1.m, sha256: a3922fad54a69f7bbb6856be9c39b9588c91690d7dc21ca29879c0eb4eb683a1}
+  verifier: {path: tools/verify_com_tp0v_current_asset_v2.py, sha256: 16afb6a93f98a868cd261517605fad500a024eea24cc7d2502f11f3abcba567f}
 formal_paths_absent:
   - docs/baselines/com-tp0v-current-asset-matlab-01.v2.json
   - docs/baselines/com-tp0v-current-asset-matlab-02.v2.json
