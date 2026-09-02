@@ -8,6 +8,13 @@ crate contains the upstream implementation.
 
 - `src/legacy_runtime.rs`: `augment_sim_rust_result_arrays_v1` validates and
   projects the already materialized `SimulationOutputV1.arrays` map.
+- `src/legacy_runtime.rs`: `web_native_input` keeps the Web-native request
+  distinct from the broader legacy `sim` request: zero additive noise, DFE
+  tuner limits, and an omitted statistical voltage resolution are not
+  materialized into core controls.
+- `src/simulation.rs`: `legacy_ctle_impulse` directly ports the pinned native
+  CTLE-only rounded frequency grid and linear interpolation boundary. It does
+  not alter the separate metallic-line grid or its channel resampler.
 - `src/workflows.rs`: `run_projected_input` invokes the projection after
   `simulate_native_v1`, then direct-ports the pinned Web adapter's private
   presentation metadata before the existing artifact writer.
@@ -33,6 +40,7 @@ The pinned files are bound by Git blob, raw byte length, and SHA-256:
 | `src/pybert_web/models.py` | `ec69a14ed97dbb500e57e378c4d8f39d359aaf20` | 11640 | `66194501d7753ddb07105edf9b724095f13682f538585e3ee455dbad5fd554d9` | BSD-3-Clause via pinned `LICENSE` |
 | `src/pybert/utility/sigproc.py` | `9e4abd5991e0d31123f5a4b7d3d3c8d618dc7140` | 17416 | `394c8ffebf5ae2c352ab16c0155a1241b84089f6bd8bbb40fc7ce1d73e0758ad` | BSD-3-Clause via pinned `LICENSE` |
 | `src/pybert/utility/statistical_eye.py` | `195f87f48cecc55bf7bcda371c4c51b17111ea21` | 38893 | `da70853bde4c0b5f428eef072c47dbd085692744031ce18fce1e0ec079d18895` | BSD-3-Clause via pinned `LICENSE` |
+| `native/pybert-core/src/simulation.rs` | `1f19bff64315e0042bab89d67e9131c289f5e583` | 85056 | `99425e94e6336dd39330ce6c1db4bbd0c43699ed7abc9e8a1fe8f56acde239fd` | BSD-3-Clause via pinned `LICENSE` |
 | `LICENSE` | `64d198ba43675ede5fbdef1ec918a63954951640` | 1466 | `4ca68aea5b8f43e0d7337b182fbc277e02dae37d85b04196d92a80e9344926c1` | BSD-3-Clause; copyright David Banas |
 
 These bindings identify the semantic reference and its license. They do not
@@ -47,6 +55,7 @@ mechanical operations below.
 | `jitter_bins` | `src/pybert_web/engine_adapter.py:681-685`; `src/pybert_web/simulation.py:771` | Alias existing `jitter_bin_centers_s`. |
 | `bathtub_chnl`, `bathtub_tx`, `bathtub_ctle`, `bathtub_dfe`, `bathtub_rx` | `src/pybert_web/engine_adapter.py:687-692`; `src/pybert_web/simulation.py:624-770` | Apply the pinned `log10(max(value, 1e-13))` presentation to existing BER curves; RX aliases DFE. |
 | `result_mode`, `channel_semantics`, eye ranges/samples/statistical summary, FOM/BER/eye/jitter/randomness/shape/presentation metadata | `src/pybert_web/engine_adapter.py:693-852` | Assemble the same metadata only from the admitted typed-RLGC request, existing waveform/clock/metric/contour telemetry, and the serializer's existing eye shapes. No second simulation or public metadata API is introduced. |
+| Web-native omitted control projection and analytic CTLE impulse | `native/pybert-core/src/simulation.rs:325-332,1425-1485` | Preserve the source request's absent zero-noise/tuner/voltage-resolution controls, then reproduce the CTLE-specific rounded grid and linear interpolation. |
 
 ## Eye and contour follow-up
 
@@ -70,21 +79,18 @@ mechanical operations below.
   channel or receiver physics.
 - The seven response magnitude fields (`chnl_H`, `chnl_trimmed_H`,
   `ctle_out_H`, `dfe_out_H`, `rx_out_H`, `tx_H`, `tx_out_H`) continue to use
-  the mechanical magnitude projection above. Their candidate/oracle logical
-  f64 hashes drift because the upstream telemetry differs before serialization;
-  no serializer-only correction or ULP claim is made.
+  the mechanical magnitude projection above. The two bounded source replays
+  exercise them as part of their full 150-member payload comparisons; no
+  broader configuration-family ULP claim is made.
 
 ## Observed boundary and explicit non-claims
 
-The source comparison checks the complete 150-member NPZ payload (names,
-dtypes, shapes, and numerical tolerance) and all mechanically derived Web
-metadata fields. Two statistical-eye observations remain deliberately visible,
-not normalized into product behavior: `eye_distribution_state_count` and
-`eye_height_at_ber_v` / `statistical_eye.height_at_ber_v`. They are generated
-by the existing native statistical-eye core rather than this serializer and
-are not evidence of complete Web-result parity. The direct port therefore
-does not claim full PyBERT Web parity, release acceptance, or any correction
-of those numerical observations.
+The release-only pinned-source tests check the complete 150-member NPZ payload
+(names, dtypes, shapes, and numerical tolerance) and complete metadata for
+the admitted NRZ metallic-line fixture. A second source-generated analytic
+CTLE configuration (`ctle_enable=true`, `peak_mag=4.0`) checks the same full
+NPZ surface. These are bounded configuration replays, not a claim of general
+PyBERT Web parity or release acceptance.
 
 AMI, IBIS, DLL, GetWave, vendor noise, and exact `PyBertData` class pickle
 behavior are outside this map. No public wire schema v2 or second engine was

@@ -1497,15 +1497,15 @@ fn legacy_ctle_impulse(
             target_sample_interval_s,
         )?);
     };
-    let (intervals, effective_maximum) = legacy_arange_grid(step.0, maximum.0, max_total_samples)?;
+    // Keep this analytic CTLE route byte-for-byte aligned with the pinned
+    // native core.  The metallic-line path has a separately justified
+    // `arange` grid, but using it here changes the CTLE IFFT timebase.
+    let intervals = (maximum.0 / step.0).round() as usize;
     let fft_size = intervals
         .checked_mul(2)
         .ok_or(NativeSimulationError::ResourceLimitExceeded)?;
-    // This is a native IFFT safety boundary: every materialized frequency must
-    // fit the requested timebase Nyquist, even when PyBERT's source grid would
-    // otherwise contain the next point after f_max.
-    if !effective_maximum.is_finite() || effective_maximum > 0.5 / target_sample_interval_s {
-        return Err(NativeSimulationError::LegacyStageFrequencyOutOfRange);
+    if fft_size > max_total_samples {
+        return Err(NativeSimulationError::ResourceLimitExceeded);
     }
     let frequencies = (0..=intervals)
         .map(|index| index as f64 * step.0)
@@ -1516,12 +1516,12 @@ fn legacy_ctle_impulse(
         &response.iter().map(|value| value.im).collect::<Vec<_>>(),
         fft_size,
     )?;
-    let source_sample_interval_s = 0.5 / effective_maximum;
+    let source_sample_interval_s = 0.5 / maximum.0;
     let source_sum = source_impulse.iter().sum::<f64>();
     // PyBERT's CTLE path uses `interp1d` without an explicit kind, whose
     // default is linear. Channel impulse resampling below is intentionally
     // cubic, but applying that rule here changes the equalizer waveform.
-    let mut resampled = linear_resample_uniform(
+    let mut resampled = pinned_ctle_linear_resample_uniform(
         &source_impulse,
         source_sample_interval_s,
         target_sample_interval_s,
@@ -1540,6 +1540,29 @@ fn legacy_ctle_impulse(
     let min_length = explicit_impulse_sample_count.unwrap_or(30 * samples_per_ui);
     let max_length = explicit_impulse_sample_count.unwrap_or(100 * samples_per_ui);
     Ok(trim_legacy_impulse(&resampled, min_length, max_length, 0))
+}
+
+/// The pinned analytic-CTLE path accepts the fractional final source interval
+/// before its `floor` reaches the end.  Channel resampling intentionally has
+/// a different out-of-range boundary, so this stays CTLE-private.
+fn pinned_ctle_linear_resample_uniform(
+    source: &[f64],
+    source_sample_interval_s: f64,
+    target_sample_interval_s: f64,
+    target_len: usize,
+) -> Vec<f64> {
+    (0..target_len)
+        .map(|index| {
+            let position = index as f64 * target_sample_interval_s / source_sample_interval_s;
+            let lower = position.floor() as usize;
+            if lower >= source.len() {
+                return 0.0;
+            }
+            let fraction = position - lower as f64;
+            source[lower] * (1.0 - fraction)
+                + source.get(lower + 1).copied().unwrap_or(0.0) * fraction
+        })
+        .collect()
 }
 
 /// Reproduce NumPy's bounded stop-exclusive ``arange(0, f_max + f_step,
@@ -2447,7 +2470,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_ctle_grid_matches_pinned_arange_endpoint_and_payload() {
+    fn legacy_ctle_grid_matches_pinned_round_endpoint_and_payload() {
         let config = CtleConfigV1 {
             bandwidth: Hertz(12.0e9),
             peak_frequency: Hertz(5.0e9),
@@ -2459,14 +2482,14 @@ mod tests {
         let impulse = legacy_ctle_impulse(&config, 16, Seconds(1.0e-12).0, 4, 1024, Some(8))
             .expect("non-integral PyBERT arange endpoint is portable");
         let expected = [
-            0.059026117198096924,
-            0.05791690535298647,
-            0.05680769350787601,
-            0.05569848166276556,
-            0.0545892698176551,
-            0.05348005797254464,
-            0.05237084612743419,
-            0.06900902380409103,
+            0.05905512979846243,
+            0.05796525968692895,
+            0.05687538957539548,
+            0.055785519463862,
+            0.054695649352328526,
+            0.05360577924079505,
+            0.052515909129261566,
+            0.0688639608022637,
         ];
         assert_eq!(impulse.len(), expected.len());
         for (actual, expected) in impulse.iter().zip(expected) {
@@ -2478,7 +2501,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_ctle_resample_uses_zero_outside_source_grid() {
+    fn legacy_ctle_resample_keeps_pinned_fractional_final_interval() {
         let config = CtleConfigV1 {
             bandwidth: Hertz(12.0e9),
             peak_frequency: Hertz(5.0e9),
@@ -2490,14 +2513,14 @@ mod tests {
         let impulse = legacy_ctle_impulse(&config, 320, Seconds(1.0e-12).0, 4, 1024, Some(8))
             .expect("legacy CTLE interpolation should remain bounded");
         let expected = [
-            -0.000522225440345773,
-            -0.000678266971593843,
-            -0.000834308502841914,
-            -0.000990350034089984,
-            -0.001146391565338055,
-            -0.001302433096586126,
-            -0.001458474627834197,
-            -0.001614516159082268,
+            -0.0022800257079578124,
+            -0.0022040248510258836,
+            -0.002128023994093958,
+            -0.002052023137162029,
+            -0.001976022280230104,
+            -0.0019000214232981786,
+            -0.0018240205663662497,
+            -0.0017480197094343244,
         ];
         assert_eq!(impulse.len(), expected.len());
         for (actual, expected) in impulse.iter().zip(expected) {

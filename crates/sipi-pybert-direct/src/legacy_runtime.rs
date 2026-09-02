@@ -655,6 +655,10 @@ impl LegacyConfigProjectionV1 {
             dfe.bandwidth = Hertz(12.0e9);
             dfe.use_agc = true;
             dfe.agc_n_ave = 100;
+            // `to_native_simulation_input_v1` does not publish legacy tuner
+            // bounds.  Retaining the broader `sim` projection's limits here
+            // changes adaptive DFE decisions in the Web-native route.
+            dfe.tap_limits = None;
         }
         input.rx.viterbi = self.viterbi_enabled.then_some(ViterbiConfigV1 {
             state_symbols: self.viterbi_symbols,
@@ -662,6 +666,18 @@ impl LegacyConfigProjectionV1 {
             noise_sigma_v: Some(Volts(self.rn_v)),
             max_states: ResourceLimitsV1::default().max_distribution_states,
         });
+        // The Web-native request omits additive noise when `rn == 0`.  The
+        // broader legacy `sim` route keeps an explicit zero waveform, but its
+        // presence makes the core re-apply the RX filter and changes DFE
+        // adaptation despite every sample being zero.
+        input.tx.additive_noise = None;
+        if let Some(statistical_eye) = input.analysis.statistical_eye.as_mut() {
+            // The Web request preserves an omitted voltage resolution as
+            // JSON null.  The broader `sim` profile defaults this to 1 mV,
+            // which changes the native statistical-eye distribution and
+            // contour geometry.
+            statistical_eye.voltage_resolution = None;
+        }
         input.analysis.jitter_rel_thresh = None;
         Ok(input)
     }
@@ -2379,6 +2395,28 @@ pub(crate) fn augment_sim_rust_result_arrays_v1(
         if let Some(values) = source.get(source_name) {
             add_projected_array(source, &mut projected, alias, values.clone())?;
         }
+    }
+    if legacy_frequency.is_some() {
+        // The pinned Web adapter publishes explicit zero-noise presentation
+        // arrays when the native request omitted `additiveNoise`.  They are
+        // adapter artifacts, not a reason to feed a zero waveform back into
+        // the core (which would re-apply the RX filter).
+        let noise_len = ["rx_input_v", "rx_output_v", "channel_output_v"]
+            .into_iter()
+            .find_map(|name| source.get(name).filter(|values| !values.is_empty()))
+            .map_or(0, Vec::len);
+        add_projected_array(
+            source,
+            &mut projected,
+            "random_noise_v",
+            vec![0.0; noise_len],
+        )?;
+        add_projected_array(
+            source,
+            &mut projected,
+            "additive_noise_v",
+            vec![0.0; noise_len],
+        )?;
     }
     add_projected_array(
         source,
