@@ -205,3 +205,26 @@ fn pinned_native_full_prbs_jitter_bathtub_case_matches_the_complete_artifact() {
     input["analysis"]["includeBathtub"] = Value::Bool(true);
     run_and_compare("jitter-bathtub", input);
 }
+
+#[test]
+fn pinned_native_dfe_case_matches_the_complete_artifact() {
+    let root = source_root();
+    assert_source_custody(&root);
+    let mut input = native_fixture();
+    input["rx"]["dfeTaps"] = Value::from(1_u64);
+    input["rx"]["dfe"] = json!({
+        "gain": 0.1,
+        "decisionScaler": 1.0,
+        "nAve": 1,
+        "deltaT": 1.0e-13,
+        "alpha": 0.0,
+        "nLockAve": 1,
+        "relLockTol": 0.01,
+        "lockSustain": 1,
+        "ideal": true,
+        "bandwidth": 0.0,
+        "useAgc": false,
+        "agcNAve": 1
+    });
+    run_and_compare("dfe", input);
+}

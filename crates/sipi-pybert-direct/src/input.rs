@@ -460,7 +460,7 @@ pub struct DfeConfigV1 {
     pub bandwidth: Hertz,
     pub use_agc: bool,
     pub agc_n_ave: u32,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tap_limits: Option<Vec<(f64, f64)>>,
 }
 

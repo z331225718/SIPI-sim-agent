@@ -23,6 +23,7 @@ BSD-3-Clause `LICENSE` and the crate's existing
 its exact commit and test blob, then runs its `sim-native` CLI and the local
 release candidate independently. It compares normalized complete metadata,
 diagnostics, and every NPZ member's name, dtype, shape, and numeric payload.
+The DFE case uses the source test's configured one-tap adaptive receiver.
 
 The CTLE case has only the source test's analytic controls; it intentionally
 does not use the historical local `impulseResponseVPerV` extension. The jitter
@@ -33,6 +34,8 @@ The local `CtleConfigV1` serializer omits an absent
 `impulseResponseVPerV`, matching the pinned native request model. A populated
 value remains confined to its separately documented typed direct-port path;
 the native CLI still drops it before execution.
+Likewise, an absent local `tapLimits` extension is omitted from the
+source-compatible native artifact rather than serialized as a new `null` key.
 
 This does not claim whole PB-02 branch parity, exact build bytes, AMI/IBIS,
 GetWave, S2P, external models, Web/GUI results, product admission, or release

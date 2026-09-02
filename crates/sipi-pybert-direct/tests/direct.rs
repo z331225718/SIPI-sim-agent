@@ -5,11 +5,12 @@ use serde_json::json;
 
 use sipi_pybert_direct::{
     AdditiveNoiseV1, AnalysisConfigV1, ArrayDTypeV1, ArtifactRefV1, ChannelInputV1,
-    ChannelResponseV1, CtleConfigV1, FfeConfigV1, Hertz, ModulationV1, NumericArrayV1, Ohms,
-    PatternV1, ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
-    SimulationOutputV1, TxConfigV1, TypedArrayV1, Volts, npz_bytes_nd, npz_bytes_typed_nd,
-    run_sim_native_json, sha256_bytes, simulate_native_v1, strict_simulation_input_json,
-    write_simulation_artifacts, write_simulation_artifacts_with_schema_and_backend,
+    ChannelResponseV1, CtleConfigV1, DfeConfigV1, FfeConfigV1, Hertz, ModulationV1, NumericArrayV1,
+    Ohms, PatternV1, ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds,
+    SimulationInputV1, SimulationOutputV1, TxConfigV1, TypedArrayV1, Volts, npz_bytes_nd,
+    npz_bytes_typed_nd, run_sim_native_json, sha256_bytes, simulate_native_v1,
+    strict_simulation_input_json, write_simulation_artifacts,
+    write_simulation_artifacts_with_schema_and_backend,
 };
 
 fn input() -> SimulationInputV1 {
@@ -237,6 +238,42 @@ fn direct_cli_drops_the_non_source_ctle_impulse_extension() {
         serde_json::json!([1.0, 0.25, -0.05])
     );
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn native_serializer_omits_absent_local_receiver_extensions() {
+    let mut request = input();
+    request.rx.native_ctle_enabled = true;
+    request.rx.ctle = Some(CtleConfigV1 {
+        bandwidth: Hertz(12.0e9),
+        peak_frequency: Hertz(5.0e9),
+        peak_magnitude_db: 4.0,
+        frequency_step_hz: None,
+        frequency_max_hz: None,
+        impulse_response_v_per_v: None,
+    });
+    request.rx.dfe_taps = 1;
+    request.rx.dfe = Some(DfeConfigV1 {
+        gain: 0.1,
+        decision_scaler: Volts(1.0),
+        n_ave: 1,
+        delta_t: Seconds(1.0e-13),
+        alpha: 0.0,
+        n_lock_ave: 1,
+        rel_lock_tol: 0.01,
+        lock_sustain: 1,
+        ideal: true,
+        bandwidth: Hertz(0.0),
+        use_agc: false,
+        agc_n_ave: 1,
+        tap_limits: None,
+    });
+
+    let value = serde_json::to_value(request).expect("serialize native request");
+    let ctle = value["rx"]["ctle"].as_object().expect("ctle object");
+    let dfe = value["rx"]["dfe"].as_object().expect("dfe object");
+    assert!(!ctle.contains_key("impulseResponseVPerV"));
+    assert!(!dfe.contains_key("tapLimits"));
 }
 
 #[test]
