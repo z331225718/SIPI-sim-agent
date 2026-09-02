@@ -1,16 +1,13 @@
-//! Internal-only root-CLI linkage to the quarantined Agent-COM direct port.
-//!
-//! This is intentionally not a CLI route or a public DTO.  The direct port's
-//! file-system request and unconstrained result payload remain internal until
-//! the route-specific license, publication, and wire-contract gates admit a
-//! product command.
+//! Feature-gated implementation behind the bounded public `sipi com run` route.
 
-use sipi_agent_com_direct::{DirectRunErrorV1, DirectRunReportV1, DirectRunRequestV1, run_com_v1};
+use sipi_agent_com_direct::{
+    DirectRunErrorV1, DirectRunReportV1, DirectRunRequestV1, load_config_run_com_write_artifacts_v1,
+};
 
 pub(crate) fn run_com_direct_for_integration_v1(
     request: &DirectRunRequestV1,
 ) -> Result<DirectRunReportV1, DirectRunErrorV1> {
-    run_com_v1(request)
+    load_config_run_com_write_artifacts_v1(request)
 }
 
 #[cfg(test)]
@@ -68,7 +65,8 @@ mod tests {
         let standalone = DirectRunRequestV1::new(&config, &pulse, root.join("standalone"));
         let integrated = DirectRunRequestV1::new(&config, &pulse, root.join("integrated"));
 
-        let expected = run_com_v1(&standalone).expect("standalone direct run");
+        let expected =
+            load_config_run_com_write_artifacts_v1(&standalone).expect("standalone direct run");
         let actual = run_com_direct_for_integration_v1(&integrated).expect("integrated direct run");
 
         assert_eq!(
@@ -111,7 +109,8 @@ mod tests {
             &pulse,
             root.join("missing-output"),
         );
-        let direct_error = run_com_v1(&missing).expect_err("missing input must fail");
+        let direct_error =
+            load_config_run_com_write_artifacts_v1(&missing).expect_err("missing input must fail");
         let adapter_error = run_com_direct_for_integration_v1(&missing)
             .expect_err("adapter must preserve the failure");
         assert_eq!(
