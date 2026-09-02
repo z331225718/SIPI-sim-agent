@@ -1441,7 +1441,7 @@ fn write_legacy_trait_dict<W: Write>(
     pickle.empty_tuple()?;
     pickle.new_object()?;
     let memo = pickle.memo()?;
-    arrays.visit(response_spectrum_db, |name, values| {
+    arrays.visit_class(response_spectrum_db, |name, values| {
         pickle.bin_unicode(name)?;
         if name == "tx_out" {
             // `PyBertData` captures the plot-data entry, not the internal
@@ -1896,6 +1896,7 @@ fn publish_legacy_class_result(
 }
 
 struct LegacyArrayProjection<'a> {
+    source: &'a BTreeMap<String, Vec<f64>>,
     channel: &'a [f64],
     tx_out_h: &'a [f64],
     tx_h: &'a [f64],
@@ -1960,6 +1961,7 @@ impl<'a> LegacyArrayProjection<'a> {
         let dfe_out_h = causal_convolve(&ffe_out_h, &dfe_h, tx_out_h.len())?;
         let tx_out = required("tx_waveform_v")?;
         Ok(Self {
+            source,
             channel,
             tx_out_h,
             tx_h,
@@ -2016,6 +2018,161 @@ impl<'a> LegacyArrayProjection<'a> {
         }
         emit("tx_out", self.tx_out)
     }
+
+    /// Render the legacy `PyBertData` plot fields, rather than the SIPI
+    /// dictionary's generic FFT presentation.  The original `sim` workflow
+    /// retains its fixed native frequency grid and pads disabled CTLE/DFE
+    /// identity impulses before plotting; the direct core exposes both facts
+    /// as legacy telemetry.
+    fn visit_class(
+        &self,
+        spectrum: fn(&[f64]) -> Result<Vec<f64>, LegacyRuntimeError>,
+        mut emit: impl FnMut(&str, &[f64]) -> Result<(), LegacyRuntimeError>,
+    ) -> Result<(), LegacyRuntimeError> {
+        emit("chnl_h", self.channel)?;
+        emit("tx_out_h", self.tx_out_h)?;
+        emit("ctle_out_h", &self.ctle_out_h)?;
+        emit("dfe_out_h", &self.dfe_out_h)?;
+
+        let class_ctle = self.class_ctle_impulse()?;
+        let class_dfe = self.class_dfe_impulse();
+        for (name, values) in [
+            ("chnl_s", step_from(self.channel)),
+            ("tx_s", step_from(self.tx_h)),
+            ("ctle_s", step_from(&class_ctle)),
+            ("dfe_s", step_from(&class_dfe)),
+            ("tx_out_s", step_from(self.tx_out_h)),
+            ("ctle_out_s", step_from(&self.ctle_out_h)),
+            ("dfe_out_s", step_from(&self.dfe_out_h)),
+        ] {
+            emit(name, &values)?;
+        }
+        for (name, source) in [
+            ("chnl_p", self.channel),
+            ("tx_out_p", self.tx_out_h),
+            ("ctle_out_p", self.ctle_out_h.as_slice()),
+            ("dfe_out_p", self.dfe_out_h.as_slice()),
+        ] {
+            let values = pulse_from(source, self.samples_per_ui);
+            emit(name, &values)?;
+        }
+        for (name, source, legacy_pair) in [
+            (
+                "chnl_H",
+                self.channel,
+                Some((
+                    "legacy_channel_terminated_re",
+                    "legacy_channel_terminated_im",
+                )),
+            ),
+            (
+                "tx_H",
+                self.tx_h,
+                Some(("legacy_stage_tx_re", "legacy_stage_tx_im")),
+            ),
+            (
+                "ctle_H",
+                self.ctle_h.as_ref(),
+                Some(("legacy_stage_ctle_re", "legacy_stage_ctle_im")),
+            ),
+            (
+                "dfe_H",
+                self.dfe_h.as_slice(),
+                Some(("legacy_stage_dfe_re", "legacy_stage_dfe_im")),
+            ),
+            (
+                "tx_out_H",
+                self.tx_out_h,
+                Some(("legacy_stage_tx_out_re", "legacy_stage_tx_out_im")),
+            ),
+            (
+                "ctle_out_H",
+                self.ctle_out_h.as_slice(),
+                Some(("legacy_stage_ctle_out_re", "legacy_stage_ctle_out_im")),
+            ),
+            (
+                "dfe_out_H",
+                self.dfe_out_h.as_slice(),
+                Some(("legacy_stage_dfe_out_re", "legacy_stage_dfe_out_im")),
+            ),
+        ] {
+            let values = match self.legacy_frequency_db(
+                legacy_pair.expect("all class responses have telemetry names"),
+            )? {
+                Some(values) => values,
+                None => spectrum(source)?,
+            };
+            emit(name, &values)?;
+        }
+        emit("tx_out", self.tx_out)
+    }
+
+    fn class_ctle_impulse(&self) -> Result<Vec<f64>, LegacyRuntimeError> {
+        if self.has_legacy_frequency_telemetry() {
+            let length = self.samples_per_ui.checked_mul(30).ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit(
+                    "legacy class CTLE identity length overflow".into(),
+                )
+            })?;
+            Ok(identity_impulse(length))
+        } else {
+            Ok(self.ctle_h.to_vec())
+        }
+    }
+
+    fn class_dfe_impulse(&self) -> Vec<f64> {
+        if self.has_legacy_frequency_telemetry()
+            && self
+                .source
+                .get("dfe_tap_weights_v")
+                .is_none_or(Vec::is_empty)
+        {
+            identity_impulse(self.tx_out_h.len())
+        } else {
+            self.dfe_h.clone()
+        }
+    }
+
+    fn has_legacy_frequency_telemetry(&self) -> bool {
+        self.source
+            .get("legacy_channel_frequency_hz")
+            .is_some_and(|values| values.len() > 1)
+    }
+
+    fn legacy_frequency_db(
+        &self,
+        (real_name, imag_name): (&str, &str),
+    ) -> Result<Option<Vec<f64>>, LegacyRuntimeError> {
+        if !self.has_legacy_frequency_telemetry() {
+            return Ok(None);
+        }
+        let Some(real) = self.source.get(real_name) else {
+            return Ok(None);
+        };
+        let Some(imag) = self.source.get(imag_name) else {
+            return Ok(None);
+        };
+        if real.len() != imag.len() || real.len() < 2 {
+            return Err(LegacyRuntimeError::InvalidConfig(format!(
+                "legacy class frequency telemetry is invalid for {real_name}/{imag_name}"
+            )));
+        }
+        Ok(Some(
+            real.iter()
+                .zip(imag)
+                .skip(1)
+                .map(|(real, imag)| {
+                    20.0 * real.hypot(*imag).max(LEGACY_CLASS_SAFE_LOG10_MIN).log10()
+                })
+                .collect(),
+        ))
+    }
+}
+
+fn identity_impulse(length: usize) -> Vec<f64> {
+    let mut values = vec![0.0; length.max(1)];
+    values[0] = 1.0;
+    values
 }
 
 fn legacy_arrays(
@@ -2954,6 +3111,23 @@ impl LegacyArrayLayout {
             .ok_or_else(|| {
                 LegacyRuntimeError::ResourceLimit("DFE result length overflow".into())
             })?;
+        // `sim` class results use the fixed legacy frequency telemetry and,
+        // when disabled, plot padded identity CTLE/DFE impulses.  Account for
+        // those actual class payloads here, not the smaller native helper
+        // vectors used by the dictionary codec.
+        let legacy_frequency = length("legacy_channel_frequency_hz") > 1;
+        let class_ctle = if legacy_frequency {
+            samples_per_ui.checked_mul(30).ok_or_else(|| {
+                LegacyRuntimeError::ResourceLimit("legacy class CTLE result length overflow".into())
+            })?
+        } else {
+            ctle
+        };
+        let class_dfe = if legacy_frequency && length("dfe_tap_weights_v") == 0 {
+            response
+        } else {
+            dfe
+        };
         let spectrum = |value: usize| {
             value
                 .checked_next_power_of_two()
@@ -2962,11 +3136,36 @@ impl LegacyArrayLayout {
                     LegacyRuntimeError::ResourceLimit("response spectrum length overflow".into())
                 })
         };
-        let channel_spectrum = spectrum(channel)?;
-        let tx_spectrum = spectrum(tx)?;
-        let ctle_spectrum = spectrum(ctle)?;
-        let dfe_spectrum = spectrum(dfe)?;
-        let response_spectrum = spectrum(response)?;
+        let class_spectrum = |real: &str, imag: &str, fallback: usize| {
+            let real_length = length(real);
+            let imag_length = length(imag);
+            if legacy_frequency && real_length == imag_length && real_length > 1 {
+                Ok(real_length - 1)
+            } else {
+                spectrum(fallback)
+            }
+        };
+        let class_channel_spectrum = class_spectrum(
+            "legacy_channel_terminated_re",
+            "legacy_channel_terminated_im",
+            channel,
+        )?;
+        let class_tx_spectrum = class_spectrum("legacy_stage_tx_re", "legacy_stage_tx_im", tx)?;
+        let class_ctle_spectrum =
+            class_spectrum("legacy_stage_ctle_re", "legacy_stage_ctle_im", ctle)?;
+        let class_dfe_spectrum = class_spectrum("legacy_stage_dfe_re", "legacy_stage_dfe_im", dfe)?;
+        let class_tx_out_spectrum =
+            class_spectrum("legacy_stage_tx_out_re", "legacy_stage_tx_out_im", response)?;
+        let class_ctle_out_spectrum = class_spectrum(
+            "legacy_stage_ctle_out_re",
+            "legacy_stage_ctle_out_im",
+            response,
+        )?;
+        let class_dfe_out_spectrum = class_spectrum(
+            "legacy_stage_dfe_out_re",
+            "legacy_stage_dfe_out_im",
+            response,
+        )?;
         let lengths = [
             channel,
             response,
@@ -2974,8 +3173,8 @@ impl LegacyArrayLayout {
             response,
             channel,
             tx,
-            ctle,
-            dfe,
+            class_ctle,
+            class_dfe,
             response,
             response,
             response,
@@ -2983,13 +3182,13 @@ impl LegacyArrayLayout {
             response,
             response,
             response,
-            channel_spectrum,
-            tx_spectrum,
-            ctle_spectrum,
-            dfe_spectrum,
-            response_spectrum,
-            response_spectrum,
-            response_spectrum,
+            class_channel_spectrum,
+            class_tx_spectrum,
+            class_ctle_spectrum,
+            class_dfe_spectrum,
+            class_tx_out_spectrum,
+            class_ctle_out_spectrum,
+            class_dfe_out_spectrum,
             tx_out,
         ];
         let total_values = lengths.into_iter().try_fold(0_usize, |total, value| {
@@ -2997,21 +3196,26 @@ impl LegacyArrayLayout {
                 LegacyRuntimeError::ResourceLimit("legacy array value count overflow".into())
             })
         })?;
+        let class_retained_ctle = if legacy_frequency {
+            class_ctle
+        } else {
+            owned_ctle_identity
+        };
         let retained_projection_values = response
             .checked_mul(2)
-            .and_then(|value| value.checked_add(dfe))
-            .and_then(|value| value.checked_add(owned_ctle_identity))
+            .and_then(|value| value.checked_add(class_dfe))
+            .and_then(|value| value.checked_add(class_retained_ctle))
             .ok_or_else(|| {
                 LegacyRuntimeError::ResourceLimit("legacy projection peak overflow".into())
             })?;
         let construction_peak_values = response
             .checked_mul(3)
-            .and_then(|value| value.checked_add(dfe))
-            .and_then(|value| value.checked_add(owned_ctle_identity))
+            .and_then(|value| value.checked_add(class_dfe))
+            .and_then(|value| value.checked_add(class_retained_ctle))
             .ok_or_else(|| {
                 LegacyRuntimeError::ResourceLimit("legacy projection peak overflow".into())
             })?;
-        let transient_vector = [channel, tx, ctle, dfe, response]
+        let transient_vector = [channel, tx, class_ctle, class_dfe, response]
             .into_iter()
             .max()
             .unwrap_or(0);
@@ -3652,6 +3856,54 @@ dfe_tap_tuners:
             .collect::<Vec<_>>();
         assert_eq!(actual.len(), source.len() / 2);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn class_projection_uses_legacy_plot_grid_and_padded_disabled_stages() {
+        let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("fixtures")
+            .join("pb-01-legacy-nrz.yaml");
+        let config = parse_legacy_config_v1(&fixture).unwrap();
+        let input = config.simulation_input("class-plot-grid".into()).unwrap();
+        let output = simulate_native_v1_with_legacy_crossing_amplitude(
+            &input,
+            &crate::NativeCancellationToken::default(),
+            config.decision_scaler_v,
+        )
+        .unwrap();
+        let projection = LegacyArrayProjection::new(&output).unwrap();
+        let mut arrays = BTreeMap::new();
+        projection
+            .visit_class(response_spectrum_db, |name, values| {
+                arrays.insert(name.to_owned(), values.to_vec());
+                Ok(())
+            })
+            .unwrap();
+
+        let legacy_frequency_len = output.arrays["legacy_channel_frequency_hz"].len();
+        let response_len = output.arrays["tx_channel_impulse_v_per_v"].len();
+        assert_eq!(
+            arrays["ctle_s"].len(),
+            input.timebase.samples_per_ui as usize * 30
+        );
+        assert!(arrays["ctle_s"].iter().all(|value| *value == 1.0));
+        assert_eq!(arrays["dfe_s"].len(), response_len);
+        assert!(arrays["dfe_s"].iter().all(|value| *value == 1.0));
+        for name in [
+            "chnl_H",
+            "tx_H",
+            "ctle_H",
+            "dfe_H",
+            "tx_out_H",
+            "ctle_out_H",
+            "dfe_out_H",
+        ] {
+            assert_eq!(arrays[name].len(), legacy_frequency_len - 1, "{name}");
+        }
+        let emitted_values = arrays.values().map(Vec::len).sum::<usize>();
+        let layout = LegacyArrayLayout::from_output(&output).unwrap();
+        assert!(layout.total_values >= emitted_values);
+        layout.validate_class_codec_peak().unwrap();
     }
 
     #[test]

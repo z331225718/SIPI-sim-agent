@@ -213,6 +213,22 @@ fn legacy_cli_reaches_class_codec_and_rejects_format_drift() {
     let root = std::env::temp_dir().join(format!("sipi-pb01-cli-{}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).unwrap();
+    let default_result = root.join("default.pybert_data");
+    let status = Command::new(binary)
+        .arg("sim")
+        .arg(&fixture)
+        .arg("--results")
+        .arg(&default_result)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(
+        fs::read(&default_result)
+            .unwrap()
+            .windows(b"pybert.results\nPyBertData\n".len())
+            .any(|window| window == b"pybert.results\nPyBertData\n")
+    );
+
     let result = root.join("class.pybert_data");
     let status = Command::new(binary)
         .arg("sim")
@@ -229,6 +245,24 @@ fn legacy_cli_reaches_class_codec_and_rejects_format_drift() {
             .unwrap()
             .windows(b"pybert.results\nPyBertData\n".len())
             .any(|window| window == b"pybert.results\nPyBertData\n")
+    );
+
+    let dictionary = root.join("dictionary.pybert_data");
+    let status = Command::new(binary)
+        .arg("sim")
+        .arg(&fixture)
+        .arg("--result-format")
+        .arg("sipi-dictionary")
+        .arg("--results")
+        .arg(&dictionary)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(
+        fs::read(&dictionary)
+            .unwrap()
+            .windows(b"sipi.pybert_data.v1".len())
+            .any(|window| window == b"sipi.pybert_data.v1")
     );
 
     for arguments in [
@@ -334,8 +368,8 @@ expected = {
     "dfe_out_h": (640, "4a337ca621d43ac7a06c0d58ce9f2e8d22658da1f0d617026bc62d50c26d1591"),
     "chnl_s": (640, "8184546a0842f8be5a696ee4f93649aa679c5543a95e00a8788990db003ce095"),
     "tx_s": (640, "9f53ade3b540318594b3f3416bdedeaabfd180237c6b28437c425a2231d3524d"),
-    "ctle_s": (1, "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712"),
-    "dfe_s": (32, "acfc7c36fce590b14adfc8a479e0dcd297e910a7212694c976c8b4284d34c144"),
+    "ctle_s": (960, "19991170f3d158846e457c8fcd1d17bfbf7d9cd992ae16482d2dc00cf4c8668f"),
+    "dfe_s": (640, "ed07ce8b9a09d9104d336ceafdbbfef7f85a7c7198cf416e0070a54b4bc366ca"),
     "tx_out_s": (640, "a98e7ab29b49071da6433c33df05263f4fa428049bab7a067d45393a47a5e50f"),
     "ctle_out_s": (640, "a98e7ab29b49071da6433c33df05263f4fa428049bab7a067d45393a47a5e50f"),
     "dfe_out_s": (640, "6d90a04bd26cd4fba9aec1fa4f575d34e26b3d41e92a067cd48a1a2fbfb86d04"),
@@ -343,13 +377,13 @@ expected = {
     "tx_out_p": (640, "5df2ad4bff0250ce1ce1ecd011b8b1a17dc3e40aeaf32067fc4d16c852254ba8"),
     "ctle_out_p": (640, "5df2ad4bff0250ce1ce1ecd011b8b1a17dc3e40aeaf32067fc4d16c852254ba8"),
     "dfe_out_p": (640, "d9b785f9648f83122f06f35795eef9cfb836d8e829e135bbbca8d9e9a12f9174"),
-    "chnl_H": (512, "033a8e8fa06c6ad017d07ce69a15360f79228a568d4dd25c949e75da7a2db5ed"),
-    "tx_H": (512, "ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7"),
-    "ctle_H": (1, "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"),
-    "dfe_H": (16, "38723a2e5e8a17aa7950dc008209944e898f69a7bd10a23c839d341e935fd5ca"),
-    "tx_out_H": (512, "02e413e77d59db3413169457112b06f314c919bd2d4af623acd1e70ab4ff2fad"),
-    "ctle_out_H": (512, "02e413e77d59db3413169457112b06f314c919bd2d4af623acd1e70ab4ff2fad"),
-    "dfe_out_H": (512, "af1ee077fd6f18576fb924e0e79990e2eded7170ac726a6645b8386a7c962651"),
+    "chnl_H": (400, "b1f21c045d988e994b4a134d872eaaa7cf253db75e1ea3fc6e27d9562f3df6c1"),
+    "tx_H": (400, "1d12882e1eb204a20aaa51cd92c87194bf89da6eef2c4b633ce6aaf328cef3ca"),
+    "ctle_H": (400, "5a312281df4bd8dfbb4d4a94ad0bf44d01bb8cfced1206b90e21b4ca0568cdb1"),
+    "dfe_H": (400, "5a312281df4bd8dfbb4d4a94ad0bf44d01bb8cfced1206b90e21b4ca0568cdb1"),
+    "tx_out_H": (400, "2525885485b5d165fd23ceed6c94d68ead2bde341139809b2a1e97cd2316adad"),
+    "ctle_out_H": (400, "2525885485b5d165fd23ceed6c94d68ead2bde341139809b2a1e97cd2316adad"),
+    "dfe_out_H": (400, "0570b7b150fdb201bd2e3166f88c8ca63e153182c474ba6bd3b11e1862603db2"),
 }
 assert list(expected) == expected_names[:-1]
 for name in expected_names:

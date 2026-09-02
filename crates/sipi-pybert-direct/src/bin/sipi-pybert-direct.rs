@@ -182,8 +182,7 @@ fn native_arguments_from(
     Ok((input_file.into(), output_dir.into()))
 }
 
-const LEGACY_USAGE: &str =
-    "usage: sipi-pybert-direct sim CONFIG [--results RESULTS] [--result-format class-pickle]";
+const LEGACY_USAGE: &str = "usage: sipi-pybert-direct sim CONFIG [--results RESULTS] [--result-format class-pickle|sipi-dictionary]";
 
 fn legacy_arguments(
     mut arguments: impl Iterator<Item = std::ffi::OsString>,
@@ -193,7 +192,10 @@ fn legacy_arguments(
         .map(PathBuf::from)
         .ok_or_else(|| LEGACY_USAGE.to_owned())?;
     let mut results = None;
-    let mut codec = LegacyResultCodecV1::SipiDictionary;
+    // Match `pybert sim`: a plain legacy invocation produces a loadable
+    // PyBertData object. The SIPI-owned dictionary remains an explicit mode
+    // for callers that previously chose it deliberately.
+    let mut codec = LegacyResultCodecV1::ClassPickle;
     let mut result_format_seen = false;
     while let Some(flag) = arguments.next() {
         match flag.to_string_lossy().as_ref() {
@@ -212,16 +214,19 @@ fn legacy_arguments(
                     return Err("--result-format may be specified only once".into());
                 }
                 result_format_seen = true;
-                let value = arguments
-                    .next()
-                    .ok_or_else(|| "--result-format requires class-pickle".to_owned())?;
-                if value != "class-pickle" {
-                    return Err(format!(
-                        "unknown legacy result format: {}",
-                        value.to_string_lossy()
-                    ));
-                }
-                codec = LegacyResultCodecV1::ClassPickle;
+                let value = arguments.next().ok_or_else(|| {
+                    "--result-format requires class-pickle or sipi-dictionary".to_owned()
+                })?;
+                codec = match value.to_string_lossy().as_ref() {
+                    "class-pickle" => LegacyResultCodecV1::ClassPickle,
+                    "sipi-dictionary" => LegacyResultCodecV1::SipiDictionary,
+                    _ => {
+                        return Err(format!(
+                            "unknown legacy result format: {}",
+                            value.to_string_lossy()
+                        ));
+                    }
+                };
             }
             _ => {
                 return Err(format!(
@@ -269,10 +274,10 @@ mod tests {
     }
 
     #[test]
-    fn legacy_result_format_is_explicit_and_fail_closed() {
+    fn legacy_result_format_defaults_to_source_compatible_class_pickle() {
         let (request, codec) = legacy_arguments(args(&["case.yaml"])).unwrap();
         assert_eq!(request.results, None);
-        assert_eq!(codec, LegacyResultCodecV1::SipiDictionary);
+        assert_eq!(codec, LegacyResultCodecV1::ClassPickle);
 
         let (request, codec) = legacy_arguments(args(&[
             "case.yaml",
@@ -284,6 +289,10 @@ mod tests {
         .unwrap();
         assert_eq!(request.results, Some(PathBuf::from("case.result")));
         assert_eq!(codec, LegacyResultCodecV1::ClassPickle);
+
+        let (_, codec) =
+            legacy_arguments(args(&["case.yaml", "--result-format", "sipi-dictionary"])).unwrap();
+        assert_eq!(codec, LegacyResultCodecV1::SipiDictionary);
 
         for invalid in [
             vec!["case.yaml", "--result-format"],
