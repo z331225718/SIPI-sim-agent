@@ -1,0 +1,42 @@
+schema: sipi.pb-02-pinned-native-source-corpus-prep.v1
+status: preparation_only_pending_immutable_replay
+candidate:
+  commit: d2047cd1
+  role: immutable Rust source candidate; this preparation commit is not the candidate.
+upstream:
+  commit: 5bf6d7ea0ace261891aaeb611ffc1c267e160afe
+  tree: 5faef6bdb341d444ad65d82a11c0018b15805e24
+  source_test:
+    path: native/pybert-core/tests/simulation.rs
+    blob: dd06dc7f612ac32a2fd088611c27530ed25762b6
+scope:
+  successful_cases:
+    - linear
+    - additive_noise
+    - ctle_additive_noise
+    - metallic_line
+    - metallic_line_windowed
+    - ctle
+    - jitter_bathtub
+    - statistical_eye
+    - dfe
+    - dfe_statistical_eye
+    - isi_viterbi
+    - fec_viterbi
+  rejection_case: additive_noise_length_rejected
+  numeric_rtol: 1.0e-9
+  numeric_atol: 1.0e-12
+  metadata_exclusions:
+    - $.input_file
+    - $.backend_metadata.engine.build
+required_replay:
+  runs: 2
+  unique_run_ids: true
+  unique_nonces: true
+  candidate_and_oracle_from_git_archives: true
+  full_metadata_diagnostics_and_npz_members: true
+  rejection_requires_nonzero_exit_and_no_artifacts: true
+non_claims:
+  - Historical PB-01/PB-02 records remain immutable historical observations.
+  - AMI, IBIS, GetWave, S2P, vendor models, local extensions, and Web/GUI families are excluded.
+  - This is not release approval, a performance claim, or whole-PyBERT parity.
