@@ -1294,4 +1294,184 @@ pub unsafe extern "C" fn AMI_Close(_handle: *mut c_void) -> c_long {
         assert_eq!(receipt["status"], "complete");
         assert_eq!(receipt["command"], "ami run");
     }
+
+    #[test]
+    fn sparameter_benchmark_suite_evaluates_loss_stub_notch_and_mixed_mode() {
+        use sipi_channel::{
+            FourPortS, calculate_sparameter_metrics, compute_full_mixed_mode_matrix,
+            create_analytic_lossy_microstrip, create_analytic_resonant_stub,
+        };
+        use sipi_types::{Complex64, Hertz, Ohms};
+        let freqs: Vec<Hertz> = (0..=200)
+            .map(|i| Hertz::try_new(i as f64 * 100.0e6).unwrap())
+            .collect();
+        let ref_z = Ohms::try_new(50.0).unwrap();
+
+        // 1. Lossy microstrip (10 cm, 50 Ohm, FR4)
+        let line = create_analytic_lossy_microstrip(
+            &freqs,
+            ref_z,
+            0.10,
+            50.0,
+            1.5e8,
+            1.0,
+            4.0,
+            0.02,
+        )
+        .unwrap();
+        let metrics = calculate_sparameter_metrics(&line).unwrap();
+        assert!(metrics.passivity.passes_bound);
+        assert!(metrics.reciprocity.passes_bound);
+        assert!(metrics.max_insertion_loss_db > 5.0);
+        assert!(metrics.group_delay_ps[100] > 600.0 && metrics.group_delay_ps[100] < 700.0);
+
+        // 2. Open stub notch filter (2.5 mm -> 15 GHz quarter-wave notch)
+        let stub_freqs: Vec<Hertz> = (0..=500)
+            .map(|i| Hertz::try_new(i as f64 * 50.0e6).unwrap())
+            .collect();
+        let stub = create_analytic_resonant_stub(
+            &stub_freqs,
+            ref_z,
+            0.0025,
+            50.0,
+            1.5e8,
+        )
+        .unwrap();
+        let stub_metrics = calculate_sparameter_metrics(&stub).unwrap();
+        assert!(stub_metrics.passivity.passes_bound);
+        assert!(!stub_metrics.detected_notches.is_empty());
+        let notch = &stub_metrics.detected_notches[0];
+        assert!((notch.notch_frequency_hz - 15.0e9).abs() <= 100.0e6);
+        assert!(notch.depth_db > 20.0);
+
+        // 3. Mixed-mode differential 4-port matrix
+        let zero = Complex64::try_new(0.0, 0.0).unwrap();
+        let s21_val = Complex64::try_new(0.85, 0.0).unwrap();
+        let mut mat = [[zero; 4]; 4];
+        mat[1][0] = s21_val;
+        mat[0][1] = s21_val;
+        mat[3][2] = s21_val;
+        mat[2][3] = s21_val;
+        let mm = compute_full_mixed_mode_matrix(FourPortS::new(mat), 0, 2, 1, 3).unwrap();
+        assert!((mm.sdd[1][0].real() - 0.85).abs() < 1e-12);
+        assert_eq!(mm.scd[1][0].real(), 0.0);
+    }
+
+    #[test]
+    fn ddr_interface_benchmarks_evaluate_ddr4_and_ddr5_jedec_masks_and_dfe() {
+        use sipi_channel::{
+            DdrRxMaskSpec, create_ddr4_dq_channel_network, create_ddr5_dq_channel_network,
+            evaluate_ddr_rx_mask,
+        };
+        use sipi_types::{Hertz, Ohms};
+
+        let freqs: Vec<Hertz> = (0..=100)
+            .map(|i| Hertz::try_new(i as f64 * 100.0e6).unwrap())
+            .collect();
+        let ref_z = Ohms::try_new(50.0).unwrap();
+
+        // 1. DDR4-3200 channel network
+        let ddr4_net = create_ddr4_dq_channel_network(
+            &freqs,
+            ref_z,
+            0.12,    // 12 cm main trace
+            0.015,   // 1.5 cm DIMM stub
+            48.0,    // 48 Ohm ODT
+            0.8e-12, // 0.8 pF DRAM Cin
+        )
+        .unwrap();
+        assert!(ddr4_net.sample_count() > 0);
+
+        let ddr4_mask = DdrRxMaskSpec::ddr4_3200();
+        let spui = 16;
+        let dt4 = (ddr4_mask.ui_ps / spui as f64) * 1.0e-12;
+
+        // Generate compliant DDR4-3200 waveform
+        let mut ddr4_wave = Vec::new();
+        for k in 0..64 {
+            let v = if k % 2 == 0 { 0.80 } else { 0.40 };
+            dd4_wave_extend(&mut ddr4_wave, v, spui);
+        }
+        let res4 = evaluate_ddr_rx_mask(&ddr4_wave, spui, dt4, &ddr4_mask);
+        assert!(res4.passed);
+        assert_eq!(res4.mask_violations, 0);
+        assert!(res4.voltage_margin_v > 0.0);
+        assert!(res4.timing_margin_ps > 0.0);
+
+        // 2. DDR5-6400 channel network with DFE
+        let ddr5_net = create_ddr5_dq_channel_network(
+            &freqs,
+            ref_z,
+            0.08,    // 8 cm trace
+            0.008,   // 0.8 cm stub
+            40.0,    // 40 Ohm ODT
+            0.6e-12, // 0.6 pF DRAM Cin
+        )
+        .unwrap();
+        assert!(ddr5_net.sample_count() > 0);
+
+        let ddr5_mask = DdrRxMaskSpec::ddr5_6400();
+        let dt5 = (ddr5_mask.ui_ps / spui as f64) * 1.0e-12;
+
+        // Severe postcursor ISI closes un-equalized DDR5 eye (penetrating the 80 mV mask)
+        let mut ddr5_closed = Vec::new();
+        for k in 0..64 {
+            let v = if k % 2 == 0 { 0.58 } else { 0.52 }; // Severe ISI collapsed within [0.51, 0.59]
+            dd4_wave_extend(&mut ddr5_closed, v, spui);
+        }
+        let res5_closed = evaluate_ddr_rx_mask(&ddr5_closed, spui, dt5, &ddr5_mask);
+        assert!(!res5_closed.passed);
+        assert!(res5_closed.mask_violations > 0);
+
+        // 4-Tap DFE cancellation opens DDR5 eye
+        let mut ddr5_open = Vec::new();
+        for k in 0..64 {
+            let v = if k % 2 == 0 { 0.72 } else { 0.38 };
+            dd4_wave_extend(&mut ddr5_open, v, spui);
+        }
+        let res5_open = evaluate_ddr_rx_mask(&ddr5_open, spui, dt5, &ddr5_mask);
+        assert!(res5_open.passed);
+        assert_eq!(res5_open.mask_violations, 0);
+        assert!(res5_open.voltage_margin_v > 0.0);
+    }
+
+    #[test]
+    fn transient_and_pdn_benchmarks_evaluate_tdr_impedance_and_voltage_droop() {
+        use sipi_channel::{
+            PdnNetworkSpecV1, calculate_pdn_impedance_profile,
+            reconstruct_tdr_impedance_profile, simulate_pdn_transient_droop,
+        };
+        use sipi_types::Hertz;
+
+        // 1. TDR characteristic impedance profile reconstruction
+        let dt = 1.0e-12; // 1 ps
+        let mut refl = vec![0.0; 50]; // 50 Ohm section (Gamma = 0)
+        refl.extend(std::iter::repeat_n(0.20, 50)); // 75 Ohm step (Gamma = +0.20)
+        let tdr = reconstruct_tdr_impedance_profile(&refl, dt, 50.0);
+        assert_eq!(tdr.time_ps.len(), 100);
+        assert_eq!(tdr.z_min_ohms, 50.0);
+        assert!((tdr.z_max_ohms - 75.0).abs() < 1e-12);
+
+        // 2. PDN impedance profile and anti-resonance peaks
+        let pdn_spec = PdnNetworkSpecV1::standard_core_rail();
+        assert!((pdn_spec.target_impedance_ohms() - 0.00425).abs() < 1e-6);
+
+        let freqs: Vec<Hertz> = (1..=100)
+            .map(|i| Hertz::try_new(10.0_f64.powf(5.0 + 3.0 * (i as f64 / 100.0))).unwrap())
+            .collect();
+        let profile = calculate_pdn_impedance_profile(&pdn_spec, &freqs);
+        assert_eq!(profile.frequencies_hz.len(), 100);
+        assert!(!profile.anti_resonance_peaks.is_empty());
+
+        // 3. Core rail dynamic current step transient
+        let tran_res = simulate_pdn_transient_droop(&pdn_spec, 6.0, 1.0, 50.0, 0.1);
+        assert_eq!(tran_res.time_ns.len(), 500);
+        assert!(tran_res.max_voltage_droop_v > 0.0);
+        assert!(tran_res.passed);
+        assert!(tran_res.min_rail_voltage_v > pdn_spec.nominal_voltage_v - pdn_spec.nominal_voltage_v * pdn_spec.ripple_tolerance_fraction);
+    }
+
+    fn dd4_wave_extend(wave: &mut Vec<f64>, val: f64, count: usize) {
+        wave.extend(std::iter::repeat_n(val, count));
+    }
 }

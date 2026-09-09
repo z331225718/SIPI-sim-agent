@@ -146,6 +146,10 @@ Build Tools。使用[微软官方运行库说明与下载](https://learn.microso
 - **实测 TX 脉冲响应（Measured TX Pulse Stimulus）闭环**：支持配置实测或通过 TXF-01 拟合提取的单脉冲响应（`measuredPulse`，包含 `pulseResponseV`、采样步长与参考面），通过时域符号线性重叠相加（Overlap-Add, $v_{\text{tx}}[n] = \sum_k s_k \cdot p[n - k \cdot \text{spui}]$）取代生硬的理想矩形保持（Hold）；保证单脉冲输入严格还原原脉冲响应，相继符号以 UI 步长线性叠加并自适应重采样对齐仿真时间网格，为实测发射机与理想发射机在同一物理通道下的眼图与误码对比提供直接闭环。
 - **受约束的均衡（CTLE / FFE）网格扫描与自动调优（`sipi channel sweep`）**：在固定物理通道冲激响应与激励下，批量并发评估 CTLE 极点增益档位（$0 \dots 14\,\text{dB}$）与 TX FFE 抽头组合（前驱/主驱/后驱）；严格执行物理能量归一化约束（$\sum |c_i| \le 1.0$ 且主驱占优）；按最差眼高（Eye Height）或 RLM 进行多维降序排序并导出 `sweep-results.csv`，在 `meta.json` 中记录最优候选参数并完成自动调优闭环。
 - **IBIS-AMI 规范模型执行网关（`sipi ami run`）**：支持加载执行符合 IBIS 5.0~7.2 标准的 Windows x64 动态链接库（DLL）；实现标准 C 语言 FFI 接口隔离（`AMI_Init`、`AMI_GetWave`、`AMI_Close`）；自动解析与绑定 AMI 树形参数文本，注入冲激响应矩阵与发射/接收波形向量，支持模型内部自适应时钟提取并导出 `clocks.csv`、输出波形 `waveform_out.csv`、回传参数文本 `parameters_out.txt` 与可复核收据 `receipt.json`。
+- **三大经典 SI/PI 对照基准套件**：
+  - **S 参数频域基准**：微带线高频衰减（趋肤效应与介质损耗）、过孔/残桩 15 GHz 陷波深度（>20 dB）与 Q 值解析提取，以及 4 端口平衡/不对称差分过孔的全量 16 项混合模 S 矩阵转换（$S_{dd}, S_{cc}, S_{cd}, S_{dc}$）。
+  - **DDR 内存总线基准**：DDR4-3200 与 DDR5-6400 DQ 链路模型（含控制器驱动、PCB 传输线、DIMM fly-by 残桩与 DRAM 焊球 $C_{\text{in}}$ 寄生），实现基于 JEDEC JESD79-4 / JESD79-5 规范的 $V_{dIVW} \times T_{dIVW}$ 接收端禁区掩模合规判定、压摆率提取，以及 4-Tap DFE 均衡开眼验证。
+  - **瞬态与电源完整性（TDR / PDN）基准**：TDR 反射系数与特征阻抗剖面重构 $Z(t) = Z_0 \frac{1+\Gamma(t)}{1-\Gamma(t)}$，以及多阶去耦电容（散装、中频与高频 MLCC，含 ESR 与 ESL 寄生回路电感）并联抗谐振阻抗峰 $Z(f)$ 与核供电轨动态大电流阶跃电压下陷（Voltage Droop）与阻尼振荡瞬态仿真。
 
 ## 验证与边界
 

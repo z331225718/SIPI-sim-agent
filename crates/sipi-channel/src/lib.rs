@@ -13,6 +13,23 @@ pub mod p3c_fixed_four_port_bench_v1;
 pub mod p3c_fixed_pole_rational_fit_v1;
 pub mod p3c_real_constrained_fixed_pole_fit_v1;
 pub mod network_cascade_v1;
+pub mod sp_benchmarks_v1;
+pub use sp_benchmarks_v1::{
+    MixedModeFourPortMatrixV1, ResonantNotchV1, SParameterMetricsV1,
+    calculate_sparameter_metrics, compute_full_mixed_mode_matrix,
+    create_analytic_lossy_microstrip, create_analytic_resonant_stub,
+};
+pub mod ddr_benchmarks_v1;
+pub use ddr_benchmarks_v1::{
+    DdrGeneration, DdrMaskComplianceResult, DdrRxMaskSpec,
+    create_ddr4_dq_channel_network, create_ddr5_dq_channel_network, evaluate_ddr_rx_mask,
+};
+pub mod pdn_benchmarks_v1;
+pub use pdn_benchmarks_v1::{
+    AntiResonancePeakV1, DecouplingCapacitorSpecV1, PdnImpedanceProfileV1, PdnNetworkSpecV1,
+    PdnTransientResultV1, TdrProfileResultV1, calculate_pdn_impedance_profile,
+    reconstruct_tdr_impedance_profile, simulate_pdn_transient_droop,
+};
 pub use network_cascade_v1::{
     CascadeError, DetailedPassivityDiagnosticsV1, DetailedReciprocityDiagnosticsV1,
     DifferentialPair, FrequencyGridCoverageV1, KernelMetricsV1, MixedModeDiagnosticsV1, PortMapV1,
