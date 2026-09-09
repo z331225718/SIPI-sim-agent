@@ -1080,6 +1080,186 @@ pub fn parse_touchstone_4port(
     Ok((ref_z, frequencies, samples))
 }
 
+/// Differential pair definition consisting of positive and negative 0-indexed port indices.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DifferentialPair {
+    pub plus: usize,
+    pub minus: usize,
+}
+
+impl DifferentialPair {
+    pub const fn new(plus: usize, minus: usize) -> Self {
+        Self { plus, minus }
+    }
+}
+
+/// Parse an arbitrary N-port Touchstone file into reference impedance, frequency vector,
+/// and flat N*N Complex64 matrices per frequency sample.
+pub fn parse_touchstone_nport(
+    text: &str,
+    num_ports: usize,
+) -> Result<(Ohms, Vec<Hertz>, Vec<Vec<Complex64>>), CascadeError> {
+    if num_ports == 0 {
+        return Err(CascadeError::InvalidPortIndex);
+    }
+    let (freq_unit, format, z0) = parse_touchstone_options(text)?;
+    let ref_z = Ohms::try_new(z0).map_err(|_| CascadeError::NonPositiveImpedance)?;
+
+    let mut tokens = Vec::new();
+    for line in text.lines() {
+        let line = line.split('!').next().unwrap_or("").trim();
+        if line.is_empty() || line.starts_with('#') || line.starts_with('[') {
+            continue;
+        }
+        tokens.extend(line.split_whitespace().map(str::to_owned));
+    }
+
+    let entries_per_point = num_ports * num_ports;
+    let row_width = 1 + entries_per_point * 2;
+    if tokens.is_empty() || tokens.len() % row_width != 0 {
+        return Err(CascadeError::TooFewSamples);
+    }
+
+    let count = tokens.len() / row_width;
+    let mut frequencies = Vec::with_capacity(count);
+    let mut samples = Vec::with_capacity(count);
+
+    for chunk in tokens.chunks_exact(row_width) {
+        let f_val = chunk[0]
+            .parse::<f64>()
+            .map_err(|_| CascadeError::NonFiniteCalculation)?
+            * freq_unit;
+        if !f_val.is_finite() || f_val < 0.0 {
+            return Err(CascadeError::NonFiniteCalculation);
+        }
+        let freq = Hertz::try_new(f_val).map_err(|_| CascadeError::NonFiniteCalculation)?;
+
+        let mut mat = Vec::with_capacity(entries_per_point);
+        for i in 0..entries_per_point {
+            let idx = 1 + i * 2;
+            let val1 = chunk[idx]
+                .parse::<f64>()
+                .map_err(|_| CascadeError::NonFiniteCalculation)?;
+            let val2 = chunk[idx + 1]
+                .parse::<f64>()
+                .map_err(|_| CascadeError::NonFiniteCalculation)?;
+            mat.push(parse_touchstone_complex(val1, val2, format)?);
+        }
+        frequencies.push(freq);
+        samples.push(mat);
+    }
+
+    if frequencies.len() < 2 {
+        return Err(CascadeError::TooFewSamples);
+    }
+    for window in frequencies.windows(2) {
+        if window[1].get() <= window[0].get() {
+            return Err(CascadeError::NonIncreasingFrequency);
+        }
+    }
+
+    Ok((ref_z, frequencies, samples))
+}
+
+/// Extract a 2-port differential spectrum (Sdd) from an N-port dataset given
+/// an input differential pair and an output differential pair.
+pub fn extract_differential_two_port_from_nport(
+    name: impl Into<String>,
+    num_ports: usize,
+    samples: &[Vec<Complex64>],
+    frequencies: &[Hertz],
+    ref_z: Ohms,
+    input_pair: DifferentialPair,
+    output_pair: DifferentialPair,
+) -> Result<TwoPortSpectrumV1, CascadeError> {
+    if input_pair.plus >= num_ports
+        || input_pair.minus >= num_ports
+        || output_pair.plus >= num_ports
+        || output_pair.minus >= num_ports
+    {
+        return Err(CascadeError::InvalidPortIndex);
+    }
+    if input_pair.plus == input_pair.minus || output_pair.plus == output_pair.minus {
+        return Err(CascadeError::DuplicatePortIndex);
+    }
+
+    let mut two_port_samples = Vec::with_capacity(samples.len());
+
+    let p1 = input_pair.plus;
+    let p2 = input_pair.minus;
+    let p3 = output_pair.plus;
+    let p4 = output_pair.minus;
+
+    for mat in samples {
+        if mat.len() != num_ports * num_ports {
+            return Err(CascadeError::TooFewSamples);
+        }
+        let s = |row: usize, col: usize| -> Complex<f64> {
+            let c = mat[row * num_ports + col];
+            Complex::new(c.real(), c.imaginary())
+        };
+
+        // Mixed-mode Sdd modal transformation
+        let sdd11 = (s(p1, p1) - s(p1, p2) - s(p2, p1) + s(p2, p2)) * 0.5;
+        let sdd12 = (s(p1, p3) - s(p1, p4) - s(p2, p3) + s(p2, p4)) * 0.5;
+        let sdd21 = (s(p3, p1) - s(p3, p2) - s(p4, p1) + s(p4, p2)) * 0.5;
+        let sdd22 = (s(p3, p3) - s(p3, p4) - s(p4, p3) + s(p4, p4)) * 0.5;
+
+        let to_c64 = |c: Complex<f64>| -> Result<Complex64, CascadeError> {
+            Complex64::try_new(c.re, c.im).map_err(|_| CascadeError::NonFiniteCalculation)
+        };
+
+        two_port_samples.push(TwoPortS {
+            s11: to_c64(sdd11)?,
+            s12: to_c64(sdd12)?,
+            s21: to_c64(sdd21)?,
+            s22: to_c64(sdd22)?,
+        });
+    }
+
+    TwoPortSpectrumV1::try_new(name, ref_z, frequencies.to_vec(), two_port_samples)
+}
+
+/// Create an analytic coupled crosstalk network (FEXT or NEXT model)
+/// where coupling is proportional to coupling coefficient k_x and delay tau.
+pub fn create_analytic_coupled_crosstalk_network(
+    frequencies: &[Hertz],
+    ref_z: Ohms,
+    coupling_coeff: f64,
+    tau_seconds: f64,
+    is_next: bool,
+) -> Result<TwoPortSpectrumV1, CascadeError> {
+    if !coupling_coeff.is_finite() || !tau_seconds.is_finite() || tau_seconds < 0.0 {
+        return Err(CascadeError::NonFiniteCalculation);
+    }
+    let zero = Complex64::try_new(0.0, 0.0).map_err(|_| CascadeError::NonFiniteCalculation)?;
+
+    let mut samples = Vec::with_capacity(frequencies.len());
+    for &freq in frequencies {
+        let f = freq.get();
+        let omega = 2.0 * std::f64::consts::PI * f;
+
+        let s21_val = if is_next {
+            let phase = Complex::new(0.0, -2.0 * omega * tau_seconds).exp();
+            let c = Complex::new(coupling_coeff, 0.0) * (Complex::new(1.0, 0.0) - phase) * 0.5;
+            Complex64::try_new(c.re, c.im).map_err(|_| CascadeError::NonFiniteCalculation)?
+        } else {
+            let phase = Complex::new(0.0, -omega * tau_seconds).exp();
+            let c = Complex::new(0.0, omega * coupling_coeff * 1e-9) * phase;
+            Complex64::try_new(c.re, c.im).map_err(|_| CascadeError::NonFiniteCalculation)?
+        };
+
+        samples.push(TwoPortS {
+            s11: zero,
+            s12: s21_val,
+            s21: s21_val,
+            s22: zero,
+        });
+    }
+
+    TwoPortSpectrumV1::try_new("analytic-crosstalk", ref_z, frequencies.to_vec(), samples)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1319,5 +1499,87 @@ mod tests {
         assert_eq!(metrics.peak_index, 128);
         assert!((metrics.peak_time_s - 250.0e-12).abs() < 1e-14);
         assert!(kernel[128] > 0.99);
+    }
+
+    #[test]
+    fn test_parse_touchstone_nport_8port_and_crosstalk_extraction() {
+        // Generate an S8P Touchstone text with 2 frequency points
+        // 8 ports -> 64 complex pairs -> 128 values per row
+        let mut s8p_text = String::from("# GHz S RI R 50\n");
+        for f_ghz in [1.0, 2.0] {
+            s8p_text.push_str(&format!("{f_ghz:.1}"));
+            for row in 0..8 {
+                for col in 0..8 {
+                    // Put a small non-zero coupling between port 4 and port 1 (aggressor to victim)
+                    if (row == 1 && col == 4) || (row == 4 && col == 1) {
+                        s8p_text.push_str(" 0.05 0.01");
+                    } else if row == col {
+                        s8p_text.push_str(" 0.00 0.00");
+                    } else if (row == 1 && col == 0) || (row == 0 && col == 1) {
+                        s8p_text.push_str(" 0.90 0.00");
+                    } else {
+                        s8p_text.push_str(" 0.00 0.00");
+                    }
+                }
+            }
+            s8p_text.push('\n');
+        }
+
+        let (z0, freqs, samples) = parse_touchstone_nport(&s8p_text, 8).unwrap();
+        assert_eq!(z0.get(), 50.0);
+        assert_eq!(freqs.len(), 2);
+        assert_eq!(samples.len(), 2);
+        assert_eq!(samples[0].len(), 64);
+
+        // Extract victim pair: input pair [0, 2], output pair [1, 3]
+        let vic_in = DifferentialPair::new(0, 2);
+        let vic_out = DifferentialPair::new(1, 3);
+        let victim_sdd = extract_differential_two_port_from_nport(
+            "victim-thru",
+            8,
+            &samples,
+            &freqs,
+            z0,
+            vic_in,
+            vic_out,
+        )
+        .unwrap();
+        assert_eq!(victim_sdd.samples().len(), 2);
+        assert!((victim_sdd.samples()[0].s21.real() - 0.45).abs() < 1e-12);
+
+        // Extract FEXT pair: aggressor input pair [4, 6], victim output pair [1, 3]
+        let agg_in = DifferentialPair::new(4, 6);
+        let fext_sdd = extract_differential_two_port_from_nport(
+            "aggressor-fext",
+            8,
+            &samples,
+            &freqs,
+            z0,
+            agg_in,
+            vic_out,
+        )
+        .unwrap();
+        assert_eq!(fext_sdd.samples().len(), 2);
+        assert!((fext_sdd.samples()[0].s21.real() - 0.025).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_analytic_coupled_crosstalk_network_fext_and_next() {
+        let grid = make_grid(100, 100.0e6);
+        let z0 = Ohms::try_new(50.0).unwrap();
+
+        let fext = create_analytic_coupled_crosstalk_network(&grid, z0, 0.05, 200.0e-12, false).unwrap();
+        assert_eq!(fext.samples().len(), 100);
+        // At DC (f=0), FEXT is zero
+        assert_eq!(fext.samples()[0].s21.real(), 0.0);
+        assert_eq!(fext.samples()[0].s21.imaginary(), 0.0);
+        // At high frequency, FEXT magnitude increases
+        assert!(fext.samples()[99].s21.imaginary().abs() > 0.0);
+
+        let next = create_analytic_coupled_crosstalk_network(&grid, z0, 0.08, 200.0e-12, true).unwrap();
+        assert_eq!(next.samples().len(), 100);
+        // At DC (f=0), NEXT is zero
+        assert_eq!(next.samples()[0].s21.real(), 0.0);
+        assert_eq!(next.samples()[0].s21.imaginary(), 0.0);
     }
 }

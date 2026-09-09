@@ -306,7 +306,7 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
         .output
         .metrics
         .keys()
-        .any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_"));
+        .any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_") || k.starts_with("crosstalk_"));
     if has_eye_or_jitter {
         let path = output.join("eye-metrics.csv");
         let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
@@ -315,7 +315,7 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
             .output
             .metrics
             .keys()
-            .filter(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_"))
+            .filter(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_") || k.starts_with("crosstalk_"))
             .cloned()
             .collect::<Vec<_>>();
         keys.sort();
@@ -327,6 +327,8 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
                 "ps"
             } else if k.ends_with("_s") {
                 "s"
+            } else if k.ends_with("_db") {
+                "dB"
             } else if k.ends_with("_count") {
                 "count"
             } else {
@@ -755,6 +757,15 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
         }
         if let (Some(&ser), Some(&ber)) = (report.output.metrics.get("pam4_ser"), report.output.metrics.get("pam4_ber")) {
             html.push_str(&format!("<div><dt>PAM4 SER / BER</dt><dd>{:.2e} / {:.2e}</dd></div>", ser, ber));
+        }
+    }
+    if let Some(&xtalk_rms) = report.output.metrics.get("crosstalk_rms_v") {
+        html.push_str(&format!("<div><dt>Crosstalk RMS</dt><dd>{:.2} mV</dd></div>", xtalk_rms * 1e3));
+        if let Some(&xtalk_p2p) = report.output.metrics.get("crosstalk_peak_to_peak_v") {
+            html.push_str(&format!("<div><dt>Crosstalk P-P</dt><dd>{:.2} mV</dd></div>", xtalk_p2p * 1e3));
+        }
+        if let Some(&scr) = report.output.metrics.get("crosstalk_scr_db") {
+            html.push_str(&format!("<div><dt>SCR</dt><dd>{:.2} dB</dd></div>", scr));
         }
     }
     html.push_str(&format!("<section data-view=\"waveform\" aria-label=\"Stage waveforms\"><h2>Stage waveforms</h2><output class=\"range-status\">Samples 0..{} of {}</output>", preview.saturating_sub(1), time.len()));

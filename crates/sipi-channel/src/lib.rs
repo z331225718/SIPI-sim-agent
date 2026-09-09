@@ -15,13 +15,15 @@ pub mod p3c_real_constrained_fixed_pole_fit_v1;
 pub mod network_cascade_v1;
 pub use network_cascade_v1::{
     CascadeError, DetailedPassivityDiagnosticsV1, DetailedReciprocityDiagnosticsV1,
-    FrequencyGridCoverageV1, KernelMetricsV1, MixedModeDiagnosticsV1, PortMapV1,
+    DifferentialPair, FrequencyGridCoverageV1, KernelMetricsV1, MixedModeDiagnosticsV1, PortMapV1,
     TerminationParamsV1, TwoPortSpectrumV1, analyze_mixed_mode_components,
     assess_frequency_grid_coverage, calculate_loaded_voltage_transfer, cascade_network_stages,
-    cascade_two_ports, create_analytic_delay_network, create_analytic_mismatched_line_network,
-    create_analytic_thru_network, create_analytic_uncoupled_four_port,
-    evaluate_sampled_passivity, evaluate_sampled_reciprocity, four_port_to_differential_two_port,
-    parse_touchstone_2port, parse_touchstone_4port, spectrum_to_discrete_kernel,
+    cascade_two_ports, create_analytic_coupled_crosstalk_network, create_analytic_delay_network,
+    create_analytic_mismatched_line_network, create_analytic_thru_network,
+    create_analytic_uncoupled_four_port, evaluate_sampled_passivity, evaluate_sampled_reciprocity,
+    extract_differential_two_port_from_nport, four_port_to_differential_two_port,
+    parse_touchstone_2port, parse_touchstone_4port, parse_touchstone_nport,
+    spectrum_to_discrete_kernel,
 };
 pub use cdr_lock_v1::{
     CDR_LOCK_POLICY_V1, CdrLockConfigV1, CdrLockErrorV1, CdrLockSampleRecordV1, CdrLockStateV1,

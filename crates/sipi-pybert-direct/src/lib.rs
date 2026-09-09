@@ -16,6 +16,7 @@ mod input;
 mod jitter;
 mod legacy_runtime;
 mod legacy_sim;
+mod crosstalk;
 mod numpy_normal;
 mod output;
 mod pam4_eye;
@@ -40,6 +41,10 @@ pub use capabilities::{EngineCapabilitiesV1, RunStageV1};
 pub use channel::{
     ChannelError, MetallicLineConfig, TerminationConfig, calculate_loaded_transfer,
     calculate_metallic_line,
+};
+pub use crosstalk::{
+    AggressorConfigV1, AggressorRunSummary, CrosstalkError, CrosstalkMetrics,
+    calculate_induced_crosstalk_noise, evaluate_crosstalk_metrics, generate_aggressor_waveform,
 };
 pub use decoder::{
     FecDecodeError, FecDecodeResult, FecEncoder, IsiDecodeConfig, IsiDecodeError, IsiDecodeResult,

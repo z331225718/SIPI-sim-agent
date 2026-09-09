@@ -249,6 +249,8 @@ pub struct TouchstoneChannelInputV1 {
     pub frequency_max_hz: Option<f64>,
     #[serde(default)]
     pub impulse_length: Option<f64>,
+    #[serde(default)]
+    pub aggressors: Option<Vec<crate::AggressorConfigV1>>,
 }
 
 fn default_touchstone_ref_impedance() -> f64 {

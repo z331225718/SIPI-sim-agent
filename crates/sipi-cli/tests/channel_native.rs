@@ -1049,4 +1049,69 @@ mod native {
         assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
         assert!(receipt["artifacts"]["eye-metrics.csv"].is_object());
     }
+
+    #[test]
+    fn touchstone_network_runs_multi_channel_crosstalk_next_and_fext() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+        req["timebase"]["nbits"] = 256.into();
+        // Add two aggressors to the channel specification
+        let aggressors = serde_json::json!([
+            {
+                "name": "fext_agg1",
+                "kind": "fext",
+                "amplitudeV": 1.0,
+                "delaySeconds": 15.0e-12,
+                "freqOffsetPpm": 50.0,
+                "couplingCoeff": 0.08,
+                "prbsOrder": 7,
+                "prbsSeed": 111
+            },
+            {
+                "name": "next_agg2",
+                "kind": "next",
+                "amplitudeV": 0.8,
+                "delaySeconds": 0.0,
+                "freqOffsetPpm": -30.0,
+                "couplingCoeff": 0.05,
+                "prbsOrder": 9,
+                "prbsSeed": 222
+            }
+        ]);
+        req["channel"]["value"]["aggressors"] = aggressors;
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "crosstalk_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("crosstalk_run");
+        // Verify eye-metrics.csv has crosstalk metrics
+        let eye_text = fs::read_to_string(dir.join("eye-metrics.csv")).unwrap();
+        assert!(eye_text.contains("crosstalk_rms_v"));
+        assert!(eye_text.contains("crosstalk_peak_to_peak_v"));
+        assert!(eye_text.contains("crosstalk_scr_db"));
+        assert!(eye_text.contains("crosstalk_fext_agg1_rms_v"));
+        assert!(eye_text.contains("crosstalk_next_agg2_rms_v"));
+
+        // Verify meta.json metrics
+        let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
+        let metrics = &meta["backend_metadata"]["metrics"];
+        assert_eq!(metrics["crosstalk_aggressor_count"], 2.0);
+        let rms = metrics["crosstalk_rms_v"].as_f64().unwrap();
+        assert!(rms > 0.0, "crosstalk RMS must be strictly positive: {rms}");
+        let p2p = metrics["crosstalk_peak_to_peak_v"].as_f64().unwrap();
+        assert!(p2p > 0.0, "crosstalk peak-to-peak must be strictly positive: {p2p}");
+        let scr = metrics["crosstalk_scr_db"].as_f64().unwrap();
+        assert!(scr.is_finite(), "crosstalk SCR must be finite: {scr}");
+
+        // Verify report.html has crosstalk summary cards
+        let html = fs::read_to_string(dir.join("report.html")).unwrap();
+        assert!(html.contains("Crosstalk RMS"));
+        assert!(html.contains("Crosstalk P-P"));
+        assert!(html.contains("SCR"));
+
+        // Verify receipt
+        let receipt: Value = serde_json::from_slice(&fs::read(dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
+        assert!(receipt["artifacts"]["eye-metrics.csv"].is_object());
+    }
 }

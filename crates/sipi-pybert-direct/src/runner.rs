@@ -1086,6 +1086,7 @@ fn strict_channel(value: &Value) -> Result<(), DirectRunError> {
             "fileContent",
             "portMap",
             "stages",
+            "aggressors",
             "referenceImpedance",
             "sourceImpedance",
             "sourceCapacitanceF",
@@ -1132,6 +1133,29 @@ fn strict_channel(value: &Value) -> Result<(), DirectRunError> {
             }
         }
     }
+        if let Some(aggressors) = value.get("aggressors").and_then(Value::as_array) {
+            for (idx, agg) in aggressors.iter().enumerate() {
+                let path = format!("$.channel.value.aggressors[{idx}]");
+                object_keys(
+                    agg,
+                    &path,
+                    &[
+                        "name",
+                        "kind",
+                        "amplitudeV",
+                        "delaySeconds",
+                        "freqOffsetPpm",
+                        "modulation",
+                        "prbsOrder",
+                        "prbsSeed",
+                        "couplingCoeff",
+                        "channelFile",
+                        "channelContent",
+                        "portIndices",
+                    ],
+                )?;
+            }
+        }
     Ok(())
 }
 

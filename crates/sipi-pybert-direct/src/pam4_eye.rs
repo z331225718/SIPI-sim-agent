@@ -176,10 +176,10 @@ pub fn calculate_pam4_eye_metrics(
         }
     };
 
-    let s0 = level_sigma(&samples_by_level[0], v0);
-    let s1 = level_sigma(&samples_by_level[1], v1);
-    let s2 = level_sigma(&samples_by_level[2], v2);
-    let s3 = level_sigma(&samples_by_level[3], v3);
+    let _s0 = level_sigma(&samples_by_level[0], v0);
+    let _s1 = level_sigma(&samples_by_level[1], v1);
+    let _s2 = level_sigma(&samples_by_level[2], v2);
+    let _s3 = level_sigma(&samples_by_level[3], v3);
 
     // IEEE 802.3ck PAM4 eye heights (mean level separations)
     let eh_lower = (v1 - v0).max(0.0);

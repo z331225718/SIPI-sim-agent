@@ -18,7 +18,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sipi_channel::{
     PortMapV1, TerminationParamsV1, TwoPortSpectrumV1, assess_frequency_grid_coverage,
-    calculate_loaded_voltage_transfer, cascade_network_stages, create_analytic_delay_network,
+    calculate_loaded_voltage_transfer, cascade_network_stages,
+    create_analytic_coupled_crosstalk_network, create_analytic_delay_network,
     create_analytic_mismatched_line_network, create_analytic_thru_network,
     evaluate_sampled_passivity, evaluate_sampled_reciprocity, four_port_to_differential_two_port,
     parse_touchstone_2port, parse_touchstone_4port, spectrum_to_discrete_kernel,
@@ -95,6 +96,8 @@ pub struct TouchstoneNetworkChannelConfigV1 {
     pub frequency_max_hz: Option<f64>,
     #[serde(default)]
     pub impulse_length: Option<f64>,
+    #[serde(default)]
+    pub aggressors: Option<Vec<crate::AggressorConfigV1>>,
 }
 
 fn default_reference_impedance() -> f64 {
@@ -205,6 +208,50 @@ fn resolve_stage_network(
         .map_err(|e| invalid(format!("naming stage failed: {e:?}")))
     } else {
         Ok(net)
+    }
+}
+
+fn resolve_aggressor_channel(
+    agg: &crate::AggressorConfigV1,
+    base_dir: &Path,
+    ref_z: SipiOhms,
+    simulation_grid: &[SipiHertz],
+) -> Result<TwoPortSpectrumV1, DirectRunError> {
+    if let Some(coeff) = agg.coupling_coeff {
+        let is_next = agg.kind.to_lowercase() == "next";
+        let tau = agg.delay_seconds.unwrap_or(100.0e-12);
+        create_analytic_coupled_crosstalk_network(simulation_grid, ref_z, coeff, tau, is_next)
+            .map_err(|e| invalid(format!("analytic crosstalk channel failed: {e:?}")))
+    } else if let Some(content) = &agg.channel_content {
+        let stage = TouchstoneStageSpecV1 {
+            name: agg.name.clone(),
+            kind: None,
+            file_path: None,
+            file_content: Some(content.clone()),
+            port_map: None,
+            delay_seconds: None,
+            line_impedance_ohms: None,
+            propagation_velocity_m_per_s: None,
+            length_m: None,
+        };
+        resolve_stage_network(&stage, base_dir, ref_z, simulation_grid)
+    } else if let Some(file_path) = &agg.channel_file {
+        let stage = TouchstoneStageSpecV1 {
+            name: agg.name.clone(),
+            kind: None,
+            file_path: Some(file_path.clone()),
+            file_content: None,
+            port_map: None,
+            delay_seconds: None,
+            line_impedance_ohms: None,
+            propagation_velocity_m_per_s: None,
+            length_m: None,
+        };
+        resolve_stage_network(&stage, base_dir, ref_z, simulation_grid)
+    } else {
+        let tau = agg.delay_seconds.unwrap_or(50.0e-12);
+        create_analytic_coupled_crosstalk_network(simulation_grid, ref_z, 0.05, tau, false)
+            .map_err(|e| invalid(format!("default crosstalk channel failed: {e:?}")))
     }
 }
 
@@ -373,6 +420,80 @@ pub fn run_channel_touchstone_network_json(
 
     // Run native link simulation (PRBS, TX FFE, RX CTLE, FFE, DFE/CDR)
     let mut output = simulate_native_v1(&direct_input).map_err(NativeSimulationError::from)?;
+    // If aggressors are configured, compute induced crosstalk noise and superpose
+    if let Some(aggressor_list) = &config.aggressors {
+        if !aggressor_list.is_empty() {
+            let nominal_ui = dt * input.timebase.samples_per_ui as f64;
+            let mut agg_noises = Vec::with_capacity(aggressor_list.len());
+
+            for agg in aggressor_list {
+                let xtalk_net = resolve_aggressor_channel(agg, base_dir, ref_z, &simulation_grid)?;
+                let xtalk_transfer = calculate_loaded_voltage_transfer(&xtalk_net, source_term, load_term)
+                    .map_err(|e| invalid(format!("aggressor {} transfer calculation failed: {e:?}", agg.name)))?;
+
+                let (xtalk_kernel, _) = spectrum_to_discrete_kernel(
+                    xtalk_net.frequencies(),
+                    &xtalk_transfer,
+                    SipiSeconds::try_new(dt).unwrap(),
+                    config.apply_raised_cosine_window,
+                    impulse_len,
+                )
+                .map_err(|e| invalid(format!("aggressor {} IFFT failed: {e:?}", agg.name)))?;
+
+                let xtalk_impulse_v_per_s = xtalk_kernel.iter().map(|&v| v / dt).collect::<Vec<_>>();
+                let agg_tx = crate::generate_aggressor_waveform(
+                    agg,
+                    nominal_ui,
+                    dt,
+                    sample_count,
+                    input.tx.amplitude.0,
+                )
+                .map_err(|e| invalid(format!("aggressor {} waveform generation failed: {e:?}", agg.name)))?;
+
+                let agg_noise = crate::calculate_induced_crosstalk_noise(
+                    &agg_tx,
+                    &xtalk_impulse_v_per_s,
+                    dt,
+                )
+                .map_err(|e| invalid(format!("aggressor {} noise convolution failed: {e:?}", agg.name)))?;
+
+                agg_noises.push((agg, agg_noise));
+            }
+
+            let clean_rx_wave = output.arrays.get("rx_output_v").cloned().unwrap_or_default();
+            let (total_xtalk, xtalk_metrics) = crate::evaluate_crosstalk_metrics(
+                &agg_noises.iter().map(|(cfg, wave)| (*cfg, wave.clone())).collect::<Vec<_>>(),
+                &clean_rx_wave,
+            );
+
+            // Record clean vs with-crosstalk waveforms
+            output.arrays.insert("rx_output_clean_v".into(), clean_rx_wave);
+            output.arrays.insert("crosstalk_noise_v".into(), total_xtalk.clone());
+
+            // Superpose crosstalk noise onto rx_output_v
+            if let Some(rx_wave) = output.arrays.get_mut("rx_output_v") {
+                for (v, n) in rx_wave.iter_mut().zip(&total_xtalk) {
+                    *v += n;
+                }
+            }
+            if let Some(chan_wave) = output.arrays.get_mut("channel_output_v") {
+                for (v, n) in chan_wave.iter_mut().zip(&total_xtalk) {
+                    *v += n;
+                }
+            }
+
+            // Insert metrics
+            output.metrics.insert("crosstalk_rms_v".into(), xtalk_metrics.total_rms_v);
+            output.metrics.insert("crosstalk_peak_to_peak_v".into(), xtalk_metrics.total_peak_to_peak_v);
+            output.metrics.insert("crosstalk_scr_db".into(), xtalk_metrics.signal_to_crosstalk_ratio_db);
+            output.metrics.insert("crosstalk_aggressor_count".into(), aggressor_list.len() as f64);
+
+            for summary in &xtalk_metrics.aggressor_summaries {
+                output.metrics.insert(format!("crosstalk_{}_rms_v", summary.name), summary.rms_voltage_v);
+                output.metrics.insert(format!("crosstalk_{}_p2p_v", summary.name), summary.peak_to_peak_v);
+            }
+        }
+    }
 
     // Prepare telemetry arrays
     let freqs_hz = cascaded_network.frequencies().iter().map(|f| f.get()).collect::<Vec<_>>();
