@@ -5,6 +5,40 @@ on:
   pull_request:
 
 jobs:
+  native-cli-source-smoke:
+    name: Windows native CLI fresh-checkout smoke
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: "1.97.0"
+          cache: false
+      - name: Check source-build prerequisites
+        shell: powershell
+        run: .\tools\build_windows.ps1 -Check
+      - name: Build default native CLI and run channel numerical smoke
+        shell: powershell
+        run: .\tools\build_windows.ps1
+      - name: Run outside checkout without build tools on PATH
+        shell: powershell
+        run: |
+          $isolated = Join-Path $env:RUNNER_TEMP 'sipi-runtime-smoke'
+          New-Item -ItemType Directory -Path $isolated -ErrorAction Stop | Out-Null
+          Copy-Item -LiteralPath '.\target\x86_64-pc-windows-msvc\release\sipi.exe' -Destination $isolated
+          Set-Location -LiteralPath $isolated
+          $env:PATH = "$env:SystemRoot\System32"
+          $doctor = .\sipi.exe doctor --json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $doctor.status -ne 'ok') { throw 'Isolated native doctor failed' }
+          $example = .\sipi.exe example channel.run --json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $example.status -ne 'ok') { throw 'Isolated native example failed' }
+          $run = $example.result.request | ConvertTo-Json -Depth 40 -Compress | .\sipi.exe channel run --stdin | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $run.status -ne 'ok' -or
+              $run.result.kernel_sample_count -ne 2 -or $run.result.gain_v_per_v.Count -ne 2 -or
+              $run.result.gain_v_per_v[0] -ne 1 -or $run.result.gain_v_per_v[1] -ne 0) {
+            throw 'Isolated native channel smoke failed'
+          }
+
   unit-tests:
     runs-on: windows-latest
     steps:
