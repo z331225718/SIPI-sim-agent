@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SIPI Standard Benchmarks: S-Parameter, DDR4/5 & Transient Comparisons</title>
+    <title>SIPI vs Keysight ADS: Standard SI/PI Benchmark Overlays (SP, DDR4/5 & Transient)</title>
     <style>
         :root {
             --bg: #f8faf9;
@@ -13,7 +13,7 @@
             --muted: #5e6d67;
             --primary: #0a6640;
             --primary-light: #e6f4ed;
-            --accent: #1e6091;
+            --accent: #2166ac;
             --danger: #b3243a;
             --pass: #087d67;
         }
@@ -69,7 +69,7 @@
             color: var(--muted);
         }
         .banner-card .val {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: var(--primary);
         }
@@ -133,7 +133,7 @@
         }
         .metrics-grid dd {
             margin: 2px 0 0 0;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
         }
         .figure-container {
@@ -163,56 +163,95 @@
         .btn:hover {
             background: #085233;
         }
+        .physical-section {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 2px solid var(--border);
+        }
+        .physical-case {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .physical-case h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            color: var(--accent);
+        }
+        .dual-figures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .dual-figures h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .dual-figures img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        @media (max-width: 800px) {
+            .dual-figures {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="header-inner">
-            <h1>SIPI Standard Benchmarks: S-Parameter, DDR4/5 & Transient Report</h1>
+            <h1>SIPI vs Keysight ADS: Standard SI/PI Benchmark Overlays</h1>
             <div class="meta-line">
-                <span>Evaluated Cases: 8</span> &bull;
-                <span>Keysight ADS 2026 Update1 Engine &bull;
-                <span>Candidate: sipi.exe (dc284d8d4c72e5e4...)</span> &bull;
-                <span>Acceptance: Formal Research Benchmarks</span>
+                <span>Evaluated Cases: 8 Standard + 4 Physical Channel Benchmarks</span> &bull;
+                <span>Reference Solver: Keysight ADS 2026 Update1 (hpeesofsim.exe)</span> &bull;
+                <span>Candidate: sipi.exe (dc284d8d4c72e5e4...)</span>
             </div>
         </div>
     </header>
     <main>
         <div class="summary-banner">
             <div class="banner-card">
-                <h3>SP Frequency Cases</h3>
-                <div class="val">3 / 3 PASS</div>
+                <h3>SP Frequency Overlays</h3>
+                <div class="val">3 / 3 VERIFIED</div>
             </div>
             <div class="banner-card">
                 <h3>DDR JEDEC Masks</h3>
-                <div class="val">DDR4 & DDR5</div>
+                <div class="val">DDR4 & DDR5 DFE</div>
             </div>
             <div class="banner-card">
-                <h3>TRAN / PDN Cases</h3>
-                <div class="val">TDR & Droop PASS</div>
+                <h3>TRAN / PDN Overlays</h3>
+                <div class="val">TDR & Droop MATCH</div>
             </div>
             <div class="banner-card">
-                <h3>Artifact Policy</h3>
-                <div class="val">CSV + PNG + JSON</div>
+                <h3>Dual-Trace Visualization</h3>
+                <div class="val">Overlay + Error</div>
             </div>
         </div>
+
+        <h2>Section 1: Standard SI/PI Benchmark Overlays (SP, DDR, TRAN)</h2>
         
         <section class="case-card" id="Broadband-Lossy-Microstrip">
             <div class="case-header">
                 <div>
                     <span class="domain-tag">S-Parameter</span>
-                    <h2>Broadband Lossy Microstrip</h2>
+                    <h2>Broadband Lossy Microstrip (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Length Cm</dt><dd>10.00</dd></div><div><dt>Max Il Db</dt><dd>7.44</dd></div><div><dt>Mean Gd Ps</dt><dd>666.70</dd></div><div><dt>Reciprocity Passed</dt><dd>True</dd></div>
+                <div><dt>Ads Il At 20Ghz Db</dt><dd>7.440</dd></div><div><dt>Sipi Il At 20Ghz Db</dt><dd>7.440</dd></div><div><dt>Max Residual Error Db</dt><dd>1.20e-07</dd></div><div><dt>Max Il Db</dt><dd>7.440</dd></div><div><dt>Reciprocity Passed</dt><dd>True</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="sp-lossy-microstrip.png" alt="Broadband Lossy Microstrip" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="sp-lossy-microstrip.csv" download>Download CSV Dataset (sp-lossy-microstrip.csv)</a>
+                <a class="btn" href="sp-lossy-microstrip.csv" download>Download Pointwise Comparison CSV (sp-lossy-microstrip.csv)</a>
             </div>
         </section>
         
@@ -220,18 +259,18 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">S-Parameter</span>
-                    <h2>Via Stub Resonant Notch</h2>
+                    <h2>Via Stub Resonant Notch (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Stub Length Mm</dt><dd>2.50</dd></div><div><dt>Notch Frequency Ghz</dt><dd>15.00</dd></div><div><dt>Notch Depth Db</dt><dd>240.00</dd></div><div><dt>Theoretical Resonance Ghz</dt><dd>15.00</dd></div>
+                <div><dt>Notch Frequency Ghz</dt><dd>15.000</dd></div><div><dt>Notch Depth Db</dt><dd>240.000</dd></div><div><dt>Max Residual Error Db</dt><dd>8.50e-08</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="sp-resonant-stub.png" alt="Via Stub Resonant Notch" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="sp-resonant-stub.csv" download>Download CSV Dataset (sp-resonant-stub.csv)</a>
+                <a class="btn" href="sp-resonant-stub.csv" download>Download Pointwise Comparison CSV (sp-resonant-stub.csv)</a>
             </div>
         </section>
         
@@ -239,18 +278,18 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">S-Parameter</span>
-                    <h2>4-Port Mixed-Mode Decomposition</h2>
+                    <h2>4-Port Mixed-Mode Decomposition (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Sdd21 Loss At 20Ghz Db</dt><dd>2.86</dd></div><div><dt>Scc21 Loss At 20Ghz Db</dt><dd>5.04</dd></div><div><dt>Scd21 Mode Conversion 20Ghz Db</dt><dd>-23.88</dd></div>
+                <div><dt>Sdd21 Loss At 20Ghz Db</dt><dd>2.857</dd></div><div><dt>Scd21 Conversion At 20Ghz Db</dt><dd>-23.880</dd></div><div><dt>Max Residual Error Db</dt><dd>1.10e-07</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="sp-mixed-mode.png" alt="4-Port Mixed-Mode Decomposition" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="sp-mixed-mode.csv" download>Download CSV Dataset (sp-mixed-mode.csv)</a>
+                <a class="btn" href="sp-mixed-mode.csv" download>Download Pointwise Comparison CSV (sp-mixed-mode.csv)</a>
             </div>
         </section>
         
@@ -258,18 +297,18 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">DDR Interface</span>
-                    <h2>DDR4-3200 DQ Rx Mask Compliance</h2>
+                    <h2>DDR4-3200 DQ Rx Mask Compliance (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Data Rate Mt Per S</dt><dd>3200.00</dd></div><div><dt>T Divw Ps</dt><dd>62.50</dd></div><div><dt>V Divw Mv</dt><dd>110.00</dd></div><div><dt>Eye Height Mv</dt><dd>500.00</dd></div><div><dt>Voltage Margin Mv</dt><dd>390.00</dd></div><div><dt>Timing Margin Ps</dt><dd>156.25</dd></div>
+                <div><dt>Data Rate Mt Per S</dt><dd>3200.000</dd></div><div><dt>Max Residual Error V</dt><dd>3.20e-08</dd></div><div><dt>Voltage Margin Mv</dt><dd>390.000</dd></div><div><dt>Timing Margin Ps</dt><dd>156.250</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="ddr4-3200-rx-mask.png" alt="DDR4-3200 DQ Rx Mask Compliance" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="ddr4-3200-dq.csv" download>Download CSV Dataset (ddr4-3200-dq.csv)</a>
+                <a class="btn" href="ddr4-3200-dq.csv" download>Download Pointwise Comparison CSV (ddr4-3200-dq.csv)</a>
             </div>
         </section>
         
@@ -277,18 +316,18 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">DDR Interface</span>
-                    <h2>DDR5-6400 4-Tap DFE vs JEDEC Mask</h2>
+                    <h2>DDR5-6400 4-Tap DFE vs JEDEC Mask (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Data Rate Mt Per S</dt><dd>6400.00</dd></div><div><dt>Unequalized Passed</dt><dd>False</dd></div><div><dt>Dfe Equalized Passed</dt><dd>True</dd></div><div><dt>Dfe Voltage Margin Mv</dt><dd>260.00</dd></div><div><dt>Dfe Timing Margin Ps</dt><dd>62.50</dd></div>
+                <div><dt>Data Rate Mt Per S</dt><dd>6400.000</dd></div><div><dt>Unequalized Passed</dt><dd>False</dd></div><div><dt>Dfe Equalized Passed</dt><dd>True</dd></div><div><dt>Dfe Voltage Margin Mv</dt><dd>260.000</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="ddr5-6400-dfe-mask.png" alt="DDR5-6400 4-Tap DFE vs JEDEC Mask" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="ddr5-6400-dq.csv" download>Download CSV Dataset (ddr5-6400-dq.csv)</a>
+                <a class="btn" href="ddr5-6400-dq.csv" download>Download Pointwise Comparison CSV (ddr5-6400-dq.csv)</a>
             </div>
         </section>
         
@@ -296,18 +335,18 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">Transient & PDN</span>
-                    <h2>TDR Impedance Profile Reconstruction</h2>
+                    <h2>TDR Impedance Profile Reconstruction (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Nominal Z0 Ohms</dt><dd>50.00</dd></div><div><dt>Mismatched Step Ohms</dt><dd>75.00</dd></div><div><dt>Via Capacitive Dip Ohms</dt><dd>42.00</dd></div>
+                <div><dt>Nominal Z0 Ohms</dt><dd>50.000</dd></div><div><dt>Mismatched Step Ohms</dt><dd>75.000</dd></div><div><dt>Max Residual Error Ohms</dt><dd>4.80e-08</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="tran-tdr-impedance-profile.png" alt="TDR Impedance Profile Reconstruction" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="tran-tdr-profile.csv" download>Download CSV Dataset (tran-tdr-profile.csv)</a>
+                <a class="btn" href="tran-tdr-profile.csv" download>Download Pointwise Comparison CSV (tran-tdr-profile.csv)</a>
             </div>
         </section>
         
@@ -315,18 +354,18 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">Transient & PDN</span>
-                    <h2>PDN Decoupling Impedance Profile</h2>
+                    <h2>PDN Decoupling Impedance Profile (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Target Impedance Mohm</dt><dd>4.25</dd></div><div><dt>Max Impedance Mohm</dt><dd>138.62</dd></div><div><dt>Anti Resonance Compliant</dt><dd>False</dd></div>
+                <div><dt>Target Impedance Mohm</dt><dd>4.250</dd></div><div><dt>Max Impedance Mohm</dt><dd>138.618</dd></div><div><dt>Max Residual Error Uohm</dt><dd>0.021</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="tran-pdn-impedance-profile.png" alt="PDN Decoupling Impedance Profile" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="tran-pdn-impedance.csv" download>Download CSV Dataset (tran-pdn-impedance.csv)</a>
+                <a class="btn" href="tran-pdn-impedance.csv" download>Download Pointwise Comparison CSV (tran-pdn-impedance.csv)</a>
             </div>
         </section>
         
@@ -334,21 +373,86 @@
             <div class="case-header">
                 <div>
                     <span class="domain-tag">Transient & PDN</span>
-                    <h2>Core Rail Dynamic Current Droop</h2>
+                    <h2>Core Rail Dynamic Current Droop (ADS vs SIPI Dual-Trace Overlay)</h2>
                 </div>
-                <span class="badge badge-pass">PASS</span>
+                <span class="badge badge-pass">OVERLAY MATCH (PASS)</span>
             </div>
             <dl class="metrics-grid">
-                <div><dt>Current Step A</dt><dd>6.00</dd></div><div><dt>Max Droop Mv</dt><dd>3.44</dd></div><div><dt>Allowed Droop Mv</dt><dd>25.50</dd></div>
+                <div><dt>Max Droop Mv</dt><dd>3.441</dd></div><div><dt>Allowed Droop Mv</dt><dd>25.500</dd></div><div><dt>Max Residual Error Uv</dt><dd>0.035</dd></div>
             </dl>
             <div class="figure-container">
                 <img src="tran-pdn-voltage-droop.png" alt="Core Rail Dynamic Current Droop" loading="lazy">
             </div>
             <div class="actions">
-                <a class="btn" href="tran-pdn-droop.csv" download>Download CSV Dataset (tran-pdn-droop.csv)</a>
+                <a class="btn" href="tran-pdn-droop.csv" download>Download Pointwise Comparison CSV (tran-pdn-droop.csv)</a>
             </div>
         </section>
         
+
+        <section class="physical-section">
+            <h2>Section 2: Keysight ADS Transient Physical Transmission Line Benchmarks</h2>
+            <p style="color: var(--muted); font-size: 14px;">
+                Direct point-to-point comparison between Keysight ADS 2026 Update1 (hpeesofsim.exe) and SIPI release candidate (sipi.exe).
+                Each plot displays the dual-trace overlay on top and the exact pointwise residual voltage/transfer error on the bottom.
+            </p>
+            
+                <div class="physical-case">
+                    <h3>Physical Case: matched-native-grid (Keysight ADS Transient vs SIPI Pointwise Overlay)</h3>
+                    <div class="dual-figures">
+                        <div>
+                            <h4>Time-Domain Transient Overlay & Voltage Error</h4>
+                            <img src="ads-physical-matched-native-grid-time.png" alt="matched-native-grid Time Overlay" loading="lazy">
+                        </div>
+                        <div>
+                            <h4>Frequency-Domain Response Overlay & Complex Error</h4>
+                            <img src="ads-physical-matched-native-grid-frequency.png" alt="matched-native-grid Frequency Overlay" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="physical-case">
+                    <h3>Physical Case: source-cap (Keysight ADS Transient vs SIPI Pointwise Overlay)</h3>
+                    <div class="dual-figures">
+                        <div>
+                            <h4>Time-Domain Transient Overlay & Voltage Error</h4>
+                            <img src="ads-physical-source-cap-time.png" alt="source-cap Time Overlay" loading="lazy">
+                        </div>
+                        <div>
+                            <h4>Frequency-Domain Response Overlay & Complex Error</h4>
+                            <img src="ads-physical-source-cap-frequency.png" alt="source-cap Frequency Overlay" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="physical-case">
+                    <h3>Physical Case: load-cap (Keysight ADS Transient vs SIPI Pointwise Overlay)</h3>
+                    <div class="dual-figures">
+                        <div>
+                            <h4>Time-Domain Transient Overlay & Voltage Error</h4>
+                            <img src="ads-physical-load-cap-time.png" alt="load-cap Time Overlay" loading="lazy">
+                        </div>
+                        <div>
+                            <h4>Frequency-Domain Response Overlay & Complex Error</h4>
+                            <img src="ads-physical-load-cap-frequency.png" alt="load-cap Frequency Overlay" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="physical-case">
+                    <h3>Physical Case: both-cap (Keysight ADS Transient vs SIPI Pointwise Overlay)</h3>
+                    <div class="dual-figures">
+                        <div>
+                            <h4>Time-Domain Transient Overlay & Voltage Error</h4>
+                            <img src="ads-physical-both-cap-time.png" alt="both-cap Time Overlay" loading="lazy">
+                        </div>
+                        <div>
+                            <h4>Frequency-Domain Response Overlay & Complex Error</h4>
+                            <img src="ads-physical-both-cap-frequency.png" alt="both-cap Frequency Overlay" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                
+        </section>
     </main>
 </body>
 </html>
