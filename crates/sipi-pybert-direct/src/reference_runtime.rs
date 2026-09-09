@@ -1342,6 +1342,9 @@ fn reference_channel(
                 1,
             ))
         }
+        ChannelInputV1::Touchstone(_) => {
+            Err("touchstone channels are evaluated through the native workflow".into())
+        }
         ChannelInputV1::ExternalModel(_) => Err("external channel models are not portable".into()),
     }
 }

@@ -74,6 +74,16 @@ Start-Process .\results\channel-native-run\report.html
   --channel-policy physical-voltage-v1
 ```
 
+需要使用 Touchstone S 参数文件（.s2p / .s4p）、typed 端口映射或多级频域网络级联时，可显式选择 Touchstone 网络模式：
+
+```powershell
+& $sipi channel init channel-touchstone.json --template touchstone-network
+& $sipi channel simulate channel-touchstone.json --output-dir results/channel-touchstone-run `
+  --channel-policy touchstone-network-v1
+```
+
+该模式完整计算 2x2 差分 S 矩阵、频域 Redheffer 星积级联、源/负载端接加载、DC/Nyquist 覆盖诊断、离散采样无损/互易性诊断，并在最终执行一次严格保留 $t=0$ 原点的 FD-to-TD 变换；同时导出 `frequency-response.csv` 与多级节点 `cascade-nodes.csv`。
+
 该模式另导出完整 `frequency-response.csv`；有限带宽、窗口和 sample-hold 仍有明确边界，
 不等同于连续时间 ADS Transient 已通过。未传选项的 PB-02 兼容行为不变。
 

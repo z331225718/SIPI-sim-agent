@@ -121,6 +121,25 @@ Redistributable，版本不低于构建工具所需版本；这不是要求使�
 Build Tools。使用[微软官方运行库说明与下载](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)，
 不要从第三方 DLL 下载站复制单个文件。本轮没有修改系统或自动安装运行库。
 
+## 显式 Touchstone 与网络级联模式
+
+同一个 `-Channel` 构建支持完整的 Touchstone S 参数网络工作流与多级级联：
+
+```powershell
+& $sipi channel init channel-touchstone.json --template touchstone-network
+& $sipi channel simulate channel-touchstone.json --output-dir results/channel-touchstone-run `
+  --channel-policy touchstone-network-v1
+```
+
+此模式由 `crates/sipi-channel/src/network_cascade_v1.rs` 与 `crates/sipi-pybert-direct/src/touchstone_channel.rs` 驱动，支持单文件（.s2p / .s4p）、内联 S 参数文本或解析网络级联：
+
+- **Typed 端口映射**：支持 4 端口标准 Touchstone（1=TX+, 2=RX+, 3=TX-, 4=RX-）、相邻差分对（1=TX+, 2=TX-, 3=RX+, 4=RX-）及自定义映射；完整保留 2x2 差分 S 矩阵（$S_{dd11}, S_{dd12}, S_{dd21}, S_{dd22}$），不只取 S21。
+- **频域网络级联**：支持 $N \ge 1$ 级网络在频域直接级联（基于精确无求逆的 Redheffer 矩阵星积），不将每段独立转为时域 impulse 拼接，也不使用有理拟合。
+- **完整频网与覆盖诊断**：严检频率严格单调递增性，报告 DC（$f=0$）覆盖状态、网格均匀性与对仿真 Nyquist（$f_{Nyquist} = 1/(2\Delta t)$）的覆盖比例，不隐式插值/缩放。
+- **无损与有界诊断**：使用数值稳定的二次型特征值分解评估离散采样最大奇异值（$\sigma_{max} \le 1$）与互易性差异（$|S_{12} - S_{21}|$），明确区分诊断与验收门。
+- **负载传递函数与一次最终 FD-to-TD**：计入源/负载复阻抗端接（含 $R_S, C_S, R_L, C_L$ 寄生）与多重反射，计算全网格 $H(f) = V_{load}/V_{half\_open}$，仅在最终执行一次两边对称实 IFFT，严格保留 $t=0$ 原点，不裁切前缀或峰值对齐。
+- **产物与收据**：收据声明 `channel_policy = "touchstone-network-v1"`，`meta.json` 采用 `sipi.channel.touchstone-result.v1` schema，`acceptance` 保持 false；全量导出 `frequency-response.csv`（全部 4 个 S 参数与加载/加窗 $H(f)$）、多级级联节点 `cascade-nodes.csv`、`waveforms.csv`、`channel-impulse.csv`、`report.html` 与 `channel-report.js`。
+
 ## 验证与边界
 
 ```powershell

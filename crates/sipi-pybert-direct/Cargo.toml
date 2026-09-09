@@ -27,6 +27,8 @@ yaml-rust2 = { version = "0.10", default-features = false }
 sipi-ami-worker = { path = "../sipi-ami-worker" }
 sipi-ami-text = { path = "../sipi-ami-text" }
 sipi-artifacts = { path = "../sipi-artifacts" }
+sipi-channel = { path = "../sipi-channel" }
+sipi-types = { path = "../sipi-types" }
 
 [[bin]]
 name = "sipi-pybert-direct"

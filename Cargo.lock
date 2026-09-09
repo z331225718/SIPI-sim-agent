@@ -1846,6 +1846,8 @@ dependencies = [
  "sipi-ami-text",
  "sipi-ami-worker",
  "sipi-artifacts",
+ "sipi-channel",
+ "sipi-types",
  "statrs",
  "thiserror 2.0.20",
  "yaml-rust2",

@@ -20,6 +20,7 @@ mod numpy_normal;
 mod output;
 mod pattern;
 mod physical_channel;
+mod touchstone_channel;
 mod pipeline;
 mod receiver;
 mod reference_runtime;
@@ -78,6 +79,10 @@ pub use legacy_sim::{
 pub use output::{ArtifactRefV1, SimulationOutputV1};
 pub use pattern::{PatternError, SymbolModulation, generate_prbs_bits, modulate_bits};
 pub use physical_channel::{PHYSICAL_CHANNEL_POLICY_V1, run_channel_physical_json};
+pub use touchstone_channel::{
+    TOUCHSTONE_CHANNEL_POLICY_V1, TOUCHSTONE_RESULT_SCHEMA_V1,
+    run_channel_touchstone_network_json,
+};
 pub use pipeline::{
     LinearDfeLinkConfig, LinearDfeLinkResult, LinearLinkError, LinearLinkResult,
     PrbsLinearDfeLinkConfig, PrbsLinearDfeLinkResult, run_linear_dfe_link, run_linear_link,

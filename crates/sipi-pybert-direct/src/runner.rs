@@ -839,6 +839,8 @@ pub fn write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_a
         "pb01_independent_rust_reference_pipeline_v1"
     } else if backend_label == "rust_channel_physical" {
         "sipi_physical_channel_with_pinned_native_link_stages"
+    } else if backend_label == "rust_channel_touchstone_network" {
+        "sipi_touchstone_network_channel_with_pinned_native_link_stages"
     } else {
         "backend_run_result_reference_payload"
     };
@@ -1078,6 +1080,21 @@ fn strict_channel(value: &Value) -> Result<(), DirectRunError> {
             "frequencyMaxHz",
             "impulseLength",
         ][..],
+        "touchstone" => &[
+            "filePath",
+            "fileContent",
+            "portMap",
+            "stages",
+            "referenceImpedance",
+            "sourceImpedance",
+            "sourceCapacitanceF",
+            "loadImpedance",
+            "loadCapacitanceF",
+            "applyRaisedCosineWindow",
+            "frequencyStepHz",
+            "frequencyMaxHz",
+            "impulseLength",
+        ][..],
         "external_model" => &["kind", "capability"][..],
         variant => {
             return Err(DirectRunError::UnsupportedVariant {
@@ -1091,7 +1108,30 @@ fn strict_channel(value: &Value) -> Result<(), DirectRunError> {
         .ok_or_else(|| DirectRunError::ObjectExpected {
             path: "$.channel.value".into(),
         })?;
-    object_keys(value, "$.channel.value", allowed)
+    object_keys(value, "$.channel.value", allowed)?;
+    if kind == "touchstone" {
+        if let Some(stages) = value.get("stages").and_then(Value::as_array) {
+            for (idx, stage) in stages.iter().enumerate() {
+                let path = format!("$.channel.value.stages[{idx}]");
+                object_keys(
+                    stage,
+                    &path,
+                    &[
+                        "name",
+                        "kind",
+                        "filePath",
+                        "fileContent",
+                        "portMap",
+                        "delaySeconds",
+                        "lineImpedanceOhms",
+                        "propagationVelocityMPerS",
+                        "lengthM",
+                    ],
+                )?;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn strict_pattern(value: &Value) -> Result<(), DirectRunError> {

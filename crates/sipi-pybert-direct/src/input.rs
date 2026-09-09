@@ -198,12 +198,95 @@ impl ExternalModelRefV1 {
         Ok(())
     }
 }
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TouchstoneStageInputV1 {
+    pub name: String,
+    #[serde(default)]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub file_content: Option<String>,
+    #[serde(default)]
+    pub port_map: Option<String>,
+    #[serde(default)]
+    pub delay_seconds: Option<f64>,
+    #[serde(default)]
+    pub line_impedance_ohms: Option<f64>,
+    #[serde(default)]
+    pub propagation_velocity_m_per_s: Option<f64>,
+    #[serde(default)]
+    pub length_m: Option<f64>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TouchstoneChannelInputV1 {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub file_content: Option<String>,
+    #[serde(default)]
+    pub port_map: Option<String>,
+    #[serde(default)]
+    pub stages: Option<Vec<TouchstoneStageInputV1>>,
+    #[serde(default = "default_touchstone_ref_impedance")]
+    pub reference_impedance: f64,
+    #[serde(default = "default_touchstone_ref_impedance")]
+    pub source_impedance: f64,
+    #[serde(default)]
+    pub source_capacitance_f: f64,
+    #[serde(default = "default_touchstone_ref_impedance")]
+    pub load_impedance: f64,
+    #[serde(default)]
+    pub load_capacitance_f: f64,
+    #[serde(default)]
+    pub apply_raised_cosine_window: bool,
+    #[serde(default)]
+    pub frequency_step_hz: Option<f64>,
+    #[serde(default)]
+    pub frequency_max_hz: Option<f64>,
+    #[serde(default)]
+    pub impulse_length: Option<f64>,
+}
+
+fn default_touchstone_ref_impedance() -> f64 {
+    50.0
+}
+
+impl TouchstoneChannelInputV1 {
+    fn validate(&self) -> Result<(), ContractError> {
+        if self.reference_impedance <= 0.0
+            || !self.reference_impedance.is_finite()
+            || self.source_impedance <= 0.0
+            || !self.source_impedance.is_finite()
+            || self.load_impedance <= 0.0
+            || !self.load_impedance.is_finite()
+            || self.source_capacitance_f < 0.0
+            || !self.source_capacitance_f.is_finite()
+            || self.load_capacitance_f < 0.0
+            || !self.load_capacitance_f.is_finite()
+            || (self.file_path.is_none() && self.file_content.is_none() && self.stages.is_none())
+        {
+            return Err(ContractError::InvalidChannelResponse);
+        }
+        if let Some(stages) = &self.stages {
+            if stages.is_empty() {
+                return Err(ContractError::InvalidChannelResponse);
+            }
+        }
+        Ok(())
+    }
+}
+
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum ChannelInputV1 {
     ImpulseResponse(ChannelResponseV1),
     MetallicLine(MetallicLineChannelV1),
+    Touchstone(TouchstoneChannelInputV1),
     ExternalModel(ExternalModelRefV1),
 }
 
@@ -212,6 +295,7 @@ impl ChannelInputV1 {
         match self {
             Self::ImpulseResponse(response) => response.validate(),
             Self::MetallicLine(channel) => channel.validate(),
+            Self::Touchstone(channel) => channel.validate(),
             Self::ExternalModel(model) => model.validate(),
         }
     }

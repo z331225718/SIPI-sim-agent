@@ -2243,7 +2243,9 @@ pub(crate) fn augment_sim_rust_result_arrays_v1(
         ChannelInputV1::MetallicLine(channel_input) => {
             Some(validate_pb03_legacy_frequency_v1(source, channel_input)?)
         }
-        ChannelInputV1::ImpulseResponse(_) | ChannelInputV1::ExternalModel(_) => None,
+        ChannelInputV1::ImpulseResponse(_)
+        | ChannelInputV1::Touchstone(_)
+        | ChannelInputV1::ExternalModel(_) => None,
     };
     validate_pb03_projection_budget_v1(input, source, channel.len(), legacy_frequency)?;
 

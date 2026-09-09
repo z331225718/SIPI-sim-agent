@@ -11,11 +11,14 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sipi_pybert_direct::{
     DirectRunError, DirectRunReport, PHYSICAL_CHANNEL_POLICY_V1, SimulationInputV1,
-    run_channel_physical_json, run_sim_native_json,
+    TOUCHSTONE_CHANNEL_POLICY_V1, run_channel_physical_json, run_channel_touchstone_network_json,
+    run_sim_native_json,
 };
 
 pub(crate) const RECEIPT_SCHEMA: &str = "sipi.channel.native-receipt.v1";
 const TEMPLATE: &[u8] = include_bytes!("../../../examples/channel-native/metallic-line.json");
+const TEMPLATE_TOUCHSTONE: &[u8] =
+    include_bytes!("../../../examples/channel-native/touchstone-network.json");
 const MAX_REQUEST_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_CSV_BYTES: usize = 256 * 1024 * 1024;
 const MAX_REPORT_BYTES: usize = 256 * 1024 * 1024;
@@ -26,6 +29,13 @@ const WAVEFORMS: &[&str] = &[
     "rx_input_v",
     "rx_output_v",
 ];
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ChannelPolicyMode {
+    Compat,
+    PhysicalVoltage,
+    TouchstoneNetwork,
+}
+
 
 #[derive(Debug)]
 pub(crate) enum Failure {
@@ -79,8 +89,10 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
             "schema": "sipi.channel.native-help.v1",
             "commands": [
                 "sipi channel init REQUEST.json",
+                "sipi channel init REQUEST.json --template TEMPLATE",
                 "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY",
-                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy physical-voltage-v1"
+                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy physical-voltage-v1",
+                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy touchstone-network-v1"
             ],
             "input_schema": "pybert.simulation.v1",
             "input_units": "SI; impulseResponseVoltsPerSecond is converted by the owning core",
@@ -88,7 +100,8 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
             "workflow": "PB-02 sim-native",
             "channel_policies": {
                 "default": "pb-02-compat",
-                "physical-voltage-v1": "explicit metallic-line load voltage; retained time origin; finite-band kernel, not ADS Transient acceptance"
+                "physical-voltage-v1": "explicit metallic-line load voltage; retained time origin; finite-band kernel, not ADS Transient acceptance",
+                "touchstone-network-v1": "typed Touchstone/cascade S-parameter network workflow with port mapping, diagnostics, loaded transfer function, and single final FD-to-TD"
             },
             "maximum_request_bytes": MAX_REQUEST_BYTES,
             "maximum_csv_bytes_per_file": MAX_CSV_BYTES,
@@ -99,42 +112,61 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
             "kernel_command": "sipi channel run --stdin remains the separate matched-S21 kernel contract"
         }),
         ("init", [request]) if !request.starts_with('-') => {
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(request)?;
-            file.write_all(TEMPLATE)?;
-            file.sync_all()?;
-            json!({
-                "schema": "sipi.channel.native-init.v1",
-                "input_schema": "pybert.simulation.v1",
-                "template": "metallic-line-prbs9",
-                "sha256": format!("{:x}", Sha256::digest(TEMPLATE)),
-                "acceptance": false
-            })
+            init_request(request, "metallic-line-prbs9", TEMPLATE)?
+        }
+        ("init", [request, option, template])
+            if !request.starts_with('-') && option == "--template" =>
+        {
+            match template.as_str() {
+                "touchstone-network" | "network-cascade" => {
+                    init_request(request, "touchstone-network-prbs9", TEMPLATE_TOUCHSTONE)?
+                }
+                "metallic-line" => init_request(request, "metallic-line-prbs9", TEMPLATE)?,
+                _ => return Err(Failure::InvalidInput),
+            }
         }
         ("simulate", [request, option, output])
             if !request.starts_with('-')
                 && option == "--output-dir"
                 && !output.starts_with('-') =>
         {
-            simulate(Path::new(request), Path::new(output), false)?
+            simulate(Path::new(request), Path::new(output), ChannelPolicyMode::Compat)?
         }
         ("simulate", [request, option, output, policy_option, policy])
             if !request.starts_with('-')
                 && option == "--output-dir"
                 && !output.starts_with('-')
-                && policy_option == "--channel-policy"
-                && policy == PHYSICAL_CHANNEL_POLICY_V1 =>
+                && policy_option == "--channel-policy" =>
         {
-            simulate(Path::new(request), Path::new(output), true)?
+            let mode = match policy.as_str() {
+                PHYSICAL_CHANNEL_POLICY_V1 => ChannelPolicyMode::PhysicalVoltage,
+                TOUCHSTONE_CHANNEL_POLICY_V1 => ChannelPolicyMode::TouchstoneNetwork,
+                _ => return Err(Failure::Usage),
+            };
+            simulate(Path::new(request), Path::new(output), mode)?
         }
         _ => return Err(Failure::Usage),
     };
     serde_json::to_string(&result).map_err(|_| Failure::Io)
 }
 
-fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Failure> {
+fn init_request(request: &str, template_name: &str, template_bytes: &[u8]) -> Result<Value, Failure> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(request)?;
+    file.write_all(template_bytes)?;
+    file.sync_all()?;
+    Ok(json!({
+        "schema": "sipi.channel.native-init.v1",
+        "input_schema": "pybert.simulation.v1",
+        "template": template_name,
+        "sha256": format!("{:x}", Sha256::digest(template_bytes)),
+        "acceptance": false
+    }))
+}
+
+fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Value, Failure> {
     let file = File::open(request)?;
     if !file.metadata()?.is_file() {
         return Err(Failure::InvalidInput);
@@ -158,10 +190,12 @@ fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Fail
     // links. The direct writer may only reuse this newly claimed directory.
     fs::create_dir(output)?;
     write_new(&output.join("request.json"), &bytes)?;
-    let report = if physical {
-        run_channel_physical_json(&bytes, request, output)?
-    } else {
-        run_sim_native_json(&bytes, request, output)?
+    let report = match mode {
+        ChannelPolicyMode::Compat => run_sim_native_json(&bytes, request, output)?,
+        ChannelPolicyMode::PhysicalVoltage => run_channel_physical_json(&bytes, request, output)?,
+        ChannelPolicyMode::TouchstoneNetwork => {
+            run_channel_touchstone_network_json(&bytes, request, output)?
+        }
     };
     let time = array(&report, "time_s")?;
     if time.is_empty() {
@@ -192,7 +226,7 @@ fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Fail
         &["channel_impulse_v_per_v"],
         &[impulse],
     )?;
-    if physical {
+    if mode == ChannelPolicyMode::PhysicalVoltage {
         let frequency = array(&report, "physical_channel_frequency_hz")?;
         let names = [
             "physical_channel_voltage_re",
@@ -214,6 +248,58 @@ fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Fail
             &names,
             &columns,
         )?;
+    } else if mode == ChannelPolicyMode::TouchstoneNetwork {
+        let frequency = array(&report, "touchstone_frequency_hz")?;
+        let names = [
+            "touchstone_s11_re",
+            "touchstone_s11_im",
+            "touchstone_s21_re",
+            "touchstone_s21_im",
+            "touchstone_s12_re",
+            "touchstone_s12_im",
+            "touchstone_s22_re",
+            "touchstone_s22_im",
+            "touchstone_loaded_h_re",
+            "touchstone_loaded_h_im",
+            "touchstone_windowed_h_re",
+            "touchstone_windowed_h_im",
+        ];
+        let columns = names
+            .iter()
+            .map(|name| array(&report, name))
+            .collect::<Result<Vec<_>, _>>()?;
+        if columns.iter().any(|values| values.len() != frequency.len()) {
+            return Err(Failure::Io);
+        }
+        write_csv(
+            &output.join("frequency-response.csv"),
+            "frequency_hz",
+            frequency,
+            &names,
+            &columns,
+        )?;
+
+        // Intermediate cascade stage node transmission if multi-stage
+        let mut node_names = Vec::new();
+        for key in report.output.arrays.keys() {
+            if key.starts_with("touchstone_stage_") {
+                node_names.push(key.as_str());
+            }
+        }
+        node_names.sort();
+        if !node_names.is_empty() {
+            let node_columns = node_names
+                .iter()
+                .map(|name| array(&report, name))
+                .collect::<Result<Vec<_>, _>>()?;
+            write_csv(
+                &output.join("cascade-nodes.csv"),
+                "frequency_hz",
+                frequency,
+                &node_names,
+                &node_columns,
+            )?;
+        }
     }
     let preview_samples = time
         .len()
@@ -247,8 +333,11 @@ fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Fail
         "report.html",
         "channel-report.js",
     ];
-    if physical {
+    if mode == ChannelPolicyMode::PhysicalVoltage || mode == ChannelPolicyMode::TouchstoneNetwork {
         artifact_names.push("frequency-response.csv");
+        if output.join("cascade-nodes.csv").is_file() {
+            artifact_names.push("cascade-nodes.csv");
+        }
     }
     for name in artifact_names {
         artifacts.insert(name.into(), file_identity(&output.join(name))?);
@@ -256,8 +345,16 @@ fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Fail
     let receipt = json!({
         "schema": RECEIPT_SCHEMA,
         "status": "complete",
-        "workflow": if physical { "physical-voltage-v1 with existing native link stages" } else { "PB-02 sim-native" },
-        "channel_policy": if physical { PHYSICAL_CHANNEL_POLICY_V1 } else { "pb-02-compat" },
+        "workflow": match mode {
+            ChannelPolicyMode::PhysicalVoltage => "physical-voltage-v1 with existing native link stages",
+            ChannelPolicyMode::TouchstoneNetwork => "touchstone-network-v1 with existing native link stages",
+            ChannelPolicyMode::Compat => "PB-02 sim-native",
+        },
+        "channel_policy": match mode {
+            ChannelPolicyMode::PhysicalVoltage => PHYSICAL_CHANNEL_POLICY_V1,
+            ChannelPolicyMode::TouchstoneNetwork => TOUCHSTONE_CHANNEL_POLICY_V1,
+            ChannelPolicyMode::Compat => "pb-02-compat",
+        },
         "backend": "in_process_sipi_pybert_direct",
         "upstream_commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
         "executable": file_identity(&std::env::current_exe()?)?,
@@ -267,7 +364,11 @@ fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Fail
         "preview_samples": preview_samples,
         "report_data_policy": "all_waveform_and_impulse_samples_embedded; original_f64; at_most_4096_contiguous_samples_per_view; no_decimation",
         "csv_policy": "all_samples_original_grid_roundtrip_f64_no_alignment_or_scaling",
-        "compatibility_metadata": if physical { "meta.json uses sipi.channel.physical-result.v1; physical_channel diagnostics declare the voltage and finite-band time contract" } else { "meta.json preserves the PB-02 upstream schema and engine labels; executable identifies this SIPI run" },
+        "compatibility_metadata": match mode {
+            ChannelPolicyMode::PhysicalVoltage => "meta.json uses sipi.channel.physical-result.v1; physical_channel diagnostics declare the voltage and finite-band time contract",
+            ChannelPolicyMode::TouchstoneNetwork => "meta.json uses sipi.channel.touchstone-result.v1; touchstone_network diagnostics declare grid coverage, passivity, reciprocity, causality, and termination contracts",
+            ChannelPolicyMode::Compat => "meta.json preserves the PB-02 upstream schema and engine labels; executable identifies this SIPI run",
+        },
         "artifacts": artifacts,
         "acceptance": false,
         "scope": "local_candidate_not_full_upstream_parity_or_ads_acceptance_or_release"

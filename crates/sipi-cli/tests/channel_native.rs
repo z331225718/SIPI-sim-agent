@@ -44,6 +44,8 @@ mod native {
     };
 
     const TEMPLATE: &[u8] = include_bytes!("../../../examples/channel-native/metallic-line.json");
+    const TEMPLATE_TOUCHSTONE: &[u8] =
+        include_bytes!("../../../examples/channel-native/touchstone-network.json");
     static NEXT: AtomicU64 = AtomicU64::new(0);
 
     struct Temp(PathBuf);
@@ -83,6 +85,19 @@ mod native {
                 self.0.join(name).to_str().unwrap(),
                 "--channel-policy",
                 "physical-voltage-v1",
+            ])
+        }
+        fn run_touchstone(&self, bytes: &[u8], name: &str) -> Output {
+            let request = self.0.join(format!("{name}.json"));
+            fs::write(&request, bytes).unwrap();
+            cli(&[
+                "channel",
+                "simulate",
+                request.to_str().unwrap(),
+                "--output-dir",
+                self.0.join(name).to_str().unwrap(),
+                "--channel-policy",
+                "touchstone-network-v1",
             ])
         }
     }
@@ -606,5 +621,107 @@ mod native {
             .code(),
             Some(64)
         );
+    }
+    #[test]
+    fn channel_init_supports_touchstone_network_template() {
+        let root = Temp::new();
+        let request = root.0.join("custom-touchstone.json");
+        let output = cli(&[
+            "channel",
+            "init",
+            request.to_str().unwrap(),
+            "--template",
+            "touchstone-network",
+        ]);
+        assert!(output.status.success(), "{output:?}");
+        let res = result(&output);
+        assert_eq!(res["template"], "touchstone-network-prbs9");
+        assert_eq!(res["acceptance"], false);
+        let bytes = fs::read(&request).unwrap();
+        assert_eq!(bytes, TEMPLATE_TOUCHSTONE);
+    }
+
+    #[test]
+    fn touchstone_network_policy_runs_analytic_cascade_and_generates_all_artifacts() {
+        let root = Temp::new();
+        let output = root.run_touchstone(TEMPLATE_TOUCHSTONE, "cascade_run");
+        assert!(output.status.success(), "{output:?}");
+        let res = result(&output);
+        assert_eq!(res["status"], "complete");
+        assert_eq!(res["channel_policy"], "touchstone-network-v1");
+        assert_eq!(res["acceptance"], false);
+
+        let dir = root.0.join("cascade_run");
+        for name in [
+            "request.json",
+            "meta.json",
+            "arrays.npz",
+            "waveforms.csv",
+            "channel-impulse.csv",
+            "frequency-response.csv",
+            "cascade-nodes.csv",
+            "report.html",
+            "channel-report.js",
+            "receipt.json",
+        ] {
+            assert!(dir.join(name).is_file(), "missing artifact: {name}");
+        }
+
+        let (freq_headers, freq_rows) = csv(dir.join("frequency-response.csv"));
+        assert_eq!(freq_headers[0], "frequency_hz");
+        assert!(freq_headers.contains(&"touchstone_s21_re".to_string()));
+        assert!(freq_headers.contains(&"touchstone_loaded_h_re".to_string()));
+        assert_eq!(freq_rows.len(), 513); // 0 to 64 GHz at 125 MHz step
+        assert_eq!(freq_rows[0].len(), freq_headers.len());
+
+        let (node_headers, _) = csv(dir.join("cascade-nodes.csv"));
+        assert_eq!(node_headers[0], "frequency_hz");
+        assert!(node_headers.iter().any(|h| h.contains("tx_fixture")));
+        assert!(node_headers.iter().any(|h| h.contains("rx_fixture")));
+
+        let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
+        assert_eq!(meta["schema"], "sipi.channel.touchstone-result.v1");
+        assert_eq!(meta["diagnostics"]["touchstone_network"]["acceptance"], false);
+        assert_eq!(meta["diagnostics"]["touchstone_network"]["stage_count"], 3);
+        assert_eq!(
+            meta["diagnostics"]["touchstone_network"]["frequency_grid_coverage"]["has_dc"],
+            true
+        );
+        assert_eq!(
+            meta["diagnostics"]["touchstone_network"]["passivity"]["passes_bound"],
+            true
+        );
+        assert_eq!(
+            meta["diagnostics"]["touchstone_network"]["reciprocity"]["passes_bound"],
+            true
+        );
+    }
+
+    #[test]
+    fn touchstone_network_policy_runs_direct_s2p_file_and_s4p_file() {
+        let root = Temp::new();
+        let s2p_path = root.0.join("line.s2p");
+        let s2p_content = "# GHz S RI R 50\n\
+                           0.0  0.0 0.0  1.0 0.0  1.0 0.0  0.0 0.0\n\
+                           1.0  0.0 0.0  0.9 -0.1 0.9 -0.1 0.0 0.0\n\
+                           2.0  0.0 0.0  0.8 -0.2 0.8 -0.2 0.0 0.0\n";
+        fs::write(&s2p_path, s2p_content).unwrap();
+
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+        req["channel"]["value"] = serde_json::json!({
+            "filePath": "line.s2p",
+            "referenceImpedance": 50.0,
+            "sourceImpedance": 50.0,
+            "loadImpedance": 50.0,
+            "applyRaisedCosineWindow": false
+        });
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "s2p_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("s2p_run");
+        assert!(dir.join("receipt.json").is_file());
+        assert!(dir.join("frequency-response.csv").is_file());
+        let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
+        assert_eq!(meta["diagnostics"]["touchstone_network"]["stage_count"], 1);
     }
 }

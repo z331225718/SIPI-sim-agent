@@ -200,7 +200,9 @@ fn simulate_native_v1_inner(
     let channel_sample_interval = match &input.channel {
         ChannelInputV1::ImpulseResponse(response) => response.sample_interval,
         ChannelInputV1::MetallicLine(channel) => channel.sample_interval,
-        ChannelInputV1::ExternalModel(_) => return Err(NativeSimulationError::UnsupportedChannel),
+        ChannelInputV1::Touchstone(_) | ChannelInputV1::ExternalModel(_) => {
+            return Err(NativeSimulationError::UnsupportedChannel);
+        }
     };
     if channel_sample_interval != input.timebase.sample_interval {
         return Err(NativeSimulationError::UnsupportedChannel);
@@ -269,7 +271,9 @@ fn simulate_native_v1_inner(
                 _ => return Err(NativeSimulationError::UnsupportedChannel),
             }
         }
-        ChannelInputV1::ImpulseResponse(_) | ChannelInputV1::ExternalModel(_) => 0,
+        ChannelInputV1::ImpulseResponse(_)
+        | ChannelInputV1::Touchstone(_)
+        | ChannelInputV1::ExternalModel(_) => 0,
     };
     // Bound both materialized result vectors and the largest per-stage
     // telemetry. DFE tap history can reach one row per sample, so count every
@@ -318,7 +322,9 @@ fn simulate_native_v1_inner(
                 .floor()
                 .max(1.0) as usize
         }),
-        ChannelInputV1::ImpulseResponse(_) | ChannelInputV1::ExternalModel(_) => None,
+        ChannelInputV1::ImpulseResponse(_)
+        | ChannelInputV1::Touchstone(_)
+        | ChannelInputV1::ExternalModel(_) => None,
     };
     let (channel_impulse, legacy_channel) = match &input.channel {
         ChannelInputV1::ImpulseResponse(response) => (
@@ -339,7 +345,9 @@ fn simulate_native_v1_inner(
             )?;
             (response.impulse, response.legacy)
         }
-        ChannelInputV1::ExternalModel(_) => unreachable!("rejected before allocation"),
+        ChannelInputV1::Touchstone(_) | ChannelInputV1::ExternalModel(_) => {
+            return Err(NativeSimulationError::UnsupportedChannel);
+        }
     };
     cancellation.check()?;
     let ffe_weights = if input.tx.ffe.enabled {
