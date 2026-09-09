@@ -63,13 +63,28 @@ Start-Process .\results\channel-native-run\report.html
 
 示例为 32 Gbit/s NRZ、PRBS9、5 cm metallic line，共 8192 个波形样点。
 输出原生 `meta.json` / `arrays.npz`、全量逐点 CSV、离线 HTML 和最后写入的哈希收据。
+离线报告可浏览完整时段、切换阶段曲线和读取原始样点；随输出生成 `channel-report.js`，
+无需 Node 或本地服务器，保持它与 `report.html` 同目录即可。
 请求文件和输出目录均不覆盖已有内容。编译后运行不依赖 Rust/Cargo。
+
+需要实际负载电压定义和保留 impulse 原点时，可显式选择独立的物理模式：
+
+```powershell
+& $sipi channel simulate channel-request.json --output-dir results/channel-physical-run `
+  --channel-policy physical-voltage-v1
+```
+
+该模式另导出完整 `frequency-response.csv`；有限带宽、窗口和 sample-hold 仍有明确边界，
+不等同于连续时间 ADS Transient 已通过。未传选项的 PB-02 兼容行为不变。
 
 这是 PB-02 的**本地候选连接**，不是完整 PyBERT/ADS parity、许可签核或发布验收；
 默认构建仍不启用它，旧 `channel run --stdin` 的 kernel 合同保持不变。
 参数、导出单位和剩余工作见 [原生 Channel 工作流](docs/channel-native-workflow.md)。
-实际 `sipi.exe` 与 ADS 的全量逐点 bench 已接通，当前数值结果仍未通过：
-legacy 裁切时间原点、复数端接参考以及有损 ADS 参考自检需要继续处理。
+实际 `sipi.exe` 与 ADS 的全量逐点 bench 已接通。当前 v3 参考改用解析材料表达式，
+补查网格中点、低频/带外响应及精确 RC 时域控制；旧 v1/v2 证据仍可复核，不隐式升级。
+显式物理模式单独检查负载电压；实际 kernel、启动历史与连续时间 Transient
+仍需逐层收口，不能把参考控制或频域通过当作整条链路通过。
+**有损线的 v3 Transient 卷积参考仍未通过自检，其 TD 差异不能全部归于 SIPI。**
 不能将兼容模式波形直接当作绝对传播时延或物理负载电压，详见
 [ADS 数值诊断](docs/channel-native-ads-diagnostics-20260909.md)。
 

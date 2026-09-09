@@ -72,6 +72,19 @@ mod native {
                 self.0.join(name).to_str().unwrap(),
             ])
         }
+        fn run_physical(&self, bytes: &[u8], name: &str) -> Output {
+            let request = self.0.join(format!("{name}.json"));
+            fs::write(&request, bytes).unwrap();
+            cli(&[
+                "channel",
+                "simulate",
+                request.to_str().unwrap(),
+                "--output-dir",
+                self.0.join(name).to_str().unwrap(),
+                "--channel-policy",
+                "physical-voltage-v1",
+            ])
+        }
     }
     impl Drop for Temp {
         fn drop(&mut self) {
@@ -188,8 +201,50 @@ mod native {
         );
         let html = fs::read_to_string(out.join("report.html")).unwrap();
         assert_eq!(html.matches("<polyline ").count(), 5);
-        assert!(!html.contains("<script"));
+        assert!(html.contains("script-src 'self'"));
+        assert!(!html.contains("script-src 'unsafe-inline'"));
+        assert!(html.contains("<script src=\"channel-report.js\" defer></script>"));
         assert!(html.contains("Samples 0..511 of 8192"));
+        let data = html
+            .split_once("<script type=\"application/json\" id=\"channel-data\">")
+            .unwrap()
+            .1
+            .split_once("</script>")
+            .unwrap()
+            .0;
+        let data_json = data;
+        let data: Value = serde_json::from_str(data_json).unwrap();
+        for (key, names) in [
+            (
+                "waveform",
+                vec![
+                    "tx_waveform_v",
+                    "channel_output_v",
+                    "rx_input_v",
+                    "rx_output_v",
+                ],
+            ),
+            ("impulse", vec!["channel_impulse_v_per_v"]),
+        ] {
+            let expected_columns = names
+                .iter()
+                .map(|name| &expected.output.arrays[*name])
+                .collect::<Vec<_>>();
+            assert!(data_json.contains(&format!(
+                "\"columns\":{}",
+                serde_json::to_string(&expected_columns).unwrap()
+            )));
+            for (column, name) in names.into_iter().enumerate() {
+                let actual = data[key]["columns"][column].as_array().unwrap();
+                let expected_values = &expected.output.arrays[name];
+                assert_eq!(actual.len(), expected_values.len());
+            }
+        }
+        assert_eq!(data["waveform"]["time"].as_array().unwrap().len(), 8192);
+        assert_eq!(
+            receipt["report_data_policy"],
+            "all_waveform_and_impulse_samples_embedded; original_f64; at_most_4096_contiguous_samples_per_view; no_decimation"
+        );
         assert!(
             expected.output.arrays["channel_output_v"]
                 .iter()
@@ -348,6 +403,15 @@ mod native {
         for arguments in [
             vec!["channel", "init", "request.json"],
             vec!["channel", "simulate", "request.json", "--output-dir", "run"],
+            vec![
+                "channel",
+                "simulate",
+                "request.json",
+                "--output-dir",
+                "physical-run",
+                "--channel-policy",
+                "physical-voltage-v1",
+            ],
         ] {
             let output = Command::new(&executable)
                 .args(arguments)
@@ -364,5 +428,183 @@ mod native {
             serde_json::from_slice(&fs::read(root.0.join("run/receipt.json")).unwrap()).unwrap();
         assert_eq!(receipt["waveform_samples"], 8192);
         assert_eq!(receipt["backend"], "in_process_sipi_pybert_direct");
+        let physical: Value =
+            serde_json::from_slice(&fs::read(root.0.join("physical-run/receipt.json")).unwrap())
+                .unwrap();
+        assert_eq!(physical["channel_policy"], "physical-voltage-v1");
+        assert_eq!(physical["waveform_samples"], 8192);
+    }
+
+    #[test]
+    fn physical_voltage_keeps_absolute_delay_and_exports_the_owning_arrays() {
+        let root = Temp::new();
+        let mut request = input();
+        let line = request["channel"]["value"].as_object_mut().unwrap();
+        for key in [
+            "skinEffectResistanceOhmPerM",
+            "dcResistanceOhmPerM",
+            "lossTangent",
+            "sourceCapacitanceF",
+            "loadCapacitanceF",
+        ] {
+            line.insert(key.into(), 0.0.into());
+        }
+        line.insert("propagationVelocityMPerS".into(), 200e6.into());
+        line.insert("frequencyMaxHz".into(), 256e9.into());
+        line.insert("applyRaisedCosineWindow".into(), false.into());
+        let bytes = serde_json::to_vec(&request).unwrap();
+        let actual = root.run_physical(&bytes, "delay");
+        assert!(actual.status.success(), "{actual:?}");
+        let receipt = result(&actual);
+        assert_eq!(receipt["channel_policy"], "physical-voltage-v1");
+        assert_eq!(receipt["channel_impulse_samples"], 512);
+        let owner = sipi_pybert_direct::run_channel_physical_json(
+            &bytes,
+            &root.0.join("delay.json"),
+            &root.0.join("owner-physical"),
+        )
+        .unwrap();
+        for name in ["meta.json", "arrays.npz"] {
+            assert_eq!(
+                fs::read(root.0.join("delay").join(name)).unwrap(),
+                fs::read(root.0.join("owner-physical").join(name)).unwrap()
+            );
+        }
+        assert_eq!(owner.metadata["schema"], "sipi.channel.physical-result.v1");
+        assert_eq!(
+            owner.diagnostics["physical_channel"]["discarded_prefix_samples"],
+            0
+        );
+        assert_eq!(
+            owner.diagnostics["physical_channel"]["kernel_peak_time_s"],
+            250e-12
+        );
+        let arrays = &owner.output.arrays;
+        for (i, &y) in arrays["channel_output_v"].iter().enumerate() {
+            let expected = if i < 128 {
+                0.0
+            } else {
+                arrays["tx_waveform_v"][i - 128]
+            };
+            assert!(
+                (y - expected).abs() < 1e-11,
+                "sample {i}: {y} != {expected}"
+            );
+        }
+        let (header, rows) = csv(root.0.join("delay/frequency-response.csv"));
+        assert_eq!(rows.len(), 2049);
+        let requested_step = request["channel"]["value"]["frequencyStepHz"]
+            .as_f64()
+            .unwrap();
+        assert_eq!(
+            owner.diagnostics["physical_channel"]["frequency_step_hz"]
+                .as_f64()
+                .unwrap()
+                .to_bits(),
+            requested_step.to_bits()
+        );
+        for (i, row) in rows.iter().enumerate() {
+            assert_eq!(row[0].to_bits(), (i as f64 * requested_step).to_bits());
+        }
+        for (col, name) in header.iter().enumerate() {
+            let key = if name == "frequency_hz" {
+                "physical_channel_frequency_hz"
+            } else {
+                name
+            };
+            for (i, row) in rows.iter().enumerate() {
+                assert_eq!(row[col].to_bits(), arrays[key][i].to_bits());
+            }
+        }
+        for (name, identity) in receipt["artifacts"].as_object().unwrap() {
+            let content = fs::read(root.0.join("delay").join(name)).unwrap();
+            assert_eq!(identity["sha256"], format!("{:x}", Sha256::digest(content)));
+        }
+        request["tx"]["ffe"] =
+            serde_json::json!({"enabled":true,"weights":[0.8,0.2],"cursorPosition":0});
+        request["rx"]["ffe"] =
+            serde_json::json!({"enabled":true,"weights":[1.0,-0.1],"cursorPosition":0});
+        let eq = root.run_physical(&serde_json::to_vec(&request).unwrap(), "with-eq");
+        assert!(eq.status.success(), "{eq:?}");
+        let (_, waves) = csv(root.0.join("with-eq/waveforms.csv"));
+        assert!(waves.iter().any(|row| (row[2] - row[3]).abs() > 0.01));
+        assert!(waves.iter().any(|row| (row[3] - row[4]).abs() > 0.01));
+    }
+
+    #[test]
+    fn physical_native_grid_uses_the_actual_nrz_duobinary_or_pam4_symbol_count() {
+        let root = Temp::new();
+        for (modulation, samples) in [("nrz", 2048), ("duo_binary", 2048), ("pam4", 1024)] {
+            let mut request = input();
+            request["timebase"]["nbits"] = 128.into();
+            request["modulation"] = modulation.into();
+            let line = request["channel"]["value"].as_object_mut().unwrap();
+            for key in ["frequencyStepHz", "frequencyMaxHz", "impulseLength"] {
+                line.insert(key.into(), Value::Null);
+            }
+            for key in [
+                "lengthM",
+                "skinEffectResistanceOhmPerM",
+                "dcResistanceOhmPerM",
+                "lossTangent",
+                "sourceCapacitanceF",
+                "loadCapacitanceF",
+            ] {
+                line.insert(key.into(), 0.0.into());
+            }
+            line.insert("applyRaisedCosineWindow".into(), false.into());
+            let output = root.run_physical(&serde_json::to_vec(&request).unwrap(), modulation);
+            assert!(output.status.success(), "{modulation}: {output:?}");
+            let receipt = result(&output);
+            assert_eq!(receipt["waveform_samples"], samples);
+            assert_eq!(receipt["channel_impulse_samples"], samples);
+            let (_, waveform) = csv(root.0.join(modulation).join("waveforms.csv"));
+            for row in waveform {
+                assert!((row[1] - row[2]).abs() < 1e-11);
+            }
+            let (_, impulse) = csv(root.0.join(modulation).join("channel-impulse.csv"));
+            assert!((impulse[0][1] - 1.0).abs() < 1e-12);
+            assert!(impulse[1..].iter().all(|row| row[1].abs() < 1e-12));
+        }
+    }
+
+    #[test]
+    fn physical_policy_rejects_ambiguous_grids_memory_and_nyquist_without_a_receipt() {
+        let root = Temp::new();
+        for (key, value) in [
+            ("frequencyMaxHz", 64001e6),
+            ("impulseLength", 16e-9),
+            ("lossTangent", -0.01),
+        ] {
+            let mut request = input();
+            request["channel"]["value"][key] = value.into();
+            let output = root.run_physical(&serde_json::to_vec(&request).unwrap(), key);
+            assert_eq!(output.status.code(), Some(2), "{output:?}");
+            assert!(!root.0.join(key).join("receipt.json").exists());
+        }
+        let mut request = input();
+        request["limits"]["maxMemoryBytes"] = 1000.into();
+        let output = root.run_physical(&serde_json::to_vec(&request).unwrap(), "memory");
+        assert_eq!(output.status.code(), Some(5), "{output:?}");
+        request = input();
+        request["channel"]["value"]["frequencyMaxHz"] = 256e9.into();
+        request["channel"]["value"]["applyRaisedCosineWindow"] = false.into();
+        let output = root.run_physical(&serde_json::to_vec(&request).unwrap(), "nyquist");
+        assert_eq!(output.status.code(), Some(2), "{output:?}");
+        assert!(!root.0.join("nyquist/receipt.json").exists());
+        assert_eq!(
+            cli(&[
+                "channel",
+                "simulate",
+                "missing.json",
+                "--output-dir",
+                "unused",
+                "--channel-policy",
+                "unknown"
+            ])
+            .status
+            .code(),
+            Some(64)
+        );
     }
 }

@@ -18,9 +18,11 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = "sipi.channel.ads-physical-bench.v1"
+LEGACY_SCHEMA = "sipi.channel.ads-physical-bench.v1"
+TABLE_SCHEMA = "sipi.channel.ads-physical-bench.v2"
+SCHEMA = "sipi.channel.ads-physical-bench.v3"
 REPEATS = 2
-REFERENCE = {
+LEGACY_REFERENCE = {
     "kind": "physical_two_terminal_differential_equivalent",
     "launch": "ADS open-circuit source = 2 * SIPI TX; fixed before solving, not fitted gain",
     "fd": "ADS load voltage with a 2 V open source; compare native terminated telemetry and actual kernel DTFT separately",
@@ -32,6 +34,19 @@ REFERENCE = {
     "oracle_check": "ADS AC is also checked against the declared RLGC two-port equations; a failure is not attributed solely to SIPI",
     "td_bandwidth": "physical ADS convolution settings and extrapolation remain in the solver log; not assumed equivalent to the PB-02 window/trim",
     "dc_material_evaluation_rad_per_s": 1e-12,
+}
+TABLE_REFERENCE = {
+    **LEGACY_REFERENCE,
+    "rlgc": "declared material-law tables; ADS native TL with Z=sqrt(L/C), V=1/(c0*sqrt(L*C)), R and G; lossless lines use TLIND",
+    "linear_representation": "ForceS_Params=yes; no fitted length, velocity, gain, or phase correction",
+    "dc_transfer": "at exactly 0 Hz, ADS independently solves Rs + Rdc_per_m * length + Rl with capacitors open; the raw line-model DC result remains exported and diagnosed",
+    "oracle_check": "all frequency points, including independently solved DC, checked against material two-port equations and the exact resistive DC limit",
+}
+REFERENCE = {
+    **TABLE_REFERENCE,
+    "rlgc": "broadband analytic material-law expressions evaluated by ADS at its requested frequencies; native TL Z=sqrt(L/C), V=1/(c0*sqrt(L*C)), R and G; lossless lines use TLIND",
+    "td_bandwidth": "analytic material evaluated at solver characterization frequencies, not a piecewise-linear finite-band RLGC table; solver bandwidth and convolution behavior remain in the log",
+    "transient_accuracy": "V_RelTol=I_RelTol=1e-11; V_AbsTol=1e-14; I_AbsTol=1e-17; TruncTol=0.1; ChargeTol=1e-22; MaxTimeStep=dt/16; reference solver settings, not comparison tolerances",
 }
 
 
@@ -61,7 +76,7 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=pairs, parse_constant=bad_constant)
 
 
-def initial_plan():
+def initial_plan(channel_policy="pb-02-compat"):
     base = read_json(ROOT / "examples/channel-native/metallic-line.json")
     base["timebase"]["nbits"] = 64
     base["pattern"] = {"kind": "explicit_bits", "bit_count": 64,
@@ -90,7 +105,7 @@ def initial_plan():
             request["pattern"]["bit_count"] = 512
             request["timebase"]["nbits"] = 512
         cases.append({"name": name, "request": request})
-    return {
+    plan = {
         "schema": SCHEMA, "cases": cases, "repeats": REPEATS,
         "voltage_tolerance": {"absolute": 2e-8, "relative": 1e-7},
         "transfer_tolerance": {"absolute": 1e-9, "relative": 1e-8},
@@ -99,13 +114,23 @@ def initial_plan():
         "acceptance": False,
         "scope": "PB-02 physical-semantics diagnostic, not full link parity or release; mismatches must remain visible",
     }
+    if channel_policy != "pb-02-compat":
+        if channel_policy != "physical-voltage-v1":
+            raise ValueError("unknown candidate channel policy")
+        plan["candidate_channel_policy"] = channel_policy
+        plan["scope"] = "explicit SIPI physical-voltage-v1; raw load transfer, actual finite-band kernel and full original TD grid; not full link parity or release"
+    return plan
 
 
 def validate_plan(plan):
-    if plan.get("schema") != SCHEMA or plan.get("repeats") != REPEATS or plan.get("acceptance") is not False:
+    if plan.get("schema") not in (LEGACY_SCHEMA, TABLE_SCHEMA, SCHEMA) or plan.get("repeats") != REPEATS or plan.get("acceptance") is not False:
         raise ValueError("wrong bench schema/repeats/acceptance")
-    if plan.get("reference") != REFERENCE:
+    reference = {LEGACY_SCHEMA: LEGACY_REFERENCE, TABLE_SCHEMA: TABLE_REFERENCE, SCHEMA: REFERENCE}[plan["schema"]]
+    if plan.get("reference") != reference:
         raise ValueError("reference semantics must match the implemented physical bench")
+    policy = plan.get("candidate_channel_policy", "pb-02-compat")
+    if policy not in ("pb-02-compat", "physical-voltage-v1") or (plan["schema"] == LEGACY_SCHEMA and policy != "pb-02-compat"):
+        raise ValueError("unsupported candidate policy for this bench version")
     if not 1 <= len(plan["cases"]) <= 32:
         raise ValueError("bench case budget")
     names = set()
@@ -204,7 +229,7 @@ def rlgc_rows(request, frequency):
     return rows
 
 
-def material_transfer(request, frequency):
+def material_transfer(request, frequency, *, exact_dc=False):
     """Closed-form AC control for the oracle, never a SIPI input or TD engine."""
     import numpy as np
     material = np.asarray(rlgc_rows(request, frequency))
@@ -220,17 +245,37 @@ def material_transfer(request, frequency):
     source_divisor = 1 + 1j * w * line["sourceImpedance"] * line["sourceCapacitanceF"]
     zs = line["sourceImpedance"] / source_divisor
     zl = line["loadImpedance"] / (1 + 1j * w * line["loadImpedance"] * line["loadCapacitanceF"])
-    return (2 * zl / source_divisor) / (a * zl + b + zs * (c * zl + a))
+    transfer = (2 * zl / source_divisor) / (a * zl + b + zs * (c * zl + a))
+    if exact_dc:
+        transfer[frequency == 0] = 2 * line["loadImpedance"] / (
+            line["sourceImpedance"] + line["dcResistanceOhmPerM"] * line["lengthM"] + line["loadImpedance"])
+    return transfer
 
 
-def netlist(request):
+def analytic_material_equations(line):
+    z, velocity = line["characteristicImpedance"], line["propagationVelocityMPerS"]
+    return [
+        "W_SAFE=max(2*pi*freq,1e-12)",
+        f'R_COMPLEX=sqrt({line["dcResistanceOhmPerM"]**2:.17g}+j*2*W_SAFE*{line["skinEffectResistanceOhmPerM"]**2:.17g}/{line["crossoverAngularFrequencyRadPerS"]:.17g})',
+        f'Y_COMPLEX=j*W_SAFE*{1/(z*velocity):.17g}*(j*W_SAFE/{line["crossoverAngularFrequencyRadPerS"]:.17g})^({-2*line["lossTangent"]/math.pi:.17g})',
+        "R_PER_M=real(R_COMPLEX)", f"L_PER_M={z/velocity:.17g}+imag(R_COMPLEX)/W_SAFE",
+        "G_PER_M=real(Y_COMPLEX)", "C_PER_M=imag(Y_COMPLEX)/W_SAFE",
+    ]
+
+
+def netlist(request, reference=None):
     import numpy as np
+    reference = REFERENCE if reference is None else reference
+    if reference not in (REFERENCE, TABLE_REFERENCE, LEGACY_REFERENCE):
+        raise ValueError("unknown reference semantics")
+    physical_v2 = reference != LEGACY_REFERENCE
+    analytic = reference == REFERENCE
     line, tb = request["channel"]["value"], request["timebase"]
     dt, spb = tb["sampleInterval"], tb["samplesPerUi"]
     f = frequencies(request)
     bits = request["pattern"]["bits"]
     voltage = [(2 * bit - 1) * 2 * request["tx"]["amplitude"] for bit in bits]
-    origin = REFERENCE["ads_clock_origin_ui"] * spb * dt
+    origin = reference["ads_clock_origin_ui"] * spb * dt
     pairs = [(0.0, 0.0), (origin - dt / 8, 0.0), (origin, voltage[0])]
     for i in range(1, len(bits)):
         t = origin + i * spb * dt
@@ -243,6 +288,17 @@ def netlist(request):
     if line["skinEffectResistanceOhmPerM"] == line["dcResistanceOhmPerM"] == line["lossTangent"] == 0:
         component = f'TLIND:LINE input output Z={line["characteristicImpedance"]:.17g} Ohm Delay={line["lengthM"] / line["propagationVelocityMPerS"]:.17g} sec'
         library = 'TLIND'
+    elif physical_v2:
+        equations = analytic_material_equations(line) if analytic else []
+        if not analytic:
+            for column, key in enumerate("RLGC", 1):
+                pairs = ",".join(f"{row[0]:.17g},{row[column]:.17g}" for row in material)
+                equations.append(f'{key}_PER_M=pwl(freq,{pairs})')
+        # Use ADS's own c0 constant, not a measured phase/velocity correction.
+        equations.append(f'TL:LINE input 0 output 0 Z=sqrt(L_PER_M/C_PER_M) L={line["lengthM"]:.17g} '
+                         'V=1/(c0*sqrt(L_PER_M*C_PER_M)) R=R_PER_M G=G_PER_M')
+        component = "\n".join(equations)
+        library = None
     else:
         parameters = []
         for column, key in [(1, "R"), (2, "L"), (3, "G"), (4, "C")]:
@@ -251,8 +307,9 @@ def netlist(request):
         component = f'W_Element:LINE input 0 output 0 N=1 Length={line["lengthM"]:.17g} Model_type=1 ' + " ".join(parameters)
         library = None
     text = [
-        f'#uselib "ckt" , "{library}"' if library else '; Native W_Element model',
-        'Options:OPTIONS V_RelTol=1e-9 I_RelTol=1e-9 V_AbsTol=1e-12 I_AbsTol=1e-15',
+        f'#uselib "ckt" , "{library}"' if library else ('; Native TL RLGC model' if physical_v2 else '; Native W_Element model'),
+        ('Options:OPTIONS V_RelTol=1e-11 I_RelTol=1e-11 V_AbsTol=1e-14 I_AbsTol=1e-17' if analytic else
+         'Options:OPTIONS V_RelTol=1e-9 I_RelTol=1e-9 V_AbsTol=1e-12 I_AbsTol=1e-15') + (' ForceS_Params=yes' if physical_v2 else ''),
         f'V_Source:SOURCE source 0 Vdc=0 V Vac=2 V V_Tran=pwl(time,{pwl}) SaveCurrent=no',
         f'R:SOURCE_R source input R={line["sourceImpedance"]:.17g} Ohm',
         f'C:SOURCE_C input 0 C={line["sourceCapacitanceF"]:.17g} F InitCond=0 V',
@@ -263,10 +320,33 @@ def netlist(request):
         'I_Source:OPEN observation 0 Idc=0 A Iac=0 A',
         'AC:AC1 SweepVar="freq" SweepPlan="FREQUENCIES" CalcNoise=no StatusLevel=2',
         'SweepPlan:FREQUENCIES ' + " ".join(f"Pt={x:.17g}" for x in f),
-        f'Tran:TRAN StartTime=0 sec StopTime={stop:.17g} sec MaxTimeStep={dt / 4:.17g} sec '
-        'TimeStepControl=2 TruncTol=7 ChargeTol=1e-16 IntegMethod=0 MaxOrder=4 UseInitCond=no OutputAllPoints=yes CheckKCL=yes MaxIters=50 MaxItersDC=200 StatusLevel=2',
+        f'Tran:TRAN StartTime=0 sec StopTime={stop:.17g} sec MaxTimeStep={dt / (16 if analytic else 4):.17g} sec '
+        'TimeStepControl=2 ' + ('TruncTol=0.1 ChargeTol=1e-22 ' if analytic else 'TruncTol=7 ChargeTol=1e-16 ') +
+        'IntegMethod=0 MaxOrder=4 UseInitCond=no OutputAllPoints=yes CheckKCL=yes MaxIters=50 MaxItersDC=200 StatusLevel=2',
     ]
+    if physical_v2:
+        text.extend([
+            '; Independent exact DC limit, not connected to the distributed-line circuit.',
+            'V_Source:DC_CONTROL dc_source 0 Vdc=0 V Vac=2 V SaveCurrent=no',
+            f'R:DC_SOURCE_AND_LINE dc_source dc_load R={line["sourceImpedance"] + line["dcResistanceOhmPerM"] * line["lengthM"]:.17g} Ohm',
+            f'R:DC_LOAD dc_load 0 R={line["loadImpedance"]:.17g} Ohm',
+        ])
     return "\n".join(text) + "\n", material
+
+
+def physical_ac_reference(raw, prefix, frequency, reference):
+    """Keep raw line voltages untouched; select the explicitly declared DC solve."""
+    import numpy as np
+    values = raw[prefix + "__output"].copy()
+    if reference in (REFERENCE, TABLE_REFERENCE):
+        np.testing.assert_array_equal(raw[prefix + "__dc_source"], np.full(len(frequency), 2, dtype=complex))
+        indices = np.flatnonzero(frequency == 0)
+        if indices.tolist() != [0]:
+            raise ValueError("physical reference requires one explicit DC frequency point")
+        values[0] = raw[prefix + "__dc_load"][0]
+    elif reference != LEGACY_REFERENCE:
+        raise ValueError("unknown reference semantics")
+    return values
 
 
 def worker(work, ads_root):
@@ -334,6 +414,8 @@ def compare_run(request, candidate, ads, output, plan):
     receipt = read_json(candidate / "receipt.json")
     if receipt["backend"] != "in_process_sipi_pybert_direct" or receipt["acceptance"] is not False:
         raise ValueError("candidate is not the SIPI in-process native workflow")
+    if receipt.get("channel_policy", "pb-02-compat") != plan.get("candidate_channel_policy", "pb-02-compat"):
+        raise ValueError("candidate channel policy does not match the frozen plan")
     for name, identity in receipt["artifacts"].items():
         if Path(name).name != name or digest(candidate / name) != identity["sha256"] or (candidate / name).stat().st_size != identity["byte_length"]:
             raise ValueError("candidate artifact identity mismatch")
@@ -360,7 +442,7 @@ def compare_run(request, candidate, ads, output, plan):
     native_time = raw[tran + "__axis"]
     if not np.isfinite(native_time).all() or np.any(np.diff(native_time) <= 0):
         raise ValueError("ADS native time axis is not strictly increasing")
-    origin = REFERENCE["ads_clock_origin_ui"] * request["timebase"]["samplesPerUi"] * request["timebase"]["sampleInterval"]
+    origin = plan["reference"]["ads_clock_origin_ui"] * request["timebase"]["samplesPerUi"] * request["timebase"]["sampleInterval"]
     requested_time = origin + time
     right = np.searchsorted(native_time, requested_time).clip(0, len(native_time)-1)
     left = (right - 1).clip(0)
@@ -387,8 +469,9 @@ def compare_run(request, candidate, ads, output, plan):
     if not math.isclose(nfft_float, nfft, rel_tol=1e-12) or len(impulse) > nfft:
         raise ValueError("kernel grid cannot be compared without resampling/truncation")
     post_kernel = np.fft.rfft(impulse, n=nfft)[:len(f)]
-    fd_reference = raw[ac + "__output"]
-    physical_control = material_transfer(request, f)
+    physical_v2 = plan["schema"] != LEGACY_SCHEMA
+    fd_reference = physical_ac_reference(raw, ac, f, plan["reference"])
+    physical_control = material_transfer(request, f, exact_dc=physical_v2)
     gates["ads_vs_material_equations"] = gate(physical_control, fd_reference, plan["transfer_tolerance"])
     gates["physical_vs_kernel_dtft"] = gate(fd_reference, post_kernel, plan["transfer_tolerance"])
     terminated = None
@@ -396,15 +479,30 @@ def compare_run(request, candidate, ads, output, plan):
         np.testing.assert_array_equal(arrays["legacy_channel_frequency_hz"], f)
         terminated = arrays["legacy_channel_terminated_re"] + 1j*arrays["legacy_channel_terminated_im"]
         gates["physical_vs_legacy_terminated"] = gate(fd_reference, terminated, plan["transfer_tolerance"])
+    physical_voltage = None
+    if plan.get("candidate_channel_policy") == "physical-voltage-v1":
+        np.testing.assert_array_equal(arrays["physical_channel_frequency_hz"], f)
+        physical_voltage = arrays["physical_channel_voltage_re"] + 1j * arrays["physical_channel_voltage_im"]
+        gates["physical_vs_voltage_transfer"] = gate(fd_reference, physical_voltage, plan["transfer_tolerance"])
     with (output / "frequency-pointwise.csv").open("x", newline="", encoding="ascii") as stream:
         writer = csv.writer(stream)
-        writer.writerow(["frequency_hz", "ads_h_re", "ads_h_im", "kernel_h_re", "kernel_h_im", "kernel_abs_error", "terminated_h_re", "terminated_h_im", "terminated_abs_error", "material_h_re", "material_h_im", "ads_material_abs_error"])
+        header = ["frequency_hz", "ads_h_re", "ads_h_im", "kernel_h_re", "kernel_h_im", "kernel_abs_error", "terminated_h_re", "terminated_h_im", "terminated_abs_error", "material_h_re", "material_h_im", "ads_material_abs_error"]
+        if physical_v2:
+            header += ["ads_raw_line_h_re", "ads_raw_line_h_im", "reference_solver"]
+        if physical_voltage is not None:
+            header += ["sipi_physical_voltage_re", "sipi_physical_voltage_im", "physical_voltage_abs_error"]
+        writer.writerow(header)
         for i, frequency in enumerate(f):
             row = [frequency, fd_reference[i].real, fd_reference[i].imag, post_kernel[i].real, post_kernel[i].imag, abs(post_kernel[i]-fd_reference[i])]
             row += [terminated[i].real, terminated[i].imag, abs(terminated[i]-fd_reference[i])] if terminated is not None else ["", "", ""]
             row += [physical_control[i].real, physical_control[i].imag, abs(fd_reference[i]-physical_control[i])]
+            if physical_v2:
+                row += [raw[ac + "__output"][i].real, raw[ac + "__output"][i].imag, "ads_resistive_dc_limit" if i == 0 else "ads_distributed_line"]
+            if physical_voltage is not None:
+                row += [physical_voltage[i].real, physical_voltage[i].imag, abs(physical_voltage[i] - fd_reference[i])]
             writer.writerow(row)
-    plot_comparison(output, time, reference, arrays["channel_output_v"], f, fd_reference, post_kernel, terminated, physical_control, plan)
+    plot_comparison(output, time, reference, arrays["channel_output_v"], f, fd_reference, post_kernel,
+                    physical_voltage if physical_voltage is not None else terminated, physical_control, plan)
     report = {"passed": all(item["passed"] for item in gates.values()), "gates": gates,
               "oracle_contract_passed": gates["ads_vs_material_equations"]["passed"],
               "ads_clock_origin_s": origin, "time_relation": "ADS requested time = fixed source origin + SIPI time; never output-fitted",
@@ -413,6 +511,13 @@ def compare_run(request, candidate, ads, output, plan):
               "receipt_sha256": digest(candidate / "receipt.json"), "dataset_sha256": digest(ads / "channel_native_ads.ds"),
               "csv_sha256": {name: digest(output / name) for name in ("time-pointwise.csv", "frequency-pointwise.csv")}, "acceptance": False}
     report["plot_sha256"] = {name: digest(output / name) for name in ("time-comparison.png", "frequency-comparison.png")}
+    if physical_v2:
+        report["raw_line_oracle_diagnostic"] = gate(physical_control, raw[ac + "__output"], plan["transfer_tolerance"])
+        report["dc_reference"] = {"frequency_hz": 0, "source": "ads_resistive_dc_limit",
+                                  "raw_line_h_re": float(raw[ac + "__output"][0].real),
+                                  "raw_line_h_im": float(raw[ac + "__output"][0].imag),
+                                  "resistive_limit_h_re": float(fd_reference[0].real),
+                                  "resistive_limit_h_im": float(fd_reference[0].imag)}
     write_json(output / "comparison.json", report)
     return report
 
@@ -441,7 +546,8 @@ def plot_comparison(output, time, reference, candidate, frequency, ac, kernel, t
         fig, axes = plt.subplots(2, 1, figsize=(12, 5.8), sharex=True, layout="constrained")
         curves = [("ADS physical", ac, colors["ADS"]), ("SIPI kernel DTFT", kernel, colors["SIPI"])]
         if terminated is not None:
-            curves.append(("SIPI terminated", terminated, "#bc3156"))
+            label = "SIPI physical voltage" if plan.get("candidate_channel_policy") == "physical-voltage-v1" else "SIPI terminated"
+            curves.append((label, terminated, "#bc3156"))
         curves.append(("Material equations", material, colors["Material"]))
         for name, values, color in curves:
             axes[0].plot(frequency * 1e-9, np.abs(values), color=color, lw=1, label=name)
@@ -464,18 +570,29 @@ def render_summary(output, result):
         runs = case.get("runs", [])
         if runs:
             gates = runs[0]["gates"]
-            overview.append(f'<tr><td><a href="#{name}">{name}</a></td><td>{gates["channel_output_v"]["max_absolute_error"]:.6e}</td><td>{gates["physical_vs_kernel_dtft"]["max_absolute_error"]:.6e}</td><td>{"PASS" if runs[0]["oracle_contract_passed"] else "FAIL"}</td><td>{"YES" if case.get("repeatable") else "NO"}</td></tr>')
+            raw = runs[0].get("raw_line_oracle_diagnostic")
+            raw_status = ("PASS" if raw["passed"] else "FAIL") + f' ({raw["max_absolute_error"]:.3e})' if raw else "v1 reference"
+            physical = gates.get("physical_vs_voltage_transfer")
+            physical_status = f'{physical["max_absolute_error"]:.6e}' if physical else "N/A"
+            overview.append(f'<tr><td><a href="#{name}">{name}</a></td><td>{gates["channel_output_v"]["max_absolute_error"]:.6e}</td><td>{gates["physical_vs_kernel_dtft"]["max_absolute_error"]:.6e}</td><td>{physical_status}</td><td>{"PASS" if runs[0]["oracle_contract_passed"] else "FAIL"}</td><td>{raw_status}</td><td>{"YES" if case.get("repeatable") else "NO"}</td></tr>')
             base = f'{name}/repeat-1'
             figures.append(f'<section id="{name}"><h2>{name}</h2><nav><a href="{base}/time-pointwise.csv">Time CSV</a><a href="{base}/frequency-pointwise.csv">Frequency CSV</a><a href="{base}/candidate/report.html">SIPI run</a><a href="{base}/ads/hpeesofsim.out">ADS log</a><a href="{base}/comparison.json">Comparison</a></nav><div class="scroll"><img width="1680" height="812" src="{base}/time-comparison.png" alt="{name}: all time samples and voltage error"></div><div class="scroll"><img width="1680" height="812" src="{base}/frequency-comparison.png" alt="{name}: transfer magnitude and complex error"></div></section>')
         else:
-            overview.append(f'<tr><td>{name}</td><td colspan="4">No complete comparison</td></tr>')
+            overview.append(f'<tr><td>{name}</td><td colspan="6">No complete comparison</td></tr>')
         for index, run in enumerate(case.get("runs", []), 1):
             for name, value in run.get("gates", {}).items():
                 rows.append(f'<tr><td>{html.escape(case["name"])}</td><td>{index}</td><td>{html.escape(name)}</td><td>{"PASS" if value["passed"] else "FAIL"}</td><td>{value["points"]}</td><td>{value["failed_points"]}</td><td>{value["max_absolute_error"]:.6e}</td><td><a href="{case["name"]}/repeat-{index}/comparison.json">Data</a></td></tr>')
         if case.get("error"):
             rows.append(f'<tr><td>{html.escape(case["name"])}</td><td colspan="7">{html.escape(case["error"])}</td></tr>')
     page = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SIPI / ADS Channel Bench</title><style>body{font:14px "Segoe UI",sans-serif;margin:24px;color:#202723;letter-spacing:0}main{max-width:1250px;margin:auto}h1{font-size:24px}h2{font-size:18px}p{line-height:1.6}.scroll{overflow:auto;max-width:100%}table{border-collapse:collapse;width:100%;white-space:nowrap}td,th{text-align:left;padding:9px;border-bottom:1px solid #d8dfdc}th{background:#edf5f1}a{color:#19628a}code{overflow-wrap:anywhere}.status{color:#a52d51}nav{display:flex;gap:12px 24px;flex-wrap:wrap}section{border-top:1px solid #d8dfdc;margin-top:24px;padding-top:8px}img{display:block;width:100%;min-width:720px;height:auto;aspect-ratio:1680/812;margin:12px 0}summary{cursor:pointer;padding:14px 0;font-weight:600}@media(max-width:600px){body{margin:16px}h1{font-size:22px}}</style><main><h1>SIPI / ADS Channel Bench</h1>'
-    page += f'<p class="status">{html.escape(result["status"])} / acceptance: false / {len(result["cases"])} cases</p><p>In-process SIPI vs fresh ADS. Physical-semantics diagnostic. All SIPI samples retained; fixed four-UI ADS source origin, no output-fitted alignment, gain fitting or interpolation. ADS material-control failures require reference investigation.</p><nav><a href="plan.json">Frozen plan</a><a href="result.json">Result</a><a href="bindings.json">Execution bindings</a></nav><h2>First-Run Errors</h2><div class="scroll"><table><thead><tr><th>Case</th><th>TD max (V)</th><th>Kernel FD max (V/V)</th><th>ADS material control</th><th>Two identical runs</th></tr></thead><tbody>'
+    page += f'<p class="status">{html.escape(result["status"])} / acceptance: false / {len(result["cases"])} cases</p><p>In-process SIPI vs fresh ADS. Physical-semantics diagnostic. All SIPI samples retained; fixed four-UI ADS source origin, no output-fitted alignment, gain fitting or interpolation. ADS material-control failures require reference investigation.</p>'
+    if any(run.get("dc_reference") for case in result["cases"] for run in case.get("runs", [])):
+        version = 'v3' if result["schema"].endswith('.v3') else 'v2'
+        page += f'<p>Reference {version}: positive frequencies use the distributed line; exactly 0 Hz uses a separate ADS resistive DC-limit circuit. Raw line-model DC errors remain in the table, dataset, CSV and comparison JSON. No frequency point is discarded.</p>'
+        if version == 'v3':
+            page += '<p>Analytic broadband RLGC replaces the finite-band material table. Tighter ADS Transient solver settings do not change pointwise comparison tolerances.</p>'
+    page += '<p class="status">AC material-control success does not qualify the ADS Transient convolution model. TD mismatches still require independent reference checks.</p>'
+    page += '<nav><a href="plan.json">Frozen plan</a><a href="result.json">Result</a><a href="bindings.json">Execution bindings</a></nav><h2>First-Run Errors</h2><div class="scroll"><table><thead><tr><th>Case</th><th>TD max (V)</th><th>Kernel FD max (V/V)</th><th>Load-voltage FD max</th><th>ADS AC material control</th><th>Raw line control</th><th>Two identical runs</th></tr></thead><tbody>'
     page += "".join(overview) + '</tbody></table></div><details><summary>All Runs / All Pointwise Gates</summary><div class="scroll"><table><thead><tr><th>Case</th><th>Run</th><th>Gate</th><th>Status</th><th>Points</th><th>Failed</th><th>Max abs. error</th><th>Evidence</th></tr></thead><tbody>'
     page += "".join(rows) + "</tbody></table></div></details>" + "".join(figures) + "</main></html>"
     (output / "report.html").write_text(page, encoding="utf-8", newline="\n")
@@ -501,7 +618,7 @@ def run(plan_file, output, sipi, ads_root, timeout, selected):
     bindings = {**identities, "plan_sha256": digest(output / "plan.json"),
                 "ads_root": str(ads_root), "sipi": str(sipi), "selected_cases": selected}
     write_json(output / "bindings.json", bindings)
-    result = {"schema": "sipi.channel.ads-physical-bench-result.v1", "status": "running", "cases": [], "acceptance": False,
+    result = {"schema": "sipi.channel.ads-physical-bench-result." + plan["schema"].rsplit('.', 1)[1], "status": "running", "cases": [], "acceptance": False,
               "scope": plan["scope"], "all_plan_cases_selected": not selected or set(selected) == names,
               "planned_cases": [case["name"] for case in plan["cases"]]}
     try:
@@ -518,12 +635,15 @@ def run(plan_file, output, sipi, ads_root, timeout, selected):
                     write_json(request_path, case["request"])
                     ads = work / "ads"
                     ads.mkdir()
-                    text, material = netlist(case["request"])
+                    text, material = netlist(case["request"], plan["reference"])
                     (ads / "requested.ckt").write_text(text, encoding="ascii", newline="\n")
                     write_json(ads / "material.json", {"columns": ["frequency_hz", "r_ohm_per_m", "l_h_per_m", "g_s_per_m", "c_f_per_m"], "rows": material})
                     # Both requests are fixed before either backend executes.
                     write_json(work / "input-bindings.json", {"request_sha256": digest(request_path), "netlist_sha256": digest(ads / "requested.ckt"), "material_sha256": digest(ads / "material.json")})
-                    checked_process([str(sipi), "channel", "simulate", str(request_path.resolve()), "--output-dir", str((work / "candidate").resolve())], work, work / "candidate.log", timeout)
+                    candidate_command = [str(sipi), "channel", "simulate", str(request_path.resolve()), "--output-dir", str((work / "candidate").resolve())]
+                    if plan.get("candidate_channel_policy") == "physical-voltage-v1":
+                        candidate_command += ["--channel-policy", "physical-voltage-v1"]
+                    checked_process(candidate_command, work, work / "candidate.log", timeout)
                     checked_process([str(python), "-X", "utf8", str(Path(__file__).resolve()), "worker", "--work", str(ads.resolve()), "--ads-root", str(ads_root)], work, work / "ads-worker.log", timeout)
                     receipt = read_json(work / "candidate/receipt.json")
                     if receipt["executable"]["sha256"] != bindings["sipi_sha256"]:
@@ -569,6 +689,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     init = commands.add_parser("init")
     init.add_argument("plan", type=Path)
+    init.add_argument("--channel-policy", choices=["pb-02-compat", "physical-voltage-v1"], default="pb-02-compat")
     execute = commands.add_parser("run")
     execute.add_argument("plan", type=Path)
     execute.add_argument("--output-dir", type=Path, required=True)
@@ -581,7 +702,7 @@ def main():
     child.add_argument("--ads-root", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "init":
-        write_json(args.plan, initial_plan())
+        write_json(args.plan, initial_plan(args.channel_policy))
         return 0
     if args.command == "worker":
         worker(args.work, args.ads_root)

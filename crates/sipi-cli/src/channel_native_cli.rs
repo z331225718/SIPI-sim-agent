@@ -9,12 +9,17 @@ use std::{
 
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use sipi_pybert_direct::{DirectRunError, DirectRunReport, SimulationInputV1, run_sim_native_json};
+use sipi_pybert_direct::{
+    DirectRunError, DirectRunReport, PHYSICAL_CHANNEL_POLICY_V1, SimulationInputV1,
+    run_channel_physical_json, run_sim_native_json,
+};
 
 pub(crate) const RECEIPT_SCHEMA: &str = "sipi.channel.native-receipt.v1";
 const TEMPLATE: &[u8] = include_bytes!("../../../examples/channel-native/metallic-line.json");
 const MAX_REQUEST_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_CSV_BYTES: usize = 256 * 1024 * 1024;
+const MAX_REPORT_BYTES: usize = 256 * 1024 * 1024;
+const REPORT_SCRIPT: &str = include_str!("channel_report.js");
 const WAVEFORMS: &[&str] = &[
     "tx_waveform_v",
     "channel_output_v",
@@ -74,16 +79,22 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
             "schema": "sipi.channel.native-help.v1",
             "commands": [
                 "sipi channel init REQUEST.json",
-                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY"
+                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY",
+                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy physical-voltage-v1"
             ],
             "input_schema": "pybert.simulation.v1",
             "input_units": "SI; impulseResponseVoltsPerSecond is converted by the owning core",
             "backend": "in_process_sipi_pybert_direct",
             "workflow": "PB-02 sim-native",
+            "channel_policies": {
+                "default": "pb-02-compat",
+                "physical-voltage-v1": "explicit metallic-line load voltage; retained time origin; finite-band kernel, not ADS Transient acceptance"
+            },
             "maximum_request_bytes": MAX_REQUEST_BYTES,
             "maximum_csv_bytes_per_file": MAX_CSV_BYTES,
+            "maximum_report_bytes": MAX_REPORT_BYTES,
             "output_policy": "new_directory_only; receipt.json is written last; failures retain partial output",
-            "artifacts": ["request.json", "meta.json", "arrays.npz", "waveforms.csv", "channel-impulse.csv", "report.html", "receipt.json"],
+            "artifacts": ["request.json", "meta.json", "arrays.npz", "waveforms.csv", "channel-impulse.csv", "report.html", "channel-report.js", "receipt.json"],
             "scope": "local_candidate; not external ADS parity or release acceptance",
             "kernel_command": "sipi channel run --stdin remains the separate matched-S21 kernel contract"
         }),
@@ -107,14 +118,23 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
                 && option == "--output-dir"
                 && !output.starts_with('-') =>
         {
-            simulate(Path::new(request), Path::new(output))?
+            simulate(Path::new(request), Path::new(output), false)?
+        }
+        ("simulate", [request, option, output, policy_option, policy])
+            if !request.starts_with('-')
+                && option == "--output-dir"
+                && !output.starts_with('-')
+                && policy_option == "--channel-policy"
+                && policy == PHYSICAL_CHANNEL_POLICY_V1 =>
+        {
+            simulate(Path::new(request), Path::new(output), true)?
         }
         _ => return Err(Failure::Usage),
     };
     serde_json::to_string(&result).map_err(|_| Failure::Io)
 }
 
-fn simulate(request: &Path, output: &Path) -> Result<Value, Failure> {
+fn simulate(request: &Path, output: &Path, physical: bool) -> Result<Value, Failure> {
     let file = File::open(request)?;
     if !file.metadata()?.is_file() {
         return Err(Failure::InvalidInput);
@@ -138,7 +158,11 @@ fn simulate(request: &Path, output: &Path) -> Result<Value, Failure> {
     // links. The direct writer may only reuse this newly claimed directory.
     fs::create_dir(output)?;
     write_new(&output.join("request.json"), &bytes)?;
-    let report = run_sim_native_json(&bytes, request, output)?;
+    let report = if physical {
+        run_channel_physical_json(&bytes, request, output)?
+    } else {
+        run_sim_native_json(&bytes, request, output)?
+    };
     let time = array(&report, "time_s")?;
     if time.is_empty() {
         return Err(Failure::Io);
@@ -150,17 +174,47 @@ fn simulate(request: &Path, output: &Path) -> Result<Value, Failure> {
     if waveforms.iter().any(|values| values.len() != time.len()) {
         return Err(Failure::Io);
     }
-    write_csv(&output.join("waveforms.csv"), time, WAVEFORMS, &waveforms)?;
+    write_csv(
+        &output.join("waveforms.csv"),
+        "time_s",
+        time,
+        WAVEFORMS,
+        &waveforms,
+    )?;
     let impulse = array(&report, "channel_impulse_v_per_v")?;
     let impulse_time = (0..impulse.len())
         .map(|index| index as f64 * report.input.timebase.sample_interval.0)
         .collect::<Vec<_>>();
     write_csv(
         &output.join("channel-impulse.csv"),
+        "time_s",
         &impulse_time,
         &["channel_impulse_v_per_v"],
         &[impulse],
     )?;
+    if physical {
+        let frequency = array(&report, "physical_channel_frequency_hz")?;
+        let names = [
+            "physical_channel_voltage_re",
+            "physical_channel_voltage_im",
+            "physical_channel_windowed_re",
+            "physical_channel_windowed_im",
+        ];
+        let columns = names
+            .iter()
+            .map(|name| array(&report, name))
+            .collect::<Result<Vec<_>, _>>()?;
+        if columns.iter().any(|values| values.len() != frequency.len()) {
+            return Err(Failure::Io);
+        }
+        write_csv(
+            &output.join("frequency-response.csv"),
+            "frequency_hz",
+            frequency,
+            &names,
+            &columns,
+        )?;
+    }
     let preview_samples = time
         .len()
         .min(32 * report.input.timebase.samples_per_ui as usize)
@@ -173,23 +227,37 @@ fn simulate(request: &Path, output: &Path) -> Result<Value, Failure> {
         impulse,
         preview_samples,
     );
-    write_new(&output.join("report.html"), html.as_bytes())?;
+    write_report(
+        &output.join("report.html"),
+        &html,
+        time,
+        &waveforms,
+        &impulse_time,
+        impulse,
+    )?;
+    write_new(&output.join("channel-report.js"), REPORT_SCRIPT.as_bytes())?;
 
     let mut artifacts = serde_json::Map::new();
-    for name in [
+    let mut artifact_names = vec![
         "request.json",
         "meta.json",
         "arrays.npz",
         "waveforms.csv",
         "channel-impulse.csv",
         "report.html",
-    ] {
+        "channel-report.js",
+    ];
+    if physical {
+        artifact_names.push("frequency-response.csv");
+    }
+    for name in artifact_names {
         artifacts.insert(name.into(), file_identity(&output.join(name))?);
     }
     let receipt = json!({
         "schema": RECEIPT_SCHEMA,
         "status": "complete",
-        "workflow": "PB-02 sim-native",
+        "workflow": if physical { "physical-voltage-v1 with existing native link stages" } else { "PB-02 sim-native" },
+        "channel_policy": if physical { PHYSICAL_CHANNEL_POLICY_V1 } else { "pb-02-compat" },
         "backend": "in_process_sipi_pybert_direct",
         "upstream_commit": "5bf6d7ea0ace261891aaeb611ffc1c267e160afe",
         "executable": file_identity(&std::env::current_exe()?)?,
@@ -197,8 +265,9 @@ fn simulate(request: &Path, output: &Path) -> Result<Value, Failure> {
         "channel_impulse_samples": impulse.len(),
         "native_array_count": report.output.arrays.len(),
         "preview_samples": preview_samples,
+        "report_data_policy": "all_waveform_and_impulse_samples_embedded; original_f64; at_most_4096_contiguous_samples_per_view; no_decimation",
         "csv_policy": "all_samples_original_grid_roundtrip_f64_no_alignment_or_scaling",
-        "compatibility_metadata": "meta.json preserves the PB-02 upstream schema and engine labels; executable identifies this SIPI run",
+        "compatibility_metadata": if physical { "meta.json uses sipi.channel.physical-result.v1; physical_channel diagnostics declare the voltage and finite-band time contract" } else { "meta.json preserves the PB-02 upstream schema and engine labels; executable identifies this SIPI run" },
         "artifacts": artifacts,
         "acceptance": false,
         "scope": "local_candidate_not_full_upstream_parity_or_ads_acceptance_or_release"
@@ -224,9 +293,74 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<(), Failure> {
     Ok(())
 }
 
-fn write_csv(path: &Path, time: &[f64], names: &[&str], columns: &[&[f64]]) -> Result<(), Failure> {
+struct LimitedWriter<W> {
+    inner: W,
+    remaining: usize,
+}
+
+impl<W: Write> Write for LimitedWriter<W> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        if bytes.len() > self.remaining {
+            return Err(io::Error::other("report byte budget exceeded"));
+        }
+        let written = self.inner.write(bytes)?;
+        self.remaining -= written;
+        Ok(written)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+fn write_report(
+    path: &Path,
+    html: &str,
+    time: &[f64],
+    waves: &[&[f64]],
+    impulse_time: &[f64],
+    impulse: &[f64],
+) -> Result<(), Failure> {
+    let mut writer = LimitedWriter {
+        inner: BufWriter::new(OpenOptions::new().write(true).create_new(true).open(path)?),
+        remaining: MAX_REPORT_BYTES,
+    };
+    writer.write_all(html.as_bytes())?;
+    // Stream borrowed numeric arrays, rather than cloning the full simulation
+    // into a JSON Value or a second large HTML string. No caller text enters JS.
+    writer.write_all(b"<script type=\"application/json\" id=\"channel-data\">{")?;
+    for (index, (name, axis, columns)) in [
+        ("waveform", time, waves),
+        ("impulse", impulse_time, &[impulse][..]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if index != 0 {
+            writer.write_all(b",")?;
+        }
+        write!(writer, "\"{name}\":{{\"time\":")?;
+        serde_json::to_writer(&mut writer, axis).map_err(|_| Failure::Io)?;
+        writer.write_all(b",\"columns\":")?;
+        serde_json::to_writer(&mut writer, columns).map_err(|_| Failure::Io)?;
+        writer.write_all(b"}")?;
+    }
+    writer
+        .write_all(b"}</script><script src=\"channel-report.js\" defer></script></body></html>")?;
+    writer.flush()?;
+    writer.inner.get_ref().sync_all()?;
+    Ok(())
+}
+
+fn write_csv(
+    path: &Path,
+    axis_name: &str,
+    time: &[f64],
+    names: &[&str],
+    columns: &[&[f64]],
+) -> Result<(), Failure> {
     let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(path)?);
-    let header = format!("time_s,{}\n", names.join(","));
+    let header = format!("{axis_name},{}\n", names.join(","));
     writer.write_all(header.as_bytes())?;
     let mut byte_count = header.len();
     for (index, t) in time.iter().enumerate() {
@@ -283,7 +417,7 @@ fn render_report(
     let mut html = String::from(
         r#"<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>SIPI Channel</title><style>
 *{box-sizing:border-box;letter-spacing:0}body{margin:0;color:#202723;background:#fff;font:14px 'Segoe UI',sans-serif}
 header,main{max-width:1160px;margin:auto;padding:24px}header{border-bottom:2px solid #206e55}
@@ -295,22 +429,37 @@ section{padding:24px 0;border-bottom:1px solid #d8dfdc}.muted{color:#55625d}.sta
 .plot{overflow-x:auto}.plot svg{display:block;width:100%;min-width:700px;height:auto}
 .legend{display:flex;gap:12px 24px;flex-wrap:wrap;margin:12px 0;font-family:Consolas,monospace}
 .legend span{overflow-wrap:anywhere}.legend i{display:inline-block;width:18px;height:3px;margin-right:8px;vertical-align:middle}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,180px));gap:12px;margin:12px 0}.controls[hidden],.readout[hidden]{display:none}
+.controls label{display:grid;gap:6px;color:#55625d}input{font:inherit;accent-color:#206e55}input[type=number]{width:100%;min-width:0;border:1px solid #aebdb5;border-radius:4px;padding:7px;color:#202723;background:#fff}
+.position{grid-column:1/-1;width:100%;margin:0;min-height:28px}.legend label{display:flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}.legend label input{flex:none;margin:0}
+.readout{border-collapse:collapse;width:100%;max-width:680px;margin-top:14px;font:12px Consolas,monospace;table-layout:fixed}.readout th,.readout td{padding:6px 8px;border-bottom:1px solid #e1e8e4;text-align:left;overflow-wrap:anywhere}.readout th{width:47%;font-weight:400;color:#55625d}
+.range-status{display:block;min-height:24px;color:#55625d;font:12px Consolas,monospace}.interactive .plot{overflow:hidden}.interactive .plot svg{min-width:0;height:300px;touch-action:pan-y}
+input:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid #166a9b;outline-offset:3px}
 details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f3f6f5;padding:16px;max-height:420px;overflow:auto;line-height:1.5}
-@media(max-width:600px){header,main{padding:18px}.summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}h1{font-size:23px}}
+@media(max-width:600px){header,main{padding:18px}.summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}h1{font-size:23px}.controls label{grid-template-rows:32px auto}.readout{font-size:11px}}
 </style></head><body><header><h1>SIPI Channel</h1><p class="status">Local Rust candidate / acceptance: false</p>"#,
     );
     html.push_str(&format!("<p>{}</p>", escape(&report.output.run_id)));
+    if report.diagnostics["physical_channel"].is_object() {
+        html.push_str("<p>Physical load voltage / absolute impulse origin / finite-band kernel</p><p class=\"muted\">Continuous-time causality and ADS finite-edge Transient parity are not certified.</p><a href=\"frequency-response.csv\">Physical frequency response CSV</a>");
+    }
     html.push_str(r#"<nav aria-label="Artifacts"><a href="waveforms.csv">Waveforms CSV</a><a href="channel-impulse.csv">Impulse CSV</a><a href="arrays.npz">Native arrays</a><a href="meta.json">Native metadata</a><a href="request.json">Request</a><a href="receipt.json">Run receipt</a></nav></header><main>"#);
     html.push_str(&format!("<dl class=\"summary\"><div><dt>Samples</dt><dd>{}</dd></div><div><dt>Sample interval</dt><dd>{:.6} ps</dd></div><div><dt>Data rate</dt><dd>{:.3} GHz</dd></div><div><dt>Native arrays</dt><dd>{}</dd></div></dl>", time.len(), report.input.timebase.sample_interval.0 * 1e12, report.input.timebase.data_rate.0 * 1e-9, report.output.arrays.len()));
-    html.push_str(&format!("<section><h2>Stage waveforms</h2><p class=\"muted\">Samples 0..{} of {}. CSV contains the full original grid. Coincident stages share a trace.</p>", preview.saturating_sub(1), time.len()));
+    html.push_str(&format!("<section data-view=\"waveform\" aria-label=\"Stage waveforms\"><h2>Stage waveforms</h2><output class=\"range-status\">Samples 0..{} of {}</output>", preview.saturating_sub(1), time.len()));
+    html.push_str(&report_controls("waveform", time.len(), preview));
     let preview_waves = waves
         .iter()
         .map(|values| &values[..preview])
         .collect::<Vec<_>>();
     html.push_str(&plot(&time[..preview], WAVEFORMS, &preview_waves, "V"));
-    html.push_str("</section><section><h2>Channel discrete impulse</h2>");
+    html.push_str("</section><section data-view=\"impulse\" aria-label=\"Channel discrete impulse\"><h2>Channel discrete impulse</h2>");
     let impulse_preview = impulse.len().min(4096);
-    html.push_str(&format!("<p class=\"muted\">Samples 0..{} of {}. Discrete convolution coefficients, not volts per second.</p>", impulse_preview.saturating_sub(1), impulse.len()));
+    html.push_str(&format!(
+        "<output class=\"range-status\">Samples 0..{} of {}</output>",
+        impulse_preview.saturating_sub(1),
+        impulse.len()
+    ));
+    html.push_str(&report_controls("impulse", impulse.len(), impulse_preview));
     html.push_str(&plot(
         &impulse_time[..impulse_preview],
         &["channel_impulse_v_per_v"],
@@ -330,8 +479,35 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
         )
         .expect("finite output"),
     ));
-    html.push_str("</pre></details></main></body></html>");
+    html.push_str("</pre></details></main>");
     html
+}
+
+fn report_controls(name: &str, length: usize, window: usize) -> String {
+    let last = length.saturating_sub(1);
+    let maximum_window = length.clamp(1, 4096);
+    format!(
+        "<div class=\"controls\" hidden><label>Start sample<input data-control=\"start\" type=\"number\" min=\"0\" max=\"{last}\" step=\"1\" value=\"0\"></label><label>Window samples<input data-control=\"count\" type=\"number\" min=\"1\" max=\"{maximum_window}\" step=\"1\" value=\"{window}\"></label><label>Cursor sample<input data-control=\"cursor\" type=\"number\" min=\"0\" max=\"{last}\" step=\"1\" value=\"0\"></label><input class=\"position\" data-control=\"position\" aria-label=\"{name} window position\" type=\"range\" min=\"0\" max=\"{last}\" step=\"1\" value=\"0\"></div><table class=\"readout\" aria-label=\"{name} original sample\" hidden><tbody></tbody></table>"
+    )
+}
+
+#[cfg(test)]
+mod report_tests {
+    use super::*;
+
+    #[test]
+    fn report_budget_is_enforced_before_writing_excess_bytes() {
+        let mut writer = LimitedWriter {
+            inner: Vec::new(),
+            remaining: 4,
+        };
+        writer.write_all(b"123").unwrap();
+        assert!(writer.write_all(b"45").is_err());
+        assert_eq!(writer.inner, b"123");
+        writer.write_all(b"4").unwrap();
+        assert!(writer.write_all(b"5").is_err());
+        assert_eq!(writer.inner, b"1234");
+    }
 }
 
 fn plot(time: &[f64], names: &[&str], columns: &[&[f64]], unit: &str) -> String {

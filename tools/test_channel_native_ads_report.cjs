@@ -58,14 +58,20 @@ async function main() {
       await page.locator('summary').click();
       assert(await page.locator('details').evaluate(item => item.open));
       const expectedGates = result.cases.reduce((n, item) => n + item.runs.reduce((k, run) => k + Object.keys(run.gates).length, 0), 0);
-      assert.equal(await page.locator('details tbody tr').count(), expectedGates);
+      const failedCases = result.cases.filter(item => item.error).length;
+      assert.equal(await page.locator('details tbody tr').count(), expectedGates + failedCases);
+      if (completeCases.some(item => item.runs[0].dc_reference)) {
+        const version = result.schema.endsWith('.v3') ? 'v3' : 'v2';
+        assert(await page.getByText(`Reference ${version}:`, { exact: false }).isVisible());
+        assert(await page.getByRole('columnheader', { name: 'Raw line control', exact: true }).isVisible());
+      }
       await page.locator('summary').click();
       await page.locator(`section#${completeCases[1].name}`).scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(output, `curves-${viewport.width}.png`) });
       await page.locator('section').first().getByRole('link', { name: 'Comparison', exact: true }).click();
       await page.waitForURL('**/comparison.json');
       assert.equal(errors.length, 0, errors.join('\n'));
-      proof.push({ viewport, images: images.length, links: links.length, gates: expectedGates, nonblank: true, noHorizontalPageOverflow: true });
+      proof.push({ viewport, images: images.length, links: links.length, gates: expectedGates, incompleteCases: failedCases, nonblank: true, noHorizontalPageOverflow: true });
       await page.close();
     }
   } finally {

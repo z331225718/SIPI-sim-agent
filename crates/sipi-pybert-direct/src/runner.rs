@@ -472,7 +472,7 @@ pub fn run_sim_native_json(
 /// engine-level callers.  The pinned CLI publishes that seed through its
 /// effective-randomness metadata instead; projecting it into the CLI output
 /// metrics creates a false extra key during complete-output comparison.
-fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
+pub(crate) fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
     output.arrays.remove("tx_impulse_v_per_v");
     output.metrics.remove("effective_prbs_seed");
     output.metrics.remove("effective_noise_seed");
@@ -488,7 +488,7 @@ fn native_cli_output(mut output: SimulationOutputV1) -> SimulationOutputV1 {
     output
 }
 
-fn upstream_native_input(mut input: SimulationInputV1) -> SimulationInputV1 {
+pub(crate) fn upstream_native_input(mut input: SimulationInputV1) -> SimulationInputV1 {
     if let Some(ctle) = input.rx.ctle.as_mut() {
         // The pinned `NativeSimulationRequest` model does not declare this
         // direct-port extension. Its Pydantic boundary drops the extra key
@@ -837,6 +837,8 @@ pub fn write_simulation_artifacts_with_schema_and_backend_and_shapes_and_typed_a
         "pinned_pybert_native_core"
     } else if backend_label == "rust_portable_reference" {
         "pb01_independent_rust_reference_pipeline_v1"
+    } else if backend_label == "rust_channel_physical" {
+        "sipi_physical_channel_with_pinned_native_link_stages"
     } else {
         "backend_run_result_reference_payload"
     };
