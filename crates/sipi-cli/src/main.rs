@@ -2,6 +2,8 @@
 
 #[cfg(feature = "agent-spice-direct-integration")]
 mod agent_spice_direct_cli;
+#[cfg(feature = "pybert-direct-integration")]
+mod channel_native_cli;
 #[cfg(feature = "com-direct-integration")]
 mod com_direct_cli_contract_v1;
 #[cfg(feature = "com-direct-integration")]
@@ -394,6 +396,12 @@ const UPSTREAM_COM_BINDINGS: &[CallerBindingV1] = &[
 ];
 
 const DIAGNOSTIC_CODES_V1: &[DiagnosticCodeV1] = &[
+    #[cfg(feature = "pybert-direct-integration")]
+    DiagnosticCodeV1 {
+        code: "resource_limit_exceeded",
+        stage: "admission",
+        rule_id: "channel.native-resource-limits.v1",
+    },
     DiagnosticCodeV1 {
         code: "usage",
         stage: "protocol",
@@ -713,6 +721,39 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         response_schema: Some("sipi.channel.matched-two-port-kernel-run-result.v1"),
         unavailable_reason: None,
         nonclaim: "matched_s21_periodic_kernel_only",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandDescriptorV1 {
+        id: "channel.help",
+        route: &["channel", "help"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.channel.native-argv.v1"),
+        response_schema: Some("sipi.channel.native-help.v1"),
+        unavailable_reason: None,
+        nonclaim: "pb_02_candidate_in_process_no_parity_or_release",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandDescriptorV1 {
+        id: "channel.init",
+        route: &["channel", "init"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.channel.native-argv.v1"),
+        response_schema: Some("sipi.channel.native-init.v1"),
+        unavailable_reason: None,
+        nonclaim: "pb_02_candidate_input_template_only",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandDescriptorV1 {
+        id: "channel.simulate",
+        route: &["channel", "simulate"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.channel.native-argv.v1"),
+        response_schema: Some(channel_native_cli::RECEIPT_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "pb_02_candidate_in_process_no_parity_or_release",
     },
     CommandDescriptorV1 {
         id: "ami.run",
@@ -1235,6 +1276,36 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: Some("channel.matched-two-port-kernel.v1"),
         successful_exit: 0,
         diagnostic_contract: "single_json_stdout_and_zero_stderr_on_success",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "channel.help",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_no_external_runtime",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "channel.init",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_no_overwrite",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "channel.simulate",
+        example_id: None,
+        required_options: &["--output-dir"],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_path_free_candidate_receipt",
     },
     CommandProtocolProfileV1 {
         command_id: "compare.run",
@@ -3694,6 +3765,10 @@ fn command_protocol_profiles_are_valid(
 }
 
 fn available_route_has_handler(route: &[&str]) -> bool {
+    #[cfg(feature = "pybert-direct-integration")]
+    if matches!(route, ["channel", "help" | "init" | "simulate"]) {
+        return true;
+    }
     let has_handler = matches!(
         route,
         ["version"]
@@ -4155,6 +4230,18 @@ impl CommandService {
                         error_value.diagnostic_code(),
                         "bounded Agent-Spice direct route failed",
                     ),
+                }
+            }
+            #[cfg(feature = "pybert-direct-integration")]
+            [command, action, tail @ ..]
+                if command == "channel"
+                    && matches!(action.as_str(), "help" | "init" | "simulate") =>
+            {
+                match channel_native_cli::execute(action, tail) {
+                    Ok(receipt) => success(receipt),
+                    Err(failure) => {
+                        error(failure.exit_code(), failure.code(), "native channel failed")
+                    }
                 }
             }
             [command, ..] if command == "run" => error(

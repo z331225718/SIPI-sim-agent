@@ -4,12 +4,82 @@
 
 当前状态：`v0.2` 产品重基线。终态为 Rust-only 的统一平台：第一方源码为 MIT，逐文件获准的第三方直接移植保留其自身兼容许可证；旧项目只作为已授权源码候选或工作树外 oracle，不作为产品运行依赖。
 
+## Windows 源码运行
+
+**`git clone` 只下载源码，不包含 Rust、C++ Build Tools 或编译好的 `sipi.exe`。**
+`target/` 是本机生成目录，不提交到 Git。下面是默认 Rust CLI 的开发构建流程，
+不是已签核的发行包，也不会启用隔离中的可选 direct-port 功能。
+
+首次在 Windows x64 机器上使用：
+
+1. 安装 [Rust/rustup](https://rust-lang.org/tools/install/)，使用 MSVC 工具链。
+2. 通过 Visual Studio Installer 安装“使用 C++ 的桌面开发”，包括 MSVC x64/x86
+   编译工具和 Windows 10/11 SDK。已有 Visual Studio 也要确认这些组件已安装；
+   不需要为运行仿真安装完整 IDE。参见 [Rust 官方 Windows 前置条件](https://rust-lang.github.io/rustup/installation/windows-msvc.html)。
+3. 新开 PowerShell，在 clone 的仓库根目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_windows.ps1 -Check
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_windows.ps1
+```
+
+脚本识别 PATH 和 `%CARGO_HOME%\bin`（默认 `%USERPROFILE%\.cargo\bin`）中的
+Cargo；缺依赖时会列出修复提示，不自动安装系统软件、不修改永久 PATH。
+`-Check` 只检查前置文件；构建时 rustup 按 `rust-toolchain.toml` 选择
+`1.97.0-x86_64-pc-windows-msvc`，首次下载工具链和 crates 需要联网。
+安装被公司策略限制时，请由管理员配置，不必关闭系统安全策略。
+
+构建成功后，脚本会实际验证一个 matched-through channel kernel，期望结果 `[1, 0]`。
+使用明确的 exe 路径，避免和旧 Python CLI 同名入口混淆：
+
+```powershell
+$sipi = '.\target\x86_64-pc-windows-msvc\release\sipi.exe'
+& $sipi version --json
+& $sipi doctor --json
+& $sipi capabilities --json
+
+$example = & $sipi example channel.run --json | ConvertFrom-Json
+$example.result.request | ConvertTo-Json -Depth 40 -Compress | & $sipi channel run --stdin
+```
+
+这是受限的 matched-S21 kernel 示例，不代表完整 PyBERT 链路或 ADS bench 验收。
+编译需要 Rust/Build Tools；运行已构建的默认 exe 不应再调用 Cargo。
+**`uv sync` 和下面的 Python 验证命令用于旧迁移设施，不会构建 Rust 主程序。**
+单独开发的 `Py-bert-agent` / `pybert channel` 也不是本仓库 clone 后自动安装的组件。
+
+## Channel 原生候选入口
+
+Channel 主线现在直接在 **SIPI 本仓库** 接入已有 `sipi-pybert-direct`，不需要再 clone
+PyBERT、安装 Python 或调用另一个仿真程序。显式启用候选模块后仍只有一个 `sipi.exe`：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_windows.ps1 -Channel
+$sipi = '.\target\x86_64-pc-windows-msvc\release\sipi.exe'
+& $sipi channel help
+& $sipi channel init channel-request.json
+& $sipi channel simulate channel-request.json --output-dir results/channel-native-run
+Start-Process .\results\channel-native-run\report.html
+```
+
+示例为 32 Gbit/s NRZ、PRBS9、5 cm metallic line，共 8192 个波形样点。
+输出原生 `meta.json` / `arrays.npz`、全量逐点 CSV、离线 HTML 和最后写入的哈希收据。
+请求文件和输出目录均不覆盖已有内容。编译后运行不依赖 Rust/Cargo。
+
+这是 PB-02 的**本地候选连接**，不是完整 PyBERT/ADS parity、许可签核或发布验收；
+默认构建仍不启用它，旧 `channel run --stdin` 的 kernel 合同保持不变。
+参数、导出单位和剩余工作见 [原生 Channel 工作流](docs/channel-native-workflow.md)。
+实际 `sipi.exe` 与 ADS 的全量逐点 bench 已接通，当前数值结果仍未通过：
+legacy 裁切时间原点、复数端接参考以及有损 ADS 参考自检需要继续处理。
+不能将兼容模式波形直接当作绝对传播时延或物理负载电压，详见
+[ADS 数值诊断](docs/channel-native-ads-diagnostics-20260909.md)。
+
 ## 核心文档
 
 - [SPEC.md](SPEC.md)：产品范围、目标架构、公共契约、引擎边界和验收标准。
 - [PLAN.md](PLAN.md)：纵向能力计划、任务依赖、质量门禁和旧资产处置。
 - [ADR-011](docs/adr/ADR-011-native-mit-rust-product-boundary.md)：MIT 第一方源码、Rust-only 终态和旧项目 oracle 边界。
 - [ADR-014](docs/adr/ADR-014-selective-bsd3-direct-port-boundary.md)：按路径保留 BSD-3-Clause 的直接移植边界。
+- [ADR-015](docs/adr/ADR-015-upstream-capability-first-rust-consolidation.md)：现行的三库工作流整合与逐行 Rust 替换顺序。
 
 ## 一句话架构
 
@@ -17,7 +87,10 @@
 
 ## 旧项目定位
 
-| 项目 | v0.2 角色 | 当前关键约束 |
+下表保留 v0.2 重基线时的定位。现行执行顺序以 ADR-015 为准：三库已有的整合代码和
+Rust 候选继续复用，不因这张历史表重新实现 PyBERT 数值内核；候选是否获准发布仍单独审核。
+
+| 项目 | v0.2 历史角色 | 当时关键约束 |
 | --- | --- | --- |
 | `agent-spice` | MIT Rust TRAN 候选与外部 oracle | 逐文件来源/依赖审计后才可 promotion；Python/旧 bundle 不发布 |
 | `Py-bert-agent` | Channel/IBIS-AMI 黑盒 oracle | BSD/非 MIT 源码和派生历史不迁入产品；Channel 由 clean-room Rust 重做 |
@@ -52,7 +125,7 @@ attestation 的 fail-closed 声明门。它目前仅为 `provisional` 模板，�
 认知隔离、授权 release 或 promotion 任何现有 Rust candidate；完整流程见
 [docs/clean-room/README.md](docs/clean-room/README.md)。
 
-## 验证
+## Python 迁移设施验证
 
 ```powershell
 uv run python -B tools/sync_contracts_schemas.py  # schema 变更后同步打包副本

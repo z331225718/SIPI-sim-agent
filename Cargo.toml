@@ -27,6 +27,7 @@ members = [
   "crates/sipi-types",
 ]
 default-members = ["crates/sipi-cli"]
+exclude = ["crates/sipi-pybert-direct"]
 resolver = "3"
 
 [workspace.package]

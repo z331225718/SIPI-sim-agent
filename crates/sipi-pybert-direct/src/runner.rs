@@ -1097,7 +1097,7 @@ fn strict_pattern(value: &Value) -> Result<(), DirectRunError> {
     let kind = string_field(object, "kind", "$.pattern")?;
     match kind {
         "prbs" => keys(object, "$.pattern", &["kind", "order", "seed"]),
-        "explicit_bits" => keys(object, "$.pattern", &["kind", "bitCount", "bits"]),
+        "explicit_bits" => keys(object, "$.pattern", &["kind", "bit_count", "bits"]),
         variant => Err(DirectRunError::UnsupportedVariant {
             path: "$.pattern.kind".into(),
             variant: variant.into(),

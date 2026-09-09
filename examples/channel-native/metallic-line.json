@@ -1,0 +1,63 @@
+{
+  "schema": "pybert.simulation.v1",
+  "runId": "metallic-line-prbs9",
+  "modulation": "nrz",
+  "pattern": {"kind": "prbs", "order": 9, "seed": 17},
+  "timebase": {
+    "sampleInterval": 1.953125e-12,
+    "samplesPerUi": 16,
+    "dataRate": 32e9,
+    "nbits": 512
+  },
+  "channel": {
+    "kind": "metallic_line",
+    "value": {
+      "sampleInterval": 1.953125e-12,
+      "lengthM": 0.05,
+      "skinEffectResistanceOhmPerM": 1.452,
+      "crossoverAngularFrequencyRadPerS": 1e7,
+      "dcResistanceOhmPerM": 0.1876,
+      "characteristicImpedance": 100,
+      "propagationVelocityMPerS": 201e6,
+      "lossTangent": 0.02,
+      "sourceImpedance": 100,
+      "sourceCapacitanceF": 0.2e-12,
+      "loadImpedance": 100,
+      "loadCapacitanceF": 0.2e-12,
+      "applyRaisedCosineWindow": true,
+      "frequencyStepHz": 125e6,
+      "frequencyMaxHz": 64e9,
+      "impulseLength": 1e-9
+    }
+  },
+  "tx": {
+    "amplitude": 0.5,
+    "ffe": {"enabled": false, "weights": [], "cursorPosition": 0},
+    "additiveNoise": null,
+    "periodicNoise": null
+  },
+  "rx": {
+    "nativeCtleEnabled": false,
+    "ctle": null,
+    "ffe": {"enabled": false, "weights": [], "cursorPosition": 0},
+    "dfeTaps": 0,
+    "dfe": null,
+    "viterbiEnabled": false,
+    "viterbi": null
+  },
+  "analysis": {
+    "statisticalEye": null,
+    "includeJitter": false,
+    "includeBathtub": false,
+    "berEyeBits": null,
+    "jitterEyeUis": null,
+    "jitterRelThresh": null
+  },
+  "limits": {
+    "maxTotalSamples": 131072,
+    "maxMemoryBytes": 268435456,
+    "maxDistributionStates": 200000
+  },
+  "externalModels": [],
+  "legacyOptions": {}
+}

@@ -21,6 +21,9 @@ normal-erl-diagnostic-sidecar = ["com-direct-integration", "sipi-agent-com-direc
 # The feature stays opt-in so the default CLI remains byte-for-byte isolated
 # from the direct port and its external-runtime custody paths.
 agent-spice-direct-integration = ["dep:sipi-agent-spice-direct", "dep:serde"]
+# Local candidate linkage only; the PyBERT crate retains its independent
+# source/license review boundary and is not admitted to release composition.
+pybert-direct-integration = ["dep:sipi-pybert-direct"]
 
 [[bin]]
 name = "sipi"
@@ -46,6 +49,10 @@ name = "upstream_migration"
 path = "tests/upstream_migration.rs"
 required-features = ["test-support"]
 
+[[test]]
+name = "channel_native"
+path = "tests/channel_native.rs"
+
 [dependencies]
 sipi-agent-com-adapter = { path = "../sipi-agent-com-adapter" }
 sipi-agent-com-direct = { path = "../sipi-agent-com-direct", optional = true }
@@ -60,6 +67,7 @@ sipi-ibis = { path = "../sipi-ibis" }
 sipi-link = { path = "../sipi-link" }
 sipi-pipeline = { path = "../sipi-pipeline" }
 sipi-pybert-adapter = { path = "../sipi-pybert-adapter" }
+sipi-pybert-direct = { path = "../sipi-pybert-direct", optional = true }
 sipi-runtime = { path = "../sipi-runtime" }
 sipi-rx-load = { path = "../sipi-rx-load" }
 sipi-tran = { path = "../sipi-tran" }
