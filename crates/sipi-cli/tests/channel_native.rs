@@ -826,4 +826,81 @@ mod native {
         assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
         assert_eq!(receipt["acceptance"], false);
     }
+
+    #[test]
+    fn touchstone_network_runs_b6_statistical_eye_jitter_and_bathtub_with_full_csvs() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+
+        // 1024 bits allows 2 full PRBS9 periods for jitter decomposition
+        req["timebase"]["nbits"] = 1024.into();
+        req["analysis"]["includeJitter"] = true.into();
+        req["analysis"]["includeBathtub"] = true.into();
+        req["analysis"]["statisticalEye"] = serde_json::json!({
+            "targetBer": 1e-12,
+            "timePoints": 64,
+            "voltageResolution": 1e-3,
+            "contourBerLevels": [1e-3, 1e-6, 1e-9, 1e-12],
+            "postReceiverOutput": false,
+            "maxDistributionStates": 200000
+        });
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "b6_eye_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("b6_eye_run");
+
+        for name in [
+            "request.json",
+            "meta.json",
+            "arrays.npz",
+            "waveforms.csv",
+            "channel-impulse.csv",
+            "frequency-response.csv",
+            "cascade-nodes.csv",
+            "eye-metrics.csv",
+            "bathtub.csv",
+            "eye-contours.csv",
+            "report.html",
+            "channel-report.js",
+            "receipt.json",
+        ] {
+            assert!(dir.join(name).is_file(), "missing artifact: {name}");
+        }
+
+        // Verify eye-metrics.csv content
+        let eye_text = fs::read_to_string(dir.join("eye-metrics.csv")).unwrap();
+        assert!(eye_text.contains("eye_height_v"));
+        assert!(eye_text.contains("eye_width_ps"));
+        assert!(eye_text.contains("jitter_chnl_isi_s"));
+        assert!(eye_text.contains("jitter_chnl_dual_dirac_random_s"));
+
+        // Verify bathtub.csv content
+        let (bathtub_headers, bathtub_rows) = csv(dir.join("bathtub.csv"));
+        assert_eq!(bathtub_headers, vec!["time_s", "time_ui", "bathtub_ber"]);
+        assert!(!bathtub_rows.is_empty());
+        assert!(bathtub_rows.iter().all(|r| r.len() == 3));
+
+        // Verify eye-contours.csv content
+        let (contour_headers, contour_rows) = csv(dir.join("eye-contours.csv"));
+        assert_eq!(contour_headers, vec!["contour_index", "x_ui", "y_v"]);
+        assert!(!contour_rows.is_empty());
+
+        // Verify report.html has eye navigation, summary values, and bathtub section
+        let html = fs::read_to_string(dir.join("report.html")).unwrap();
+        assert!(html.contains("Eye metrics CSV"));
+        assert!(html.contains("Bathtub CSV"));
+        assert!(html.contains("Eye contours CSV"));
+        assert!(html.contains("Eye height"));
+        assert!(html.contains("Eye width"));
+        assert!(html.contains("data-view=\"bathtub\""));
+        assert!(html.contains("BER Bathtub curve"));
+
+        // Verify receipt
+        let receipt: Value = serde_json::from_slice(&fs::read(dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
+        assert!(receipt["artifacts"]["eye-metrics.csv"].is_object());
+        assert!(receipt["artifacts"]["bathtub.csv"].is_object());
+        assert!(receipt["artifacts"]["eye-contours.csv"].is_object());
+    }
 }

@@ -301,6 +301,98 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
             )?;
         }
     }
+    // Export eye and jitter metrics if present
+    let has_eye_or_jitter = report
+        .output
+        .metrics
+        .keys()
+        .any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_"));
+    if has_eye_or_jitter {
+        let path = output.join("eye-metrics.csv");
+        let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
+        writer.write_all(b"metric,value,unit\n")?;
+        let mut keys = report
+            .output
+            .metrics
+            .keys()
+            .filter(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_"))
+            .cloned()
+            .collect::<Vec<_>>();
+        keys.sort();
+        for k in keys {
+            let val = report.output.metrics.get(&k).copied().unwrap_or(0.0);
+            let unit = if k.ends_with("_v") {
+                "V"
+            } else if k.ends_with("_ps") {
+                "ps"
+            } else if k.ends_with("_s") {
+                "s"
+            } else if k.ends_with("_count") {
+                "count"
+            } else {
+                ""
+            };
+            writeln!(writer, "{k},{val},{unit}").map_err(|_| Failure::Io)?;
+        }
+        writer.flush()?;
+        writer.get_ref().sync_all()?;
+    }
+
+    // Export bathtub curve if present
+    let bathtub_array = report
+        .output
+        .arrays
+        .get("bathtub_chnl_ber")
+        .or_else(|| report.output.arrays.get("bathtub_ber"))
+        .or_else(|| report.output.arrays.get("bathtub_dfe_ber"));
+    let bin_centers = report
+        .output
+        .arrays
+        .get("jitter_chnl_bin_centers_s")
+        .or_else(|| report.output.arrays.get("jitter_bin_centers_s"))
+        .or_else(|| report.output.arrays.get("jitter_dfe_bin_centers_s"));
+
+    let bathtub_info = if let (Some(ber), Some(centers)) = (bathtub_array, bin_centers) {
+        if !ber.is_empty() && ber.len() == centers.len() {
+            let path = output.join("bathtub.csv");
+            let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
+            writer.write_all(b"time_s,time_ui,bathtub_ber\n")?;
+            let data_rate = report.input.timebase.data_rate.0;
+            for (&t, &b) in centers.iter().zip(ber) {
+                let ui = t * data_rate;
+                writeln!(writer, "{t},{ui},{b}").map_err(|_| Failure::Io)?;
+            }
+            writer.flush()?;
+            writer.get_ref().sync_all()?;
+            Some((centers.as_slice(), ber.as_slice()))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Export statistical eye contours if present
+    let has_eye_contours = report.output.arrays.contains_key("eye_contour_0_x_ui");
+    if has_eye_contours {
+        let path = output.join("eye-contours.csv");
+        let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
+        writer.write_all(b"contour_index,x_ui,y_v\n")?;
+        let count = report.output.metrics.get("eye_contour_count").copied().unwrap_or(0.0) as usize;
+        for c_idx in 0..count {
+            if let (Some(x_vals), Some(y_vals)) = (
+                report.output.arrays.get(&format!("eye_contour_{c_idx}_x_ui")),
+                report.output.arrays.get(&format!("eye_contour_{c_idx}_y_v")),
+            ) {
+                for (&x, &y) in x_vals.iter().zip(y_vals) {
+                    writeln!(writer, "{c_idx},{x},{y}").map_err(|_| Failure::Io)?;
+                }
+            }
+        }
+        writer.flush()?;
+        writer.get_ref().sync_all()?;
+    }
+
     let preview_samples = time
         .len()
         .min(32 * report.input.timebase.samples_per_ui as usize)
@@ -311,6 +403,7 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
         &waveforms,
         &impulse_time,
         impulse,
+        bathtub_info,
         preview_samples,
     );
     write_report(
@@ -320,6 +413,7 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
         &waveforms,
         &impulse_time,
         impulse,
+        bathtub_info,
     )?;
     write_new(&output.join("channel-report.js"), REPORT_SCRIPT.as_bytes())?;
 
@@ -338,6 +432,15 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
         if output.join("cascade-nodes.csv").is_file() {
             artifact_names.push("cascade-nodes.csv");
         }
+    }
+    if output.join("eye-metrics.csv").is_file() {
+        artifact_names.push("eye-metrics.csv");
+    }
+    if output.join("bathtub.csv").is_file() {
+        artifact_names.push("bathtub.csv");
+    }
+    if output.join("eye-contours.csv").is_file() {
+        artifact_names.push("eye-contours.csv");
     }
     for name in artifact_names {
         artifacts.insert(name.into(), file_identity(&output.join(name))?);
@@ -421,6 +524,7 @@ fn write_report(
     waves: &[&[f64]],
     impulse_time: &[f64],
     impulse: &[f64],
+    bathtub_info: Option<(&[f64], &[f64])>,
 ) -> Result<(), Failure> {
     let mut writer = LimitedWriter {
         inner: BufWriter::new(OpenOptions::new().write(true).create_new(true).open(path)?),
@@ -430,13 +534,16 @@ fn write_report(
     // Stream borrowed numeric arrays, rather than cloning the full simulation
     // into a JSON Value or a second large HTML string. No caller text enters JS.
     writer.write_all(b"<script type=\"application/json\" id=\"channel-data\">{")?;
-    for (index, (name, axis, columns)) in [
+    let impulse_cols = [impulse];
+    let b_ber_col = bathtub_info.map(|(_, b)| [b]);
+    let mut datasets: Vec<(&str, &[f64], &[&[f64]])> = vec![
         ("waveform", time, waves),
-        ("impulse", impulse_time, &[impulse][..]),
-    ]
-    .into_iter()
-    .enumerate()
-    {
+        ("impulse", impulse_time, &impulse_cols),
+    ];
+    if let (Some((b_time, _)), Some(b_cols)) = (bathtub_info, &b_ber_col) {
+        datasets.push(("bathtub", b_time, b_cols));
+    }
+    for (index, (name, axis, columns)) in datasets.into_iter().enumerate() {
         if index != 0 {
             writer.write_all(b",")?;
         }
@@ -513,6 +620,7 @@ fn render_report(
     waves: &[&[f64]],
     impulse_time: &[f64],
     impulse: &[f64],
+    bathtub_info: Option<(&[f64], &[f64])>,
     preview: usize,
 ) -> String {
     let mut html = String::from(
@@ -544,8 +652,30 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
     if report.diagnostics["physical_channel"].is_object() {
         html.push_str("<p>Physical load voltage / absolute impulse origin / finite-band kernel</p><p class=\"muted\">Continuous-time causality and ADS finite-edge Transient parity are not certified.</p><a href=\"frequency-response.csv\">Physical frequency response CSV</a>");
     }
-    html.push_str(r#"<nav aria-label="Artifacts"><a href="waveforms.csv">Waveforms CSV</a><a href="channel-impulse.csv">Impulse CSV</a><a href="arrays.npz">Native arrays</a><a href="meta.json">Native metadata</a><a href="request.json">Request</a><a href="receipt.json">Run receipt</a></nav></header><main>"#);
-    html.push_str(&format!("<dl class=\"summary\"><div><dt>Samples</dt><dd>{}</dd></div><div><dt>Sample interval</dt><dd>{:.6} ps</dd></div><div><dt>Data rate</dt><dd>{:.3} GHz</dd></div><div><dt>Native arrays</dt><dd>{}</dd></div></dl>", time.len(), report.input.timebase.sample_interval.0 * 1e12, report.input.timebase.data_rate.0 * 1e-9, report.output.arrays.len()));
+    html.push_str(r#"<nav aria-label="Artifacts"><a href="waveforms.csv">Waveforms CSV</a><a href="channel-impulse.csv">Impulse CSV</a><a href="arrays.npz">Native arrays</a><a href="meta.json">Native metadata</a><a href="request.json">Request</a><a href="receipt.json">Run receipt</a>"#);
+    if report.output.metrics.keys().any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_")) {
+        html.push_str("<a href=\"eye-metrics.csv\">Eye metrics CSV</a>");
+    }
+    if bathtub_info.is_some() {
+        html.push_str("<a href=\"bathtub.csv\">Bathtub CSV</a>");
+    }
+    if report.output.arrays.contains_key("eye_contour_0_x_ui") {
+        html.push_str("<a href=\"eye-contours.csv\">Eye contours CSV</a>");
+    }
+    html.push_str("</nav></header><main>");
+    html.push_str(&format!("<dl class=\"summary\"><div><dt>Samples</dt><dd>{}</dd></div><div><dt>Sample interval</dt><dd>{:.6} ps</dd></div><div><dt>Data rate</dt><dd>{:.3} GHz</dd></div><div><dt>Native arrays</dt><dd>{}</dd></div>", time.len(), report.input.timebase.sample_interval.0 * 1e12, report.input.timebase.data_rate.0 * 1e-9, report.output.arrays.len()));
+    if let Some(&height) = report.output.metrics.get("eye_height_v") {
+        html.push_str(&format!("<div><dt>Eye height</dt><dd>{:.2} mV</dd></div>", height * 1e3));
+    }
+    if let Some(&width) = report.output.metrics.get("eye_width_ps") {
+        html.push_str(&format!("<div><dt>Eye width</dt><dd>{:.2} ps</dd></div>", width));
+    }
+    if let Some(&rj) = report.output.metrics.get("jitter_chnl_dual_dirac_random_s").or_else(|| report.output.metrics.get("jitter_dual_dirac_random_s")) {
+        html.push_str(&format!("<div><dt>Random jitter (RJ)</dt><dd>{:.3} ps</dd></div>", rj * 1e12));
+    }
+    if let Some(&dj) = report.output.metrics.get("jitter_chnl_dual_dirac_periodic_s").or_else(|| report.output.metrics.get("jitter_dual_dirac_periodic_s")) {
+        html.push_str(&format!("<div><dt>Deterministic jitter (DJ)</dt><dd>{:.3} ps</dd></div>", dj * 1e12));
+    }
     html.push_str(&format!("<section data-view=\"waveform\" aria-label=\"Stage waveforms\"><h2>Stage waveforms</h2><output class=\"range-status\">Samples 0..{} of {}</output>", preview.saturating_sub(1), time.len()));
     html.push_str(&report_controls("waveform", time.len(), preview));
     let preview_waves = waves
@@ -567,7 +697,24 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
         &[&impulse[..impulse_preview]],
         "V/V",
     ));
-    html.push_str("</section><details><summary>Effective request</summary><pre>");
+    html.push_str("</section>");
+    if let Some((b_time, b_ber)) = bathtub_info {
+        let b_preview = b_time.len().min(4096);
+        html.push_str(&format!(
+            "<section data-view=\"bathtub\" aria-label=\"BER Bathtub curve\"><h2>BER Bathtub curve</h2><output class=\"range-status\">Samples 0..{} of {}</output>",
+            b_preview.saturating_sub(1),
+            b_time.len()
+        ));
+        html.push_str(&report_controls("bathtub", b_time.len(), b_preview));
+        html.push_str(&plot(
+            &b_time[..b_preview],
+            &["bathtub_ber"],
+            &[&b_ber[..b_preview]],
+            "BER",
+        ));
+        html.push_str("</section>");
+    }
+    html.push_str("<details><summary>Effective request</summary><pre>");
     html.push_str(&escape(
         &serde_json::to_string_pretty(&report.metadata["effective_input"]).expect("finite request"),
     ));

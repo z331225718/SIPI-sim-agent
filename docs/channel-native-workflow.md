@@ -139,6 +139,7 @@ Build Tools。使用[微软官方运行库说明与下载](https://learn.microso
 - **无损与有界诊断**：使用数值稳定的二次型特征值分解评估离散采样最大奇异值（$\sigma_{max} \le 1$）与互易性差异（$|S_{12} - S_{21}|$），明确区分诊断与验收门。
 - **负载传递函数与一次最终 FD-to-TD**：计入源/负载复阻抗端接（含 $R_S, C_S, R_L, C_L$ 寄生）与多重反射，计算全网格 $H(f) = V_{load}/V_{half\_open}$，仅在最终执行一次两边对称实 IFFT，严格保留 $t=0$ 原点，不裁切前缀或峰值对齐。
 - **产物与收据**：收据声明 `channel_policy = "touchstone-network-v1"`，`meta.json` 采用 `sipi.channel.touchstone-result.v1` schema，`acceptance` 保持 false；全量导出 `frequency-response.csv`（全部 4 个 S 参数与加载/加窗 $H(f)$）、多级级联节点 `cascade-nodes.csv`、`waveforms.csv`、`channel-impulse.csv`、`report.html` 与 `channel-report.js`。
+- **B6 噪声/抖动与眼图统计闭环**：当请求启用 `analysis` 统计选项时，自动输出 `eye-metrics.csv`（眼高、眼宽、电平及 ISI/DCD/PJ/RJ/DJ 抖动分解）、`bathtub.csv`（采样相位维度的 BER 浴盆曲线）与 `eye-contours.csv`（目标 BER 下的 2D 轮廓），并在离线 HTML 报告与 `channel-report.js` 中新增 BER Bathtub 曲线互动浏览视图。
 
 ## 验证与边界
 

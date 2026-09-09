@@ -6,6 +6,7 @@
   const names = {
     waveform: ["tx_waveform_v", "channel_output_v", "rx_input_v", "rx_output_v"],
     impulse: ["channel_impulse_v_per_v"],
+    bathtub: ["bathtub_ber"],
   };
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
   const integer = (input, fallback, low, high) => {
@@ -31,7 +32,7 @@
     section.append(table);
     const svg = section.querySelector("svg");
     const visible = columns.map(() => true);
-    const unit = kind === "waveform" ? "V" : "V/V";
+    const unit = kind === "waveform" ? "V" : kind === "impulse" ? "V/V" : "BER";
     let start = 0;
     let count = Number(controls.count.value);
     let cursor = 0;
@@ -107,7 +108,7 @@
           ((first + fraction * (last - first)) * 1e12).toPrecision(5)));
       }
       svg.append(svgNode("text", { x: 8, y: 15, "font-size": 12 }, unit));
-      svg.append(svgNode("text", { x: (left + right) / 2, y: 295, "text-anchor": "middle", "font-size": 12 }, "Time (ps)"));
+      svg.append(svgNode("text", { x: (left + right) / 2, y: 295, "text-anchor": "middle", "font-size": 12 }, kind === "bathtub" ? "Sampling phase offset (ps)" : "Time (ps)"));
       columns.forEach((values, index) => {
         if (!visible[index]) return;
         const points = [];
