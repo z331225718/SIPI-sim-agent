@@ -689,11 +689,17 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     init = commands.add_parser("init")
     init.add_argument("plan", type=Path)
-    init.add_argument("--channel-policy", choices=["pb-02-compat", "physical-voltage-v1"], default="pb-02-compat")
+    init.add_argument("--channel-policy", choices=["pb-02-compat", "physical-voltage-v1", "touchstone-network-v1"], default="pb-02-compat")
     execute = commands.add_parser("run")
     execute.add_argument("plan", type=Path)
     execute.add_argument("--output-dir", type=Path, required=True)
-    execute.add_argument("--sipi", type=Path, required=True)
+    default_sipi = ROOT / "target/release/sipi.exe"
+    if not default_sipi.is_file():
+        default_sipi = ROOT / "target/x86_64-pc-windows-msvc/release/sipi.exe"
+    if default_sipi.is_file():
+        execute.add_argument("--sipi", type=Path, default=default_sipi)
+    else:
+        execute.add_argument("--sipi", type=Path, required=True)
     execute.add_argument("--ads-root", type=Path, required=True)
     execute.add_argument("--timeout", type=int, default=180)
     execute.add_argument("--case", action="append", default=[])
