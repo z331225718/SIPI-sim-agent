@@ -479,3 +479,12 @@ SIPI 的物理启动/带宽合同、Touchstone/级联、EQ/CDR、B6-B7 和可用
 更新后的校验器已复核旧 v3 全七例 14 次运行，原 TD/kernel 失败保持失败；新报告的单例
 ADS 双重复 smoke 仅检查工件/入口连接。共同物理启动合同、Touchstone/级联、完整 EQ/CDR
 及 B6-B7 均继续开放，整体目标仍未完成。
+
+## 本地 Release `sipi.exe` 候选绑定与实跑复核
+
+2026-09-09。完成多通道串扰、实测 TX 脉冲、接收机均衡网格扫描与 IBIS-AMI 运行时接入后，在 release 模式下重新编译本仓库实际 `sipi.exe`。
+运行 `tools/run_channel_native_ads_bench.py` 驱动 Keysight ADS 2026 Update1 求解器（`hpeesofsim.exe`）执行 6 例物理/解析案例（双重复，共 12 次完整 ADS 运行）：
+- 结果工件保存在 `results/channel-native-ads-candidate-20260909/`
+- 通过 `tools/verify_channel_native_ads_bench.py` 执行 Keysight 原生数据集 SDK 逐点复核，输出 `results/channel-native-ads-candidate-20260909-verification.json`，12 次运行全部完成并通过完整性校验。
+- `matched-native-grid` 时域 1024 个配对点全过，最大误差仅 $4.700023 \times 10^{-8}\,\text{V}$，频域负载电压最大误差 $5.013034 \times 10^{-11}\,\text{V/V}$。
+- 其余电容与 legacy 网格案例严格记录由于采样裁切和连续时间卷积差异引起的点对点残差，保持 `acceptance: false`，不因部分通过而伪造全线通过。
