@@ -26,7 +26,7 @@ class SipiSpDdrTranBenchmarkTests(unittest.TestCase):
 
     def test_result_schema_and_case_count(self):
         self.assertEqual(self.result["schema"], "sipi.benchmarks.sp-ddr-tran.v1")
-        self.assertEqual(len(self.result["cases"]), 8)
+        self.assertEqual(len(self.result["cases"]), 9)
         self.assertTrue(len(self.result["sipi_executable_sha256"]) >= 16)
 
     def test_artifacts_exist_and_hashes_match(self):
@@ -56,8 +56,8 @@ class SipiSpDdrTranBenchmarkTests(unittest.TestCase):
     def test_case_1_lossy_microstrip(self):
         c1 = next(c for c in self.result["cases"] if c["name"] == "Broadband Lossy Microstrip")
         self.assertTrue(c1["passivity_passed"])
-        self.assertTrue(c1["reciprocity_passed"])
-        self.assertGreater(c1["max_il_db"], 5.0)
+        self.assertTrue(c1["overlay_verified"])
+        self.assertGreater(c1["ads_il_at_20ghz_db"], 5.0)
 
     def test_case_2_resonant_stub_notch(self):
         c2 = next(c for c in self.result["cases"] if c["name"] == "Via Stub Resonant Notch")
@@ -84,6 +84,14 @@ class SipiSpDdrTranBenchmarkTests(unittest.TestCase):
         c8 = next(c for c in self.result["cases"] if c["name"] == "Core Rail Dynamic Current Droop")
         self.assertTrue(c8["passed"])
         self.assertLessEqual(c8["max_droop_mv"], c8["allowed_droop_mv"])
+
+    def test_case_9_statistical_eye(self):
+        c9 = next(c for c in self.result["cases"] if c["name"] == "Statistical Eye Diagram & Bathtub")
+        self.assertTrue(c9["passed"])
+        self.assertTrue(c9["overlay_verified"])
+        self.assertGreater(c9["eye_width_at_1e12_ps"], 15.0)
+        self.assertGreater(c9["eye_height_at_1e12_mv"], 100.0)
+        self.assertLess(c9["max_residual_error_log_ber"], 1e-6)
 
 
 if __name__ == "__main__":

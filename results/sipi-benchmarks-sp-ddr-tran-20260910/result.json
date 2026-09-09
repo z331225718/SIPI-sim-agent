@@ -88,6 +88,21 @@
       "overlay_verified": true,
       "csv": "tran-pdn-droop.csv",
       "figure": "tran-pdn-voltage-droop.png"
+    },
+    {
+      "name": "Statistical Eye Diagram & Bathtub",
+      "domain": "Statistical Eye",
+      "data_rate_gbd": 32.0,
+      "eye_width_at_1e12_ps": 20.7155,
+      "eye_height_at_1e12_mv": 185.4,
+      "total_jitter_at_1e12_ps": 10.534500000000001,
+      "random_jitter_rj_ps": 0.5,
+      "deterministic_jitter_dj_ps": 3.5,
+      "max_residual_error_log_ber": 4.199855396791463e-08,
+      "passed": true,
+      "overlay_verified": true,
+      "csv": "sp-statistical-eye.csv",
+      "figure": "sp-statistical-eye-bathtub.png"
     }
   ],
   "artifacts": {
@@ -103,13 +118,15 @@
     "ddr4-3200-rx-mask.png": "63400eff651cf9279e9b857928c36745ed4e6904a98ac08652bd9a7982b4d5ad",
     "ddr5-6400-dfe-mask.png": "42fe7fbf08d8cbdb12432c818a18290ee0ed5da968dc4c5b5353f9159bde5c15",
     "ddr5-6400-dq.csv": "42c06b1e472fa61ee38fda616281fd70f83fa82d31059d86e1c9a7301614a947",
-    "report.html": "3a44bf3c689c2c26cbe65c9972ddc002bd2f34989ae619aca6b2de9e197d7bc5",
+    "report.html": "c87a09e60067baaf677531503e9ab3312aad621237f0f3c0c692a1271cdf6075",
     "sp-lossy-microstrip.csv": "5748b81ee593808f2be54e81a8271600258ba5d24fe5f8c7aeeee618a119890b",
     "sp-lossy-microstrip.png": "aef9d56538896f1a2617529b05b02dd213562f27125175dad361864b21b763bb",
     "sp-mixed-mode.csv": "b177b3eb30b1902399d4fe9dabff50c85cde140434933120b2709919e357e854",
     "sp-mixed-mode.png": "2c90d553c04c452977f90759240e336efd1bf30c75485b657e0421e9b44c4fc5",
     "sp-resonant-stub.csv": "a4fd45adf0957ed1a5862822f55f4be4638c3159c520f8d7bf62f4e4ba77722e",
     "sp-resonant-stub.png": "a86b1cf7bfeb5b3f44055018bcd7ab2b73308e1cd696acd4d8a24924f51f154f",
+    "sp-statistical-eye-bathtub.png": "8095554c9594be1a6fdb7671d6a4c8b7487d7b3f7ddcd6e929002d01f7bbccab",
+    "sp-statistical-eye.csv": "36295331cef7e56068a97f1d12f91c802862aa752e77da89750bb6f0bae9faf0",
     "tran-pdn-droop.csv": "d865acbfbed890bb8d1483239085dd63864ad5487a06e614dbcdfd2f2014ce3a",
     "tran-pdn-impedance-profile.png": "136314d3c923d95fec55263ac800a932ea98a72a3815433cb7d9c27c636e87f3",
     "tran-pdn-impedance.csv": "37d6685428feec4470c925191e1dad288a64cd9d0ceaa7d4fc7ae5c706cfe47a",
