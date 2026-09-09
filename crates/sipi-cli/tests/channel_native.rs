@@ -1148,4 +1148,51 @@ mod native {
         assert_eq!(receipt["status"], "complete");
         assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
     }
+
+    #[test]
+    fn channel_sweep_runs_and_exports_ranked_csv_and_optimal_metrics() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+        req["timebase"]["nbits"] = 256.into();
+        req["sweep"] = serde_json::json!({
+            "ctlePeakingGainDb": [0.0, 3.0, 6.0],
+            "txFfePrecursor": [-0.1, 0.0],
+            "txFfePostcursor": [-0.1, 0.0],
+            "rankingMetric": "eye_height_worst_v"
+        });
+
+        let req_file = root.0.join("sweep_req.json");
+        fs::write(&req_file, serde_json::to_vec_pretty(&req).unwrap()).unwrap();
+        let out_dir = root.0.join("sweep_run");
+
+        let output = cli(&[
+            "channel",
+            "sweep",
+            req_file.to_str().unwrap(),
+            "--output-dir",
+            out_dir.to_str().unwrap(),
+            "--channel-policy",
+            "touchstone-network-v1",
+        ]);
+        assert!(output.status.success(), "{output:?}");
+
+        // Verify sweep-results.csv
+        let csv_text = fs::read_to_string(out_dir.join("sweep-results.csv")).unwrap();
+        assert!(csv_text.contains("rank,candidate_id,ctle_boost_db"));
+        assert!(csv_text.contains("valid"));
+
+        // Verify meta.json
+        let meta: Value = serde_json::from_slice(&fs::read(out_dir.join("meta.json")).unwrap()).unwrap();
+        assert_eq!(meta["schema"], "sipi.channel.sweep-result.v1");
+        assert_eq!(meta["totalCandidates"], 12);
+        assert_eq!(meta["validCandidates"], 12);
+        let opt_eh = meta["optimalEyeHeightV"].as_f64().unwrap();
+        assert!(opt_eh > 0.0, "optimal eye height must be strictly positive: {opt_eh}");
+
+        // Verify receipt
+        let receipt: Value = serde_json::from_slice(&fs::read(out_dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["command"], "channel sweep");
+        assert!(receipt["artifacts"]["sweep-results.csv"].is_object());
+    }
 }

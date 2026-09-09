@@ -996,6 +996,7 @@ fn strict_shape(value: &Value) -> Result<(), DirectRunError> {
             "limits",
             "externalModels",
             "legacyOptions",
+            "sweep",
         ],
     )?;
     strict_pattern(
@@ -1048,6 +1049,19 @@ fn strict_shape(value: &Value) -> Result<(), DirectRunError> {
                 &["kind", "capability"],
             )?;
         }
+    }
+    if let Some(value) = root.get("sweep").filter(|value| !value.is_null()) {
+        object_keys(
+            value,
+            "$.sweep",
+            &[
+                "ctlePeakingGainDb",
+                "txFfePrecursor",
+                "txFfePostcursor",
+                "maxNormalizedTapSum",
+                "rankingMetric",
+            ],
+        )?;
     }
     Ok(())
 }

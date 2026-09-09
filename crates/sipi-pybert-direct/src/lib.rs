@@ -18,6 +18,7 @@ mod legacy_runtime;
 mod legacy_sim;
 mod crosstalk;
 mod numpy_normal;
+mod eq_sweep;
 mod measured_tx;
 mod output;
 mod pam4_eye;
@@ -50,6 +51,10 @@ pub use crosstalk::{
 pub use decoder::{
     FecDecodeError, FecDecodeResult, FecEncoder, IsiDecodeConfig, IsiDecodeError, IsiDecodeResult,
     decode_fec, decode_isi,
+};
+pub use eq_sweep::{
+    EqCandidateResult, EqSweepConfigV1, EqSweepError, EqSweepReport, derive_main_cursor,
+    is_ffe_tap_combination_valid, rank_candidates, run_eq_sweep, sweep_results_to_csv,
 };
 pub use equalization::{
     CtleConfig, EqualizationError, apply_ffe, apply_ffe_to_response, ctle_frequency_response,
@@ -95,7 +100,7 @@ pub use pam4_eye::{
 pub use physical_channel::{PHYSICAL_CHANNEL_POLICY_V1, run_channel_physical_json};
 pub use touchstone_channel::{
     TOUCHSTONE_CHANNEL_POLICY_V1, TOUCHSTONE_RESULT_SCHEMA_V1,
-    run_channel_touchstone_network_json,
+    resolve_touchstone_channel_response, run_channel_touchstone_network_json,
 };
 pub use pipeline::{
     LinearDfeLinkConfig, LinearDfeLinkResult, LinearLinkError, LinearLinkResult,

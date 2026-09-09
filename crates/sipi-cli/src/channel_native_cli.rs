@@ -92,7 +92,9 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
                 "sipi channel init REQUEST.json --template TEMPLATE",
                 "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY",
                 "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy physical-voltage-v1",
-                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy touchstone-network-v1"
+                "sipi channel simulate REQUEST.json --output-dir NEW_DIRECTORY --channel-policy touchstone-network-v1",
+                "sipi channel sweep REQUEST.json --output-dir NEW_DIRECTORY",
+                "sipi channel sweep REQUEST.json --output-dir NEW_DIRECTORY --channel-policy touchstone-network-v1"
             ],
             "input_schema": "pybert.simulation.v1",
             "input_units": "SI; impulseResponseVoltsPerSecond is converted by the owning core",
@@ -144,6 +146,26 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, Fail
                 _ => return Err(Failure::Usage),
             };
             simulate(Path::new(request), Path::new(output), mode)?
+        }
+        ("sweep", [request, option, output])
+            if !request.starts_with('-')
+                && option == "--output-dir"
+                && !output.starts_with('-') =>
+        {
+            sweep(Path::new(request), Path::new(output), ChannelPolicyMode::Compat)?
+        }
+        ("sweep", [request, option, output, policy_option, policy])
+            if !request.starts_with('-')
+                && option == "--output-dir"
+                && !output.starts_with('-')
+                && policy_option == "--channel-policy" =>
+        {
+            let mode = match policy.as_str() {
+                PHYSICAL_CHANNEL_POLICY_V1 => ChannelPolicyMode::PhysicalVoltage,
+                TOUCHSTONE_CHANNEL_POLICY_V1 => ChannelPolicyMode::TouchstoneNetwork,
+                _ => return Err(Failure::Usage),
+            };
+            sweep(Path::new(request), Path::new(output), mode)?
         }
         _ => return Err(Failure::Usage),
     };
@@ -542,6 +564,79 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
     });
     let receipt_bytes = serde_json::to_vec_pretty(&receipt).map_err(|_| Failure::Io)?;
     write_new(&output.join("receipt.json"), &receipt_bytes)?;
+    Ok(receipt)
+}
+
+fn sweep(request: &Path, output: &Path, _mode: ChannelPolicyMode) -> Result<Value, Failure> {
+    let file = File::open(request)?;
+    if !file.metadata()?.is_file() {
+        return Err(Failure::InvalidInput);
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_REQUEST_BYTES + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_REQUEST_BYTES {
+        return Err(Failure::InvalidInput);
+    }
+
+    let input: SimulationInputV1 =
+        serde_json::from_slice(&bytes).map_err(|_| Failure::InvalidInput)?;
+    input.validate().map_err(|_| Failure::InvalidInput)?;
+
+    let raw: Value = serde_json::from_slice(&bytes).map_err(|_| Failure::InvalidInput)?;
+    let sweep_cfg: sipi_pybert_direct::EqSweepConfigV1 = raw
+        .get("sweep")
+        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .unwrap_or_default();
+    let base_dir = request.parent().unwrap_or_else(|| Path::new("."));
+    let mut sim_input = input.clone();
+    if matches!(_mode, ChannelPolicyMode::TouchstoneNetwork) || matches!(input.channel, sipi_pybert_direct::ChannelInputV1::Touchstone(_)) {
+        let resp = sipi_pybert_direct::resolve_touchstone_channel_response(&bytes, base_dir)
+            .map_err(|_| Failure::InvalidInput)?;
+        sim_input.channel = sipi_pybert_direct::ChannelInputV1::ImpulseResponse(resp);
+    }
+
+    let report = sipi_pybert_direct::run_eq_sweep(&sim_input, &sweep_cfg)
+        .map_err(|_| Failure::InvalidInput)?;
+    if let Some(parent) = output.parent().filter(|path| !path.as_os_str().is_empty()) {
+        fs::create_dir_all(parent)?;
+    }
+    fs::create_dir(output)?;
+    write_new(&output.join("request.json"), &bytes)?;
+
+    let csv_content = sipi_pybert_direct::sweep_results_to_csv(&report.candidates);
+    write_new(&output.join("sweep-results.csv"), csv_content.as_bytes())?;
+
+    let meta = json!({
+        "schema": "sipi.channel.sweep-result.v1",
+        "totalCandidates": report.total_candidates,
+        "validCandidates": report.valid_candidates,
+        "optimalCandidateId": report.optimal_candidate_id,
+        "optimalCtleBoostDb": report.optimal_ctle_boost_db,
+        "optimalTxFfeWeights": report.optimal_tx_ffe_weights,
+        "optimalEyeHeightV": report.optimal_eye_height_v,
+        "optimalEyeWidthPs": report.optimal_eye_width_ps,
+    });
+    write_new(&output.join("meta.json"), &serde_json::to_vec_pretty(&meta).map_err(|_| Failure::Io)?)?;
+
+    let receipt = json!({
+        "schema": RECEIPT_SCHEMA,
+        "command": "channel sweep",
+        "status": "complete",
+        "acceptance": false,
+        "total_candidates": report.total_candidates,
+        "valid_candidates": report.valid_candidates,
+        "optimal_ctle_boost_db": report.optimal_ctle_boost_db,
+        "optimal_tx_ffe_weights": report.optimal_tx_ffe_weights,
+        "optimal_eye_height_v": report.optimal_eye_height_v,
+        "optimal_eye_width_ps": report.optimal_eye_width_ps,
+        "artifacts": {
+            "request.json": file_identity(&output.join("request.json"))?,
+            "sweep-results.csv": file_identity(&output.join("sweep-results.csv"))?,
+            "meta.json": file_identity(&output.join("meta.json"))?
+        }
+    });
+    write_new(&output.join("receipt.json"), &serde_json::to_vec_pretty(&receipt).map_err(|_| Failure::Io)?)?;
+
     Ok(receipt)
 }
 

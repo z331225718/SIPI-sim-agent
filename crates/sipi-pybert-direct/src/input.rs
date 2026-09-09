@@ -809,6 +809,8 @@ pub struct SimulationInputV1 {
     /// a typed field before this map can be removed in a future schema version.
     #[serde(default)]
     pub legacy_options: BTreeMap<String, serde_json::Value>,
+    #[serde(default)]
+    pub sweep: Option<crate::EqSweepConfigV1>,
 }
 
 impl SimulationInputV1 {

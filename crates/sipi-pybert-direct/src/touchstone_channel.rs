@@ -255,6 +255,143 @@ fn resolve_aggressor_channel(
     }
 }
 
+/// Resolve a Touchstone/cascade channel specification into a discrete impulse response ChannelResponseV1.
+pub fn resolve_touchstone_channel_response(
+    bytes: &[u8],
+    base_dir: &Path,
+) -> Result<ChannelResponseV1, DirectRunError> {
+    let input: SimulationInputV1 =
+        serde_json::from_slice(bytes).map_err(|error| DirectRunError::Json(error.to_string()))?;
+    input.validate().map_err(NativeSimulationError::from)?;
+
+    let raw: Value = serde_json::from_slice(bytes).map_err(|e| DirectRunError::Json(e.to_string()))?;
+    let channel_val = raw.get("channel").ok_or_else(|| invalid("missing channel object"))?;
+    let channel_inner = channel_val.get("value").unwrap_or(channel_val);
+
+    let config: TouchstoneNetworkChannelConfigV1 = serde_json::from_value(channel_inner.clone())
+        .map_err(|e| invalid(format!("invalid touchstone channel config: {e}")))?;
+
+    let dt = input.timebase.sample_interval.0;
+    if dt <= 0.0 {
+        return Err(invalid("sample interval must be positive"));
+    }
+
+    let bits = match &input.pattern {
+        PatternV1::Prbs { .. } => {
+            usize::try_from(input.timebase.nbits).map_err(|_| resource_limit())?
+        }
+        PatternV1::ExplicitBits { bits, .. } => {
+            if bits.is_empty() || bits.len() as u64 != input.timebase.nbits {
+                return Err(invalid("explicit bits must match the declared timebase"));
+            }
+            bits.len()
+        }
+    };
+    let encoded_bits = if input.rx.viterbi_enabled && input.rx.viterbi.as_ref().is_some_and(|v| v.fec) {
+        bits.checked_mul(2).ok_or_else(resource_limit)?
+    } else {
+        bits
+    };
+    let symbols = if matches!(input.modulation, ModulationV1::Pam4) {
+        encoded_bits / 2
+    } else {
+        encoded_bits
+    };
+    let sample_count = symbols
+        .checked_mul(input.timebase.samples_per_ui as usize)
+        .ok_or_else(resource_limit)?;
+
+    let ref_z = SipiOhms::try_new(config.reference_impedance)
+        .map_err(|_| invalid("reference impedance must be positive"))?;
+
+    let df = config.frequency_step_hz.unwrap_or(1.0 / (sample_count as f64 * dt));
+    let n_fft_float = 1.0 / (df * dt);
+    let n_fft = n_fft_float.round() as usize;
+    if (n_fft_float - n_fft as f64).abs() > 1e-6 || n_fft < 2 || n_fft % 2 != 0 {
+        return Err(invalid("frequency step and dt must yield an even integer FFT length"));
+    }
+    let last_bin = match config.frequency_max_hz {
+        Some(max_f) => {
+            let bin = (max_f / df).round() as usize;
+            bin.min(n_fft / 2)
+        }
+        None => n_fft / 2,
+    };
+    if last_bin == 0 {
+        return Err(invalid("maximum frequency must be greater than zero"));
+    }
+
+    let simulation_grid = (0..=last_bin)
+        .map(|i| SipiHertz::try_new(i as f64 * df).unwrap())
+        .collect::<Vec<_>>();
+
+    let stages = if let Some(stage_list) = &config.stages {
+        if stage_list.is_empty() {
+            return Err(invalid("stages list must not be empty"));
+        }
+        let mut built = Vec::with_capacity(stage_list.len());
+        for stage_spec in stage_list {
+            let net = resolve_stage_network(stage_spec, base_dir, ref_z, &simulation_grid)?;
+            built.push(net);
+        }
+        built
+    } else if config.file_path.is_some() || config.file_content.is_some() {
+        let single_spec = TouchstoneStageSpecV1 {
+            name: "primary_touchstone".into(),
+            kind: Some("touchstone_file".into()),
+            file_path: config.file_path.clone(),
+            file_content: config.file_content.clone(),
+            port_map: config.port_map.clone(),
+            delay_seconds: None,
+            line_impedance_ohms: None,
+            propagation_velocity_m_per_s: None,
+            length_m: None,
+        };
+        vec![resolve_stage_network(&single_spec, base_dir, ref_z, &simulation_grid)?]
+    } else {
+        return Err(invalid("must specify either 'stages', 'filePath', or 'fileContent'"));
+    };
+
+    let cascaded_network = cascade_network_stages("total_cascaded_network", &stages)
+        .map_err(|e| invalid(format!("cascading network stages failed: {e:?}")))?;
+
+    let source_term = TerminationParamsV1::new(
+        SipiOhms::try_new(config.source_impedance)
+            .map_err(|_| invalid("source impedance must be positive"))?,
+        config.source_capacitance_f,
+    )
+    .map_err(|e| invalid(format!("invalid source termination: {e:?}")))?;
+
+    let load_term = TerminationParamsV1::new(
+        SipiOhms::try_new(config.load_impedance)
+            .map_err(|_| invalid("load impedance must be positive"))?,
+        config.load_capacitance_f,
+    )
+    .map_err(|e| invalid(format!("invalid load termination: {e:?}")))?;
+
+    let loaded_transfer = calculate_loaded_voltage_transfer(&cascaded_network, source_term, load_term)
+        .map_err(|e| invalid(format!("calculating loaded transfer failed: {e:?}")))?;
+
+    let impulse_len = config.impulse_length.map(|l| SipiSeconds::try_new(l).unwrap());
+    let (kernel, _) = spectrum_to_discrete_kernel(
+        cascaded_network.frequencies(),
+        &loaded_transfer,
+        SipiSeconds::try_new(dt).unwrap(),
+        config.apply_raised_cosine_window,
+        impulse_len,
+    )
+    .map_err(|e| invalid(format!("spectrum to kernel IFFT failed: {e:?}")))?;
+
+    let impulse_v_per_s = kernel.iter().map(|&v| v / dt).collect::<Vec<_>>();
+
+    Ok(ChannelResponseV1 {
+        sample_interval: Seconds(dt),
+        impulse_response_volts_per_second: impulse_v_per_s,
+        source_impedance: Ohms(config.source_impedance),
+        load_impedance: Ohms(config.load_impedance),
+    })
+}
+
 pub fn run_channel_touchstone_network_json(
     bytes: &[u8],
     input_file: &Path,

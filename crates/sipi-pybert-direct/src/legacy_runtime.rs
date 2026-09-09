@@ -609,6 +609,7 @@ impl LegacyConfigProjectionV1 {
             limits: ResourceLimitsV1::default(),
             external_models: Vec::new(),
             legacy_options: BTreeMap::new(),
+            sweep: None,
         })
     }
 

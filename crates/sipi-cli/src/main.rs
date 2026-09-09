@@ -755,6 +755,17 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         unavailable_reason: None,
         nonclaim: "pb_02_candidate_in_process_no_parity_or_release",
     },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandDescriptorV1 {
+        id: "channel.sweep",
+        route: &["channel", "sweep"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.channel.native-argv.v1"),
+        response_schema: Some(channel_native_cli::RECEIPT_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "pb_02_candidate_eq_sweep_no_parity_or_release",
+    },
     CommandDescriptorV1 {
         id: "ami.run",
         route: &["ami", "run"],
@@ -1300,6 +1311,16 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
     #[cfg(feature = "pybert-direct-integration")]
     CommandProtocolProfileV1 {
         command_id: "channel.simulate",
+        example_id: None,
+        required_options: &["--output-dir"],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_path_free_candidate_receipt",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "channel.sweep",
         example_id: None,
         required_options: &["--output-dir"],
         caller_bindings: &[],
@@ -3766,7 +3787,7 @@ fn command_protocol_profiles_are_valid(
 
 fn available_route_has_handler(route: &[&str]) -> bool {
     #[cfg(feature = "pybert-direct-integration")]
-    if matches!(route, ["channel", "help" | "init" | "simulate"]) {
+    if matches!(route, ["channel", "help" | "init" | "simulate" | "sweep"]) {
         return true;
     }
     let has_handler = matches!(
@@ -4235,7 +4256,7 @@ impl CommandService {
             #[cfg(feature = "pybert-direct-integration")]
             [command, action, tail @ ..]
                 if command == "channel"
-                    && matches!(action.as_str(), "help" | "init" | "simulate") =>
+                    && matches!(action.as_str(), "help" | "init" | "simulate" | "sweep") =>
             {
                 match channel_native_cli::execute(action, tail) {
                     Ok(receipt) => success(receipt),
