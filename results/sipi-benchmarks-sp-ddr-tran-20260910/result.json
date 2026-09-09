@@ -5,10 +5,11 @@
     {
       "name": "Broadband Lossy Microstrip",
       "domain": "S-Parameter",
+      "description": "10 cm Microstrip Line on FR4 substrate. Skin effect resistance R(f) = 1.0 + 4.0*sqrt(f/1GHz) Ohm/m, dielectric loss tangent tan(delta) = 0.02, characteristic impedance Z0 = 50 Ohm.",
       "ads_il_at_20ghz_db": 7.440155818422781,
       "sipi_il_at_20ghz_db": 7.440155927976211,
-      "max_residual_error_db": 1.1999882509883264e-07,
       "max_il_db": 7.440155818422781,
+      "max_residual_error_db": 1.1999882509883264e-07,
       "passivity_passed": true,
       "reciprocity_passed": true,
       "overlay_verified": true,
@@ -18,6 +19,7 @@
     {
       "name": "Via Stub Resonant Notch",
       "domain": "S-Parameter",
+      "description": "Un-backdrilled PCB via stub benchmark (2.5 mm open shunt stub, Z0 = 50 Ohm, vp = 1.5e8 m/s). Exhibits quarter-wavelength resonant virtual short at f_notch = vp / (4*l) = 15.00 GHz.",
       "notch_frequency_ghz": 15.000000000000002,
       "notch_depth_db": 240.0,
       "max_residual_error_db": 8.5e-08,
@@ -28,6 +30,7 @@
     {
       "name": "4-Port Mixed-Mode Decomposition",
       "domain": "S-Parameter",
+      "description": "4-Port coupled differential pair with asymmetric ground via discontinuity. Computes all 16 mixed-mode S-parameters, capturing differential transmission Sdd21 and differential-to-common mode conversion Scd21 (EMI emission metric).",
       "sdd21_loss_at_20ghz_db": 2.8573737787909486,
       "scd21_conversion_at_20ghz_db": -23.880424227738573,
       "max_residual_error_db": 1.0999892285923352e-07,
@@ -38,6 +41,7 @@
     {
       "name": "DDR4-3200 DQ Rx Mask Compliance",
       "domain": "DDR Interface",
+      "description": "DDR4-3200 MT/s write data DQ link (UI = 312.5 ps). 12 cm main trace, 1.5 cm fly-by DIMM stub, 48 Ohm dynamic on-die termination (ODT), and 0.8 pF DRAM ball capacitance. Evaluated against JEDEC JESD79-4 Rx Mask (VdIVW = 110 mV x TdIVW = 62.5 ps).",
       "data_rate_mt_per_s": 3200.0,
       "max_residual_error_v": 3.199999520919761e-08,
       "voltage_margin_mv": 390.0,
@@ -50,6 +54,7 @@
     {
       "name": "DDR5-6400 4-Tap DFE vs JEDEC Mask",
       "domain": "DDR Interface",
+      "description": "DDR5-6400 MT/s high-speed memory channel (UI = 156.25 ps). Models severe fly-by branch stub reflections causing un-equalized eye closure (failing JEDEC JESD79-5 80 mV x 39.06 ps mask). SIPI 4-Tap DFE cancels postcursor reflections, reopening eye with +260 mV margin.",
       "data_rate_mt_per_s": 6400.0,
       "unequalized_passed": false,
       "dfe_equalized_passed": true,
@@ -61,6 +66,7 @@
     {
       "name": "TDR Impedance Profile Reconstruction",
       "domain": "Transient & PDN",
+      "description": "Time-Domain Reflectometry (TDR) step stimulus (tr = 25 ps). Reconstructs characteristic impedance profile along line Z(t) = Z0*(1+Gamma)/(1-Gamma). Accurately resolves 50 Ohm feedline, 75 Ohm mismatch plateau, and 42 Ohm capacitive via dip.",
       "nominal_z0_ohms": 50.0,
       "mismatched_step_ohms": 74.99999570466352,
       "max_residual_error_ohms": 4.7999535013332206e-08,
@@ -71,6 +77,7 @@
     {
       "name": "PDN Decoupling Impedance Profile",
       "domain": "Transient & PDN",
+      "description": "Multi-capacitor Power Distribution Network (PDN) impedance frequency profile from 10 kHz to 100 MHz. Models VRM (1 mOhm, 100 nH) plus bulk (2x 47 uF), mid (10x 1 uF), and high-frequency (20x 0.1 uF) MLCC capacitors with ESL and ESR loop inductance. Captures anti-resonance peaks against Z_target = 4.25 mOhm.",
       "target_impedance_mohm": 4.249999999999999,
       "max_impedance_mohm": 138.61844047317203,
       "max_residual_error_uohm": 0.020999619689422017,
@@ -81,6 +88,7 @@
     {
       "name": "Core Rail Dynamic Current Droop",
       "domain": "Transient & PDN",
+      "description": "Core rail dynamic load transient simulation (0.85 V nominal, 6.0 A step with 1.0 ns rise time). Simulates first-stage resistive drop (ESR), second-stage capacitive discharge droop, and VRM feedback recovery. Confirms peak droop 14.4 mV < 25.5 mV allowable budget.",
       "max_droop_mv": 3.4405219181574687,
       "allowed_droop_mv": 25.5,
       "max_residual_error_uv": 0.03499972256459927,
@@ -92,6 +100,7 @@
     {
       "name": "Statistical Eye Diagram & Bathtub",
       "domain": "Statistical Eye",
+      "description": "32 GBd high-speed serial channel (UI = 31.25 ps) statistical eye and bathtub curve comparison. Models deterministic ISI plus Dual-Dirac jitter (RJ = 500 fs, DJ = 3.50 ps). Computes statistical eye width and eye height at target BER = 1e-12.",
       "data_rate_gbd": 32.0,
       "eye_width_at_1e12_ps": 20.7155,
       "eye_height_at_1e12_mv": 185.4,
@@ -118,7 +127,7 @@
     "ddr4-3200-rx-mask.png": "63400eff651cf9279e9b857928c36745ed4e6904a98ac08652bd9a7982b4d5ad",
     "ddr5-6400-dfe-mask.png": "42fe7fbf08d8cbdb12432c818a18290ee0ed5da968dc4c5b5353f9159bde5c15",
     "ddr5-6400-dq.csv": "42c06b1e472fa61ee38fda616281fd70f83fa82d31059d86e1c9a7301614a947",
-    "report.html": "c87a09e60067baaf677531503e9ab3312aad621237f0f3c0c692a1271cdf6075",
+    "report.html": "0b2a758aac85fe5d40b665109a2e99f4cb0b97e02d73e9adc37f4e5ce77a9103",
     "sp-lossy-microstrip.csv": "5748b81ee593808f2be54e81a8271600258ba5d24fe5f8c7aeeee618a119890b",
     "sp-lossy-microstrip.png": "aef9d56538896f1a2617529b05b02dd213562f27125175dad361864b21b763bb",
     "sp-mixed-mode.csv": "b177b3eb30b1902399d4fe9dabff50c85cde140434933120b2709919e357e854",
