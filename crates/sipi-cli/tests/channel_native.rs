@@ -979,4 +979,74 @@ mod native {
         assert!(receipt["artifacts"]["dfe-adaptation.csv"].is_object());
         assert!(receipt["artifacts"]["dfe-events.csv"].is_object());
     }
+
+    #[test]
+    fn touchstone_network_runs_pam4_modulation_with_three_eye_metrics() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+
+        // Configure PAM4 modulation with 512 bits (= 256 symbols)
+        req["modulation"] = "pam4".into();
+        req["timebase"]["nbits"] = 512.into();
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "pam4_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("pam4_run");
+
+        for name in [
+            "request.json",
+            "meta.json",
+            "arrays.npz",
+            "waveforms.csv",
+            "channel-impulse.csv",
+            "frequency-response.csv",
+            "cascade-nodes.csv",
+            "eye-metrics.csv",
+            "report.html",
+            "channel-report.js",
+            "receipt.json",
+        ] {
+            assert!(dir.join(name).is_file(), "missing artifact: {name}");
+        }
+
+        // Verify eye-metrics.csv contains PAM4 four levels, three thresholds, three eyes, and RLM
+        let eye_text = fs::read_to_string(dir.join("eye-metrics.csv")).unwrap();
+        assert!(eye_text.contains("pam4_level_0_v"));
+        assert!(eye_text.contains("pam4_level_1_v"));
+        assert!(eye_text.contains("pam4_level_2_v"));
+        assert!(eye_text.contains("pam4_level_3_v"));
+        assert!(eye_text.contains("pam4_threshold_lower_v"));
+        assert!(eye_text.contains("pam4_threshold_mid_v"));
+        assert!(eye_text.contains("pam4_threshold_upper_v"));
+        assert!(eye_text.contains("pam4_eye_height_lower_v"));
+        assert!(eye_text.contains("pam4_eye_height_mid_v"));
+        assert!(eye_text.contains("pam4_eye_height_upper_v"));
+        assert!(eye_text.contains("pam4_eye_height_worst_v"));
+        assert!(eye_text.contains("pam4_eye_width_worst_ps"));
+        assert!(eye_text.contains("pam4_rlm"));
+        assert!(eye_text.contains("pam4_symbol_count"));
+
+        // Verify meta.json metrics
+        let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
+        let metrics = &meta["backend_metadata"]["metrics"];
+        assert_eq!(metrics["pam4_symbol_count"], 256.0);
+        let rlm = metrics["pam4_rlm"].as_f64().unwrap();
+        assert!(rlm > 0.0 && rlm <= 1.0, "unexpected rlm: {rlm}");
+        let worst_eh = metrics["pam4_eye_height_worst_v"].as_f64().unwrap();
+        assert!(worst_eh > 0.0, "worst eye height must be positive for low-loss line: {worst_eh}");
+
+        // Verify report.html has PAM4 summary cards
+        let html = fs::read_to_string(dir.join("report.html")).unwrap();
+        assert!(html.contains("Modulation"));
+        assert!(html.contains("PAM4"));
+        assert!(html.contains("PAM4 RLM"));
+        assert!(html.contains("Worst eye height"));
+        assert!(html.contains("Worst eye width"));
+
+        // Verify receipt
+        let receipt: Value = serde_json::from_slice(&fs::read(dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
+        assert!(receipt["artifacts"]["eye-metrics.csv"].is_object());
+    }
 }

@@ -18,6 +18,7 @@ mod legacy_runtime;
 mod legacy_sim;
 mod numpy_normal;
 mod output;
+mod pam4_eye;
 mod pattern;
 mod physical_channel;
 mod touchstone_channel;
@@ -78,6 +79,9 @@ pub use legacy_sim::{
 };
 pub use output::{ArtifactRefV1, SimulationOutputV1};
 pub use pattern::{PatternError, SymbolModulation, generate_prbs_bits, modulate_bits};
+pub use pam4_eye::{
+    Pam4EyeError, Pam4EyeMetrics, Pam4Levels, Pam4Thresholds, calculate_pam4_eye_metrics,
+};
 pub use physical_channel::{PHYSICAL_CHANNEL_POLICY_V1, run_channel_physical_json};
 pub use touchstone_channel::{
     TOUCHSTONE_CHANNEL_POLICY_V1, TOUCHSTONE_RESULT_SCHEMA_V1,

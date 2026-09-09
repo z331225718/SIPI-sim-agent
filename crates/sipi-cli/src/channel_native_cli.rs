@@ -306,7 +306,7 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
         .output
         .metrics
         .keys()
-        .any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_"));
+        .any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_"));
     if has_eye_or_jitter {
         let path = output.join("eye-metrics.csv");
         let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
@@ -315,7 +315,7 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
             .output
             .metrics
             .keys()
-            .filter(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_"))
+            .filter(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_"))
             .cloned()
             .collect::<Vec<_>>();
         keys.sort();
@@ -715,7 +715,7 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
         html.push_str("<p>Physical load voltage / absolute impulse origin / finite-band kernel</p><p class=\"muted\">Continuous-time causality and ADS finite-edge Transient parity are not certified.</p><a href=\"frequency-response.csv\">Physical frequency response CSV</a>");
     }
     html.push_str(r#"<nav aria-label="Artifacts"><a href="waveforms.csv">Waveforms CSV</a><a href="channel-impulse.csv">Impulse CSV</a><a href="arrays.npz">Native arrays</a><a href="meta.json">Native metadata</a><a href="request.json">Request</a><a href="receipt.json">Run receipt</a>"#);
-    if report.output.metrics.keys().any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_")) {
+    if report.output.metrics.keys().any(|k| k.starts_with("eye_") || k.starts_with("jitter_") || k.starts_with("bathtub_") || k.starts_with("pam4_")) {
         html.push_str("<a href=\"eye-metrics.csv\">Eye metrics CSV</a>");
     }
     if bathtub_info.is_some() {
@@ -743,6 +743,19 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
     }
     if let Some(&dj) = report.output.metrics.get("jitter_chnl_dual_dirac_periodic_s").or_else(|| report.output.metrics.get("jitter_dual_dirac_periodic_s")) {
         html.push_str(&format!("<div><dt>Deterministic jitter (DJ)</dt><dd>{:.3} ps</dd></div>", dj * 1e12));
+    }
+    if let Some(&rlm) = report.output.metrics.get("pam4_rlm") {
+        html.push_str("<div><dt>Modulation</dt><dd>PAM4</dd></div>");
+        html.push_str(&format!("<div><dt>PAM4 RLM</dt><dd>{:.4}</dd></div>", rlm));
+        if let Some(&worst_h) = report.output.metrics.get("pam4_eye_height_worst_v") {
+            html.push_str(&format!("<div><dt>Worst eye height</dt><dd>{:.2} mV</dd></div>", worst_h * 1e3));
+        }
+        if let Some(&worst_w) = report.output.metrics.get("pam4_eye_width_worst_ps") {
+            html.push_str(&format!("<div><dt>Worst eye width</dt><dd>{:.2} ps</dd></div>", worst_w));
+        }
+        if let (Some(&ser), Some(&ber)) = (report.output.metrics.get("pam4_ser"), report.output.metrics.get("pam4_ber")) {
+            html.push_str(&format!("<div><dt>PAM4 SER / BER</dt><dd>{:.2e} / {:.2e}</dd></div>", ser, ber));
+        }
     }
     html.push_str(&format!("<section data-view=\"waveform\" aria-label=\"Stage waveforms\"><h2>Stage waveforms</h2><output class=\"range-status\">Samples 0..{} of {}</output>", preview.saturating_sub(1), time.len()));
     html.push_str(&report_controls("waveform", time.len(), preview));

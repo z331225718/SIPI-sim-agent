@@ -21,7 +21,7 @@ use crate::{
     BathtubError, BerError, CdrConfig, ChannelError, ChannelInputV1, ContractError, CrossingError,
     CtleConfig, DfeConfig, DfeModulation, DfeRunError, DfeRunOptions, EngineCapabilitiesV1,
     EqualizationError, FecDecodeError, FecEncoder, IsiDecodeConfig, IsiDecodeError,
-    LinearLinkError, MetallicLineChannelV1, MetallicLineConfig, ModulationV1, PatternError,
+    LinearLinkError, MetallicLineChannelV1, MetallicLineConfig, ModulationV1, Pam4EyeError, PatternError,
     PatternV1, PeriodicNoiseV1, RunEventV1, RunStageV1, SIMULATION_SCHEMA_V1, SignalError,
     SimulationInputV1, SimulationOutputV1, StatisticalEyeError, StatisticalEyeInputV1,
     SymbolModulation, TerminationConfig, assemble_tie_track, calculate_ber,
@@ -95,6 +95,8 @@ pub enum NativeSimulationError {
     Crossing(#[from] CrossingError),
     #[error(transparent)]
     Bathtub(#[from] BathtubError),
+    #[error(transparent)]
+    Pam4Eye(#[from] Pam4EyeError),
 }
 
 /// Thread-safe cancellation handle owned by the host adapter.
@@ -954,6 +956,44 @@ fn simulate_native_v1_inner(
             arrays.insert(format!("eye_contour_{index}_y_v"), contour.y_v.clone());
         }
         stages.push(RunStageV1::StatisticalEye);
+    }
+    if matches!(input.modulation, ModulationV1::Pam4) {
+        let pam4_waveform = dfe_result
+            .as_ref()
+            .map_or(linear.rx_output.as_slice(), |dfe| dfe.dfe_out.as_slice());
+        let rx_bits = dfe_result.as_ref().map(|dfe| dfe.bits.as_slice());
+        let pam4_eye = crate::pam4_eye::calculate_pam4_eye_metrics(
+            pam4_waveform,
+            samples_per_ui,
+            input.timebase.sample_interval.0,
+            &bits,
+            rx_bits,
+        )?;
+        metrics.extend([
+            ("pam4_level_0_v".into(), pam4_eye.levels.v0),
+            ("pam4_level_1_v".into(), pam4_eye.levels.v1),
+            ("pam4_level_2_v".into(), pam4_eye.levels.v2),
+            ("pam4_level_3_v".into(), pam4_eye.levels.v3),
+            ("pam4_threshold_lower_v".into(), pam4_eye.thresholds.lower),
+            ("pam4_threshold_mid_v".into(), pam4_eye.thresholds.mid),
+            ("pam4_threshold_upper_v".into(), pam4_eye.thresholds.upper),
+            ("pam4_eye_height_lower_v".into(), pam4_eye.eye_height_lower_v),
+            ("pam4_eye_height_mid_v".into(), pam4_eye.eye_height_mid_v),
+            ("pam4_eye_height_upper_v".into(), pam4_eye.eye_height_upper_v),
+            ("pam4_eye_height_worst_v".into(), pam4_eye.eye_height_worst_v),
+            ("pam4_inner_eye_height_lower_v".into(), pam4_eye.inner_eye_height_lower_v),
+            ("pam4_inner_eye_height_mid_v".into(), pam4_eye.inner_eye_height_mid_v),
+            ("pam4_inner_eye_height_upper_v".into(), pam4_eye.inner_eye_height_upper_v),
+            ("pam4_inner_eye_height_worst_v".into(), pam4_eye.inner_eye_height_worst_v),
+            ("pam4_eye_width_lower_ps".into(), pam4_eye.eye_width_lower_ps),
+            ("pam4_eye_width_mid_ps".into(), pam4_eye.eye_width_mid_ps),
+            ("pam4_eye_width_upper_ps".into(), pam4_eye.eye_width_upper_ps),
+            ("pam4_eye_width_worst_ps".into(), pam4_eye.eye_width_worst_ps),
+            ("pam4_rlm".into(), pam4_eye.rlm),
+            ("pam4_ser".into(), pam4_eye.ser),
+            ("pam4_ber".into(), pam4_eye.ber),
+            ("pam4_symbol_count".into(), pam4_eye.symbol_count as f64),
+        ]);
     }
     cancellation.check()?;
     stages.push(RunStageV1::ResultAssembly);

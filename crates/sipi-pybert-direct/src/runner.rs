@@ -162,7 +162,8 @@ impl DirectRunError {
                 | NativeSimulationError::Fec(_)
                 | NativeSimulationError::Ber(_)
                 | NativeSimulationError::Crossing(_)
-                | NativeSimulationError::Bathtub(_) => "native_execution_error",
+                | NativeSimulationError::Bathtub(_)
+                | NativeSimulationError::Pam4Eye(_) => "native_execution_error",
             },
             Self::Output(_) => "invalid_native_output",
             Self::Io(_) => "artifact_io_error",
