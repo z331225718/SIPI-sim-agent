@@ -723,5 +723,107 @@ mod native {
         assert!(dir.join("frequency-response.csv").is_file());
         let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
         assert_eq!(meta["diagnostics"]["touchstone_network"]["stage_count"], 1);
+
+        // Now test 4-port S4P file with differential port mapping
+        let s4p_path = root.0.join("diff_channel.s4p");
+        let s4p_content = "# GHz S RI R 50\n\
+0.0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n\
+1.0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n\
+2.0 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02 0.05 -0.02\n";
+        fs::write(&s4p_path, s4p_content).unwrap();
+
+        req["channel"]["value"] = serde_json::json!({
+            "filePath": "diff_channel.s4p",
+            "portMap": "tx_plus_rx_plus_tx_minus_rx_minus",
+            "referenceImpedance": 50.0,
+            "sourceImpedance": 50.0,
+            "loadImpedance": 50.0,
+            "applyRaisedCosineWindow": false
+        });
+
+        let output4 = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "s4p_run");
+        assert!(output4.status.success(), "{output4:?}");
+        let dir4 = root.0.join("s4p_run");
+        assert!(dir4.join("receipt.json").is_file());
+        assert!(dir4.join("frequency-response.csv").is_file());
+    }
+
+    #[test]
+    fn touchstone_network_runs_with_b4_eq_and_b5_dfe_cdr() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+
+        // Enable B4 TX FFE (3 taps: precursor, cursor, postcursor)
+        req["tx"]["ffe"] = serde_json::json!({
+            "enabled": true,
+            "weights": [-0.1, 0.8, -0.1],
+            "cursorPosition": 1
+        });
+
+        // Enable B4 RX CTLE (8 GHz zero, 16 GHz pole, 6 dB boost)
+        req["rx"]["nativeCtleEnabled"] = true.into();
+        req["rx"]["ctle"] = serde_json::json!({
+            "bandwidth": 16e9,
+            "peakFrequency": 8e9,
+            "peakMagnitudeDb": 6.0,
+            "frequencyStepHz": 125e6,
+            "frequencyMaxHz": 64e9
+        });
+
+        // Enable B4 RX FFE
+        req["rx"]["ffe"] = serde_json::json!({
+            "enabled": true,
+            "weights": [0.0, 1.0, 0.0],
+            "cursorPosition": 1
+        });
+
+        // Enable B5 DFE and CDR (4 taps, adaptive gain)
+        req["rx"]["dfeTaps"] = 4.into();
+        req["rx"]["dfe"] = serde_json::json!({
+            "gain": 0.1,
+            "decisionScaler": 0.5,
+            "deltaT": 1e-13,
+            "alpha": 0.01,
+            "bandwidth": 32e9,
+            "ideal": false,
+            "useAgc": false,
+            "nLockAve": 10,
+            "relLockTol": 0.1,
+            "lockSustain": 5,
+            "nAve": 10,
+            "agcNAve": 10
+        });
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "b4_b5_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("b4_b5_run");
+
+        for name in [
+            "request.json",
+            "meta.json",
+            "arrays.npz",
+            "waveforms.csv",
+            "channel-impulse.csv",
+            "frequency-response.csv",
+            "cascade-nodes.csv",
+            "report.html",
+            "channel-report.js",
+            "receipt.json",
+        ] {
+            assert!(dir.join(name).is_file(), "missing artifact: {name}");
+        }
+
+        let (headers, rows) = csv(dir.join("waveforms.csv"));
+        assert_eq!(headers[0], "time_s");
+        assert!(headers.contains(&"tx_waveform_v".to_string()));
+        assert!(headers.contains(&"channel_output_v".to_string()));
+        assert!(headers.contains(&"rx_input_v".to_string()));
+        assert!(headers.contains(&"rx_output_v".to_string()));
+        assert_eq!(rows.len(), 8192); // 512 bits * 16 samples/UI
+
+        let receipt: Value = serde_json::from_slice(&fs::read(dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
+        assert_eq!(receipt["acceptance"], false);
     }
 }
