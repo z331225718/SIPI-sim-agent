@@ -1,0 +1,107 @@
+{
+  "schema": "sipi.benchmarks.sp-ddr-tran.v1",
+  "sipi_executable_sha256": "dc284d8d4c72e5e4b3156395dbf56ba64d933cc635e9be85a86641b109bb7f20",
+  "cases": [
+    {
+      "name": "Broadband Lossy Microstrip",
+      "domain": "S-Parameter",
+      "length_cm": 10.0,
+      "max_il_db": 7.440155818422781,
+      "mean_gd_ps": 666.698471160547,
+      "passivity_passed": true,
+      "reciprocity_passed": true,
+      "csv": "sp-lossy-microstrip.csv",
+      "figure": "sp-lossy-microstrip.png"
+    },
+    {
+      "name": "Via Stub Resonant Notch",
+      "domain": "S-Parameter",
+      "stub_length_mm": 2.5,
+      "notch_frequency_ghz": 15.000000000000002,
+      "notch_depth_db": 240.0,
+      "theoretical_resonance_ghz": 15.000000000000002,
+      "csv": "sp-resonant-stub.csv",
+      "figure": "sp-resonant-stub.png"
+    },
+    {
+      "name": "4-Port Mixed-Mode Decomposition",
+      "domain": "S-Parameter",
+      "sdd21_loss_at_20ghz_db": 2.8573737787909486,
+      "scc21_loss_at_20ghz_db": 5.040263167292311,
+      "scd21_mode_conversion_20ghz_db": -23.880424227738573,
+      "csv": "sp-mixed-mode.csv",
+      "figure": "sp-mixed-mode.png"
+    },
+    {
+      "name": "DDR4-3200 DQ Rx Mask Compliance",
+      "domain": "DDR Interface",
+      "data_rate_mt_per_s": 3200.0,
+      "t_divw_ps": 62.5,
+      "v_divw_mv": 110.0,
+      "eye_height_mv": 500.0,
+      "voltage_margin_mv": 390.0,
+      "timing_margin_ps": 156.25,
+      "jedec_passed": true,
+      "csv": "ddr4-3200-dq.csv",
+      "figure": "ddr4-3200-rx-mask.png"
+    },
+    {
+      "name": "DDR5-6400 4-Tap DFE vs JEDEC Mask",
+      "domain": "DDR Interface",
+      "data_rate_mt_per_s": 6400.0,
+      "unequalized_passed": false,
+      "dfe_equalized_passed": true,
+      "dfe_voltage_margin_mv": 259.99999999999994,
+      "dfe_timing_margin_ps": 62.5,
+      "csv": "ddr5-6400-dq.csv",
+      "figure": "ddr5-6400-dfe-mask.png"
+    },
+    {
+      "name": "TDR Impedance Profile Reconstruction",
+      "domain": "Transient & PDN",
+      "nominal_z0_ohms": 50.0,
+      "mismatched_step_ohms": 74.99999570466352,
+      "via_capacitive_dip_ohms": 42.00154952304125,
+      "csv": "tran-tdr-profile.csv",
+      "figure": "tran-tdr-impedance-profile.png"
+    },
+    {
+      "name": "PDN Decoupling Impedance Profile",
+      "domain": "Transient & PDN",
+      "target_impedance_mohm": 4.249999999999999,
+      "max_impedance_mohm": 138.61844047317203,
+      "anti_resonance_compliant": false,
+      "csv": "tran-pdn-impedance.csv",
+      "figure": "tran-pdn-impedance-profile.png"
+    },
+    {
+      "name": "Core Rail Dynamic Current Droop",
+      "domain": "Transient & PDN",
+      "current_step_a": 6.0,
+      "max_droop_mv": 3.4405219181574687,
+      "allowed_droop_mv": 25.5,
+      "passed": true,
+      "csv": "tran-pdn-droop.csv",
+      "figure": "tran-pdn-voltage-droop.png"
+    }
+  ],
+  "artifacts": {
+    "ddr4-3200-dq.csv": "feeda28913a83dc2a12b411fbe1d60249d75d73532531e6299e59ef27035e4a9",
+    "ddr4-3200-rx-mask.png": "1c12d6ecd067e43cab00cc0d892b3e1bcd1342bf62c5fed049e1d6f80a214468",
+    "ddr5-6400-dfe-mask.png": "9afca224054bf947eeb4cafb9c60b16d0df600393aae77b495f04b87f5b4fafb",
+    "ddr5-6400-dq.csv": "f6f5c87b8b26b54fe7c1ba8928ce90b429c7436e10da8411caa7ba6696919cc2",
+    "report.html": "c94a2067130a48be3c5f9bdd573c19562ecfee105c681bb10f3a7ed4f9291a72",
+    "sp-lossy-microstrip.csv": "b0ec413c71b58c2eef254940d0727e6859af0e2bcb750313fa13fbf11afaf4b6",
+    "sp-lossy-microstrip.png": "f342572f3f57d8beaa3780a834b583ea1b3a1c70b1126fa591729e5dfa7d7a7c",
+    "sp-mixed-mode.csv": "56ab7ed0006adcd48bce3a961d0cde51fa941d7d7b8be5d83cc47f8ea39d4aaf",
+    "sp-mixed-mode.png": "20f461e88fbe1e8c41927ceeb6b3b4bd0e705ea0029e17e96ca2d313af6a164d",
+    "sp-resonant-stub.csv": "97ba4280fdf94b51f24c1beed5aeb2c253c4432ce0d2b9e37667678a5d554a0f",
+    "sp-resonant-stub.png": "c0052e721e098644e4b2e8c737a7bf1009a56dce68127ac4882d3d2ed7b78614",
+    "tran-pdn-droop.csv": "cf105df7981efdcb9438dedfb3855df8ad0e45d04cf72e5df94a0ef829c82996",
+    "tran-pdn-impedance-profile.png": "3be73e93b19052ee2d02ab60200cbf28526ed59db642438cef9ccabedecd553a",
+    "tran-pdn-impedance.csv": "84495f1e51ef0a0f9c8a197b0c61d477e082bf021f4ff7634f0effcb3b6f3812",
+    "tran-pdn-voltage-droop.png": "2dd2a1906c1ac5b524dcb5fbe68f2d82b4f700b62ab70d1bdefed7c016a53889",
+    "tran-tdr-impedance-profile.png": "f112af217fdfd1fb77a857c9ad372c87912a36357725ccb399f64d86bb3a570c",
+    "tran-tdr-profile.csv": "89a351fdcd7c5c137582afef036934e044b7f74d0386a50a9f13e8fa76168ecc"
+  }
+}
