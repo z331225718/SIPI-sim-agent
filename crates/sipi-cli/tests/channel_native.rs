@@ -1195,4 +1195,103 @@ mod native {
         assert_eq!(receipt["command"], "channel sweep");
         assert!(receipt["artifacts"]["sweep-results.csv"].is_object());
     }
+
+    #[test]
+    fn ami_help_returns_usage_and_capabilities() {
+        let output = cli(&["ami", "help"]);
+        assert!(output.status.success(), "{output:?}");
+        let res = result(&output);
+        assert_eq!(res["schema"], "sipi.ami.help.v1");
+        assert_eq!(res["platform"], "windows-x64");
+    }
+
+    #[test]
+    fn ami_run_executes_mock_model_and_exports_artifacts() {
+        let root = Temp::new();
+        let mock_source = r#"
+#![allow(unsafe_op_in_unsafe_fn)]
+use std::ffi::{c_char, c_long, c_void};
+static INIT_OUT: &[u8] = b"init-out\0";
+static GETWAVE_OUT: &[u8] = b"getwave-out\0";
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn AMI_Init(matrix: *mut f64, _rows: c_long, _aggressors: c_long, _dt: f64, _bit: f64, _params: *mut c_char, out: *mut *mut c_char, handle: *mut *mut c_void, _msg: *mut *mut c_char) -> c_long {
+    *matrix = 42.0;
+    *out = INIT_OUT.as_ptr() as *mut c_char;
+    *handle = 1usize as *mut c_void;
+    1
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn AMI_GetWave(wave: *mut f64, size: c_long, clocks: *mut f64, out: *mut *mut c_char, _handle: *mut c_void) -> c_long {
+    *out = GETWAVE_OUT.as_ptr() as *mut c_char;
+    if size > 0 { *wave = 7.0; }
+    if size > 1 { *wave.add(1) = 8.0; }
+    *clocks = 1e-12;
+    *clocks.add(1) = -1.0;
+    1
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn AMI_Close(_handle: *mut c_void) -> c_long {
+    1
+}
+"#;
+        let src_path = root.0.join("mock_ami.rs");
+        fs::write(&src_path, mock_source).unwrap();
+        let dll_path = root.0.join("mock_ami.dll");
+        let rustc = std::env::var("RUSTC").unwrap_or_else(|_| "rustc".into());
+        let status = Command::new(rustc)
+            .args(["--crate-type", "cdylib", "--edition", "2024"])
+            .arg(&src_path)
+            .arg("-o")
+            .arg(&dll_path)
+            .status()
+            .expect("compile mock AMI DLL");
+        assert!(status.success());
+
+        let req = serde_json::json!({
+            "dllPath": dll_path.to_str().unwrap(),
+            "sampleIntervalS": 1.0e-12,
+            "bitTimeS": 1.0e-11,
+            "impulseMatrix": [0.0, 1.0],
+            "rows": 2,
+            "aggressors": 0,
+            "waveformIn": [0.0, 0.0],
+            "clockCapacity": 4,
+            "parametersIn": "(mode success)"
+        });
+        let req_file = root.0.join("ami_req.json");
+        fs::write(&req_file, serde_json::to_vec_pretty(&req).unwrap()).unwrap();
+        let out_dir = root.0.join("ami_out");
+
+        let output = cli(&[
+            "ami",
+            "run",
+            req_file.to_str().unwrap(),
+            "--output-dir",
+            out_dir.to_str().unwrap(),
+        ]);
+        assert!(output.status.success(), "{output:?}");
+
+        // Verify output artifacts
+        assert!(out_dir.join("parameters_out.txt").is_file());
+        assert_eq!(fs::read_to_string(out_dir.join("parameters_out.txt")).unwrap(), "init-out");
+
+        assert!(out_dir.join("waveform_out.csv").is_file());
+        let wave_csv = fs::read_to_string(out_dir.join("waveform_out.csv")).unwrap();
+        assert!(wave_csv.contains("7.000000e0"));
+        assert!(wave_csv.contains("8.000000e0"));
+
+        assert!(out_dir.join("clocks.csv").is_file());
+        let clocks_csv = fs::read_to_string(out_dir.join("clocks.csv")).unwrap();
+        assert!(clocks_csv.contains("1.000000e-12"));
+
+        assert!(out_dir.join("meta.json").is_file());
+        let meta: Value = serde_json::from_slice(&fs::read(out_dir.join("meta.json")).unwrap()).unwrap();
+        assert_eq!(meta["getWaveExecuted"], true);
+        assert_eq!(meta["clockCount"], 1);
+
+        assert!(out_dir.join("receipt.json").is_file());
+        let receipt: Value = serde_json::from_slice(&fs::read(out_dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["command"], "ami run");
+    }
 }

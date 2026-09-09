@@ -10,6 +10,8 @@ mod com_direct_cli_contract_v1;
 mod com_direct_integration;
 mod com_run_artifact_preflight_v1;
 mod upstream_migration;
+#[cfg(feature = "pybert-direct-integration")]
+mod ami_cli;
 
 use std::{
     collections::BTreeMap,
@@ -766,6 +768,29 @@ const COMMAND_MANIFEST_V1: &[CommandDescriptorV1] = &[
         unavailable_reason: None,
         nonclaim: "pb_02_candidate_eq_sweep_no_parity_or_release",
     },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandDescriptorV1 {
+        id: "ami.run",
+        route: &["ami", "run"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: Some("sipi.ami.request.v1"),
+        response_schema: Some(ami_cli::AMI_RECEIPT_SCHEMA),
+        unavailable_reason: None,
+        nonclaim: "bounded_vendor_dll_abi_execution_only",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandDescriptorV1 {
+        id: "ami.help",
+        route: &["ami", "help"],
+        availability: CommandAvailabilityV1::Available,
+        transport: "argv_typed_v1",
+        request_schema: None,
+        response_schema: None,
+        unavailable_reason: None,
+        nonclaim: "ami_help_only",
+    },
+    #[cfg(not(feature = "pybert-direct-integration"))]
     CommandDescriptorV1 {
         id: "ami.run",
         route: &["ami", "run"],
@@ -1327,6 +1352,26 @@ const COMMAND_PROTOCOL_PROFILES_V1: &[CommandProtocolProfileV1] = &[
         validation_rule_id: None,
         successful_exit: 0,
         diagnostic_contract: "root_json_envelope_with_path_free_candidate_receipt",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "ami.run",
+        example_id: None,
+        required_options: &["--output-dir"],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_with_path_free_candidate_receipt",
+    },
+    #[cfg(feature = "pybert-direct-integration")]
+    CommandProtocolProfileV1 {
+        command_id: "ami.help",
+        example_id: None,
+        required_options: &[],
+        caller_bindings: &[],
+        validation_rule_id: None,
+        successful_exit: 0,
+        diagnostic_contract: "root_json_envelope_no_overwrite",
     },
     CommandProtocolProfileV1 {
         command_id: "compare.run",
@@ -3787,6 +3832,10 @@ fn command_protocol_profiles_are_valid(
 
 fn available_route_has_handler(route: &[&str]) -> bool {
     #[cfg(feature = "pybert-direct-integration")]
+    if matches!(route, ["ami", "help" | "run"]) {
+        return true;
+    }
+    #[cfg(feature = "pybert-direct-integration")]
     if matches!(route, ["channel", "help" | "init" | "simulate" | "sweep"]) {
         return true;
     }
@@ -4255,6 +4304,17 @@ impl CommandService {
             }
             #[cfg(feature = "pybert-direct-integration")]
             [command, action, tail @ ..]
+                if command == "ami" && matches!(action.as_str(), "help" | "run") =>
+            {
+                match ami_cli::execute(action, tail) {
+                    Ok(receipt) => success(receipt),
+                    Err(failure) => {
+                        error(failure.exit_code(), failure.code(), failure.message())
+                    }
+                }
+            }
+            #[cfg(feature = "pybert-direct-integration")]
+            [command, action, tail @ ..]
                 if command == "channel"
                     && matches!(action.as_str(), "help" | "init" | "simulate" | "sweep") =>
             {
@@ -4604,19 +4664,14 @@ mod tests {
         assert_eq!(commands_response.code, 0);
         assert_eq!(commands_response.stdout.as_deref(), Some(manifest.as_str()));
 
-        #[cfg(feature = "com-direct-integration")]
-        let unavailable = vec![
-            ["ami", "run"].as_slice(),
+        let mut unavailable: Vec<&[&str]> = vec![
             ["project", "validate"].as_slice(),
             ["report", "show"].as_slice(),
         ];
         #[cfg(not(feature = "com-direct-integration"))]
-        let unavailable = vec![
-            ["ami", "run"].as_slice(),
-            ["com", "run"].as_slice(),
-            ["project", "validate"].as_slice(),
-            ["report", "show"].as_slice(),
-        ];
+        unavailable.push(["com", "run"].as_slice());
+        #[cfg(not(feature = "pybert-direct-integration"))]
+        unavailable.push(["ami", "run"].as_slice());
         for command in unavailable {
             let response = dispatch(&args(command));
             assert_eq!(response.code, 4);

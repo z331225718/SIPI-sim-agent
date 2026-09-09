@@ -145,6 +145,7 @@ Build Tools。使用[微软官方运行库说明与下载](https://learn.microso
 - **多通道串扰（NEXT / FEXT）闭环**：支持 8/12/16 端口多对 Touchstone 文件的差分提取及解析耦合模型；支持配置 1~N 个独立 Aggressor，允许定义独立 PRBS 码型、调制模式、幅度、相对时延/相位及异步时钟频率偏移（ppm 漂移）；通过加载网络求解频域串扰传递函数并执行一次 FD-to-TD 得到感应冲激响应，经时域无混叠线性卷积与叠加生成总串扰噪声波形 `crosstalk_noise_v`；计算集成串扰噪声（ICN / $\sigma_{\text{RMS}}$）、峰峰值（$V_{\text{p-p}}$）与信号串扰比（SCR, dB），并在 HTML 报告中提供直观对比卡片。
 - **实测 TX 脉冲响应（Measured TX Pulse Stimulus）闭环**：支持配置实测或通过 TXF-01 拟合提取的单脉冲响应（`measuredPulse`，包含 `pulseResponseV`、采样步长与参考面），通过时域符号线性重叠相加（Overlap-Add, $v_{\text{tx}}[n] = \sum_k s_k \cdot p[n - k \cdot \text{spui}]$）取代生硬的理想矩形保持（Hold）；保证单脉冲输入严格还原原脉冲响应，相继符号以 UI 步长线性叠加并自适应重采样对齐仿真时间网格，为实测发射机与理想发射机在同一物理通道下的眼图与误码对比提供直接闭环。
 - **受约束的均衡（CTLE / FFE）网格扫描与自动调优（`sipi channel sweep`）**：在固定物理通道冲激响应与激励下，批量并发评估 CTLE 极点增益档位（$0 \dots 14\,\text{dB}$）与 TX FFE 抽头组合（前驱/主驱/后驱）；严格执行物理能量归一化约束（$\sum |c_i| \le 1.0$ 且主驱占优）；按最差眼高（Eye Height）或 RLM 进行多维降序排序并导出 `sweep-results.csv`，在 `meta.json` 中记录最优候选参数并完成自动调优闭环。
+- **IBIS-AMI 规范模型执行网关（`sipi ami run`）**：支持加载执行符合 IBIS 5.0~7.2 标准的 Windows x64 动态链接库（DLL）；实现标准 C 语言 FFI 接口隔离（`AMI_Init`、`AMI_GetWave`、`AMI_Close`）；自动解析与绑定 AMI 树形参数文本，注入冲激响应矩阵与发射/接收波形向量，支持模型内部自适应时钟提取并导出 `clocks.csv`、输出波形 `waveform_out.csv`、回传参数文本 `parameters_out.txt` 与可复核收据 `receipt.json`。
 
 ## 验证与边界
 

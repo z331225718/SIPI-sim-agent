@@ -20,7 +20,7 @@ normal-erl-diagnostic-sidecar = ["com-direct-integration", "sipi-agent-com-direc
 # Internal-only root linkage for the quarantined Agent-Spice direct leaves.
 # The feature stays opt-in so the default CLI remains byte-for-byte isolated
 # from the direct port and its external-runtime custody paths.
-agent-spice-direct-integration = ["dep:sipi-agent-spice-direct", "dep:serde"]
+agent-spice-direct-integration = ["dep:sipi-agent-spice-direct"]
 # Local candidate linkage only; the PyBERT crate retains its independent
 # source/license review boundary and is not admitted to release composition.
 pybert-direct-integration = ["dep:sipi-pybert-direct"]
@@ -54,6 +54,9 @@ name = "channel_native"
 path = "tests/channel_native.rs"
 
 [dependencies]
+sipi-ami-host = { path = "../sipi-ami-host" }
+sipi-ami-text = { path = "../sipi-ami-text" }
+sipi-ami-worker = { path = "../sipi-ami-worker" }
 sipi-agent-com-adapter = { path = "../sipi-agent-com-adapter" }
 sipi-agent-com-direct = { path = "../sipi-agent-com-direct", optional = true }
 sipi-agent-spice-direct = { path = "../sipi-agent-spice-direct", optional = true }
@@ -73,8 +76,8 @@ sipi-rx-load = { path = "../sipi-rx-load" }
 sipi-tran = { path = "../sipi-tran" }
 sipi-touchstone = { path = "../sipi-touchstone" }
 sipi-types = { path = "../sipi-types" }
+serde = { version = "1", features = ["derive"] }
 sha2 = "0.10"
-serde = { version = "1", features = ["derive"], optional = true }
 serde_json = "1"
 
 [lints]
