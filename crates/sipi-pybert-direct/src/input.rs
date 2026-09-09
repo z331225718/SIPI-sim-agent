@@ -546,6 +546,16 @@ pub struct DfeConfigV1 {
     pub agc_n_ave: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tap_limits: Option<Vec<(f64, f64)>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_weights: Option<Vec<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_values: Option<Vec<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_corrections: Option<Vec<f64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub training_start_ui: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub training_end_ui: Option<u32>,
 }
 
 impl DfeConfigV1 {
@@ -566,6 +576,10 @@ impl DfeConfigV1 {
                     .iter()
                     .any(|(lower, upper)| !lower.is_finite() || !upper.is_finite() || lower > upper)
             })
+            || self.initial_weights.as_ref().is_some_and(|w| w.iter().any(|val| !val.is_finite()))
+            || self.initial_values.as_ref().is_some_and(|v| v.iter().any(|val| !val.is_finite()))
+            || self.initial_corrections.as_ref().is_some_and(|c| c.iter().any(|val| !val.is_finite()))
+            || (self.training_start_ui.is_some() && self.training_end_ui.is_some() && self.training_start_ui > self.training_end_ui)
         {
             return Err(ContractError::InvalidDfe);
         }

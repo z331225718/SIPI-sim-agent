@@ -193,6 +193,11 @@ pub fn simulate_portable_reference_v1(
                 modulation: modulation.1,
                 n_ave: dfe.n_ave as usize,
                 limits: dfe.tap_limits.clone(),
+                initial_weights: dfe.initial_weights.clone(),
+                initial_values: dfe.initial_values.clone(),
+                initial_corrections: dfe.initial_corrections.clone(),
+                training_start_ui: dfe.training_start_ui.map(|u| u as usize),
+                training_end_ui: dfe.training_end_ui.map(|u| u as usize),
             },
             crate::CdrConfig {
                 delta_t: dfe.delta_t.0,

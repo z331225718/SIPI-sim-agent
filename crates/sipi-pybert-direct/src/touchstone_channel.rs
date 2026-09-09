@@ -448,6 +448,43 @@ pub fn run_channel_touchstone_network_json(
             })
         })
         .collect::<Vec<_>>();
+    let dfe_invariance_diagnostic = if let Some(dfe_cfg) = &input.rx.dfe {
+        if let Some(end_ui) = dfe_cfg.training_end_ui {
+            if let (Some(weights_flat), Some(clock_times)) = (
+                output.arrays.get("dfe_tap_weights_v"),
+                output.arrays.get("dfe_clock_times_s"),
+            ) {
+                let n_taps = input.rx.dfe_taps as usize;
+                let end_idx = (end_ui as usize).min(clock_times.len());
+                let frozen_weights = (0..n_taps)
+                    .map(|t| weights_flat.get(end_idx * n_taps + t).copied().unwrap_or(0.0))
+                    .collect::<Vec<_>>();
+                let mut max_drift = 0.0_f64;
+                for k in end_idx..clock_times.len() {
+                    for t in 0..n_taps {
+                        let w = weights_flat.get(k * n_taps + t).copied().unwrap_or(0.0);
+                        let drift = (w - frozen_weights[t]).abs();
+                        if drift > max_drift {
+                            max_drift = drift;
+                        }
+                    }
+                }
+                Some(json!({
+                    "checked": true,
+                    "training_end_ui": end_ui,
+                    "passes_invariance": max_drift == 0.0,
+                    "maximum_drift": max_drift,
+                }))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
 
     let diagnostics_json = json!({
         "touchstone_network": {
@@ -491,7 +528,8 @@ pub fn run_channel_touchstone_network_json(
                 "source_capacitance_f": config.source_capacitance_f,
                 "load_resistance_ohms": config.load_impedance,
                 "load_capacitance_f": config.load_capacitance_f,
-            }
+            },
+            "dfe_training_invariance": dfe_invariance_diagnostic,
         }
     });
 

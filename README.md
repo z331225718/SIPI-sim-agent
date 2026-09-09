@@ -82,7 +82,7 @@ Start-Process .\results\channel-native-run\report.html
   --channel-policy touchstone-network-v1
 ```
 
-该模式完整计算 2x2 差分 S 矩阵、频域 Redheffer 星积级联、源/负载端接加载、DC/Nyquist 覆盖诊断、离散采样无损/互易性诊断，并在最终执行一次严格保留 $t=0$ 原点的 FD-to-TD 变换；同时导出 `frequency-response.csv` 与多级节点 `cascade-nodes.csv`。启用统计分析时另导出 `eye-metrics.csv`、`bathtub.csv`、`eye-contours.csv` 并在离线报告中提供互动浴盆曲线视图。
+该模式完整计算 2x2 差分 S 矩阵、频域 Redheffer 星积级联、源/负载端接加载、DC/Nyquist 覆盖诊断、离散采样无损/互易性诊断，并在最终执行一次严格保留 $t=0$ 原点的 FD-to-TD 变换；同时导出 `frequency-response.csv` 与多级节点 `cascade-nodes.csv`。启用统计分析时另导出 `eye-metrics.csv`、`bathtub.csv`、`eye-contours.csv` 并在离线报告中提供互动浴盆曲线视图；配置 DFE 时导出 `dfe-adaptation.csv`、`dfe-events.csv` 并严格校验训练窗口后的权重零漂移不变性。
 
 该模式另导出完整 `frequency-response.csv`；有限带宽、窗口和 sample-hold 仍有明确边界，
 不等同于连续时间 ADS Transient 已通过。未传选项的 PB-02 兼容行为不变。

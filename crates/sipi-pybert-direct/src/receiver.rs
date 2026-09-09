@@ -66,6 +66,11 @@ pub struct DfeConfig {
     pub modulation: DfeModulation,
     pub n_ave: usize,
     pub limits: Option<Vec<(f64, f64)>>,
+    pub initial_weights: Option<Vec<f64>>,
+    pub initial_values: Option<Vec<f64>>,
+    pub initial_corrections: Option<Vec<f64>>,
+    pub training_start_ui: Option<usize>,
+    pub training_end_ui: Option<usize>,
 }
 
 impl DfeConfig {
@@ -80,6 +85,26 @@ impl DfeConfig {
                 }))
         {
             return Err(DfeError::InvalidLimits);
+        }
+        if let Some(weights) = &self.initial_weights
+            && (weights.len() != self.n_taps || weights.iter().any(|w| !w.is_finite()))
+        {
+            return Err(DfeError::InvalidConfiguration);
+        }
+        if let Some(values) = &self.initial_values
+            && (values.len() != self.n_taps || values.iter().any(|v| !v.is_finite()))
+        {
+            return Err(DfeError::InvalidConfiguration);
+        }
+        if let Some(corrs) = &self.initial_corrections
+            && (corrs.len() != self.n_taps || corrs.iter().any(|c| !c.is_finite()))
+        {
+            return Err(DfeError::InvalidConfiguration);
+        }
+        if let (Some(start), Some(end)) = (self.training_start_ui, self.training_end_ui)
+            && start > end
+        {
+            return Err(DfeError::InvalidConfiguration);
         }
         Ok(())
     }
@@ -112,8 +137,12 @@ pub struct DfeRunResult {
     pub signal_samples: Vec<f64>,
     pub decisions: Vec<f64>,
     pub decision_scalers: Vec<f64>,
+    pub slicer_inputs: Vec<f64>,
+    pub errors: Vec<f64>,
+    pub update_enableds: Vec<bool>,
+    pub bank_updateds: Vec<bool>,
+    pub event_corrections: Vec<Vec<f64>>,
 }
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DfeRunOptions {
     pub samples_per_ui: usize,
@@ -214,7 +243,11 @@ pub fn run_dfe(
     let mut slicer_sample_count = 0_usize;
     let mut average_sample_count = 0_usize;
     let mut decision_scalers = vec![decision_scaler];
-
+    let mut slicer_inputs = Vec::new();
+    let mut errors = Vec::new();
+    let mut update_enableds = Vec::new();
+    let mut bank_updateds = Vec::new();
+    let mut event_corrections = Vec::new();
     for (index, (&time, &input)) in sample_times.iter().zip(signal).enumerate() {
         let sum_out = summing_filter
             .as_mut()
@@ -246,9 +279,16 @@ pub fn run_dfe(
             decisions.push(decision.decision);
             let slicer_output = decision.decision * decision_scaler;
             let error = sum_out - slicer_output;
-            let update = locked && clock_count.is_multiple_of(dfe.config.n_ave);
-            next_filter_out = dfe.step(slicer_output, if locked { error } else { 0.0 }, update)?;
+            let in_training = dfe.config.training_start_ui.map_or(true, |start| clock_count >= start)
+                && dfe.config.training_end_ui.map_or(true, |end| clock_count < end);
+            let update = locked && in_training && clock_count.is_multiple_of(dfe.config.n_ave);
+            next_filter_out = dfe.step(slicer_output, if locked && in_training { error } else { 0.0 }, update)?;
             tap_weights.push(dfe.tap_weights().to_vec());
+            slicer_inputs.push(sum_out);
+            errors.push(error);
+            update_enableds.push(locked && in_training);
+            bank_updateds.push(update);
+            event_corrections.push(dfe.corrections().to_vec());
             last_clock_sample = sum_out;
             next_boundary_time = next_clock_time + ui / 2.0;
             next_clock_time += ui;
@@ -292,6 +332,11 @@ pub fn run_dfe(
         signal_samples,
         decisions,
         decision_scalers,
+        slicer_inputs,
+        errors,
+        update_enableds,
+        bank_updateds,
+        event_corrections,
     })
 }
 
@@ -339,6 +384,11 @@ pub fn run_dfe_with_external_clocks(
         modulation,
         n_ave: 1,
         limits: None,
+        initial_weights: None,
+        initial_values: None,
+        initial_corrections: None,
+        training_start_ui: None,
+        training_end_ui: None,
     };
     let dfe = DfeState::new(dfe_config)?;
     let mut sample_index = 0_usize;
@@ -388,18 +438,30 @@ pub fn run_dfe_with_external_clocks(
         signal_samples,
         decisions,
         decision_scalers: Vec::new(),
+        slicer_inputs: Vec::new(),
+        errors: Vec::new(),
+        update_enableds: Vec::new(),
+        bank_updateds: Vec::new(),
+        event_corrections: Vec::new(),
     })
 }
 
 impl DfeState {
     pub fn new(config: DfeConfig) -> Result<Self, DfeError> {
         config.validate()?;
+        let tap_weights = config.initial_weights.clone().unwrap_or_else(|| vec![0.0; config.n_taps]);
+        let tap_values = config.initial_values.clone().unwrap_or_else(|| vec![0.0; config.n_taps]);
+        let corrections = config.initial_corrections.clone().unwrap_or_else(|| vec![0.0; config.n_taps]);
         Ok(Self {
-            tap_weights: vec![0.0; config.n_taps],
-            tap_values: vec![0.0; config.n_taps],
-            corrections: vec![0.0; config.n_taps],
+            tap_weights,
+            tap_values,
+            corrections,
             config,
         })
+    }
+
+    pub fn corrections(&self) -> &[f64] {
+        &self.corrections
     }
 
     pub fn tap_weights(&self) -> &[f64] {

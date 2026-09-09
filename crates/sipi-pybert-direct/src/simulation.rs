@@ -462,6 +462,11 @@ fn simulate_native_v1_inner(
                     modulation,
                     n_ave: dfe.n_ave as usize,
                     limits: dfe.tap_limits.clone(),
+                    initial_weights: dfe.initial_weights.clone(),
+                    initial_values: dfe.initial_values.clone(),
+                    initial_corrections: dfe.initial_corrections.clone(),
+                    training_start_ui: dfe.training_start_ui.map(|u| u as usize),
+                    training_end_ui: dfe.training_end_ui.map(|u| u as usize),
                 },
                 CdrConfig {
                     delta_t: dfe.delta_t.0,
@@ -646,6 +651,16 @@ fn simulate_native_v1_inner(
             ),
             ("dfe_ui_estimates_s".into(), dfe.ui_estimates.clone()),
             ("dfe_clocks".into(), dfe.clocks.clone()),
+            ("dfe_slicer_inputs_v".into(), dfe.slicer_inputs.clone()),
+            ("dfe_errors_v".into(), dfe.errors.clone()),
+            (
+                "dfe_update_enabled".into(),
+                dfe.update_enableds.iter().map(|&u| f64::from(u)).collect(),
+            ),
+            (
+                "dfe_bank_updated".into(),
+                dfe.bank_updateds.iter().map(|&u| f64::from(u)).collect(),
+            ),
             (
                 "dfe_locked".into(),
                 dfe.lockeds

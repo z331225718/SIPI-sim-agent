@@ -1226,6 +1226,11 @@ fn strict_rx(value: &Value) -> Result<(), DirectRunError> {
                 "useAgc",
                 "agcNAve",
                 "tapLimits",
+                "initialWeights",
+                "initialValues",
+                "initialCorrections",
+                "trainingStartUi",
+                "trainingEndUi",
             ],
         )?;
     }

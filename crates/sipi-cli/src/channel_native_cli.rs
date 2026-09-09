@@ -392,6 +392,62 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
         writer.flush()?;
         writer.get_ref().sync_all()?;
     }
+    // Export DFE adaptation and events if DFE was enabled
+    if let (Some(weights_flat), Some(clock_times)) = (
+        report.output.arrays.get("dfe_tap_weights_v"),
+        report.output.arrays.get("dfe_clock_times_s"),
+    ) {
+        let n_taps = report.input.rx.dfe_taps as usize;
+        if n_taps > 0 && !clock_times.is_empty() {
+            let path = output.join("dfe-adaptation.csv");
+            let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
+            let mut header = String::from("clock_index,time_s");
+            for t in 0..n_taps {
+                header.push_str(&format!(",tap_{t}_weight"));
+            }
+            header.push('\n');
+            writer.write_all(header.as_bytes())?;
+            for (clock_idx, &t) in clock_times.iter().enumerate() {
+                let mut row = format!("{clock_idx},{t}");
+                let offset = clock_idx * n_taps;
+                for t_idx in 0..n_taps {
+                    let w = weights_flat.get(offset + t_idx).copied().unwrap_or(0.0);
+                    row.push_str(&format!(",{w}"));
+                }
+                row.push('\n');
+                writer.write_all(row.as_bytes())?;
+            }
+            writer.flush()?;
+            writer.get_ref().sync_all()?;
+        }
+    }
+
+    if let (Some(slicer_inputs), Some(clock_times)) = (
+        report.output.arrays.get("dfe_slicer_inputs_v"),
+        report.output.arrays.get("dfe_clock_times_s"),
+    ) {
+        if !slicer_inputs.is_empty() {
+            let path = output.join("dfe-events.csv");
+            let mut writer = BufWriter::new(OpenOptions::new().write(true).create_new(true).open(&path)?);
+            writer.write_all(b"clock_index,time_s,slicer_input_v,decision,error_v,update_enabled,bank_updated\n")?;
+            let decisions = report.output.arrays.get("dfe_decisions");
+            let errors = report.output.arrays.get("dfe_errors_v");
+            let updates = report.output.arrays.get("dfe_update_enabled");
+            let banks = report.output.arrays.get("dfe_bank_updated");
+
+            for (idx, &v_in) in slicer_inputs.iter().enumerate() {
+                let t = clock_times.get(idx).copied().unwrap_or(0.0);
+                let dec = decisions.and_then(|d| d.get(idx).copied()).unwrap_or(0.0);
+                let err = errors.and_then(|e| e.get(idx).copied()).unwrap_or(0.0);
+                let upd = updates.and_then(|u| u.get(idx).copied()).unwrap_or(0.0);
+                let bnk = banks.and_then(|b| b.get(idx).copied()).unwrap_or(0.0);
+                writeln!(writer, "{idx},{t},{v_in},{dec},{err},{upd},{bnk}").map_err(|_| Failure::Io)?;
+            }
+            writer.flush()?;
+            writer.get_ref().sync_all()?;
+        }
+    }
+
 
     let preview_samples = time
         .len()
@@ -441,6 +497,12 @@ fn simulate(request: &Path, output: &Path, mode: ChannelPolicyMode) -> Result<Va
     }
     if output.join("eye-contours.csv").is_file() {
         artifact_names.push("eye-contours.csv");
+    }
+    if output.join("dfe-adaptation.csv").is_file() {
+        artifact_names.push("dfe-adaptation.csv");
+    }
+    if output.join("dfe-events.csv").is_file() {
+        artifact_names.push("dfe-events.csv");
     }
     for name in artifact_names {
         artifacts.insert(name.into(), file_identity(&output.join(name))?);
@@ -661,6 +723,12 @@ details{margin-top:24px}summary{cursor:pointer;font-weight:600}pre{background:#f
     }
     if report.output.arrays.contains_key("eye_contour_0_x_ui") {
         html.push_str("<a href=\"eye-contours.csv\">Eye contours CSV</a>");
+    }
+    if report.output.arrays.contains_key("dfe_tap_weights_v") {
+        html.push_str("<a href=\"dfe-adaptation.csv\">DFE adaptation CSV</a>");
+    }
+    if report.output.arrays.contains_key("dfe_slicer_inputs_v") {
+        html.push_str("<a href=\"dfe-events.csv\">DFE events CSV</a>");
     }
     html.push_str("</nav></header><main>");
     html.push_str(&format!("<dl class=\"summary\"><div><dt>Samples</dt><dd>{}</dd></div><div><dt>Sample interval</dt><dd>{:.6} ps</dd></div><div><dt>Data rate</dt><dd>{:.3} GHz</dd></div><div><dt>Native arrays</dt><dd>{}</dd></div>", time.len(), report.input.timebase.sample_interval.0 * 1e12, report.input.timebase.data_rate.0 * 1e-9, report.output.arrays.len()));

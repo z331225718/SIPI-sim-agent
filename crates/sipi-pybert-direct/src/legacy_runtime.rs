@@ -467,6 +467,11 @@ impl LegacyConfigProjectionV1 {
                     .map(|(_, lower, upper)| (*lower, *upper))
                     .collect()
             }),
+            initial_weights: None,
+            initial_values: None,
+            initial_corrections: None,
+            training_start_ui: None,
+            training_end_ui: None,
         });
         let ctle = (self.ctle_enable || self.ctle_impulse_response_v_per_v.is_some()).then_some(
             CtleConfigV1 {

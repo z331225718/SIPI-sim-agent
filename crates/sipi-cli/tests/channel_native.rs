@@ -903,4 +903,80 @@ mod native {
         assert!(receipt["artifacts"]["bathtub.csv"].is_object());
         assert!(receipt["artifacts"]["eye-contours.csv"].is_object());
     }
+
+    #[test]
+    fn touchstone_network_runs_b5_training_window_and_exports_adaptation_and_events() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+
+        // Enable B5 DFE with preloaded state and training window (10 to 200 UI)
+        req["rx"]["dfeTaps"] = 4.into();
+        req["rx"]["dfe"] = serde_json::json!({
+            "gain": 0.05,
+            "decisionScaler": 0.5,
+            "deltaT": 1e-13,
+            "alpha": 0.01,
+            "bandwidth": 32e9,
+            "ideal": false,
+            "useAgc": false,
+            "nLockAve": 10,
+            "relLockTol": 0.1,
+            "lockSustain": 5,
+            "nAve": 5,
+            "agcNAve": 10,
+            "initialWeights": [0.05, -0.02, 0.01, -0.005],
+            "initialValues": [1.0, -1.0, 1.0, -1.0],
+            "initialCorrections": [0.0, 0.0, 0.0, 0.0],
+            "trainingStartUi": 10,
+            "trainingEndUi": 200
+        });
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "b5_training_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("b5_training_run");
+
+        assert!(dir.join("dfe-adaptation.csv").is_file());
+        assert!(dir.join("dfe-events.csv").is_file());
+
+        // Check dfe-adaptation.csv
+        let (adapt_headers, adapt_rows) = csv(dir.join("dfe-adaptation.csv"));
+        assert_eq!(
+            adapt_headers,
+            vec!["clock_index", "time_s", "tap_0_weight", "tap_1_weight", "tap_2_weight", "tap_3_weight"]
+        );
+        assert!(!adapt_rows.is_empty());
+
+        // Verify strict frozen weight invariance: all clocks >= 200 must match clock 200 exactly!
+        if adapt_rows.len() > 200 {
+            let frozen_row = &adapt_rows[200];
+            for row in &adapt_rows[200..] {
+                assert_eq!(row[2], frozen_row[2], "tap 0 drifted after training end!");
+                assert_eq!(row[3], frozen_row[3], "tap 1 drifted after training end!");
+                assert_eq!(row[4], frozen_row[4], "tap 2 drifted after training end!");
+                assert_eq!(row[5], frozen_row[5], "tap 3 drifted after training end!");
+            }
+        }
+
+        // Check dfe-events.csv
+        let (event_headers, event_rows) = csv(dir.join("dfe-events.csv"));
+        assert_eq!(
+            event_headers,
+            vec!["clock_index", "time_s", "slicer_input_v", "decision", "error_v", "update_enabled", "bank_updated"]
+        );
+        assert_eq!(event_rows.len(), adapt_rows.len().saturating_sub(1));
+
+        // Check meta.json diagnostics for invariance assertion
+        let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
+        let inv = &meta["diagnostics"]["touchstone_network"]["dfe_training_invariance"];
+        assert_eq!(inv["checked"], true);
+        assert_eq!(inv["training_end_ui"], 200);
+        assert_eq!(inv["passes_invariance"], true);
+        assert_eq!(inv["maximum_drift"], 0.0);
+
+        // Verify receipt
+        let receipt: Value = serde_json::from_slice(&fs::read(dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert!(receipt["artifacts"]["dfe-adaptation.csv"].is_object());
+        assert!(receipt["artifacts"]["dfe-events.csv"].is_object());
+    }
 }
