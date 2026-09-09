@@ -143,6 +143,7 @@ Build Tools。使用[微软官方运行库说明与下载](https://learn.microso
 - **B5 接收机自适应训练与可观测寄存器导出**：支持 DFE 显式初态预装（`initialWeights`、`initialValues`、`initialCorrections`）与有限训练窗口（`trainingStartUi`、`trainingEndUi`）；自动导出 `dfe-adaptation.csv`（全时钟 tap 权重演进轨迹）与 `dfe-events.csv`（每个采样事件的 slicer 输入、决策、误差与 bank 更新标志）；并在 `meta.json` 诊断中严格执行训练窗口关闭后的权重不变性零漂移检查（`dfe_training_invariance`）。
 - **PAM4 四电平与三眼统计闭环**：支持 IEEE 802.3ck 标准 Gray 编码 PAM4 调制（00, 01, 11, 10）与 3 门限切片判决；自动计算四电平（$V_0, V_1, V_2, V_3$）、三切片门限（$V_{th,\text{lower/mid/upper}}$）、独立三眼高/眼宽（$EH_{\text{upper/mid/lower}}$, $EW_{\text{upper/mid/lower}}$）与最差眼高/眼宽；依标准计算电平失配比率（$RLM = 3 \min(\Delta V) / (V_3 - V_0)$），统计符号误码率（SER）并映射为 Gray 位误码率（BER），相关指标输出至 `eye-metrics.csv` 并在 HTML 报告中展示。
 - **多通道串扰（NEXT / FEXT）闭环**：支持 8/12/16 端口多对 Touchstone 文件的差分提取及解析耦合模型；支持配置 1~N 个独立 Aggressor，允许定义独立 PRBS 码型、调制模式、幅度、相对时延/相位及异步时钟频率偏移（ppm 漂移）；通过加载网络求解频域串扰传递函数并执行一次 FD-to-TD 得到感应冲激响应，经时域无混叠线性卷积与叠加生成总串扰噪声波形 `crosstalk_noise_v`；计算集成串扰噪声（ICN / $\sigma_{\text{RMS}}$）、峰峰值（$V_{\text{p-p}}$）与信号串扰比（SCR, dB），并在 HTML 报告中提供直观对比卡片。
+- **实测 TX 脉冲响应（Measured TX Pulse Stimulus）闭环**：支持配置实测或通过 TXF-01 拟合提取的单脉冲响应（`measuredPulse`，包含 `pulseResponseV`、采样步长与参考面），通过时域符号线性重叠相加（Overlap-Add, $v_{\text{tx}}[n] = \sum_k s_k \cdot p[n - k \cdot \text{spui}]$）取代生硬的理想矩形保持（Hold）；保证单脉冲输入严格还原原脉冲响应，相继符号以 UI 步长线性叠加并自适应重采样对齐仿真时间网格，为实测发射机与理想发射机在同一物理通道下的眼图与误码对比提供直接闭环。
 
 ## 验证与边界
 

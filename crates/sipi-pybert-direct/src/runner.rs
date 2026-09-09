@@ -1177,7 +1177,7 @@ fn strict_tx(value: &Value) -> Result<(), DirectRunError> {
     keys(
         object,
         "$.tx",
-        &["amplitude", "ffe", "additiveNoise", "periodicNoise"],
+        &["amplitude", "ffe", "additiveNoise", "periodicNoise", "measuredPulse"],
     )?;
     strict_ffe(
         object
@@ -1192,6 +1192,19 @@ fn strict_tx(value: &Value) -> Result<(), DirectRunError> {
     }
     if let Some(value) = object.get("periodicNoise").filter(|value| !value.is_null()) {
         object_keys(value, "$.tx.periodicNoise", &["magnitude", "frequency"])?;
+    }
+    if let Some(value) = object.get("measuredPulse").filter(|value| !value.is_null()) {
+        object_keys(
+            value,
+            "$.tx.measuredPulse",
+            &[
+                "pulseResponseV",
+                "sampleIntervalS",
+                "cursorIndex",
+                "amplitudeScale",
+                "referencePlane",
+            ],
+        )?;
     }
     Ok(())
 }

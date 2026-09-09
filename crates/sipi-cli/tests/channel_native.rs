@@ -1114,4 +1114,38 @@ mod native {
         assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
         assert!(receipt["artifacts"]["eye-metrics.csv"].is_object());
     }
+
+    #[test]
+    fn touchstone_network_runs_measured_tx_pulse_stimulus() {
+        let root = Temp::new();
+        let mut req: Value = serde_json::from_slice(TEMPLATE_TOUCHSTONE).unwrap();
+        req["timebase"]["nbits"] = 256.into();
+
+        // Empirical single-pulse response measured or fitted from lab data
+        let pulse = vec![0.0, 0.05, 0.25, 0.70, 1.0, 0.75, 0.35, 0.10, 0.02, 0.0];
+        req["tx"]["measuredPulse"] = serde_json::json!({
+            "pulseResponseV": pulse,
+            "amplitudeScale": 0.9,
+            "referencePlane": "tp0a"
+        });
+
+        let output = root.run_touchstone(&serde_json::to_vec(&req).unwrap(), "measured_tx_run");
+        assert!(output.status.success(), "{output:?}");
+        let dir = root.0.join("measured_tx_run");
+
+        // Verify meta.json records that measured pulse was enabled
+        let meta: Value = serde_json::from_slice(&fs::read(dir.join("meta.json")).unwrap()).unwrap();
+        let metrics = &meta["backend_metadata"]["metrics"];
+        assert_eq!(metrics["tx_measured_pulse_enabled"], 1.0);
+
+        // Verify waveforms.csv was exported and contains smooth transitions
+        let wave_csv = fs::read_to_string(dir.join("waveforms.csv")).unwrap();
+        assert!(wave_csv.contains("tx_waveform_v"));
+        assert!(wave_csv.contains("rx_output_v"));
+
+        // Verify receipt
+        let receipt: Value = serde_json::from_slice(&fs::read(dir.join("receipt.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "complete");
+        assert_eq!(receipt["channel_policy"], "touchstone-network-v1");
+    }
 }

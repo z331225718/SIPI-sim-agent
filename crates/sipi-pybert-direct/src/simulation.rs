@@ -384,6 +384,28 @@ fn simulate_native_v1_inner(
         samples_per_ui,
         max_total_samples,
     )?;
+    if let Some(pulse_cfg) = &input.tx.measured_pulse {
+        let mut custom_tx = crate::generate_measured_tx_waveform(
+            &symbols,
+            samples_per_ui,
+            input.timebase.sample_interval.0,
+            pulse_cfg,
+            sample_count,
+        )
+        .map_err(|_| NativeSimulationError::Contract(crate::ContractError::InvalidChannelResponse))?;
+
+        if input.tx.ffe.enabled && !input.tx.ffe.weights.is_empty() {
+            let ffe_impulse = ffe_impulse_response(
+                &input.tx.ffe.weights,
+                samples_per_ui,
+                input.tx.ffe.weights.len() * samples_per_ui,
+            )?;
+            custom_tx = convolve_truncated(&custom_tx, &ffe_impulse, sample_count)?;
+        }
+        linear.tx_waveform = custom_tx;
+        linear.rx_input = causal_convolve_truncated(&linear.tx_waveform, &channel_impulse, sample_count)?;
+        linear.rx_output = causal_convolve_truncated(&linear.rx_input, &rx_filter, sample_count)?;
+    }
     cancellation.check()?;
     let periodic_noise = input
         .tx
@@ -524,6 +546,9 @@ fn simulate_native_v1_inner(
     }
     if let Some(encoded_bits) = &fec_encoded_bits {
         metrics.insert("fec_encoded_bit_count".into(), encoded_bits.len() as f64);
+    }
+    if input.tx.measured_pulse.is_some() {
+        metrics.insert("tx_measured_pulse_enabled".into(), 1.0);
     }
     let mut arrays = BTreeMap::from([
         (

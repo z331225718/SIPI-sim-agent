@@ -18,6 +18,7 @@ mod legacy_runtime;
 mod legacy_sim;
 mod crosstalk;
 mod numpy_normal;
+mod measured_tx;
 mod output;
 mod pam4_eye;
 mod pattern;
@@ -53,6 +54,10 @@ pub use decoder::{
 pub use equalization::{
     CtleConfig, EqualizationError, apply_ffe, apply_ffe_to_response, ctle_frequency_response,
     ctle_impulse_response, ffe_impulse_response,
+};
+pub use measured_tx::{
+    MeasuredTxError, MeasuredTxPulseConfigV1, generate_measured_tx_waveform,
+    resample_pulse_linear,
 };
 pub use error::ContractError;
 pub use event::RunEventV1;

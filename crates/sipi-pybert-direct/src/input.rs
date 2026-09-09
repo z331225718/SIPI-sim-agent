@@ -342,6 +342,8 @@ pub struct TxConfigV1 {
     /// receiver input. Host-provided random noise remains separate above.
     #[serde(default)]
     pub periodic_noise: Option<PeriodicNoiseV1>,
+    #[serde(default)]
+    pub measured_pulse: Option<crate::MeasuredTxPulseConfigV1>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
@@ -391,6 +393,7 @@ impl Default for TxConfigV1 {
             ffe: FfeConfigV1::default(),
             additive_noise: None,
             periodic_noise: None,
+            measured_pulse: None,
         }
     }
 }
@@ -406,6 +409,9 @@ impl TxConfigV1 {
         }
         if let Some(periodic_noise) = &self.periodic_noise {
             periodic_noise.validate()?;
+        }
+        if let Some(pulse) = &self.measured_pulse {
+            pulse.validate().map_err(|_| ContractError::InvalidChannelResponse)?;
         }
         Ok(())
     }

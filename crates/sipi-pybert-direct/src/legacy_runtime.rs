@@ -556,6 +556,7 @@ impl LegacyConfigProjectionV1 {
                     magnitude: Volts(self.pn_mag_v),
                     frequency: Hertz(self.pn_freq_mhz * 1.0e6),
                 }),
+                measured_pulse: None,
             },
             rx: RxConfigV1 {
                 native_ctle_enabled: self.ctle_enable
