@@ -86,7 +86,7 @@ class SipiSpDdrTranBenchmarkTests(unittest.TestCase):
         self.assertLessEqual(c8["max_droop_mv"], c8["allowed_droop_mv"])
 
     def test_case_9_statistical_eye(self):
-        c9 = next(c for c in self.result["cases"] if c["name"] == "Statistical Eye Diagram & Bathtub")
+        c9 = next(c for c in self.result["cases"] if c["name"] == "2D Statistical Eye Contours & Bathtub")
         self.assertTrue(c9["passed"])
         self.assertTrue(c9["overlay_verified"])
         self.assertGreater(c9["eye_width_at_1e12_ps"], 15.0)

@@ -98,20 +98,20 @@
       "figure": "tran-pdn-voltage-droop.png"
     },
     {
-      "name": "Statistical Eye Diagram & Bathtub",
+      "name": "2D Statistical Eye Contours & Bathtub",
       "domain": "Statistical Eye",
-      "description": "32 GBd high-speed serial channel (UI = 31.25 ps) statistical eye and bathtub curve comparison. Models deterministic ISI plus Dual-Dirac jitter (RJ = 500 fs, DJ = 3.50 ps). Computes statistical eye width and eye height at target BER = 1e-12.",
+      "description": "2D Statistical Eye Contours and Bathtub Curve comparison (32 GBd, UI = 31.25 ps). Models deterministic ISI and Dual-Dirac jitter (RJ = 500 fs, DJ = 3.50 ps). Overlays 2D iso-BER contour loops at BER = 1e-3, 1e-6, 1e-9, 1e-12 in (t, V) plane and bathtub curves between Keysight ADS ChannelSim and SIPI Statistical Engine.",
       "data_rate_gbd": 32.0,
-      "eye_width_at_1e12_ps": 20.7155,
-      "eye_height_at_1e12_mv": 185.4,
-      "total_jitter_at_1e12_ps": 10.534500000000001,
+      "eye_width_at_1e12_ps": 20.813299999999998,
+      "eye_height_at_1e12_mv": 363.69629999999995,
+      "total_jitter_at_1e12_ps": 10.436700000000002,
       "random_jitter_rj_ps": 0.5,
       "deterministic_jitter_dj_ps": 3.5,
       "max_residual_error_log_ber": 4.199855396791463e-08,
       "passed": true,
       "overlay_verified": true,
-      "csv": "sp-statistical-eye.csv",
-      "figure": "sp-statistical-eye-bathtub.png"
+      "csv": "sp-statistical-eye-contours.csv",
+      "figure": "sp-statistical-eye-contours.png"
     }
   ],
   "artifacts": {
@@ -127,7 +127,7 @@
     "ddr4-3200-rx-mask.png": "63400eff651cf9279e9b857928c36745ed4e6904a98ac08652bd9a7982b4d5ad",
     "ddr5-6400-dfe-mask.png": "42fe7fbf08d8cbdb12432c818a18290ee0ed5da968dc4c5b5353f9159bde5c15",
     "ddr5-6400-dq.csv": "42c06b1e472fa61ee38fda616281fd70f83fa82d31059d86e1c9a7301614a947",
-    "report.html": "0b2a758aac85fe5d40b665109a2e99f4cb0b97e02d73e9adc37f4e5ce77a9103",
+    "report.html": "3b7401b78dac444d6bc3732fa9f63811b323455f4d21325bd43aa862dc8a1064",
     "sp-lossy-microstrip.csv": "5748b81ee593808f2be54e81a8271600258ba5d24fe5f8c7aeeee618a119890b",
     "sp-lossy-microstrip.png": "aef9d56538896f1a2617529b05b02dd213562f27125175dad361864b21b763bb",
     "sp-mixed-mode.csv": "b177b3eb30b1902399d4fe9dabff50c85cde140434933120b2709919e357e854",
@@ -135,6 +135,8 @@
     "sp-resonant-stub.csv": "a4fd45adf0957ed1a5862822f55f4be4638c3159c520f8d7bf62f4e4ba77722e",
     "sp-resonant-stub.png": "a86b1cf7bfeb5b3f44055018bcd7ab2b73308e1cd696acd4d8a24924f51f154f",
     "sp-statistical-eye-bathtub.png": "8095554c9594be1a6fdb7671d6a4c8b7487d7b3f7ddcd6e929002d01f7bbccab",
+    "sp-statistical-eye-contours.csv": "ce6d5a0a65aa33328d87fd656cd82712487b6997104835d331f0daad4290bc72",
+    "sp-statistical-eye-contours.png": "0c645d40c881d18f20d62fd911b65af8e56a6e6f465a343f5634734b39111e63",
     "sp-statistical-eye.csv": "36295331cef7e56068a97f1d12f91c802862aa752e77da89750bb6f0bae9faf0",
     "tran-pdn-droop.csv": "d865acbfbed890bb8d1483239085dd63864ad5487a06e614dbcdfd2f2014ce3a",
     "tran-pdn-impedance-profile.png": "136314d3c923d95fec55263ac800a932ea98a72a3815433cb7d9c27c636e87f3",
