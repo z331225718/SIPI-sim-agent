@@ -98,6 +98,8 @@ Start-Process .\results\channel-native-run\report.html
 不能将兼容模式波形直接当作绝对传播时延或物理负载电压，详见
 [ADS 数值诊断](docs/channel-native-ads-diagnostics-20260909.md)。
 
+完整基准复现与自动化校验步骤见 [SI/PI 基准复现指南](docs/sipi-benchmarks-reproduction.md)。
+
 ## 核心文档
 
 - [SPEC.md](SPEC.md)：产品范围、目标架构、公共契约、引擎边界和验收标准。

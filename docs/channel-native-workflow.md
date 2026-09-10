@@ -151,6 +151,8 @@ Build Tools。使用[微软官方运行库说明与下载](https://learn.microso
   - **DDR 内存总线基准**：DDR4-3200 与 DDR5-6400 DQ 链路模型（含控制器驱动、PCB 传输线、DIMM fly-by 残桩与 DRAM 焊球 $C_{\text{in}}$ 寄生），实现基于 JEDEC JESD79-4 / JESD79-5 规范的 $V_{dIVW} \times T_{dIVW}$ 接收端禁区掩模合规判定、压摆率提取，以及 4-Tap DFE 均衡开眼验证。
   - **瞬态与电源完整性（TDR / PDN）基准**：TDR 反射系数与特征阻抗剖面重构 $Z(t) = Z_0 \frac{1+\Gamma(t)}{1-\Gamma(t)}$，以及多阶去耦电容（散装、中频与高频 MLCC，含 ESR 与 ESL 寄生回路电感）并联抗谐振阻抗峰 $Z(f)$ 与核供电轨动态大电流阶跃电压下陷（Voltage Droop）与阻尼振荡瞬态仿真。
 
+
+三大基准的从零复现与报告生成详见 [SI/PI 基准测试复现指南](sipi-benchmarks-reproduction.md)。
 ## 验证与边界
 
 ```powershell
