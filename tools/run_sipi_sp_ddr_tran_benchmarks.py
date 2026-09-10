@@ -1293,7 +1293,10 @@ def generate_html_report(output_dir: Path, case_results: list[dict], sipi_sha256
 def main():
     parser = argparse.ArgumentParser(description="Run full SIPI SP, DDR, and TRAN benchmark suite with dual-trace overlays.")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results/sipi-benchmarks-sp-ddr-tran-20260910")
-    parser.add_argument("--sipi", type=Path, default=ROOT / "target/release/sipi.exe")
+    default_sipi = ROOT / "bin/sipi.exe"
+    if not default_sipi.is_file():
+        default_sipi = ROOT / "target/release/sipi.exe"
+    parser.add_argument("--sipi", type=Path, default=default_sipi)
     args = parser.parse_args()
 
     out_dir = args.output_dir

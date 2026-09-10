@@ -51,16 +51,23 @@ $example.result.request | ConvertTo-Json -Depth 40 -Compress | & $sipi channel r
 
 Channel 主线现在直接在 **SIPI 本仓库** 接入已有 `sipi-pybert-direct`，不需要再 clone
 PyBERT、安装 Python 或调用另一个仿真程序。显式启用候选模块后仍只有一个 `sipi.exe`：
+仓库已内置预编译好的 Windows x64 可执行程序 `bin/sipi.exe`，从远端 clone 或 pull 之后**无需安装 Rust/Cargo 编译工具链即可直接开箱使用**：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_windows.ps1 -Channel
-$sipi = '.\target\x86_64-pc-windows-msvc\release\sipi.exe'
-& $sipi channel help
-& $sipi channel init channel-request.json
-& $sipi channel simulate channel-request.json --output-dir results/channel-native-run
+.\bin\sipi.exe version --json
+.\bin\sipi.exe channel help
+.\bin\sipi.exe ami help
+.\bin\sipi.exe channel init channel-request.json
+.\bin\sipi.exe channel simulate channel-request.json --output-dir results/channel-native-run
 Start-Process .\results\channel-native-run\report.html
 ```
 
+如需从源码重新构建，可执行：
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build_windows.ps1 -Channel
+# 或直接使用 cargo:
+cargo build --release -p sipi-cli --features pybert-direct-integration
+```
 示例为 32 Gbit/s NRZ、PRBS9、5 cm metallic line，共 8192 个波形样点。
 输出原生 `meta.json` / `arrays.npz`、全量逐点 CSV、离线 HTML 和最后写入的哈希收据。
 离线报告可浏览完整时段、切换阶段曲线和读取原始样点；随输出生成 `channel-report.js`，

@@ -693,7 +693,9 @@ def main():
     execute = commands.add_parser("run")
     execute.add_argument("plan", type=Path)
     execute.add_argument("--output-dir", type=Path, required=True)
-    default_sipi = ROOT / "target/release/sipi.exe"
+    default_sipi = ROOT / "bin/sipi.exe"
+    if not default_sipi.is_file():
+        default_sipi = ROOT / "target/release/sipi.exe"
     if not default_sipi.is_file():
         default_sipi = ROOT / "target/x86_64-pc-windows-msvc/release/sipi.exe"
     if default_sipi.is_file():
