@@ -13,6 +13,12 @@ use sipi_types::{Complex64, Hertz, Ohms};
 
 pub mod selected_four_port_v1;
 
+/// Relative tolerance for the uniform-grid identity `f(index) == index * step`.
+/// The identity is compared on values that were parsed from decimal text, so an
+/// exact binary comparison would reject uniform grids whose step is not exactly
+/// representable. This matches the tolerance the channel owner uses.
+const UNIFORM_GRID_RELATIVE_TOLERANCE: f64 = 1.0e-9;
+
 /// Bounded parsing limits supplied by the caller. They carry no file or
 /// transport policy; the parser operates only on the bytes it receives.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -247,7 +253,15 @@ pub fn admit_matched_two_port_spectrum_v1(
         if row.frequency_hz <= rows[index - 1].frequency_hz {
             return Err(TouchstoneError::NonIncreasingFrequency);
         }
-        if row.frequency_hz.to_bits() != (index as f64 * step).to_bits() {
+        // `index * step` cannot reproduce the decimal text of a grid whose step
+        // is not exactly representable in binary, so a bit-exact comparison
+        // rejects legitimately uniform grids (`3.0 * 0.1 != 0.3`). Compare with
+        // the same relative tolerance the channel owner already applies to this
+        // identity; only the double-rounding residue is absorbed, a real grid
+        // discontinuity is still rejected.
+        let expected = index as f64 * step;
+        let scale = expected.abs().max(step.abs());
+        if (row.frequency_hz - expected).abs() > UNIFORM_GRID_RELATIVE_TOLERANCE * scale {
             return Err(TouchstoneError::NonUniformFrequencyGrid);
         }
     }
@@ -458,6 +472,36 @@ mod tests {
         assert_eq!(
             admit_matched_two_port_spectrum_v1(&too_few).unwrap_err(),
             TouchstoneError::TooFewRows
+        );
+    }
+
+    /// A uniform grid whose step is not exactly representable in binary cannot
+    /// satisfy `index * step` bit-exactly (`3.0 * 0.1 != 0.3`). Admission must
+    /// not reject it, while a genuine grid discontinuity must still fail.
+    #[test]
+    fn uniform_decimal_grid_is_admitted_but_a_real_discontinuity_is_not() {
+        let uniform_decimal = parse_touchstone_hz_s_ri_50_two_port_v1(
+            &source(
+                "0 0 0 1 0 0 0 0 0\r\n0.1 0 0 1 0 0 0 0 0\r\n0.2 0 0 1 0 0 0 0 0\r\n0.3 0 0 1 0 0 0 0 0\r\n0.4 0 0 1 0 0 0 0 0",
+            ),
+            limits(),
+        )
+        .unwrap();
+        assert!(
+            admit_matched_two_port_spectrum_v1(&uniform_decimal).is_ok(),
+            "a uniform decimal grid is not a non-uniform grid"
+        );
+
+        let discontinuity = parse_touchstone_hz_s_ri_50_two_port_v1(
+            &source(
+                "0 0 0 1 0 0 0 0 0\r\n0.1 0 0 1 0 0 0 0 0\r\n0.2 0 0 1 0 0 0 0 0\r\n0.3001 0 0 1 0 0 0 0 0",
+            ),
+            limits(),
+        )
+        .unwrap();
+        assert_eq!(
+            admit_matched_two_port_spectrum_v1(&discontinuity).unwrap_err(),
+            TouchstoneError::NonUniformFrequencyGrid
         );
     }
 }

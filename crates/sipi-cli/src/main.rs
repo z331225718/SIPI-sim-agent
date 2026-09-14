@@ -4433,6 +4433,9 @@ fn version_json() -> String {
 }
 
 fn capabilities_json() -> String {
+    // The inventory must follow the command manifest: a route that an opt-in
+    // feature admits cannot still be advertised as `not_implemented`, or an
+    // automated caller would skip a capability this build actually has.
     let capabilities = PLANNED_DOMAINS
         .iter()
         .map(|domain| {
@@ -4440,6 +4443,10 @@ fn capabilities_json() -> String {
                 "{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_bounded_one_node_rc_sources_only\"}".to_owned()
             } else if *domain == "channel" && manifest_available("channel.run") {
                 "{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"}".to_owned()
+            } else if *domain == "ibis-ami" && manifest_available("ami.run") {
+                "{\"domain\":\"ibis-ami\",\"status\":\"limited\",\"reason\":\"bounded_vendor_dll_abi_execution_only\"}".to_owned()
+            } else if *domain == "com" && manifest_available("com.run") {
+                "{\"domain\":\"com\",\"status\":\"limited\",\"reason\":\"r480_direct_port_scoped_no_oracle_acceptance_or_release\"}".to_owned()
             } else {
                 format!(
                     "{{\"domain\":\"{domain}\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}}"
@@ -4641,11 +4648,49 @@ mod tests {
 
         assert_eq!(response.code, 0);
         assert_eq!(response.stderr, None);
-        assert_eq!(
-            response.stdout.as_deref(),
-            Some(
-                "{\"schema\":\"sipi.capabilities.v1\",\"product\":{\"name\":\"sipi\",\"version\":\"0.1.0\"},\"platform\":{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"},\"capabilities\":[{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_bounded_one_node_rc_sources_only\"},{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"},{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"},{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}]}"
-            )
+        // The `ibis-ami` and `com` entries must follow the command manifest: the
+        // manifest admits `ami.run` only under `pybert-direct-integration` and
+        // `com.run` only under `com-direct-integration`, so the inventory may
+        // report `not_implemented` only in the matching default build. Pinning
+        // `not_implemented` unconditionally would re-introduce the defect where
+        // an automated caller skips a capability this build actually has.
+        let ibis_ami = if cfg!(feature = "pybert-direct-integration") {
+            "{\"domain\":\"ibis-ami\",\"status\":\"limited\",\"reason\":\"bounded_vendor_dll_abi_execution_only\"}"
+        } else {
+            "{\"domain\":\"ibis-ami\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}"
+        };
+        let com = if cfg!(feature = "com-direct-integration") {
+            "{\"domain\":\"com\",\"status\":\"limited\",\"reason\":\"r480_direct_port_scoped_no_oracle_acceptance_or_release\"}"
+        } else {
+            "{\"domain\":\"com\",\"status\":\"unsupported\",\"reason\":\"not_implemented\"}"
+        };
+        let expected = format!(
+            "{{\"schema\":\"sipi.capabilities.v1\",\"product\":{{\"name\":\"sipi\",\"version\":\"0.1.0\"}},\"platform\":{{\"target\":\"x86_64-pc-windows-msvc\",\"certification\":\"uncertified\"}},\"capabilities\":[{{\"domain\":\"tran\",\"status\":\"limited\",\"reason\":\"fixed_rc_pulse_and_bounded_one_node_rc_sources_only\"}},{{\"domain\":\"channel\",\"status\":\"limited\",\"reason\":\"matched_s21_periodic_kernel_only\"}},{ibis_ami},{com}]}}"
+        );
+        assert_eq!(response.stdout.as_deref(), Some(expected.as_str()));
+    }
+
+    #[cfg(feature = "com-direct-integration")]
+    #[test]
+    fn capability_inventory_follows_an_admitted_opt_in_route() {
+        let response = dispatch(&args(&["capabilities", "--json"]));
+        assert_eq!(response.code, 0);
+        let stdout = response.stdout.expect("capabilities stdout");
+        assert!(
+            stdout.contains("{\"domain\":\"com\",\"status\":\"limited\",\"reason\":\"r480_direct_port_scoped_no_oracle_acceptance_or_release\"}"),
+            "an admitted route must not be advertised as not_implemented: {stdout}"
+        );
+    }
+
+    #[cfg(feature = "pybert-direct-integration")]
+    #[test]
+    fn capability_inventory_follows_an_admitted_opt_in_ami_route() {
+        let response = dispatch(&args(&["capabilities", "--json"]));
+        assert_eq!(response.code, 0);
+        let stdout = response.stdout.expect("capabilities stdout");
+        assert!(
+            stdout.contains("{\"domain\":\"ibis-ami\",\"status\":\"limited\",\"reason\":\"bounded_vendor_dll_abi_execution_only\"}"),
+            "an admitted route must not be advertised as not_implemented: {stdout}"
         );
     }
 

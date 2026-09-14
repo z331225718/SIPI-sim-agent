@@ -12,6 +12,10 @@ pub enum ContractError {
     InvalidDataRate,
     #[error("samples per UI must be greater than zero")]
     InvalidSamplesPerUi,
+    #[error(
+        "sample interval, samples per UI, and data rate must describe one consistent symbol clock"
+    )]
+    InconsistentTimebase,
     #[error("bit count must be greater than zero")]
     InvalidBitCount,
     #[error("PRBS order must be between 2 and 63")]

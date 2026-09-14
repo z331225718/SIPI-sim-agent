@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ContractError, Hertz, Ohms, SIMULATION_SCHEMA_V1, Seconds, Volts};
 
+/// Relative tolerance for the single cross-field timebase identity
+/// `sample_interval * samples_per_ui == 1 / data_rate`. It absorbs double
+/// rounding only; any real parameter mismatch is far larger.
+const TIMEBASE_UI_RELATIVE_TOLERANCE: f64 = 1.0e-9;
+
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ModulationV1 {
@@ -72,6 +77,22 @@ impl TimebaseV1 {
         }
         if self.nbits == 0 {
             return Err(ContractError::InvalidBitCount);
+        }
+        // One symbol clock has exactly one period. The timebase supplies the UI
+        // twice: through the sample grid (`sample_interval * samples_per_ui`)
+        // and through the symbol rate (`1 / data_rate`). Admit the request only
+        // when both describe the same UI, otherwise the time axis used for
+        // convolution and the UI used by the CDR/jitter stages silently drift
+        // apart. The tolerance only absorbs double rounding, not a mismatch.
+        let ui_from_grid_s: f64 = self.sample_interval.0 * f64::from(self.samples_per_ui);
+        let ui_from_rate_s: f64 = 1.0 / self.data_rate.0;
+        if !ui_from_grid_s.is_finite() || !ui_from_rate_s.is_finite() {
+            return Err(ContractError::InconsistentTimebase);
+        }
+        if (ui_from_grid_s - ui_from_rate_s).abs()
+            > TIMEBASE_UI_RELATIVE_TOLERANCE * ui_from_rate_s.abs()
+        {
+            return Err(ContractError::InconsistentTimebase);
         }
         Ok(())
     }

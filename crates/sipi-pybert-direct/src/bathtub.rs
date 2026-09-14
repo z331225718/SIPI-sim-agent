@@ -11,7 +11,7 @@ pub enum BathtubError {
     InvalidLength,
     #[error("bathtub centers, jitter PDF, and parameters must be finite")]
     NonFiniteInput,
-    #[error("bathtub bin spacing must be non-zero")]
+    #[error("bathtub bin spacing must be strictly positive")]
     InvalidBinSpacing,
     #[error("random-jitter sigma must be finite and greater than zero when extrapolating")]
     InvalidRandomJitter,
@@ -43,7 +43,10 @@ pub fn make_bathtub(
         return Err(BathtubError::NonFiniteInput);
     }
     let bin_width = centers[2] - centers[1];
-    if bin_width == 0.0 {
+    // A zero *or negative* spacing is invalid: descending centers invert the
+    // sign of every probability mass and therefore of the whole CDF, so the
+    // bath tub would report negative probabilities instead of failing closed.
+    if !(bin_width > 0.0) {
         return Err(BathtubError::InvalidBinSpacing);
     }
     if extrapolate && random_jitter_sigma <= 0.0 {

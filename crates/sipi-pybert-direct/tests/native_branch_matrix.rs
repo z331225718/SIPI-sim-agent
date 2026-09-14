@@ -7,11 +7,12 @@
 use std::collections::BTreeMap;
 
 use sipi_pybert_direct::{
-    AdditiveNoiseV1, AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, CtleConfigV1,
-    DfeConfigV1, FfeConfigV1, Hertz, MetallicLineChannelV1, ModulationV1, NativeCancellationToken,
-    NativeSimulationError, Ohms, PatternV1, PeriodicNoiseV1, ResourceLimitsV1, RxConfigV1,
-    SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1, StatisticalEyeConfigV1, TxConfigV1,
-    ViterbiConfigV1, Volts, simulate_native_v1, simulate_native_v1_with_cancellation,
+    AdditiveNoiseV1, AnalysisConfigV1, ChannelInputV1, ChannelResponseV1, ContractError,
+    CtleConfigV1, DfeConfigV1, FfeConfigV1, Hertz, MetallicLineChannelV1, ModulationV1,
+    NativeCancellationToken, NativeSimulationError, Ohms, PatternV1, PeriodicNoiseV1,
+    ResourceLimitsV1, RxConfigV1, SIMULATION_SCHEMA_V1, Seconds, SimulationInputV1,
+    StatisticalEyeConfigV1, TxConfigV1, ViterbiConfigV1, Volts, simulate_native_v1,
+    simulate_native_v1_with_cancellation,
 };
 
 fn impulse() -> ChannelInputV1 {
@@ -41,6 +42,7 @@ fn base(run_id: &str) -> SimulationInputV1 {
             ffe: FfeConfigV1::default(),
             additive_noise: None,
             periodic_noise: None,
+            measured_pulse: None,
         },
         rx: RxConfigV1 {
             native_ctle_enabled: false,
@@ -66,6 +68,7 @@ fn base(run_id: &str) -> SimulationInputV1 {
         },
         external_models: Vec::new(),
         legacy_options: BTreeMap::new(),
+        sweep: None,
     }
 }
 
@@ -84,6 +87,11 @@ fn dfe() -> DfeConfigV1 {
         use_agc: true,
         agc_n_ave: 4,
         tap_limits: Some(vec![(-0.2, 0.2)]),
+        initial_weights: None,
+        initial_values: None,
+        initial_corrections: None,
+        training_start_ui: None,
+        training_end_ui: None,
     }
 }
 
@@ -665,4 +673,23 @@ fn native_request_fail_closed_branches_are_explicit() {
         simulate_native_v1_with_cancellation(&base("branch-cancel"), &cancellation),
         Err(NativeSimulationError::Cancelled)
     ));
+}
+
+/// The timebase carries the UI twice: through the sample grid and through the
+/// symbol rate. A request whose grid and rate disagree would drive the
+/// convolution time axis and the CDR/jitter UI from different clocks, so it
+/// must be rejected before any stage runs.
+#[test]
+fn native_request_rejects_a_timebase_whose_grid_disagrees_with_the_symbol_rate() {
+    let mut input = base("branch-timebase-inconsistent");
+    input.timebase.data_rate = Hertz(1.0e9);
+    assert_eq!(
+        simulate_native_v1(&input).unwrap_err(),
+        NativeSimulationError::Contract(ContractError::InconsistentTimebase)
+    );
+
+    let mut consistent = base("branch-timebase-consistent");
+    consistent.timebase.samples_per_ui = 8;
+    consistent.timebase.data_rate = Hertz(125.0e9);
+    run(&consistent);
 }

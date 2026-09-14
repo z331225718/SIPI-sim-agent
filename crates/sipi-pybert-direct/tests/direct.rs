@@ -36,6 +36,7 @@ fn input() -> SimulationInputV1 {
             ffe: FfeConfigV1::default(),
             additive_noise: None,
             periodic_noise: None,
+            measured_pulse: None,
         },
         rx: RxConfigV1 {
             native_ctle_enabled: false,
@@ -57,6 +58,7 @@ fn input() -> SimulationInputV1 {
         limits: ResourceLimitsV1::default(),
         external_models: vec![],
         legacy_options: BTreeMap::new(),
+        sweep: None,
     }
 }
 
@@ -269,6 +271,11 @@ fn native_serializer_omits_absent_local_receiver_extensions() {
         use_agc: false,
         agc_n_ave: 1,
         tap_limits: None,
+        initial_weights: None,
+        initial_values: None,
+        initial_corrections: None,
+        training_start_ui: None,
+        training_end_ui: None,
     });
 
     let value = serde_json::to_value(request).expect("serialize native request");

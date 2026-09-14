@@ -334,15 +334,16 @@ pub fn calculate_data_dependent_jitter(
     padded_jitter.resize(pattern_count * crossings_per_pattern, 0.0);
     padded_jitter.truncate(pattern_count * crossings_per_pattern);
     let one_pattern_average = pattern_average(&padded_jitter, pattern_count, crossings_per_pattern);
-    // Preserve PyBERT's historical zero-pad behavior here. Although a
-    // repeated pattern might look more natural, `resize_zero_pad()` only
-    // places the averaged pattern at the beginning of the observed TIE span.
-    let mut tie_average = one_pattern_average;
-    tie_average.resize(jitter_s.len(), 0.0);
+    // The averaged pattern must be tiled over the whole observed TIE span. The
+    // deterministic DDJ pattern repeats with period `crossings_per_pattern`;
+    // zero-padding the average after the first period would leave the full
+    // data-dependent TIE of every later period inside the "data independent"
+    // residual, inflating the RJ/PJ fitted from it. SPEC 9.4 forbids
+    // replicating an upstream defect merely because it is upstream.
     let mut data_independent_tie_s = jitter_s
         .iter()
         .enumerate()
-        .map(|(index, jitter)| jitter - tie_average[index])
+        .map(|(index, jitter)| jitter - one_pattern_average[index % crossings_per_pattern])
         .collect::<Vec<_>>();
     if zero_mean {
         let average = mean(&data_independent_tie_s);
@@ -683,4 +684,75 @@ fn moving_average_protect_edges(values: &[f64], width: usize) -> Result<Vec<f64>
     }
     smoothed.push(*values.last().expect("validated minimum length"));
     Ok(smoothed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The deterministic DDJ pattern repeats with period
+    /// `crossings_per_pattern` over the whole observed TIE span. Subtracting
+    /// the averaged pattern only from the first period leaves data-dependent
+    /// jitter inside the "data independent" residual and inflates the RJ/PJ
+    /// fitted from it, so the average must be tiled across the full span.
+    #[test]
+    fn data_dependent_jitter_removes_every_repeated_pattern_period() {
+        let ui_s = 1.0;
+        let pattern_len = 4;
+        let nui = 16;
+        let ideal_crossings_s = (0..nui)
+            .map(|index| index as f64 + 0.5)
+            .collect::<Vec<_>>();
+        // Four repeats of a zero-mean, non-zero-peak-to-peak DDJ pattern.
+        let ddj_pattern = [1.0e-13, -1.0e-13, 2.0e-13, -2.0e-13];
+        let jitter_s = (0..nui)
+            .map(|index| ddj_pattern[index % ddj_pattern.len()])
+            .collect::<Vec<_>>();
+
+        let result = calculate_data_dependent_jitter(
+            ui_s,
+            nui,
+            pattern_len,
+            &ideal_crossings_s,
+            &jitter_s,
+            true,
+        )
+        .expect("repeating DDJ pattern is separable");
+
+        assert_eq!(result.pattern_count, 4);
+        assert_eq!(result.crossings_per_pattern, 4);
+        assert_eq!(result.data_independent_tie_s.len(), jitter_s.len());
+        assert!(
+            result
+                .data_independent_tie_s
+                .iter()
+                .all(|value| value.abs() < 1.0e-30),
+            "a purely periodic TIE leaves no data-independent residue: {:?}",
+            result.data_independent_tie_s
+        );
+        assert!(
+            result.isi_s > 0.0,
+            "the removed pattern must still be reported as ISI"
+        );
+
+        // The rejected behaviour: subtract the averaged pattern only from the
+        // first period and zero-pad the rest of the span. It leaves every
+        // later period's DDJ inside the residual, so it can no longer satisfy
+        // the rejection above for a repeating pattern.
+        let legacy_residual = jitter_s
+            .iter()
+            .enumerate()
+            .map(|(index, jitter)| {
+                if index < result.crossings_per_pattern {
+                    *jitter - (jitter_s[index] - result.data_independent_tie_s[index])
+                } else {
+                    *jitter
+                }
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            legacy_residual.iter().any(|value| value.abs() > 1.0e-13),
+            "the zero-padded residual must retain the later periods' DDJ: {legacy_residual:?}"
+        );
+    }
 }

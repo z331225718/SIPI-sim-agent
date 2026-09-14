@@ -107,9 +107,13 @@ pub(crate) fn execute(action: &str, arguments: &[String]) -> Result<String, AmiF
             "input_schema": "sipi.ami.request.v1",
             "supported_abis": ["AMI_Init", "AMI_GetWave", "AMI_Close"],
             "platform": "windows-x64",
+            // Declared artifacts are exactly the ones `ami run` commits.
+            // `impulse_out.csv` is deliberately absent: the pinned AMI host
+            // exposes no in/out impulse matrix, so declaring it would promise an
+            // artifact that no run can produce. `waveform_out.csv` is written
+            // only when the request supplies `waveformIn`.
             "output_artifacts": [
                 "request.json",
-                "impulse_out.csv",
                 "waveform_out.csv",
                 "clocks.csv",
                 "parameters_out.txt",

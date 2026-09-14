@@ -18,6 +18,13 @@ const NUMERICAL_EPSILON: f64 = 1.0e-15;
 const PASSIVITY_TOLERANCE: f64 = 1.0e-10;
 const RECIPROCITY_TOLERANCE: f64 = 1.0e-10;
 
+/// Upper bound for the discrete-kernel IFFT length. The frequency grid and the
+/// target sample interval jointly determine `N_fft = 1 / (df * dt)`, so a
+/// caller that pairs a tiny step with a tiny interval can otherwise request an
+/// allocation far beyond physical memory. The certified one-sided sample
+/// budgets stay far below this bound, so the request fails closed instead.
+const MAX_DISCRETE_KERNEL_FFT_LENGTH: usize = 1 << 24;
+
 /// Errors arising during Touchstone network admission, port mapping,
 /// cascade, termination loading, or FD-to-TD transformation.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -622,6 +629,9 @@ pub fn spectrum_to_discrete_kernel(
     }
     if n_fft < 2 || n_fft % 2 != 0 {
         return Err(CascadeError::InvalidNyquistGrid);
+    }
+    if n_fft > MAX_DISCRETE_KERNEL_FFT_LENGTH {
+        return Err(CascadeError::FftLengthOverflow);
     }
 
     let one_sided_bins = n_fft / 2 + 1;
@@ -1269,6 +1279,26 @@ mod tests {
         (0..count)
             .map(|i| Hertz::try_new(i as f64 * step_hz).unwrap())
             .collect()
+    }
+
+    /// A 1 Hz grid step with a 1 ps target interval asks for 1e12 complex bins.
+    /// The bounded conversion must fail closed before attempting the
+    /// allocation instead of exhausting memory.
+    #[test]
+    fn test_discrete_kernel_rejects_an_unbounded_fft_length() {
+        let grid = make_grid(2, 1.0);
+        let transfer = vec![Complex::new(1.0, 0.0); grid.len()];
+        assert_eq!(
+            spectrum_to_discrete_kernel(
+                &grid,
+                &transfer,
+                Seconds::try_new(1.0e-12).unwrap(),
+                false,
+                None,
+            )
+            .unwrap_err(),
+            CascadeError::FftLengthOverflow
+        );
     }
 
     #[test]

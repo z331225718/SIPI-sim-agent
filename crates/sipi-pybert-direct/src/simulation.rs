@@ -2422,7 +2422,7 @@ mod tests {
             timebase: TimebaseV1 {
                 sample_interval: Seconds(1.0e-12),
                 samples_per_ui: 2,
-                data_rate: Hertz(5.0e9),
+                data_rate: Hertz(500.0e9),
                 nbits: 1_000,
             },
             channel: ChannelInputV1::ImpulseResponse(ChannelResponseV1 {
@@ -2451,6 +2451,11 @@ mod tests {
                     use_agc: true,
                     agc_n_ave: 4,
                     tap_limits: None,
+                    initial_weights: None,
+                    initial_values: None,
+                    initial_corrections: None,
+                    training_start_ui: None,
+                    training_end_ui: None,
                 }),
                 viterbi_enabled: false,
                 viterbi: None,
@@ -2466,6 +2471,7 @@ mod tests {
             limits: ResourceLimitsV1::default(),
             external_models: Vec::new(),
             legacy_options: Default::default(),
+            sweep: None,
         }
     }
 
