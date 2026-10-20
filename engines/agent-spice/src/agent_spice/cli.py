@@ -16,7 +16,7 @@ from agent_spice.hspice.audit import audit_deck
 from agent_spice.hspice.converter import accept_hspice_deck, convert_hspice_deck
 from agent_spice.hspice.results import parse_ngspice_measurements, write_ngspice_waveform_csv
 from agent_spice.project import prepare_run_directory
-from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_target
+from agent_spice.sparam.fitting import SParamFitConfig, fit_touchstone_to_spice_adaptive, fit_touchstone_to_spice_target
 from agent_spice.sparam.target_fit import SParamFitTarget
 from agent_spice.sparam.io import load_touchstone_metadata
 from agent_spice.sparam.artifacts import evaluate_fitted_s, write_cadence_rfm, write_cadence_rfm_wrapper, write_fitted_touchstone
@@ -1225,6 +1225,69 @@ def main(argv: list[str] | None = None) -> int:
         default=8,
         help="Largest adaptive order-search step when RMS is far above target (default: 8).",
     )
+    fit_parser.add_argument(
+        "--search-mode",
+        choices=["ladder", "adaptive"],
+        default="ladder",
+        help=(
+            "Order-search architecture. 'ladder' is the frozen native ladder (default); "
+            "'adaptive' uses the merged IdEM-replica Adding/Skimming pole discovery and "
+            "feeds its poles to the native residue/passivity/artifact pipeline."
+        ),
+    )
+    adaptive_search_group = fit_parser.add_argument_group(
+        "Adaptive search (only with --search-mode adaptive)",
+        "Merged IdEM-replica pole discovery; the native residue, DC, passivity and "
+        "artifact layers are unchanged.",
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-order-step",
+        type=int,
+        default=8,
+        help="Poles added per Adding pass (rounded up to a conjugate pair; default: 8).",
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-min-order",
+        type=int,
+        default=4,
+        help="Starting order of the cumulative adaptive search (default: 4).",
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-target-margin",
+        type=float,
+        default=1.0,
+        help=(
+            "Fraction of --rms-target handed to the raw search as headroom; later retry "
+            "attempts tighten it automatically (default: 1.0)."
+        ),
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-init-pole-damping",
+        type=float,
+        default=0.05,
+        help="Starting-pole damping ratio of the adaptive search (default: 0.05).",
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-seed-probe",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Measure lin/auto/log seedings on a strided grid and keep the winner (default: on).",
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-sk-weighting",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Sanathanan-Koerner 1/|sigma| reweighting inside the merged search (default: on).",
+    )
+    adaptive_search_group.add_argument(
+        "--adaptive-refine-iterations",
+        type=int,
+        default=0,
+        help=(
+            "Native pole-relocation iterations run on the discovered poles before the "
+            "residue solve (default: 0, i.e. trust the adaptive pole set)."
+        ),
+    )
     fit_parser.add_argument("--auto-preset", choices=["idem-fast"], default="idem-fast", help=argparse.SUPPRESS)
     fit_parser.add_argument(
         "--auto-model-order-candidates",
@@ -1951,11 +2014,43 @@ def main(argv: list[str] | None = None) -> int:
             }
             if tuning_overrides is not None:
                 target_fit_kwargs["tuning_overrides"] = tuning_overrides
-            result = fit_touchstone_to_spice_target(
-                args.touchstone,
-                args.output,
-                **target_fit_kwargs,
-            )
+            if args.search_mode == "adaptive":
+                if priority_bands:
+                    raise ValueError("--search-mode adaptive does not support --priority-band")
+                # Lazy: the default ladder path must not load the vendored engine.
+                from agent_spice.sparam.adaptive_search import AdaptiveSearchConfig
+
+                adaptive_config = AdaptiveSearchConfig(
+                    target_mean_rms=rms_target,
+                    max_order=max_order,
+                    min_order=args.adaptive_min_order,
+                    order_step=args.adaptive_order_step,
+                    target_margin=args.adaptive_target_margin,
+                    init_pole_damping=args.adaptive_init_pole_damping,
+                    seed_probe=args.adaptive_seed_probe,
+                    sk_weighting=args.adaptive_sk_weighting,
+                )
+                result = fit_touchstone_to_spice_adaptive(
+                    args.touchstone,
+                    args.output,
+                    target=target,
+                    config=config,
+                    search=adaptive_config,
+                    refine_iterations=args.adaptive_refine_iterations,
+                    report_path=report_path,
+                    html_report_path=html_report_path,
+                    log_path=log_path,
+                    fitted_touchstone_path=fitted_touchstone_path,
+                    rfm_path=rfm_path,
+                    rfm_wrapper_path=rfm_wrapper_path,
+                    report_top_rms=args.report_top_rms,
+                )
+            else:
+                result = fit_touchstone_to_spice_target(
+                    args.touchstone,
+                    args.output,
+                    **target_fit_kwargs,
+                )
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

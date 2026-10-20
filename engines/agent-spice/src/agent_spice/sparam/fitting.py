@@ -12,10 +12,14 @@ import re
 import shutil
 import threading
 import time
-from typing import Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import numpy as np
 
+if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime
+    from agent_spice.sparam.adaptive_search import AdaptivePoleSearchResult
+
+from agent_spice.sparam.adaptive_config import AdaptiveSearchConfig
 from agent_spice.sparam.native_vf import NativeVectorFitting
 from agent_spice.sparam.artifacts import (
     evaluate_fitted_s,
@@ -210,6 +214,7 @@ class SParamFitConfig:
     quality_profile: str = "explore"
     max_comparison_rms_error: float = 0.05
     max_passivity_epsilon: float = 1e-6
+    passivity_backend: str = "native"
     require_dc: bool = False
     passivity_perturb_constant: bool = False
     passivity_perturb_poles: bool = False
@@ -1860,18 +1865,23 @@ def _fit_touchstone_execution(
     config: SParamFitConfig | None = None,
     log_path: Path | None = None,
     _initial_poles: np.ndarray | None = None,
+    _network: Any | None = None,
 ) -> _FitExecution:
     config = config or SParamFitConfig()
     resource_monitor = _FitResourceMonitor()
     resource_monitor.__enter__()
     with _ProgressLog(log_path) as progress:
-        progress.info(f"loading Touchstone: {touchstone_path}")
-        if config.use_lightweight_network:
-            if config.parameter_type.lower() != "s":
-                raise ValueError("use_lightweight_network only supports S-parameter fitting")
-            network = _load_touchstone_s_lightweight(touchstone_path)
+        if _network is not None:
+            network = _network
+            progress.info(f"using preloaded Touchstone: {touchstone_path}")
         else:
-            network = rf.Network(str(touchstone_path))
+            progress.info(f"loading Touchstone: {touchstone_path}")
+            if config.use_lightweight_network:
+                if config.parameter_type.lower() != "s":
+                    raise ValueError("use_lightweight_network only supports S-parameter fitting")
+                network = _load_touchstone_s_lightweight(touchstone_path)
+            else:
+                network = rf.Network(str(touchstone_path))
         progress.info(
             f"loaded Touchstone: ports={network.nports}, frequency_points={len(network.f)}, "
             f"frequency_range={_frequency_range(network)}"
@@ -2115,6 +2125,7 @@ def _fit_touchstone_execution(
                         pole_weight=config.passivity_pole_weight,
                         asymptotic_compensation_rms_target=config.passivity_enforce_rms_target,
                         preserve_dc=config.preserve_dc,
+                        backend=config.passivity_backend,
                     )
                 else:
                     progress.info(
@@ -2295,6 +2306,7 @@ def _fit_touchstone_execution(
                     pole_weight=config.passivity_pole_weight,
                     asymptotic_compensation_rms_target=config.passivity_enforce_rms_target,
                     preserve_dc=config.preserve_dc,
+                    backend=config.passivity_backend,
                 )
                 enforce_seconds += time.perf_counter() - enforce_started
                 _log_asymptotic_compensation(progress, vector_fit)
@@ -3461,4 +3473,394 @@ def fit_touchstone_to_spice_target(
 """,
                 encoding="utf-8",
             )
+    return search_result
+
+
+# --------------------------------------------------------------------------- #
+# Adaptive Adding/Skimming search mode (merged IdEM-replica pole discovery)
+# --------------------------------------------------------------------------- #
+
+#: Raw-target headroom tried by successive adaptive attempts.  Attempt 0 asks
+#: for exactly the absolute bar; later attempts tighten the search target so
+#: that a model which fails the *post-enforcement* contract can be repaired by
+#: a better-conditioned pole set instead of by more order at the same accuracy.
+_ADAPTIVE_ATTEMPT_MARGIN_FACTORS = (1.0, 0.75, 0.55)
+
+
+def _adaptive_attempt_margins(search: AdaptiveSearchConfig) -> tuple[float, ...]:
+    margins: list[float] = []
+    for factor in _ADAPTIVE_ATTEMPT_MARGIN_FACTORS:
+        margin = float(search.target_margin) * factor
+        margin = min(1.0, max(1e-3, margin))
+        if not margins or margin < margins[-1]:
+            margins.append(margin)
+    return tuple(margins)
+
+
+def fit_touchstone_to_spice_adaptive(
+    touchstone_path: Path,
+    output_path: Path,
+    *,
+    target: SParamFitTarget,
+    config: SParamFitConfig | None = None,
+    search: AdaptiveSearchConfig | None = None,
+    refine_iterations: int = 0,
+    report_path: Path | None = None,
+    html_report_path: Path | None = None,
+    log_path: Path | None = None,
+    fitted_touchstone_path: Path | None = None,
+    rfm_path: Path | None = None,
+    rfm_wrapper_path: Path | None = None,
+    report_top_rms: int = 6,
+) -> SParamTargetSearchResult:
+    """Target-driven fit whose pole set comes from the adaptive search backend.
+
+    The vendored IdEM-replica Adding/Skimming engine chooses the shared poles;
+    the native residue solve, DC constraint, passivity policy, quality report
+    and product artifacts are unchanged.  The pass/fail contract is exactly the
+    one used by :func:`fit_touchstone_to_spice_target`: the returned
+    ``SParamTargetSearchResult`` carries one ``SParamOrderTrial`` per adaptive
+    attempt and ``target_met`` is true only when the delivered
+    (post-enforcement) model meets the absolute RMS bar and the passivity
+    epsilon.
+    """
+
+    if report_top_rms < 0:
+        raise ValueError("report_top_rms must be >= 0")
+    if rfm_wrapper_path is not None and rfm_path is None:
+        raise ValueError("rfm_wrapper_path requires rfm_path")
+    if int(refine_iterations) < 0:
+        raise ValueError("refine_iterations must be >= 0")
+    # Imported lazily so the frozen ladder path never loads the vendored engine.
+    from .adaptive_search import ADAPTIVE_SEARCH_BACKEND_VERSION, discover_poles
+
+    _validate_distinct_output_paths(
+        spice=output_path,
+        report=report_path,
+        html_report=html_report_path,
+        log=log_path,
+        fitted_touchstone=fitted_touchstone_path,
+        rfm=rfm_path,
+        rfm_wrapper=rfm_wrapper_path,
+    )
+    base_config = config or SParamFitConfig()
+    if target.priority_bands_hz or base_config.priority_bands_hz:
+        raise ValueError("adaptive search does not support priority bands")
+    if base_config.priority_band_fit_only:
+        raise ValueError("adaptive search does not support priority_band_fit_only")
+    if not target.gate_full_band_rms:
+        raise ValueError("adaptive search requires a blocking full-band RMS target")
+    if base_config.parameter_type.lower() != "s":
+        raise ValueError("adaptive search only supports S-parameter fitting")
+
+    search_config = search or AdaptiveSearchConfig(
+        target_mean_rms=target.mean_rms,
+        max_order=target.max_order,
+        order_step=target.max_order_step,
+    )
+    if not math.isclose(
+        float(search_config.target_mean_rms),
+        float(target.mean_rms),
+        rel_tol=1.0e-12,
+        abs_tol=0.0,
+    ):
+        raise ValueError("adaptive search target_mean_rms must equal the fit target mean_rms")
+    search_config = replace(
+        search_config,
+        max_order=min(int(search_config.max_order), int(target.max_order)),
+    )
+    policy_config = replace(
+        base_config,
+        mode="manual",
+        priority_bands_hz=(),
+        priority_band_fit_only=False,
+        # The native hard DC pin eliminates the constant column and then fixes
+        # it from the DC sample, which assumes the asymptotic direct term is
+        # small.  The adaptive pole family deliberately produces a large direct
+        # term (D ~ 1 for the 30-port PDN), where that elimination is
+        # ill-conditioned (measured 1.2e-2 instead of 8.2e-4 on s30).  The
+        # merged mode therefore solves residues freely like IdEM/the replica
+        # search does; the delivered DC error is measured and reported in the
+        # ``adaptive_search.selected_model_dc_*`` diagnostics instead of being
+        # hidden behind a pin that would destroy the broadband fit.
+        enforce_dc=False,
+        # The merged mode uses the vendored IdEM-replica Hildreth-QP residue
+        # enforcement as its fast path.  Our native dual-QP/spectral-projection
+        # enforcer is much stronger but measured 734 s even on an essentially
+        # passive 30-port model (pre sigma 1.0000000115); the replica enforcer
+        # does the same job in ~5 s at sigma <= 1 - margin.  The authoritative
+        # post-enforcement Hamiltonian audit below stays native, and a failed
+        # replica pass is retried with the full native enforcer (see the
+        # passivity fallback in fit_touchstone_to_spice_adaptive).
+        passivity_backend="idem-replica" if target.passivity == "enforce" else "native",
+        # The authoritative pre/post Hamiltonian audit stays native; only the
+        # enforcement step itself is swapped.  Skipping the audit when
+        # check_passivity=False would leave the trial without a post sigma and
+        # therefore unable to satisfy the target contract.
+        check_passivity=target.passivity != "off",
+        enforce_passivity=target.passivity == "enforce",
+        passivity_enforce_rms_target=(
+            target.mean_rms if target.passivity == "enforce" and target.gate_full_band_rms else None
+        ),
+        passivity_check_rms_target=(
+            target.mean_rms if target.passivity != "off" and target.gate_full_band_rms else None
+        ),
+        max_passivity_epsilon=target.passivity_epsilon,
+        max_iterations=int(refine_iterations),
+        fit_frequency_stride=1,
+        fit_max_frequency_points=None,
+        fit_f_min=None,
+        fit_f_max=None,
+    )
+
+    def write_progress(message: str) -> None:
+        if log_path is None:
+            return
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(message + "\n")
+            handle.flush()
+
+    if log_path is not None:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text("", encoding="utf-8")
+    write_progress(
+        "adaptive-search start "
+        f"rms_target={target.mean_rms:.12g} passivity={target.passivity} "
+        f"min_order={search_config.min_order} max_order={search_config.max_order} "
+        f"order_step={search_config.order_step} refine_iterations={int(refine_iterations)} "
+        f"backend={ADAPTIVE_SEARCH_BACKEND_VERSION}"
+    )
+
+    if policy_config.use_lightweight_network:
+        network = _load_touchstone_s_lightweight(touchstone_path)
+    else:
+        network = rf.Network(str(touchstone_path))
+    frequencies = np.asarray(network.f, dtype=float)
+    data = np.asarray(network.s, dtype=complex)
+    rms_abs_input = float(np.sqrt(np.mean(np.abs(data) ** 2)))
+
+    margins = _adaptive_attempt_margins(search_config)
+    trials: list[SParamOrderTrial] = []
+    executions: list[_FitExecution] = []
+    searches: list[AdaptivePoleSearchResult] = []
+    attempts: list[dict[str, Any]] = []
+    selected_trial: SParamOrderTrial | None = None
+    stop_reason = "target_not_met_before_max_order"
+    for attempt_index, margin in enumerate(margins):
+        attempt_search = replace(search_config, target_margin=margin)
+        write_progress(
+            f"adaptive-search attempt={attempt_index} margin={margin:.6g} status=START"
+        )
+        pole_result = discover_poles(
+            frequencies,
+            data,
+            attempt_search,
+            rms_abs_input=rms_abs_input,
+        )
+        searches.append(pole_result)
+        write_progress(
+            "adaptive-search attempt=%d order=%d raw_abs_rms=%.12g raw_rel_rms=%.12g "
+            "target_rel_rms=%.12g seed=%s search_seconds=%.3f"
+            % (
+                attempt_index,
+                pole_result.order,
+                pole_result.absolute_rms,
+                pole_result.relative_rms,
+                pole_result.target_relative_rms,
+                pole_result.seed_kind,
+                pole_result.elapsed_seconds,
+            )
+        )
+        order = int(pole_result.order)
+        execution = _fit_touchstone_execution(
+            touchstone_path,
+            output_path,
+            config=replace(policy_config, model_order_max=order),
+            log_path=log_path,
+            _initial_poles=pole_result.poles,
+            _network=network,
+        )
+        trial = trial_from_fit_result(target, execution.result, requested_order=order)
+        if (
+            not trial.target_met
+            and trial.rejection_reason == "passivity_enforcement_failed"
+            and policy_config.passivity_backend != "native"
+        ):
+            write_progress(
+                f"adaptive-search attempt={attempt_index} replica passivity enrichment failed; "
+                "retrying the same pole set with the native enforcer"
+            )
+            fallback_config = replace(policy_config, passivity_backend="native")
+            execution = _fit_touchstone_execution(
+                touchstone_path,
+                output_path,
+                config=replace(fallback_config, model_order_max=order),
+                log_path=log_path,
+                _initial_poles=pole_result.poles,
+                _network=network,
+            )
+            trial = trial_from_fit_result(target, execution.result, requested_order=order)
+        trials.append(trial)
+        executions.append(execution)
+        attempts.append(
+            {
+                "attempt": attempt_index,
+                "target_margin": margin,
+                "native_refine_iterations": int(refine_iterations),
+                "pole_search": pole_result.to_dict(),
+                "native_trial": trial.to_dict(),
+            }
+        )
+        write_progress(
+            "adaptive-search attempt=%d order=%d pre_rms=%.12g final_rms=%.12g "
+            "sigma_after=%s status=%s reason=%s"
+            % (
+                attempt_index,
+                order,
+                trial.pre_mean_rms,
+                trial.final_mean_rms,
+                "n/a" if trial.final_max_sigma is None else f"{trial.final_max_sigma:.12g}",
+                trial.status,
+                trial.rejection_reason,
+            )
+        )
+        if trial.target_met:
+            selected_trial = trial
+            stop_reason = "target_met"
+            break
+        write_progress(f"adaptive-search attempt={attempt_index} status=FAIL")
+
+    if selected_trial is None:
+        finite_trials = [
+            (index, trial)
+            for index, trial in enumerate(trials)
+            if math.isfinite(trial.final_mean_rms)
+        ]
+        if finite_trials:
+            best_index, best_trial = min(
+                finite_trials,
+                key=lambda item: (item[1].final_mean_rms, item[1].effective_order),
+            )
+        else:
+            best_index, best_trial = 0, trials[0]
+        selected_index = best_index
+        stop_reason = "target_not_met_before_max_order"
+    else:
+        selected_index = len(trials) - 1
+        best_trial = selected_trial
+
+    selected_execution = executions[selected_index]
+    selected_pole_result = searches[selected_index]
+    selected_dc_abs_error = None
+    selected_dc_max_abs_error = None
+    dc_indices = np.flatnonzero(frequencies == 0.0)
+    if dc_indices.size:
+        dc_index = int(dc_indices[0])
+        dc_model = evaluate_fitted_s(selected_execution.vector_fit, np.array([0.0]))
+        dc_delta = np.asarray(dc_model[0], dtype=complex) - np.asarray(data[dc_index], dtype=complex)
+        selected_dc_abs_error = float(np.sqrt(np.mean(np.abs(dc_delta) ** 2)))
+        selected_dc_max_abs_error = float(np.max(np.abs(dc_delta)))
+    final_order = (
+        selected_trial.requested_order if selected_trial is not None else best_trial.requested_order
+    )
+    write_progress(
+        f"adaptive-search selected_attempt={selected_index} selected_order={final_order}; "
+        "writing final artifacts"
+    )
+    report_configuration = {
+        "rms_target": target.mean_rms,
+        "full_band_rms_target": target.mean_rms,
+        "full_band_rms_blocking": True,
+        "priority_band_fit_only": False,
+        "max_order": target.max_order,
+        "min_order": target.min_order,
+        "max_order_step": target.max_order_step,
+        "selected_order": final_order,
+        "passivity": target.passivity,
+        "passivity_backend": policy_config.passivity_backend,
+        "search_mode": "adaptive",
+        "search_backend": ADAPTIVE_SEARCH_BACKEND_VERSION,
+        "adaptive_search": search_config,
+        "tuning_overrides": None,
+    }
+    written_result = _write_fit_outputs(
+        selected_execution,
+        output_path,
+        report_path=report_path,
+        html_report_path=html_report_path,
+        fitted_touchstone_path=fitted_touchstone_path,
+        rfm_path=rfm_path,
+        rfm_wrapper_path=rfm_wrapper_path,
+        report_top_rms=report_top_rms,
+        report_configuration=report_configuration,
+    )
+    if selected_trial is not None:
+        selected_trial = replace(selected_trial, payload=written_result)
+
+    search_result = SParamTargetSearchResult(
+        target=target,
+        trials=tuple(trials),
+        selected_trial=selected_trial,
+        stop_reason=stop_reason,
+    )
+    payload = search_result.to_dict()
+    selected_payload = written_result.to_dict()
+    selected_payload["spice_path"] = str(output_path)
+    selected_payload["report_path"] = None if report_path is None else str(report_path)
+    selected_payload["html_report_path"] = None if html_report_path is None else str(html_report_path)
+    selected_payload["log_path"] = None if log_path is None else str(log_path)
+    selected_payload["fitted_touchstone_path"] = (
+        None if fitted_touchstone_path is None else str(fitted_touchstone_path)
+    )
+    selected_payload["rfm_path"] = None if rfm_path is None else str(rfm_path)
+    selected_payload["rfm_wrapper_path"] = None if rfm_wrapper_path is None else str(rfm_wrapper_path)
+    selected_payload.update(payload)
+    payload = selected_payload
+    payload["search_mode"] = "adaptive"
+    payload["search_backend"] = ADAPTIVE_SEARCH_BACKEND_VERSION
+    payload["adaptive_search"] = {
+        "backend_version": ADAPTIVE_SEARCH_BACKEND_VERSION,
+        "config": asdict(search_config),
+        "attempt_target_margins": list(margins),
+        "attempts": attempts,
+        "selected_attempt": int(selected_index),
+        "selected_pole_search": selected_pole_result.to_dict(),
+        "native_refine_iterations": int(refine_iterations),
+        "native_enforce_dc": False,
+        "passivity_backend": policy_config.passivity_backend,
+        "selected_model_dc_abs_error": selected_dc_abs_error,
+        "selected_model_dc_max_abs_error": selected_dc_max_abs_error,
+    }
+    payload["rms_formula"] = "mean_s_rms_v1"
+    payload["order_formula"] = "real_plus_twice_complex_v1"
+    payload["touchstone_path"] = str(touchstone_path)
+    payload["priority_band_fit_mode"] = "full_band_only"
+    payload["tuning_overrides"] = None
+    payload["effective_base_config"] = _target_trial_json_safe(asdict(policy_config))
+    payload["best_effort_exported"] = True
+    payload["passivity_frequency_scope"] = "zero_to_full_input_max_frequency"
+    payload["passivity_reference_sample_scope"] = "full_input_samples"
+    payload["full_band_postcheck"] = None
+    payload["priority_band_targets_hz"] = []
+    if stop_reason == "target_met":
+        write_progress("adaptive-search finished status=PASS")
+    else:
+        write_progress(
+            "adaptive-search finished status=FAIL reason=target_not_met_before_max_order "
+            f"best_effort_order={best_trial.requested_order} "
+            f"best_effort_rms={best_trial.final_mean_rms:.12g}"
+        )
+    if report_path is not None:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            json.dumps(
+                _target_trial_json_safe(payload),
+                indent=2,
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     return search_result

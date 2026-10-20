@@ -36,7 +36,14 @@ class AgentSpicePlatformWheel(bdist_wheel):
         return "py3", "none", platform_tag
 
 
-package_data = ["lib/ngspice/*.cm", "lib/ngspice/*.txt"]
+package_data = [
+    "lib/ngspice/*.cm",
+    "lib/ngspice/*.txt",
+    # MIT notice for the vendored IdEM-replica pole-discovery snapshot must
+    # travel with the wheel (see sparam/_idem_sk/VENDOR.md).
+    "sparam/_idem_sk/LICENSE",
+    "sparam/_idem_sk/VENDOR.md",
+]
 if platform_tag and runtime_identifier:
     native_executable = (
         "agent-spice-sim.exe"

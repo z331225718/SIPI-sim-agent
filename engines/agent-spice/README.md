@@ -244,6 +244,33 @@ python -m agent_spice.cli fit-sparam .\board.s19p `
   --passivity enforce
 ```
 
+### 自适应极点搜索模式（合并 idem_replica，opt-in）
+
+`--search-mode adaptive` 把极点发现换成本项目合并进来的 IdEM 复刻引擎（vendored `sparam/_idem_sk/`，MIT）：共享 sigma 的 Sanathanan–Koerner relocation + 累积式 Adding/Skimming order 搜索；residue 求解、权威无源审计、质量门和全部交付物仍是 Native 实现，默认 `ladder` 路径不受影响。
+
+```powershell
+python -m agent_spice.cli fit-sparam .\5power_30port_....s30p `
+  --output .\runs\s30_adaptive.sp `
+  --rms-target 0.001 --passivity enforce --max-order 100 `
+  --search-mode adaptive
+```
+
+相对默认 ladder 的实测差异（同机、8 线程、abs target 1e-3、`--passivity enforce`）：
+
+| 输入 | ladder | adaptive |
+| --- | --- | --- |
+| 30-port PDN (s30) | order 80、RMS 9.4628e-4、enforce 735 s、wall 1820–3543 s | **order 82、RMS 8.2368e-4、≈2.0 min** |
+| 19-port PDN (s19) | 文档记录 FAIL | **order 75、RMS 9.8703e-4、≈0.7 min、PASS** |
+
+行为差异与限制：
+
+- 该模式**不硬钉 DC 采样点**（vendored 极点族的 direct term 较大，Native DC 硬约束消元在该极点集上会破坏宽带精度）；报告 `adaptive_search.selected_model_dc_abs_error` 给出实测 DC 误差（s30 1.19e-4、s19 2.2e-4）。
+- 快速无源修正使用 vendored Hildreth-QP，但**通过判据仍是 Native Hamiltonian 审计**（`max_sigma <= 1 + --max-passivity-epsilon`）；若快速修正后审计不过，自动 fallback 到完整 Native enforcement。
+- 不支持 `--priority-band`、只支持 S 参数、不支持 `gate_full_band_rms=False`；v1 会显式报错。
+- 自适应搜索参数见 `--help` 的 “Adaptive search” 组（`--adaptive-order-step`、`--adaptive-min-order`、`--adaptive-target-margin`、`--adaptive-seed-probe` 等）。
+
+完整证据、机理和后续提升为默认路径的步骤见 [合并说明](docs/sparam-adaptive-search-merge.md)。
+
 ### `fit-sparam` 全部公开参数
 
 | 参数 | 默认值 | 含义 |

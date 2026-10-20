@@ -3,7 +3,7 @@ status: provisional
 captured_at_utc: 2026-08-09 00:00:00+00:00
 inventory:
   source: git_ls_files
-  tracked_paths_sha256: d77cd90aa6d139dca1a6f2f9836193d064c04456f2cd105f3e147dd4137c21c5
+  tracked_paths_sha256: 9278a254309821288aad31930c464b705e1d1c1895fc291774e8ffe2f9206f0b
   entries:
     .gitattributes:
       rule: migration-metadata
@@ -20879,6 +20879,12 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: external
       distribution: non-distributed
+    engines/agent-spice/docs/sparam-adaptive-search-merge.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
     engines/agent-spice/docs/sparam-algorithm-research-retrospective.md:
       rule: migration-engine-source
       class: migration_only
@@ -21887,6 +21893,60 @@ inventory:
       license: LicenseRef-See-License-Manifest
       provenance: external
       distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/LICENSE:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/VENDOR.md:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/__init__.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/adaptive.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/passivity.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/rational_model.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/_idem_sk/vector_fitting.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/adaptive_config.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/src/agent_spice/sparam/adaptive_search.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
     engines/agent-spice/src/agent_spice/sparam/artifacts.py:
       rule: migration-engine-source
       class: migration_only
@@ -22608,6 +22668,12 @@ inventory:
       provenance: external
       distribution: non-distributed
     engines/agent-spice/tests/test_smoke_fixtures.py:
+      rule: migration-engine-source
+      class: migration_only
+      license: LicenseRef-See-License-Manifest
+      provenance: external
+      distribution: non-distributed
+    engines/agent-spice/tests/test_sparam_adaptive_search.py:
       rule: migration-engine-source
       class: migration_only
       license: LicenseRef-See-License-Manifest

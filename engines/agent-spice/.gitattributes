@@ -5,3 +5,12 @@ third_party/solver-shims/**/*.pyc filter=lfs diff=lfs merge=lfs -text
 third_party/solver-shims/**/*.pyd filter=lfs diff=lfs merge=lfs -text
 third_party/solver-shims/**/*.pyz filter=lfs diff=lfs merge=lfs -text
 third_party/solver-shims/**/*.zip filter=lfs diff=lfs merge=lfs -text
+
+# Keep Python sources LF (repository convention) so Windows checkouts keep
+# semantic diffs and so the vendored IdEM-replica snapshot stays byte-identical
+# to upstream commit 28b76dc (its provenance SHA-256 is verified).
+src/agent_spice/**/*.py text eol=lf
+# Vendored read-only snapshot (sources + MIT notice).
+src/agent_spice/sparam/_idem_sk/*.py text eol=lf
+src/agent_spice/sparam/_idem_sk/LICENSE text eol=lf
+

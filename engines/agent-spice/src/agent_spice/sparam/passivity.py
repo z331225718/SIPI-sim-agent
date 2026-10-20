@@ -4953,10 +4953,35 @@ def enforce_passivity_hamiltonian(
     max_modes_per_frequency: int = 2,
     asymptotic_compensation_rms_target: float | None = None,
     preserve_dc: bool = True,
+    backend: str = "native",
 ) -> None:
     """
     Enforces passivity of S-parameter model using Hamiltonian crossover checks and SLSQP residue, constant, and pole perturbations.
+
+    ``backend`` selects the enforcement implementation:
+
+    * ``"native"`` (default) — the production dual-QP/NNLS/spectral-projection
+      enforcement described above; bit-for-bit unchanged.
+    * ``"idem-replica"`` — the fast Hildreth-QP residue perturbation of the
+      vendored IdEM-replica engine (the merged adaptive-search mode).  The
+      model is converted to the replica representation, enforced with its
+      strict ``sigma_max <= 1 - margin`` target, and converted back; the caller's
+      authoritative post-check still uses the native Hamiltonian audit.
     """
+    if backend == "native":
+        pass
+    elif backend == "idem-replica":
+        from .adaptive_search import enforce_passivity_with_idem_replica
+
+        enforce_passivity_with_idem_replica(
+            vector_fit,
+            nports=nports,
+            epsilon=epsilon,
+            f_max=f_max,
+        )
+        return
+    else:
+        raise ValueError(f"Unsupported passivity backend {backend!r}")
     poles_orig = np.asarray(getattr(vector_fit, "poles", []), dtype=complex)
     residues_orig = np.asarray(getattr(vector_fit, "residues", []), dtype=complex)
     constant_coeff = np.asarray(getattr(vector_fit, "constant_coeff", []), dtype=complex)

@@ -31,6 +31,9 @@ agent_spice = [
   "lib/ngspice/*.txt",
   "lib/native/*/agent-spice-sim",
   "lib/native/*/agent-spice-sim.exe",
+  # MIT notice for the vendored IdEM-replica snapshot must ship with the wheel.
+  "sparam/_idem_sk/LICENSE",
+  "sparam/_idem_sk/VENDOR.md",
 ]
 
 [tool.pytest.ini_options]

@@ -39,6 +39,16 @@
 > psutil（BSD-3-Clause）、h5py（BSD-3-Clause）等同样经 `pip` 解析、不入库。
 > 完整的传递依赖 SBOM 未固化（见升级项 U-1）。
 
+### 1.1 vendored 第三方源码（唯一一项，2026-10-20 合并）
+
+| 资产 | 版本/来源 | 许可 | 证据 | wheel |
+|---|---|---|---|---|
+| `src/agent_spice/sparam/_idem_sk/{rational_model,vector_fitting,adaptive,passivity}.py`（IdEM 复刻研究项目 `idem_replica` 的极点发现 + 快速无源修正核心，逐字快照） | `idem_replica` 0.1.0，上游 commit `28b76dc` | MIT，Copyright (c) 2026 z331225718 | 同目录 `LICENSE`、`VENDOR.md` | 是（在 `src/agent_spice/**` 内，随 wheel 分发并在 `VENDOR.md` 保留 MIT 声明） |
+
+> 该快照只被 opt-in 的 `fit-sparam --search-mode adaptive` 使用，默认
+> `native-idem-fast-v1` 路径不导入它。MIT 允许以保留版权与许可声明的方式
+> 再分发；此表是该声明在发布物中的位置记录。
+
 ---
 
 ## 2. authorized_private — 已获授权的私有/内部资产（本仓自有 IP）
